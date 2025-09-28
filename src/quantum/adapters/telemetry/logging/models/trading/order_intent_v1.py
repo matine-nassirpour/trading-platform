@@ -1,9 +1,9 @@
 from typing import Literal
 
-from pydantic import BaseModel
+from quantum.adapters.telemetry.logging.models.trading.base import BaseEvent
 
 
-class TradeIntentV1(BaseModel):
+class TradeIntentV1(BaseEvent):
     event_name: Literal["trade_intent_v1"] = "trade_intent_v1"
     app: Literal["python_core", "ea_mql5"]
     intent_id: str
