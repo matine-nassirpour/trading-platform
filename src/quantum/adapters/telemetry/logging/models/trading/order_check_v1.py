@@ -10,7 +10,7 @@ class OrderCheckV1(BaseEvent):
     client_order_id: str
     symbol: str
     request_ms: int  # t_send OrderCheck (unix ms)
-    response_ms: int | None  # t_resp
+    response_ms: int | None = None  # t_resp
     result_code: int  # RETCODE_*
     result_desc: str
     details: dict[str, Any] | None = None  # sl, tp, etc.

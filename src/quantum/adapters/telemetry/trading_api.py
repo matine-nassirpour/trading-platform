@@ -27,5 +27,12 @@ def emit_event(
     payload.setdefault("run_id", get_run_id())
     payload.setdefault("correlation_id", get_correlation_id())
 
-    msg = payload.get("event_name", "event")
-    _logger.log(level, msg, extra={"event": payload, **(extra or {})})
+    msg = payload.get("event_name") or "event"
+    safe_extra = {"event": payload}
+    if extra:
+        # avoid overwriting "event" or other sensitive keys
+        for k, v in extra.items():
+            if k not in safe_extra:
+                safe_extra[k] = v
+
+    _logger.log(level, msg, extra=safe_extra)

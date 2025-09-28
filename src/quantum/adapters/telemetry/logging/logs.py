@@ -1,16 +1,5 @@
 import logging
-import socket
 import sys
-
-from opentelemetry._logs import set_logger_provider
-from opentelemetry.sdk._logs import LoggerProvider
-from opentelemetry.sdk.resources import (
-    DEPLOYMENT_ENVIRONMENT,
-    SERVICE_INSTANCE_ID,
-    SERVICE_NAME,
-    SERVICE_NAMESPACE,
-    Resource,
-)
 
 from quantum.adapters.telemetry.logging.filters import (
     IgnoreLibrariesFilter,
@@ -35,18 +24,6 @@ class LoggingConfig:
 
 
 def init_logging(cfg: LoggingConfig) -> None:
-    resource = Resource.create(
-        {
-            SERVICE_NAME: cfg.app_name,
-            SERVICE_NAMESPACE: cfg.namespace,
-            DEPLOYMENT_ENVIRONMENT: cfg.environment,
-            SERVICE_INSTANCE_ID: socket.gethostname(),
-        }
-    )
-
-    logger_provider = LoggerProvider(resource=resource)
-    set_logger_provider(logger_provider)
-
     # Common log level
     level = getattr(logging, cfg.log_level.upper(), logging.INFO)
 
@@ -55,7 +32,7 @@ def init_logging(cfg: LoggingConfig) -> None:
         handler.addFilter(IgnoreLibrariesFilter())
         handler.addFilter(SchemaVersionFilter())
 
-    # Fallback handler (console stderr)
+    # Console handler (stderr) in JSON format
     stderr_handler = logging.StreamHandler(sys.stderr)
     stderr_handler.setLevel(level)
     stderr_handler.setFormatter(JsonFormatter())
