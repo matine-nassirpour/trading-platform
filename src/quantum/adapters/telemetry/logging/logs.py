@@ -1,12 +1,17 @@
 import logging
+import os
 import sys
 
+from quantum.adapters.telemetry.logging.audit_sink import AuditEventFileHandler
 from quantum.adapters.telemetry.logging.filters import (
     IgnoreLibrariesFilter,
     LoggingContextFilter,
     SchemaVersionFilter,
 )
 from quantum.adapters.telemetry.logging.formatter import JsonFormatter
+from quantum.adapters.telemetry.logging.partitioned_handlers import (
+    PartitionedJSONLFileHandler,
+)
 
 
 class LoggingConfig:
@@ -38,11 +43,49 @@ def init_logging(cfg: LoggingConfig) -> None:
     stderr_handler.setFormatter(JsonFormatter())
     _add_filters(stderr_handler, cfg.environment)
 
+    partition_handler: logging.Handler | None = None
+    audit_handler: logging.Handler | None = None
+
+    # Partitioned JSONL (ENV opt-in)d
+    partition_base = os.getenv("QUANTUM_LOG_DIR")  # e.g. /var/log/quantum
+    if partition_base:
+        partition_handler = PartitionedJSONLFileHandler(
+            base_dir=partition_base,
+            app=cfg.app_name,
+            environment=cfg.environment,
+            namespace=cfg.namespace,
+        )
+        partition_handler.setLevel(level)
+        partition_handler.setFormatter(JsonFormatter())
+        _add_filters(partition_handler, cfg.environment)
+
+    # Audit per-event files (ENV opt-in) ---
+    audit_base = os.getenv("QUANTUM_AUDIT_DIR")  # e.g. /var/log/quantum/audit
+    if audit_base:
+        audit_handler = AuditEventFileHandler(
+            base_dir=audit_base,
+            app=cfg.app_name,
+            environment=cfg.environment,
+            namespace=cfg.namespace,
+        )
+        # No formatter: we write the raw 'event' payload (already structured Pydantic)
+        audit_handler.setLevel(level)
+        _add_filters(audit_handler, cfg.environment)
+
     # Root logger: clear all existing handlers
     root_logger = logging.getLogger()
     if root_logger.hasHandlers():
         root_logger.handlers.clear()
 
+    # Build the definitive handler list (only non-None)
+    handlers: list[logging.Handler] = [stderr_handler]
+    if partition_handler is not None:
+        handlers.append(partition_handler)
+    if audit_handler is not None:
+        handlers.append(audit_handler)
+
     root_logger.setLevel(level)
-    root_logger.addHandler(stderr_handler)
+    for h in handlers:
+        root_logger.addHandler(h)
+
     root_logger.propagate = False

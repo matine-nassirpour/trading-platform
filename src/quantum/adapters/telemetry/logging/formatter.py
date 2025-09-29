@@ -1,8 +1,6 @@
 import json
 import logging
 import socket
-import time
-from datetime import datetime, timezone
 
 from opentelemetry.trace import get_current_span
 from pydantic import ValidationError
@@ -10,6 +8,11 @@ from pydantic import ValidationError
 from quantum.adapters.telemetry.context.run_id import get_run_id
 from quantum.adapters.telemetry.correlation.correlation_id import get_correlation_id
 from quantum.adapters.telemetry.logging.models.log_payload_v1 import LogPayloadV1
+from quantum.fundation.time.rfc3339 import (
+    from_unix_s_to_rfc3339_ms,
+    now_mono_ms,
+    now_unix_ms,
+)
 
 INSTANCE_ID = socket.gethostname()
 ALLOWED_EXTRA_FIELDS = {
@@ -39,12 +42,6 @@ ALLOWED_EXTRA_FIELDS = {
 
 
 class JsonFormatter(logging.Formatter):
-    def formatTime(self, record: logging.LogRecord, datefmt: str | None = None) -> str:
-        dt = datetime.fromtimestamp(record.created, tz=timezone.utc)
-        # RFC3339, millisecond precision, suffix Z
-        s = dt.isoformat(timespec="milliseconds")
-        return s.removesuffix("+00:00") + "Z"
-
     def format(self, record: logging.LogRecord) -> str:
         # Get OpenTelemetry context
         span = get_current_span()
@@ -59,11 +56,11 @@ class JsonFormatter(logging.Formatter):
         correlation_id = get_correlation_id()
         run_id = get_run_id()
         message = record.getMessage()
-        now_ms = int(record.created * 1000)
-        mono_ms = time.monotonic_ns() // 1_000_000
+        now_ms = now_unix_ms()
+        mono_ms = now_mono_ms()
 
         payload_dict = {
-            "timestamp": self.formatTime(record),
+            "timestamp": from_unix_s_to_rfc3339_ms(record.created),
             "ts_unix_ms": now_ms,
             "ts_monotonic_ms": mono_ms,
             "level": record.levelname,

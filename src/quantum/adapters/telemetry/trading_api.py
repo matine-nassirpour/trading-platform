@@ -5,6 +5,11 @@ from typing import Any
 from quantum.adapters.telemetry.context.run_id import get_run_id
 from quantum.adapters.telemetry.correlation.correlation_id import get_correlation_id
 
+DEFAULT_LEVELS = {
+    "order_reject_v1": logging.WARNING,
+    "killswitch_trigger_v1": logging.ERROR,
+}
+
 _logger = logging.getLogger("quantum.trading")
 
 
@@ -28,6 +33,7 @@ def emit_event(
     payload.setdefault("correlation_id", get_correlation_id())
 
     msg = payload.get("event_name") or "event"
+    level = level or DEFAULT_LEVELS.get(msg, logging.INFO)
     safe_extra = {"event": payload}
     if extra:
         # avoid overwriting "event" or other sensitive keys

@@ -10,7 +10,7 @@ PS  := powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -Command
 
 .DEFAULT_GOAL := help
 
-.PHONY: help fmt-check fmt typecheck pre-commit test audit clean check-ci ui-up
+.PHONY: help fmt-check fmt typecheck pre-commit test audit clean check-ci ui
 
 help:
 	@$(PS) "Write-Host 'Targets:'; Get-Content '$(MAKEFILE_LIST)' | Select-String '^\S+:.*?## ' | ForEach-Object { $$t = $$_.Line -replace ':.*',''; $$d = ($$_.Line -split '## ')[1]; '{0,-18} {1}' -f $$t, $$d } | Sort-Object"
@@ -52,5 +52,5 @@ clean: ## Remove build/test caches
 check-ci: pre-commit test ## Run CI-equivalent checks locally
 	@echo "All CI checks completed"
 
-ui-up: ## Launch Streamlit
+ui: ## Launch Streamlit
 	poetry run streamlit run src/quantum/ui/streamlit_app.py --server.headless true

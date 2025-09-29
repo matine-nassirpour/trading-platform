@@ -1,8 +1,16 @@
+import os
+import threading
+from typing import Literal
+
+from prometheus_client import start_http_server
+
 from quantum.adapters.telemetry.logging.logs import LoggingConfig, init_logging
 from quantum.adapters.telemetry.tracing.propagation import setup_propagation
 from quantum.adapters.telemetry.tracing.traces import TracingConfig, init_tracing
+from quantum.fundation.config.env import load_local_env
 
 _initialized = False
+_init_lock = threading.Lock()
 
 
 def init_observability(
@@ -12,29 +20,55 @@ def init_observability(
     log_level: str = "INFO",
     sample_ratio: float = 1.0,
 ) -> None:
+    """Idempotent + thread-safe observability bootstrap."""
     global _initialized
     if _initialized:
         return
 
-    init_logging(
-        LoggingConfig(
-            app_name=app_name,
-            environment=environment,
-            namespace=namespace,
-            log_level=log_level,
+    with _init_lock:
+        if _initialized:
+            return
+
+        load_local_env()
+
+        # Read config from environment (OS > .env)
+        app_name = os.getenv("QUANTUM_APP_NAME", app_name)
+        environment = os.getenv("QUANTUM_ENV", environment)
+        namespace = os.getenv("QUANTUM_NS", namespace)
+        log_level = os.getenv("QUANTUM_LOG_LEVEL", log_level)
+        sample_ratio = float(os.getenv("QUANTUM_TRACE_SAMPLE", sample_ratio))
+
+        # Logging JSON
+        init_logging(
+            LoggingConfig(
+                app_name=app_name,
+                environment=environment,
+                namespace=namespace,
+                log_level=log_level,
+            )
         )
-    )
 
-    init_tracing(
-        TracingConfig(
-            service_name=app_name,
-            environment=environment,
-            namespace=namespace,
-            exporter="console",
-            sample_ratio=sample_ratio,
+        exp_env = os.getenv("QUANTUM_TRACE_EXPORTER")
+        exporter: Literal["console", "none"] = (
+            "none" if exp_env == "none" else "console"
         )
-    )
 
-    setup_propagation()
+        # Tracing OTel
+        init_tracing(
+            TracingConfig(
+                service_name=app_name,
+                environment=environment,
+                namespace=namespace,
+                exporter=exporter,
+                sample_ratio=sample_ratio,
+            )
+        )
+        setup_propagation()
 
-    _initialized = True
+        # Prometheus metrics endpoint (opt-in)
+        port = int(os.getenv("QUANTUM_METRICS_PORT", "0") or "0")
+        addr = os.getenv("QUANTUM_METRICS_ADDR", "0.0.0.0")
+        if port > 0:
+            start_http_server(port, addr=addr)
+
+        _initialized = True
