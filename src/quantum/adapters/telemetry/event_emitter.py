@@ -20,7 +20,8 @@ def emit_event(
     extra: Mapping[str, Any] | None = None,
 ) -> None:
     """
-    Accepts a Pydantic model (or dict) representing a trading event, injects run_id/correlation_id if absent, and logs as JSON.
+    Emit a structured trading *event* via logging infrastructure (JSON format).
+    Accepts a Pydantic model or a dict. Injects run_id/correlation_id if missing.
     """
     if hasattr(event_model, "model_dump"):
         payload = event_model.model_dump(exclude_none=True)

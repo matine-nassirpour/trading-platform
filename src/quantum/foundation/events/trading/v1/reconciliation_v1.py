@@ -1,6 +1,6 @@
 from typing import Any, Literal
 
-from quantum.adapters.telemetry.logging.models.trading.base import BaseEvent
+from quantum.foundation.events.common.base import BaseEvent
 
 
 class ReconciliationV1(BaseEvent):

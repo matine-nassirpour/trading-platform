@@ -1,6 +1,6 @@
 from typing import Literal
 
-from quantum.adapters.telemetry.logging.models.trading.base import BaseEvent
+from quantum.foundation.events.common.base import BaseEvent
 
 
 class OrderSubmitV1(BaseEvent):

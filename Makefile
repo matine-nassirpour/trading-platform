@@ -55,4 +55,4 @@ check-ci: pre-commit test ## Run CI-equivalent checks locally
 	@echo "All CI checks completed"
 
 ui: ## Launch Streamlit
-	poetry run streamlit run src/quantum/ui/streamlit_app.py --server.headless true
+	poetry run streamlit run apps/streamlit/app.py --server.headless true

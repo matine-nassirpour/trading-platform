@@ -1,6 +1,6 @@
 import json
 
-from quantum.adapters.telemetry.logging.models.schema_registry import REGISTRY
+from quantum.foundation.serialization.schema_registry import REGISTRY
 
 
 def test_registry_contains_known_events():

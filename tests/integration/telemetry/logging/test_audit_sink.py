@@ -5,11 +5,9 @@ from pathlib import Path
 
 import pytest
 
+from quantum.adapters.telemetry.event_emitter import emit_event
 from quantum.adapters.telemetry.logging.logs import LoggingConfig, init_logging
-from quantum.adapters.telemetry.logging.models.trading.order_submit_v1 import (
-    OrderSubmitV1,
-)
-from quantum.adapters.telemetry.trading_api import emit_event
+from quantum.foundation.events.trading.v1.order_submit_v1 import OrderSubmitV1
 
 
 # --- Helpers -----------------------------------------------------------------

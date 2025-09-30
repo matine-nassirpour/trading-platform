@@ -2,7 +2,7 @@ import streamlit as st
 
 from quantum.adapters.telemetry.correlation.correlation_id import get_correlation_id
 from quantum.bootstrap import init_observability
-from quantum.ui._obs import PageTimer, ui_action
+from quantum.ui.obs import PageTimer, ui_action
 
 # Important: do the init at the very beginning
 init_observability(app_name="ui_streamlit", environment="dev", namespace="quantum")
