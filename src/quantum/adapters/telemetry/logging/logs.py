@@ -4,9 +4,10 @@ import sys
 
 from quantum.adapters.telemetry.logging.audit_sink import AuditEventFileHandler
 from quantum.adapters.telemetry.logging.filters import (
+    AuditEventFilter,
     IgnoreLibrariesFilter,
     LoggingContextFilter,
-    SchemaVersionFilter,
+    MonotonicTimestampFilter,
 )
 from quantum.adapters.telemetry.logging.formatter import JsonFormatter
 from quantum.adapters.telemetry.logging.partitioned_handlers import (
@@ -35,7 +36,7 @@ def init_logging(cfg: LoggingConfig) -> None:
     def _add_filters(handler: logging.Handler, env: str) -> None:
         handler.addFilter(LoggingContextFilter(env=env))
         handler.addFilter(IgnoreLibrariesFilter())
-        handler.addFilter(SchemaVersionFilter())
+        handler.addFilter(MonotonicTimestampFilter())
 
     # Console handler (stderr) in JSON format
     stderr_handler = logging.StreamHandler(sys.stderr)
@@ -71,6 +72,7 @@ def init_logging(cfg: LoggingConfig) -> None:
         # No formatter: we write the raw 'event' payload (already structured Pydantic)
         audit_handler.setLevel(level)
         _add_filters(audit_handler, cfg.environment)
+        audit_handler.addFilter(AuditEventFilter())
 
     # Root logger: clear all existing handlers
     root_logger = logging.getLogger()

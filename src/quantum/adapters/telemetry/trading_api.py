@@ -16,7 +16,7 @@ _logger = logging.getLogger("quantum.trading")
 def emit_event(
     event_model: Any,
     *,
-    level: int = logging.INFO,
+    level: int | None = None,
     extra: Mapping[str, Any] | None = None,
 ) -> None:
     """

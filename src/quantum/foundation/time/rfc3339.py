@@ -23,13 +23,6 @@ def from_unix_s_to_rfc3339_ms(seconds: float) -> str:
     return dt.isoformat(timespec="milliseconds").replace("+00:00", "Z")
 
 
-def now_unix_ms() -> int:
-    """
-    Current UNIX epoch time in milliseconds as int.
-    """
-    return int(time.time() * 1000)
-
-
 def now_mono_ms() -> int:
     """
     Monotonic clock in milliseconds (not subject to system clock changes).

@@ -31,12 +31,14 @@ typecheck: ## Strict typing (mypy)
 test: ## Run tests with coverage (HTML, XML, JUnit)
 	@echo "Running tests + Coverage"
 	@$(PS) "New-Item -ItemType Directory -Force -Path 'test-results','htmlcov' | Out-Null"
-	@poetry run pytest \
-		--cov=$(PKG) --cov-report=term-missing \
-		--cov-report=xml:coverage.xml \	--cov-report=html:htmlcov \
-#		--cov-fail-under=90 \
+	@poetry run pytest --rootdir=. tests\
+		--cov=$(PKG) \
+		--cov-report=term-missing \
+		--cov-report=xml:coverage.xml \
+		--cov-report=html:htmlcov \
 		--junitxml=test-results/results.xml \
 		--disable-warnings -v
+#		--cov-fail-under=90
 
 pre-commit: ## Run pre-commit hooks on the entire repo
 	@echo "Running pre-commit hooks"

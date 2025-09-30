@@ -1,6 +1,7 @@
 import json
 import logging
 import socket
+from typing import Any
 
 from opentelemetry.trace import get_current_span
 from pydantic import ValidationError
@@ -8,14 +9,10 @@ from pydantic import ValidationError
 from quantum.adapters.telemetry.context.run_id import get_run_id
 from quantum.adapters.telemetry.correlation.correlation_id import get_correlation_id
 from quantum.adapters.telemetry.logging.models.log_payload_v1 import LogPayloadV1
-from quantum.fundation.time.rfc3339 import (
-    from_unix_s_to_rfc3339_ms,
-    now_mono_ms,
-    now_unix_ms,
-)
+from quantum.foundation.time.rfc3339 import from_unix_s_to_rfc3339_ms, now_mono_ms
 
 INSTANCE_ID = socket.gethostname()
-ALLOWED_EXTRA_FIELDS = {
+EXCLUDED_STD_FIELDS = {
     "args",
     "asctime",
     "created",
@@ -43,10 +40,9 @@ ALLOWED_EXTRA_FIELDS = {
 
 class JsonFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
-        # Get OpenTelemetry context
+        # OpenTelemetry context
         span = get_current_span()
         span_context = span.get_span_context()
-
         trace_id = (
             format(span_context.trace_id, "032x") if span_context.trace_id else None
         )
@@ -56,10 +52,10 @@ class JsonFormatter(logging.Formatter):
         correlation_id = get_correlation_id()
         run_id = get_run_id()
         message = record.getMessage()
-        now_ms = now_unix_ms()
-        mono_ms = now_mono_ms()
+        now_ms = int(record.created * 1000)
+        mono_ms = getattr(record, "ts_monotonic_ms", now_mono_ms())
 
-        payload_dict = {
+        payload_dict: dict[str, Any] = {
             "timestamp": from_unix_s_to_rfc3339_ms(record.created),
             "ts_unix_ms": now_ms,
             "ts_monotonic_ms": mono_ms,
@@ -74,6 +70,7 @@ class JsonFormatter(logging.Formatter):
             "correlation_id": correlation_id,
             "run_id": run_id,
             "log_schema_version": "v1",
+            "attrs": {},
         }
 
         # Include exception info if available
@@ -81,10 +78,17 @@ class JsonFormatter(logging.Formatter):
             exception_msg = self.formatException(record.exc_info)
             payload_dict["exception"] = exception_msg
 
-        # Forward any custom extra fields (exclude stdlib internals & already-populated keys)
+        # Route all non-standard extras to attrs
+        attrs = payload_dict["attrs"]
         for key, value in record.__dict__.items():
-            if key not in payload_dict and key not in ALLOWED_EXTRA_FIELDS:
-                payload_dict[key] = value
+            if key in EXCLUDED_STD_FIELDS:
+                continue
+            if key == "attrs" and isinstance(value, dict):
+                attrs.update(value)
+                continue
+            if key in payload_dict:
+                continue
+            attrs[key] = value
 
         try:
             model = LogPayloadV1.model_validate(payload_dict)
@@ -93,4 +97,4 @@ class JsonFormatter(logging.Formatter):
             # Fallback JSON
             payload_dict["log_schema_version"] = "fallback"
             payload_dict["validation_error"] = str(e)
-            return json.dumps(payload_dict)
+            return json.dumps(payload_dict, ensure_ascii=False, separators=(",", ":"))

@@ -1,13 +1,15 @@
+import logging
 import os
 import threading
 from typing import Literal
 
 from prometheus_client import start_http_server
 
+from quantum.adapters.telemetry.context.run_id import generate_run_id
 from quantum.adapters.telemetry.logging.logs import LoggingConfig, init_logging
 from quantum.adapters.telemetry.tracing.propagation import setup_propagation
 from quantum.adapters.telemetry.tracing.traces import TracingConfig, init_tracing
-from quantum.fundation.config.env import load_local_env
+from quantum.foundation.config.env import load_local_env
 
 _initialized = False
 _init_lock = threading.Lock()
@@ -30,6 +32,7 @@ def init_observability(
             return
 
         load_local_env()
+        generate_run_id()
 
         # Read config from environment (OS > .env)
         app_name = os.getenv("QUANTUM_APP_NAME", app_name)
@@ -67,8 +70,13 @@ def init_observability(
 
         # Prometheus metrics endpoint (opt-in)
         port = int(os.getenv("QUANTUM_METRICS_PORT", "0") or "0")
-        addr = os.getenv("QUANTUM_METRICS_ADDR", "0.0.0.0")
+        addr = os.getenv("QUANTUM_METRICS_ADDR", "127.0.0.1")
         if port > 0:
-            start_http_server(port, addr=addr)
+            try:
+                start_http_server(port, addr=addr)
+            except OSError as e:
+                logging.getLogger(__name__).warning(
+                    f"Metrics HTTP server failed to start on {addr}:{port}: {e}"
+                )
 
         _initialized = True

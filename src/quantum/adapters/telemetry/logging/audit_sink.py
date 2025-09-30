@@ -1,9 +1,10 @@
 import json
 import logging
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 
-from quantum.fundation.time.naming import generate_audit_blob_name
+from quantum.foundation.time.naming import generate_audit_blob_name
 
 
 class AuditEventFileHandler(logging.Handler):
@@ -48,9 +49,13 @@ class AuditEventFileHandler(logging.Handler):
             return
 
         try:
-            with open(path, "w", encoding=self.encoding) as f:
+            tmp_path = path.with_suffix(".json.tmp")
+            with open(tmp_path, "w", encoding=self.encoding, newline="\n") as f:
                 json.dump(
                     event, f, ensure_ascii=False, separators=(",", ":"), allow_nan=False
                 )
+                f.flush()
+                os.fsync(f.fileno())
+            os.replace(tmp_path, path)
         except (OSError, TypeError, ValueError):
             self.handleError(record)
