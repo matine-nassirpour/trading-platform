@@ -106,6 +106,8 @@ trading-platform/
 │       ├── __init__.py
 │       └── bootstrap.py
 ├── tests/
+│   ├── e2e/
+│   │   └── __init__.py
 │   ├── integration/
 │   │   ├── infrastructure/
 │   │   │   ├── observability/
