@@ -3,8 +3,8 @@ from typing import Literal
 from quantum.foundation.events.common.base import BaseEvent
 
 
-class TradeIntentV1(BaseEvent):
-    event_name: Literal["trade_intent_v1"] = "trade_intent_v1"
+class OrderIntentV1(BaseEvent):
+    event_name: Literal["order_intent_v1"] = "order_intent_v1"
     app: Literal["python_core", "ea_mql5"]
     intent_id: str
     symbol: str
