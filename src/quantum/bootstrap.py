@@ -5,11 +5,14 @@ from typing import Literal
 
 from prometheus_client import start_http_server
 
-from quantum.adapters.telemetry.context.run_id import generate_run_id
-from quantum.adapters.telemetry.logging.logs import LoggingConfig, init_logging
-from quantum.adapters.telemetry.tracing.propagation import setup_propagation
-from quantum.adapters.telemetry.tracing.traces import TracingConfig, init_tracing
-from quantum.foundation.config.env import load_local_env
+from quantum.infrastructure.observability.logging import LoggingConfig, init_logging
+from quantum.infrastructure.observability.tracing.propagation import setup_propagation
+from quantum.infrastructure.observability.tracing.traces import (
+    TracingConfig,
+    init_tracing,
+)
+from quantum.shared.config.env import load_local_env
+from quantum.shared.context import generate_run_id
 
 _initialized = False
 _init_lock = threading.Lock()

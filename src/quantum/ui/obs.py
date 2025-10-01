@@ -7,7 +7,7 @@ from typing import ParamSpec, TypeVar
 from opentelemetry import trace
 from prometheus_client import Counter, Histogram
 
-from quantum.adapters.telemetry.correlation.correlation_id import (
+from quantum.shared.correlation.correlation_id import (
     correlation_context,
     new_correlation_id,
 )
