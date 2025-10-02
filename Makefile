@@ -63,5 +63,5 @@ ui: ## Launch Streamlit
 
 tree: ## Print repo tree into docs/architecture/tree.txt
 	@$(PS) "New-Item -ItemType Directory -Force -Path 'docs/architecture' | Out-Null"
-	@poetry run python scripts/print_tree.py --root . --max-depth 10 --output docs/architecture/tree.txt
+	@poetry run python scripts/print_tree.py . --output docs/architecture/tree.txt --respect-gitignore --max-depth 10
 	@echo Done. Output: docs/architecture/tree.txt

@@ -1,10 +1,19 @@
 trading-platform/
 ├── apps/
 │   ├── cli/
+│   │   ├── __init__.py
+│   │   ├── bootstrap.py
 │   │   └── main.py
-│   └── streamlit/
-│       ├── pages/
-│       └── app.py
+│   ├── streamlit/
+│   │   ├── lib/
+│   │   │   ├── __init__.py
+│   │   │   └── obs.py
+│   │   ├── pages/
+│   │   │   └── __init__.py
+│   │   ├── __init__.py
+│   │   ├── app.py
+│   │   └── bootstrap.py
+│   └── __init__.py
 ├── docs/
 │   └── architecture/
 │       └── tree.txt
@@ -49,6 +58,9 @@ trading-platform/
 │       │   │   └── base.py
 │       │   ├── services/
 │       │   │   └── __init__.py
+│       │   ├── types/
+│       │   │   ├── __init__.py
+│       │   │   └── enums.py
 │       │   ├── value_objects/
 │       │   │   └── __init__.py
 │       │   └── __init__.py
@@ -78,9 +90,18 @@ trading-platform/
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── propagation.py
 │       │   │   │   └── traces.py
-│       │   │   └── __init__.py
+│       │   │   ├── __init__.py
+│       │   │   └── init_observability.py
 │       │   ├── storage/
 │       │   │   └── __init__.py
+│       │   └── __init__.py
+│       ├── interface/
+│       │   ├── cli/
+│       │   │   ├── __init__.py
+│       │   │   └── entrypoints.py
+│       │   ├── streamlit/
+│       │   │   ├── __init__.py
+│       │   │   └── entrypoints.py
 │       │   └── __init__.py
 │       ├── shared/
 │       │   ├── config/
@@ -101,12 +122,12 @@ trading-platform/
 │       │   │   ├── __init__.py
 │       │   │   ├── naming.py
 │       │   │   └── rfc3339.py
+│       │   ├── typing/
+│       │   │   ├── __init__.py
+│       │   │   ├── ids.py
+│       │   │   └── time.py
 │       │   └── __init__.py
-│       ├── ui/
-│       │   ├── __init__.py
-│       │   └── obs.py
-│       ├── __init__.py
-│       └── bootstrap.py
+│       └── __init__.py
 ├── tests/
 │   ├── e2e/
 │   │   └── __init__.py
@@ -114,8 +135,7 @@ trading-platform/
 │   │   ├── infrastructure/
 │   │   │   ├── observability/
 │   │   │   │   ├── logging/
-│   │   │   │   │   ├── __init__.py
-│   │   │   │   │   └── test_audit_sink.py
+│   │   │   │   │   └── __init__.py
 │   │   │   │   └── __init__.py
 │   │   │   └── __init__.py
 │   │   └── __init__.py
@@ -130,6 +150,7 @@ trading-platform/
 ├── .coveragerc
 ├── .env.example
 ├── .gitignore
+├── .importlinter
 ├── .pre-commit-config.yaml
 ├── .secrets.baseline
 ├── Makefile
