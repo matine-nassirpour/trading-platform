@@ -1,7 +1,8 @@
 import re
+from decimal import Decimal
 from typing import ClassVar
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, field_serializer, field_validator
 
 RFC3339_MS = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$")
 
@@ -31,6 +32,10 @@ class BaseEvent(BaseModel):
     correlation_id: str | None = None
     trace_id: str | None = None
     span_id: str | None = None
+
+    @field_serializer(Decimal)
+    def _ser_decimal(self, v: Decimal) -> str:
+        return str(v)
 
     @field_validator("timestamp")
     @classmethod

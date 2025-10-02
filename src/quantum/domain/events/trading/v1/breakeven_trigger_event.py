@@ -1,7 +1,9 @@
+from decimal import Decimal
 from typing import ClassVar
 
 from quantum.domain.events.base import BaseEvent
 from quantum.domain.types.enums import App
+from quantum.shared.typing.time import EpochMs
 
 
 class BreakevenTriggerEvent(BaseEvent):
@@ -10,5 +12,5 @@ class BreakevenTriggerEvent(BaseEvent):
     symbol: str
     position_id: int
     intent_id: str | None = None
-    trigger_ms: int
-    price_at_trigger: float
+    trigger_epoch_ms: EpochMs
+    price_at_trigger: Decimal

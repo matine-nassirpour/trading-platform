@@ -2,6 +2,7 @@ from typing import Any, ClassVar
 
 from quantum.domain.events.base import BaseEvent
 from quantum.domain.types.enums import App
+from quantum.shared.typing.time import EpochMs
 
 
 class OrderRejectEvent(BaseEvent):
@@ -10,7 +11,7 @@ class OrderRejectEvent(BaseEvent):
     intent_id: str
     client_order_id: str
     symbol: str
-    reject_ms: int
+    reject_epoch_ms: EpochMs
     error_code: int  # RETCODE_*
     error_desc: str
     request_snapshot: dict[str, Any] | None = None

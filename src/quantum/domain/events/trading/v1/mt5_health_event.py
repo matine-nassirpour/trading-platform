@@ -2,6 +2,7 @@ from typing import ClassVar
 
 from quantum.domain.events.base import BaseEvent
 from quantum.domain.types.enums import App
+from quantum.shared.typing.time import EpochMs
 
 
 class Mt5HealthEvent(BaseEvent):
@@ -16,4 +17,4 @@ class Mt5HealthEvent(BaseEvent):
     trade_allowed: bool
     connection_up: bool
     free_margin: float | None = None
-    update_ms: int
+    update_epoch_ms: EpochMs

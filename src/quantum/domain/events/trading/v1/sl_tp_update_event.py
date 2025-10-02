@@ -1,7 +1,9 @@
+from decimal import Decimal
 from typing import ClassVar, Literal
 
 from quantum.domain.events.base import BaseEvent
 from quantum.domain.types.enums import App
+from quantum.shared.typing.time import EpochMs
 
 
 class SlTpUpdateEvent(BaseEvent):
@@ -10,9 +12,9 @@ class SlTpUpdateEvent(BaseEvent):
     symbol: str
     position_id: int
     intent_id: str | None = None
-    old_sl: float | None = None
-    new_sl: float | None = None
-    old_tp: float | None = None
-    new_tp: float | None = None
-    update_ms: int
+    old_sl: Decimal | None = None
+    new_sl: Decimal | None = None
+    old_tp: Decimal | None = None
+    new_tp: Decimal | None = None
+    update_epoch_ms: EpochMs
     reason: Literal["manual", "rule", "risk"]
