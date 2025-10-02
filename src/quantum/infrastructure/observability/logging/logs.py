@@ -10,6 +10,7 @@ from quantum.infrastructure.observability.logging.filters import (
     IgnoreLibrariesFilter,
     LoggingContextFilter,
     MonotonicTimestampFilter,
+    RedactFilter,
 )
 from quantum.infrastructure.observability.logging.formatter import JsonFormatter
 from quantum.infrastructure.observability.logging.partitioned_handlers import (
@@ -39,6 +40,7 @@ def init_logging(cfg: LoggingConfig) -> None:
         handler.addFilter(LoggingContextFilter(env=env))
         handler.addFilter(IgnoreLibrariesFilter())
         handler.addFilter(MonotonicTimestampFilter())
+        handler.addFilter(RedactFilter())
 
     # Console handler (stderr) in JSON format
     stderr_handler = logging.StreamHandler(sys.stderr)

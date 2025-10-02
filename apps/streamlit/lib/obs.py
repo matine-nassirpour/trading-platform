@@ -26,6 +26,7 @@ ui_actions_total = Counter(
 ui_action_latency_ms = Histogram(
     "quantum_ui_action_latency_ms",
     "Latency of UI actions (ms)",
+    ["action"],
     buckets=(10, 25, 50, 100, 200, 400, 800, 1600, 3200),
 )
 
@@ -51,7 +52,7 @@ def ui_action(name: str) -> Callable[[Callable[P, R]], Callable[P, R]]:
                 finally:
                     dur_ms = (time.monotonic_ns() - start) // 1_000_000
                     ui_actions_total.labels(name).inc()
-                    ui_action_latency_ms.observe(dur_ms)
+                    ui_action_latency_ms.labels(name).observe(dur_ms)
                     logging.getLogger("quantum.ui").info(
                         "ui action completed",
                         extra={"attrs": {"ui.action": name, "ui.latency_ms": dur_ms}},
@@ -65,6 +66,8 @@ def ui_action(name: str) -> Callable[[Callable[P, R]], Callable[P, R]]:
 class PageTimer:
     def __enter__(self):
         self._start = time.monotonic_ns()
+        self._span_cm = _TRACER.start_as_current_span("ui.page.render")
+        self._span = self._span_cm.__enter__()
         return self
 
     def __exit__(self, exc_type, exc, tb):
@@ -73,3 +76,4 @@ class PageTimer:
         logging.getLogger("quantum.ui").info(
             "ui page rendered", extra={"attrs": {"ui.render_ms": dur_ms}}
         )
+        self._span_cm.__exit__(exc_type, exc, tb)

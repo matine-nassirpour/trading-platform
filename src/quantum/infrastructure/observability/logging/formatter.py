@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import socket
 from typing import Any
 
@@ -45,11 +46,13 @@ class JsonFormatter(logging.Formatter):
         # OpenTelemetry context
         span = get_current_span()
         span_context = span.get_span_context()
-        trace_id = (
-            format(span_context.trace_id, "032x") if span_context.trace_id else None
-        )
-        span_id = format(span_context.span_id, "016x") if span_context.span_id else None
+        is_valid = span_context.is_valid if hasattr(span_context, "is_valid") else False
+        trace_id = format(span_context.trace_id, "032x") if is_valid else None
+        span_id = format(span_context.span_id, "016x") if is_valid else None
         is_sampled = span_context.trace_flags.sampled
+
+        service_name = os.getenv("QUANTUM_APP_NAME")
+        service_namespace = os.getenv("QUANTUM_NS")
 
         correlation_id = get_correlation_id()
         run_id = get_run_id()
@@ -66,6 +69,8 @@ class JsonFormatter(logging.Formatter):
             "message": message,
             "env": getattr(record, "env", "unknown"),
             "instance": INSTANCE_ID,
+            "service_name": service_name,
+            "service_namespace": service_namespace,
             "trace_id": trace_id,
             "span_id": span_id,
             "sampled": is_sampled,

@@ -29,7 +29,7 @@ with PageTimer():
 
     @ui_action("refresh_market")
     def on_refresh():
-        on_refresh(refresh_uc)
+        refresh_uc.execute(symbol=None)
 
     positions = get_positions(positions_q)
     st.write(positions)

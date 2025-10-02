@@ -47,3 +47,45 @@ class AuditEventFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
         ev = getattr(record, "event", None)
         return isinstance(ev, dict) and ev.get("event_name") in self.AUDIT_EVENTS
+
+
+class RedactFilter(logging.Filter):
+    SECRETS_KEYS = {
+        "password",
+        "secret",
+        "token",
+        "api_key",
+        "access_key",
+        "auth",
+        "authorization",
+        "bearer",
+        "client_secret",
+        "refresh_token",
+        "session_id",
+    }
+    MAX_VALUE_LEN = 5_000
+
+    def _redact_recursive(self, obj):
+        if isinstance(obj, dict):
+            return {
+                k: (
+                    "[REDACTED]"
+                    if k.lower() in self.SECRETS_KEYS
+                    else self._redact_recursive(v)
+                )
+                for k, v in obj.items()
+            }
+        if isinstance(obj, list):
+            return [self._redact_recursive(v) for v in obj]
+        if isinstance(obj, str) and len(obj) > self.MAX_VALUE_LEN:
+            return obj[: self.MAX_VALUE_LEN] + "…"
+        return obj
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        attrs = getattr(record, "attrs", None)
+        if isinstance(attrs, dict):
+            record.attrs = self._redact_recursive(attrs)
+        msg = getattr(record, "msg", None)
+        if isinstance(msg, str) and len(msg) > self.MAX_VALUE_LEN:
+            record.msg = msg[: self.MAX_VALUE_LEN] + "…"
+        return True

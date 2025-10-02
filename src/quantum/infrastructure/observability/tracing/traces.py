@@ -1,6 +1,6 @@
 import atexit
 import socket
-from typing import Literal
+from typing import Literal, cast
 
 from opentelemetry.sdk.resources import (
     DEPLOYMENT_ENVIRONMENT,
@@ -9,7 +9,7 @@ from opentelemetry.sdk.resources import (
     SERVICE_NAMESPACE,
     Resource,
 )
-from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace import SpanLimits, TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
 from opentelemetry.sdk.trace.id_generator import RandomIdGenerator
 from opentelemetry.sdk.trace.sampling import ParentBased, TraceIdRatioBased
@@ -47,12 +47,33 @@ def init_tracing(cfg: TracingConfig) -> TracerProviderInterface:
         resource=resource,
         id_generator=RandomIdGenerator(),
         sampler=ParentBased(TraceIdRatioBased(cfg.sample_ratio)),
+        span_limits=SpanLimits(
+            max_attributes=64,
+            max_events=64,
+            max_links=16,
+        ),
     )
 
     if cfg.exporter == "console":
-        tracer_provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
+        tracer_provider.add_span_processor(
+            BatchSpanProcessor(
+                ConsoleSpanExporter(),
+                max_export_batch_size=256,
+                schedule_delay_millis=500,
+                max_queue_size=4096,
+            )
+        )
 
     set_tracer_provider(tracer_provider)
 
     atexit.register(tracer_provider.shutdown)
+
+    # Expose a reference for controlled shutdown in init_observability
+    try:
+        import quantum.infrastructure.observability.init_observability as _init_mod
+
+        _init_mod._tracer_provider_ref = cast(object, tracer_provider)
+    except Exception:
+        pass
+
     return tracer_provider

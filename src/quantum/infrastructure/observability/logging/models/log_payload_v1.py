@@ -12,6 +12,8 @@ class LogPayloadV1(BaseModel):
     message: str
     env: str  # deployment env (dev/stage/prod)
     instance: str  # hostname/node id
+    service_name: str | None = None
+    service_namespace: str | None = None
     trace_id: str | None
     span_id: str | None
     sampled: bool | None
