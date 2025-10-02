@@ -58,5 +58,19 @@ repos:
       - id: check-json
       - id: check-yaml
 
+  - repo: local
+    hooks:
+      - id: import-linter
+        name: import-linter (architecture contracts)
+        language: system
+        pass_filenames: false
+        # PowerShell pour Windows: fixe PYTHONPATH puis exécute import-linter via Poetry.
+        entry: powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -Command
+        args:
+          - |
+            $env:PYTHONPATH = 'src';
+            poetry run lint-imports;
+            if ($LASTEXITCODE -ne 0) { exit 1 }
+
 default_language_version:
   python: python3.11

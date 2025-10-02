@@ -10,7 +10,7 @@ PS  := powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -Command
 
 .DEFAULT_GOAL := help
 
-.PHONY: help fmt-check fmt typecheck pre-commit test audit clean check-ci ui tree
+.PHONY: help fmt-check fmt typecheck pre-commit test audit clean contracts check-ci ui tree
 
 help:
 	@$(PS) "Write-Host 'Targets:'; Get-Content '$(MAKEFILE_LIST)' | Select-String '^\S+:.*?## ' | ForEach-Object { $$t = $$_.Line -replace ':.*',''; $$d = ($$_.Line -split '## ')[1]; '{0,-18} {1}' -f $$t, $$d } | Sort-Object"
@@ -48,6 +48,10 @@ audit: ## Check pyproject/lock and vulnerabilities
 	poetry check
 	poetry run pip-audit -l || (echo "pip-audit found issues" & exit /b 1)
 
+contracts: ## Enforce architecture contracts (import-linter)
+	@echo "Checking architecture contracts (import-linter)"
+	@set PYTHONPATH=src;. && poetry run lint-imports
+
 clean: ## Remove build/test caches
 	-@$(PS) "Remove-Item -Recurse -Force -ErrorAction SilentlyContinue .pytest_cache,.mypy_cache,.ruff_cache,htmlcov,dist,build,*.egg-info,.coverage,coverage.xml,test-results"
 
@@ -55,7 +59,7 @@ check-ci: pre-commit test ## Run CI-equivalent checks locally
 	@echo "All CI checks completed"
 
 ui: ## Launch Streamlit
-	poetry run streamlit run apps/streamlit/app.py --server.headless true
+	@set PYTHONPATH=src;. && poetry run streamlit run apps/streamlit/app.py --server.headless true
 
 tree: ## Print repo tree into docs/architecture/tree.txt
 	@$(PS) "New-Item -ItemType Directory -Force -Path 'docs/architecture' | Out-Null"

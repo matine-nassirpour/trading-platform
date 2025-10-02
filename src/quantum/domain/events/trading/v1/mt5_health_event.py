@@ -1,11 +1,12 @@
-from typing import Literal
+from typing import ClassVar
 
 from quantum.domain.events.base import BaseEvent
+from quantum.domain.types.enums import App
 
 
-class Mt5HealthV1(BaseEvent):
-    event_name: Literal["mt5_health_v1"] = "mt5_health_v1"
-    app: Literal["ea_mql5"]
+class Mt5HealthEvent(BaseEvent):
+    event_name: ClassVar[str] = "trading.mt5_health"
+    app: App = App.EA_MQL5
     terminal_build: int
     account_login: int
     account_server: str

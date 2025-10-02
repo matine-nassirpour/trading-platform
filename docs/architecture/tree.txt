@@ -29,21 +29,21 @@ trading-platform/
 │       │   │   ├── trading/
 │       │   │   │   ├── v1/
 │       │   │   │   │   ├── __init__.py
-│       │   │   │   │   ├── breakeven_trigger_v1.py
-│       │   │   │   │   ├── killswitch_trigger_v1.py
-│       │   │   │   │   ├── latency_probe_v1.py
-│       │   │   │   │   ├── market_data_gap_v1.py
-│       │   │   │   │   ├── mt5_health_v1.py
-│       │   │   │   │   ├── order_ack_v1.py
-│       │   │   │   │   ├── order_check_v1.py
-│       │   │   │   │   ├── order_fill_v1.py
-│       │   │   │   │   ├── order_intent_v1.py
-│       │   │   │   │   ├── order_reject_v1.py
-│       │   │   │   │   ├── order_submit_v1.py
-│       │   │   │   │   ├── position_update_v1.py
-│       │   │   │   │   ├── reconciliation_v1.py
-│       │   │   │   │   ├── sl_tp_update_v1.py
-│       │   │   │   │   └── trailing_trigger_v1.py
+│       │   │   │   │   ├── breakeven_trigger_event.py
+│       │   │   │   │   ├── killswitch_trigger_event.py
+│       │   │   │   │   ├── latency_probe_event.py
+│       │   │   │   │   ├── market_data_gap_event.py
+│       │   │   │   │   ├── mt5_health_event.py
+│       │   │   │   │   ├── order_ack_event.py
+│       │   │   │   │   ├── order_check_event.py
+│       │   │   │   │   ├── order_fill_event.py
+│       │   │   │   │   ├── order_intent_event.py
+│       │   │   │   │   ├── order_reject_event.py
+│       │   │   │   │   ├── order_submit_event.py
+│       │   │   │   │   ├── position_update_event.py
+│       │   │   │   │   ├── reconciliation_event.py
+│       │   │   │   │   ├── sl_tp_update_event.py
+│       │   │   │   │   └── trailing_trigger_event.py
 │       │   │   │   └── __init__.py
 │       │   │   ├── __init__.py
 │       │   │   └── base.py
@@ -92,6 +92,8 @@ trading-platform/
 │       │   ├── correlation/
 │       │   │   ├── __init__.py
 │       │   │   └── correlation_id.py
+│       │   ├── errors/
+│       │   │   └── __init__.py
 │       │   ├── serialization/
 │       │   │   ├── __init__.py
 │       │   │   └── schema_registry.py

@@ -21,6 +21,7 @@ black = "^25.9.0"
 bandit = "^1.8.6"
 pip-audit = "^2.9.0"
 python-dotenv = "^1.1.1"
+import-linter = "^2.5"
 
 [tool.poetry.dependencies]
 pydantic = "^2.11.9"

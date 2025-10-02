@@ -1,5 +1,5 @@
 import re
-from typing import Literal
+from typing import ClassVar
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
@@ -7,15 +7,30 @@ RFC3339_MS = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$")
 
 
 class BaseEvent(BaseModel):
-    event_name: str
-    timestamp: str
+    """
+    Immutable and strict event.
+
+    - `event_name` and `schema_version` are class constants (unchangeable).
+    - `use_enum_values=True` serializes enums into their values (str).
+    """
+
+    model_config = ConfigDict(
+        extra="forbid",
+        frozen=True,
+        use_enum_values=True,
+        populate_by_name=True,
+    )
+
+    # Constants (defined in subclasses)
+    event_name: ClassVar[str]
+    schema_version: ClassVar[int] = 1
+
+    # Common fields
+    timestamp: str  # RFC3339 with milliseconds and Z suffix
     run_id: str | None = None
     correlation_id: str | None = None
     trace_id: str | None = None
     span_id: str | None = None
-    log_schema_version: Literal["v1"] = "v1"
-
-    model_config = ConfigDict(extra="forbid", frozen=True)
 
     @field_validator("timestamp")
     @classmethod

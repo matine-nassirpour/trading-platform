@@ -1,11 +1,12 @@
-from typing import Literal
+from typing import ClassVar, Literal
 
 from quantum.domain.events.base import BaseEvent
+from quantum.domain.types.enums import App
 
 
-class SlTpUpdateV1(BaseEvent):
-    event_name: Literal["sl_tp_update_v1"] = "sl_tp_update_v1"
-    app: Literal["ea_mql5"]
+class SlTpUpdateEvent(BaseEvent):
+    event_name: ClassVar[str] = "trading.sl_tp_update"
+    app: App = App.EA_MQL5
     symbol: str
     position_id: int
     intent_id: str | None = None

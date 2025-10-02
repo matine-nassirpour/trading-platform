@@ -1,0 +1,65 @@
+[importlinter]
+# Root packages to analyze (multiple)
+root_packages =
+    quantum
+# Only analyze the internal graph
+include_external_packages = False
+
+###############################################################################
+# Contract 1 — Clean Architecture
+# Goal: prevent any upward dependency (domain <- application <- infra <- interface)
+###############################################################################
+[importlinter:contract:layers]
+name = Clean architecture layers (no upward imports)
+type = layers
+layers =
+    quantum.domain
+    quantum.application
+    quantum.infrastructure
+    quantum.interface
+
+###############################################################################
+# Contract 2 — Interface NEVER imports the infrastructure
+###############################################################################
+[importlinter:contract:forbidden_ui_infra]
+name = Interface must not import infrastructure
+type = forbidden
+source_modules =
+    quantum.interface
+forbidden_modules =
+    quantum.infrastructure
+
+###############################################################################
+# Contract 3 — Interface does not import the domain (only goes through Application)
+###############################################################################
+[importlinter:contract:forbidden_ui_domain]
+name = Interface must not import domain
+type = forbidden
+source_modules =
+    quantum.interface
+forbidden_modules =
+    quantum.domain
+
+###############################################################################
+# Contract 4 — The application does not import the infrastructure
+###############################################################################
+[importlinter:contract:forbidden_app_infra]
+name = Application must not import infrastructure
+type = forbidden
+source_modules =
+    quantum.application
+forbidden_modules =
+    quantum.infrastructure
+
+###############################################################################
+# Contract 5 — The domain is independent (does not depend on any app, application, or infrastructure)
+###############################################################################
+[importlinter:contract:forbidden_domain_upwards]
+name = Domain must not depend on outer layers
+type = forbidden
+source_modules =
+    quantum.domain
+forbidden_modules =
+    quantum.application
+    quantum.infrastructure
+    quantum.interface
