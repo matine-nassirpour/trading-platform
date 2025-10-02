@@ -1,65 +1,124 @@
 """
-tree_exporter.py — Export propre et déterministe de l'arborescence d'un projet vers un .txt
+tree_exporter.py — Clean and deterministic export of project’s directory tree to a .txt file
 
-Points clés:
-- Tri déterministe: dossiers puis fichiers, tri case-insensitive.
-- Exclusions: --exclude (glob) multiples; option --respect-gitignore (via pathspec si dispo).
-- Liens symboliques: non suivis par défaut; marqués " -> cible". Option --follow-symlinks sûre.
-- Profondeur max (--max-depth), fichiers/dossiers cachés (--include-hidden).
-- Encodage UTF-8, fins de ligne LF, sortie stable et reproductible.
-- Gestion d'erreurs (permissions, encodage, boucles de symlinks) avec messages utiles.
-- Aucune dépendance obligatoire. pathspec est optionnelle pour .gitignore.
+Key features:
+- Deterministic ordering: directories first, then files; case-insensitive sorting.
+- Exclusions: multiple --exclude (glob) patterns; --respect-gitignore option (via pathspec if available).
+- Symbolic links: not followed by default; displayed as " -> target". Safe --follow-symlinks option available.
+- Maximum depth (--max-depth), hidden files/directories (--include-hidden).
+- UTF-8 encoding, LF line endings, stable and reproducible output.
+- Error handling (permissions, encoding issues, symlink loops) with clear messages.
+- No mandatory dependencies. pathspec is optional for .gitignore support.
 """
 
 from __future__ import annotations
 
 import argparse
+import ctypes
 import fnmatch
 import logging
 import os
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
+from ctypes import wintypes
+from functools import lru_cache
 from pathlib import Path
 
 try:
-    # Optionnel: correspondance .gitignore de qualité
+    # Optional: high-quality .gitignore matching
     import pathspec  # type: ignore
-except Exception:  # pragma: no cover - absence tolérée
+except ImportError:  # pragma: no cover - absence tolerated
     pathspec = None
 
 
-# ---------- Configuration & utilitaires ----------
+FILE_ATTRIBUTE_HIDDEN = 0x2
+FILE_ATTRIBUTE_SYSTEM = 0x4
+INVALID_FILE_ATTRIBUTES = 0xFFFFFFFF
+
+DEFAULT_EXCLUDES = (
+    ".git",
+    ".hg",
+    ".svn",
+    "**/__pycache__",
+    "**/.mypy_cache",
+    "**/.pytest_cache",
+    "**/.ruff_cache",
+    ".tox",
+    ".venv",
+    "venv",
+    "env",
+    ".DS_Store",
+    "htmlcov",
+    "test-results",
+)
+
+
+# ------- Configuration & Utilities ------------------------------------------
+
+
+@lru_cache(maxsize=1)
+def _get_file_attributes_w() -> Callable[[str], int]:
+    k32 = ctypes.windll.kernel32
+    func = k32.GetFileAttributesW  # type: ignore[attr-defined]
+    func.argtypes = [wintypes.LPCWSTR]
+    func.restype = wintypes.DWORD
+    return func
 
 
 def _is_hidden(path: Path) -> bool:
     """
-    Détermine si un chemin est 'caché'.
-    POSIX: préfixe '.'.
-    Windows: on essaie l'attribut FILE_ATTRIBUTE_HIDDEN si dispo, sinon '.'.
+    Determine whether a path is considered 'hidden'.
+
+    POSIX: a path is hidden if its name starts with '.'.
+    Windows: attempt to check the FILE_ATTRIBUTE_HIDDEN flag if available,
+    otherwise fall back to the '.' prefix convention.
     """
     name_hidden = path.name.startswith(".")
     if os.name != "nt":
         return name_hidden
-    try:
-        import ctypes  # lazy import (Windows only)
 
-        attrs = ctypes.windll.kernel32.GetFileAttributesW(str(path))
-        if attrs == -1:
+    try:
+        get_file_attributes_w = _get_file_attributes_w()
+        attrs = get_file_attributes_w(str(path))
+        if attrs == INVALID_FILE_ATTRIBUTES:
+            # Windows API returned failure (e.g., path does not exist or is inaccessible)
             return name_hidden
-        FILE_ATTRIBUTE_HIDDEN = 0x2
-        FILE_ATTRIBUTE_SYSTEM = 0x4
+
         return (
             bool(attrs & (FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM)) or name_hidden
         )
-    except Exception:
+
+    except AttributeError:
+        # Very old/odd environments where the symbol isn't exposed – fall back gracefully.
         return name_hidden
 
 
 def _case_insensitive_key(p: Path) -> tuple[str, str]:
-    return (p.name.lower(), p.name)
+    return p.name.lower(), p.name
 
 
 class ExcludeMatcher:
-    """Compose plusieurs stratégies d'exclusion (glob + .gitignore optionnel)."""
+    """
+    Combines multiple exclusion strategies for project tree traversal.
+
+    Features:
+    - Supports custom glob-style exclusion patterns.
+      * Simple names without '/' or wildcards (e.g. "__pycache__", ".venv")
+        are matched against any path component.
+      * Full glob patterns (e.g. "**/__pycache__", "build/*", "*.log")
+        are matched against the full relative POSIX path.
+    - Optional .gitignore support (via the 'pathspec' library if installed).
+    - Callable interface: returns True if the given path should be excluded.
+
+    Attributes:
+        root (Path): Root directory of the project.
+        patterns (list[str]): Exclusion patterns provided by the user and/or defaults.
+        _gitignore_spec (Optional[pathspec.PathSpec]): Compiled .gitignore matcher if available.
+
+    Example:
+        matcher = ExcludeMatcher(root=Path("."), patterns=["__pycache__", "*.log"], respect_gitignore=True)
+        if matcher(Path("src/__pycache__")):
+            print("Excluded")
+    """
 
     def __init__(self, root: Path, patterns: Sequence[str], respect_gitignore: bool):
         self.root = root
@@ -69,8 +128,8 @@ class ExcludeMatcher:
         if respect_gitignore:
             if pathspec is None:
                 logging.warning(
-                    "Option --respect-gitignore activée mais 'pathspec' n'est pas installée. "
-                    "Ignorer .gitignore. (pip install pathspec)"
+                    "--respect-gitignore was enabled but 'pathspec' is not installed. "
+                    ".gitignore will be ignored. (pip install pathspec)"
                 )
             else:
                 gitignore = root / ".gitignore"
@@ -83,28 +142,22 @@ class ExcludeMatcher:
                         self._gitignore_spec = spec
                     except Exception as e:
                         logging.warning(
-                            "Impossible de parser .gitignore (%s): %s", gitignore, e
+                            f"Failed to parse .gitignore ({gitignore}): {e}"
                         )
 
     def __call__(self, path: Path) -> bool:
-        """Retourne True si le chemin doit être EXCLU."""
-        # Chemin relatif à la racine (POSIX)
+        """Return True if the given path should be excluded."""
         rel = path.relative_to(self.root) if path != self.root else Path(".")
         rel_posix = rel.as_posix()
 
-        # 1) Motifs utilisateur
         for pat in self.patterns:
-            # 1.1 — motif 'nu' (pas de slash, pas de wildcard) => match sur les composants
             if ("/" not in pat) and not any(ch in pat for ch in "*?[]"):
-                # rel.parts est un tuple des composants ('src', 'pkg', '__pycache__', ...)
                 if pat in rel.parts:
                     return True
 
-            # 1.2 — motif glob standard sur le chemin relatif posix
             if fnmatch.fnmatch(rel_posix, pat):
                 return True
 
-        # 2) Règles .gitignore si dispo
         if self._gitignore_spec is not None:
             if self._gitignore_spec.match_file(rel_posix):
                 return True
@@ -112,18 +165,20 @@ class ExcludeMatcher:
         return False
 
 
-# ---------- Rendu de l'arborescence ----------
+# ------- Rendering the tree structure ------------------------------------------
+
+
 def _is_dir_follow(p: Path, follow: bool) -> bool:
     if follow:
         return p.is_dir()
-    # sans suivre les symlinks : un répertoire "réel" seulement
+
     return p.is_dir() and not p.is_symlink()
 
 
 def _is_file_follow(p: Path, follow: bool) -> bool:
     if follow:
         return p.is_file()
-    # sans suivre les symlinks : un fichier "réel" seulement
+
     return p.is_file() and not p.is_symlink()
 
 
@@ -134,20 +189,27 @@ def iter_children(
     include_hidden: bool,
     follow_symlinks: bool,
 ) -> list[Path]:
-    """Liste triée et filtrée des enfants immédiats."""
+    """
+    Return a sorted and filtered list of immediate children of a directory.
+
+    - Applies exclusion rules (glob patterns, .gitignore if enabled).
+    - Skips hidden entries unless `include_hidden=True`.
+    - Returns entries in deterministic order: directories first, then files, then others.
+    - Sorting is case-insensitive.
+    """
     try:
         entries = list(directory.iterdir())
     except PermissionError:
-        logging.warning("Permission refusée: %s", directory)
+        logging.warning(f"Permission denied: {directory}")
         return []
     except FileNotFoundError:
-        logging.warning("Chemin introuvable: %s", directory)
+        logging.warning(f"Directory not found: {directory}")
         return []
     except OSError as e:
-        logging.warning("Erreur d'accès %s: %s", directory, e)
+        logging.warning(f"Error accessing {directory}: {e}")
         return []
 
-    # Filtrage initial
+    # Initial filtering
     filtered: list[Path] = []
     for p in entries:
         if not include_hidden and _is_hidden(p):
@@ -155,10 +217,10 @@ def iter_children(
                 continue
         if exclude(p):
             continue
-        # Si on ne suit pas les symlinks, on autorise l'entrée mais on ne la traverse pas
+        # If symlinks are not followed, we still include them but do not recurse into them
         filtered.append(p)
 
-    # Tri déterministe: dossiers puis fichiers, tri insensible à la casse
+    # Deterministic ordering: directories first, then files, then others
     dirs = sorted(
         [p for p in filtered if _is_dir_follow(p, follow_symlinks)],
         key=_case_insensitive_key,
@@ -184,10 +246,12 @@ def render_tree(
     stream,
 ) -> None:
     """
-    Écrit l'arborescence sous forme 'tree' avec caractères unicode.
-    - Ajoute un '/' après les noms de dossiers.
-    - Annote les liens symboliques après le nom (après le '/' si dossier).
-    - Ne suit pas les symlinks par défaut (option follow_symlinks).
+    Render the project directory tree in a 'tree'-like format using Unicode characters.
+
+    - Adds a '/' suffix to directory names (including the root).
+    - Annotates symbolic links after the entry name (after '/' if it is a directory).
+    - Does not follow symlinks by default (can be enabled with `follow_symlinks=True`).
+    - Traversal can be limited with `max_depth`.
     """
 
     root_display = (root.resolve().name or str(root.resolve())) + "/"
@@ -215,28 +279,30 @@ def render_tree(
                     if follow_symlinks
                     else (child.is_dir() and not child.is_symlink())
                 )
-            except OSError:
+            except OSError as e:
+                logging.warning(f"Failed to check directory status for {child}: {e}")
                 is_dir = False
 
-            # Nom à afficher (+ '/' si dossier)
+            # Display name (+ '/' if directory)
             display_name = child.name + ("/" if is_dir else "")
 
-            # Construction de la ligne
+            # Build the tree line
             line = prefix + branch + display_name
 
-            # Marquage symlink (après le nom, et donc après le '/' si dossier)
+            # Symlink annotation (after the name, after '/' if directory)
             try:
                 if child.is_symlink():
                     target = os.readlink(child)
                     line += f" -> {target}"
-            except OSError:
+            except OSError as e:
+                logging.warning(f"Failed to resolve symlink for {child}: {e}")
                 line += " -> <unreadable>"
 
             stream.write(line + "\n")
 
-            # Descente dans les dossiers
+            # Recurse into subdirectoriess
             if is_dir:
-                # Si on suit les symlinks, éviter les boucles : ne pas re-descendre dans un répertoire symlinké
+                # Avoid symlink loops when following symlinks
                 if follow_symlinks and child.is_symlink():
                     continue
                 next_prefix = prefix + ("    " if is_last else "│   ")
@@ -245,75 +311,67 @@ def render_tree(
     _walk(root, prefix="", depth=1)
 
 
-# ---------- CLI ----------
-
-DEFAULT_EXCLUDES = (
-    ".git",
-    ".hg",
-    ".svn",
-    "**/__pycache__",
-    "**/.mypy_cache",
-    "**/.pytest_cache",
-    "**/.ruff_cache",
-    ".tox",
-    ".venv",
-    "venv",
-    "env",
-    ".DS_Store",
-    "htmlcov",
-    "test-results",
-)
+# ------- CLI -------------------------------------------------------------------
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
-    p = argparse.ArgumentParser(
+    parser = argparse.ArgumentParser(
         prog="tree-exporter",
-        description="Exporte l'arborescence d'un projet vers un fichier .txt (sortie déterministe & propre).",
+        description="Export a project's directory tree to a .txt file (deterministic and clean output).",
     )
-    p.add_argument("root", type=Path, help="Répertoire racine du projet à exporter")
-    p.add_argument(
-        "-o", "--output", type=Path, required=True, help="Fichier .txt de destination"
+    parser.add_argument(
+        "root",
+        type=Path,
+        help="Root directory of the project to export",
     )
-    p.add_argument(
+    parser.add_argument(
+        "-o",
+        "--output",
+        type=Path,
+        required=True,
+        help="Destination .txt file",
+    )
+    parser.add_argument(
         "--max-depth",
         type=int,
         default=None,
-        help="Profondeur maximale (par défaut illimitée)",
+        help="Maximum depth (default: unlimited)",
     )
-    p.add_argument(
+    parser.add_argument(
         "--include-hidden",
         action="store_true",
-        help="Inclure les fichiers/dossiers cachés",
+        help="Include hidden files and directories",
     )
-    p.add_argument(
+    parser.add_argument(
         "--follow-symlinks",
         action="store_true",
-        help="Suivre les liens symboliques (prudent)",
+        help="Follow symbolic links (use with caution)",
     )
-    p.add_argument(
+    parser.add_argument(
         "--exclude",
         action="append",
         default=[],
-        help="Motif glob à exclure (peut être répété). Ex: --exclude 'build/*' --exclude '*.log'",
+        help="Glob pattern to exclude (can be repeated). "
+        "Example: --exclude 'build/*' --exclude '*.log'",
     )
-    p.add_argument(
+    parser.add_argument(
         "--respect-gitignore",
         action="store_true",
-        help="Respecter .gitignore (via 'pathspec' si installé)",
+        help="Respect .gitignore rules (requires 'pathspec' if installed)",
     )
-    p.add_argument(
+    parser.add_argument(
         "--no-default-excludes",
         action="store_true",
-        help="Ne pas appliquer les exclusions par défaut (.git, __pycache__, .venv, etc.)",
+        help="Do not apply default exclusions (.git, __pycache__, .venv, etc.)",
     )
-    p.add_argument(
+    parser.add_argument(
         "-v",
         "--verbose",
         action="count",
         default=0,
-        help="Verbosité (-v: info, -vv: debug)",
+        help="Increase verbosity (-v: info, -vv: debug)",
     )
-    return p.parse_args(argv)
+    return parser.parse_args(argv)
 
 
 def configure_logging(verbosity: int) -> None:
@@ -331,7 +389,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     root: Path = args.root.resolve()
     if not root.exists() or not root.is_dir():
-        logging.error("Racine invalide: %s", root)
+        logging.error(f"Invalid root: {root}")
         return 2
 
     patterns: list[str] = []
@@ -343,7 +401,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         root=root, patterns=patterns, respect_gitignore=args.respect_gitignore
     )
 
-    # Écriture en UTF-8 + LF pour reproductibilité (y compris sous Windows)
+    # Writing in UTF-8 + LF for reproducibility (including under Windows)
     try:
         with args.output.open("w", encoding="utf-8", newline="\n") as f:
             render_tree(
@@ -355,10 +413,10 @@ def main(argv: Sequence[str] | None = None) -> int:
                 stream=f,
             )
     except Exception as e:
-        logging.error("Échec d'écriture du fichier de sortie '%s': %s", args.output, e)
+        logging.error(f"Failed to write output file '{args.output}': {e}")
         return 1
 
-    logging.info("Arborescence exportée vers: %s", args.output)
+    logging.info(f"Tree exported to: {args.output}")
     return 0
 
 
