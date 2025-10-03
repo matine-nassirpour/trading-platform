@@ -187,11 +187,13 @@ class PartitionedJSONLFileHandler(logging.Handler):
 
     @staticmethod
     def _events_filename(yyyy: str, mm: str, dd: str, hh: str, part: int) -> str:
-        return f"events-{yyyy}{mm}{dd}-{hh}{''.join(['.part', str(part)] if part > 0 else '')}.jsonl"
+        suffix = f".part{part}" if part > 0 else ""
+        return f"events-{yyyy}{mm}{dd}-{hh}{suffix}.jsonl"
 
     @staticmethod
     def _bad_filename(yyyy: str, mm: str, dd: str, hh: str, part: int) -> str:
-        return f"bad-logs-{yyyy}{mm}{dd}-{hh}{''.join(['.part', str(part)] if part > 0 else '')}.jsonl"
+        suffix = f".part{part}" if part > 0 else ""
+        return f"bad-logs-{yyyy}{mm}{dd}-{hh}{suffix}.jsonl"
 
     def _reopen(self, path: Path, bad_path: Path) -> None:
         # close previous

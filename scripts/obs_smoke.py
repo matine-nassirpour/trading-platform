@@ -83,6 +83,13 @@ def _latest_matching(root: Path, pattern: str) -> Path | None:
     return candidates[0]
 
 
+def _all_matching(root: Path, pattern: str) -> list[Path]:
+    """Returns all files matching pattern under root, sorted by mtime ascending."""
+    files = list(root.rglob(pattern))
+    files.sort(key=lambda p: p.stat().st_mtime)
+    return files
+
+
 def _any_matching(root: Path, pattern: str) -> Path | None:
     for p in root.rglob(pattern):
         return p
@@ -95,6 +102,14 @@ def _gauge_value(g) -> float:
     """
     try:
         return float(g._value.get())  # type: ignore[attr-defined]
+    except Exception:
+        return -1.0
+
+
+def _counter_value(c) -> float:
+    """Returns the value of a prometheus_client Counter."""
+    try:
+        return float(c._value.get())  # type: ignore[attr-defined]
     except Exception:
         return -1.0
 
@@ -155,6 +170,10 @@ def main() -> None:
         os.environ["QUANTUM_LOG_DIR"] = str(log_dir)
         os.environ["QUANTUM_AUDIT_DIR"] = str(audit_dir)
 
+        # Disable sampling and rate limiting to ensure all test logs pass
+        os.environ["QUANTUM_LOG_SAMPLE_INFO"] = ""  # disable INFO sampling
+        os.environ["QUANTUM_LOG_RATELIMIT"] = "0"  # disable rate limiting
+
         os.environ["QUANTUM_LOG_FSYNC"] = "0"  # fsync disabled (faster)
         os.environ["QUANTUM_LOG_MAX_BYTES"] = "2048"  # rollover ~2KB
         os.environ["QUANTUM_LOG_WARN_BYTES"] = "0"
@@ -175,6 +194,7 @@ def main() -> None:
             port = _free_port()
             os.environ["QUANTUM_METRICS_PORT"] = str(port)
             os.environ["QUANTUM_METRICS_ADDR"] = "127.0.0.1"
+            os.environ["QUANTUM_LOG_DEEP_PROBE"] = "1"
         else:
             port = None
             os.environ["QUANTUM_METRICS_PORT"] = "0"
@@ -202,6 +222,7 @@ def main() -> None:
                             }
                         },
                     )
+                    log.info("inside span", extra={"attrs": {"in_span": True}})
 
                     # audit event (whitelisted)
                     emit_event(
@@ -244,10 +265,25 @@ def main() -> None:
                 errs.append("rollover not detected (missing .part1.jsonl)")
 
             # Asserts: JSON content (last line) + redaction + key fields
-            if latest_events:
-                last = _read_last_jsonl_line(latest_events)
-                if not last:
-                    errs.append("Unable to read last JSONL line")
+            events_files = _all_matching(log_dir, "events-*.jsonl")
+            if not events_files:
+                errs.append("no events-*.jsonl file generated (scan)")
+            else:
+                found_selftest = None
+                for fp in events_files:
+                    with open(fp, encoding="utf-8") as f:
+                        for line in f:
+                            try:
+                                js = json.loads(line)
+                            except Exception:
+                                continue
+                            if js.get("message") == "selftest start":
+                                found_selftest = js
+                                break
+                    if found_selftest:
+                        break
+                if not found_selftest:
+                    errs.append("could not find 'selftest start' log entry")
                 else:
                     must_fields = [
                         "service_name",
@@ -260,15 +296,36 @@ def main() -> None:
                         "attrs",
                     ]
                     for k in must_fields:
-                        if k not in last:
+                        if k not in found_selftest:
                             errs.append(f"missing field '{k}' in JSON log")
-                    if "correlation_id" not in last:
+                    if "correlation_id" not in found_selftest:
                         errs.append("correlation_id missing in JSON log")
+                    attrs = found_selftest.get("attrs", {})
+                    if attrs.get("secret") != "[REDACTED]":
+                        errs.append(
+                            "redaction not applied (attrs.secret != [REDACTED])"
+                        )
 
-                    attrs = last.get("attrs", {})
-                    # the writing must have replaced the value
-                    if attrs.get("secret") == "s3cr3t":
-                        errs.append("redaction not applied (attrs.secret)")
+            # Check that at least one log UNDER SPAN contains trace_id/span_id
+            has_trace = False
+            for fp in _all_matching(log_dir, "events-*.jsonl"):
+                with open(fp, encoding="utf-8") as f:
+                    for line in f:
+                        try:
+                            js = json.loads(line)
+                        except Exception:
+                            continue
+                        if (
+                            js.get("message") == "inside span"
+                            and js.get("trace_id")
+                            and js.get("span_id")
+                        ):
+                            has_trace = True
+                            break
+                if has_trace:
+                    break
+            if not has_trace:
+                errs.append("missing trace_id/span_id on 'inside span' log")
 
             # Asserts: Valid JSON audit file
             audit_any = _any_matching(audit_dir, "*.json")
@@ -299,6 +356,22 @@ def main() -> None:
                         errs.append("/metrics does not contain 'quantum_pipeline_up 1'")
                 except Exception as e:
                     errs.append(f"/metrics unavailable: {e}")
+
+            # Trace exporter active (console->0, none->0, otlp->1 if built)
+            exp = os.environ.get("QUANTUM_TRACE_EXPORTER", "console")
+            exp_active = _gauge_value(m.tracer_exporter_active)
+            if exp == "otlp":
+                if not exp_active == 1.0:
+                    errs.append("tracer_exporter_active != 1 with exporter=otlp")
+            else:
+                if not exp_active == 0.0:
+                    errs.append(
+                        "tracer_exporter_active should be 0 with exporter!=otlp"
+                    )
+
+            # Compteur de redaction > 0
+            if _counter_value(m.logging_redactions_total) <= 0.0:
+                errs.append("logging_redactions_total did not increase")
 
         finally:
             # Always shut down cleanly to free handles (Windows!)

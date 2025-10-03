@@ -1,9 +1,11 @@
+import json
 import logging
 import os
 import threading
 import time
 
 from quantum.infrastructure.observability.logging.constants import get_audit_whitelist
+from quantum.infrastructure.observability.metrics.health import logging_redactions_total
 
 NOISY_LOGGERS = {
     "urllib3.connectionpool",
@@ -87,7 +89,11 @@ class RedactFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
         attrs = getattr(record, "attrs", None)
         if isinstance(attrs, dict):
+            before_len = len(json.dumps(attrs, ensure_ascii=False))
             record.attrs = self._redact_recursive(attrs)
+            after_len = len(json.dumps(record.attrs, ensure_ascii=False))
+            if after_len < before_len:
+                logging_redactions_total.inc()
         msg = getattr(record, "msg", None)
         if isinstance(msg, str) and len(msg) > self.MAX_VALUE_LEN:
             record.msg = msg[: self.MAX_VALUE_LEN] + "…"

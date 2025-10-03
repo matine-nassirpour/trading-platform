@@ -9,6 +9,10 @@ logging_disk_errors_total = Counter(
 logging_file_rotations_total = Counter(
     "quantum_logging_file_rotations_total", "Partitioned JSONL handler rollovers"
 )
+logging_redactions_total = Counter("quantum_logging_redactions_total", "...")
+tracer_exporter_active = Gauge(
+    "quantum_tracer_exporter_active", "0/1 exporter configured & active"
+)
 
 # Granularity by pillar
 pipeline_logging_ok = Gauge(

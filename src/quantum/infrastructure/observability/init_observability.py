@@ -2,6 +2,7 @@ import logging
 import os
 import threading
 from contextlib import contextmanager
+from pathlib import Path
 from typing import Literal
 
 from prometheus_client import start_http_server
@@ -17,6 +18,7 @@ from quantum.infrastructure.observability.metrics.health import (
     pipeline_metrics_http_ok,
     pipeline_tracing_ok,
     pipeline_up,
+    tracer_exporter_active,
 )
 from quantum.infrastructure.observability.tracing.propagation import setup_propagation
 from quantum.infrastructure.observability.tracing.traces import (
@@ -46,6 +48,17 @@ def _probe_logging_sinks() -> bool:
                 os.makedirs(base_dir, exist_ok=True)
                 if not os.access(base_dir, os.W_OK):
                     ok = False
+                if os.getenv("QUANTUM_LOG_DEEP_PROBE", "0") == "1":
+                    test_dir = Path(base_dir) / "__probe__/yyyy/mm/dd/hh"
+                    test_dir.mkdir(parents=True, exist_ok=True)
+                    test_file = test_dir / "probe.jsonl"
+                    with open(test_file, "a", encoding="utf-8") as f:
+                        f.write("{}\n")
+                    test_file.unlink(missing_ok=True)
+                    try:
+                        test_dir.rmdir()
+                    except OSError:
+                        pass
             except OSError:
                 ok = False
     return ok
@@ -159,7 +172,11 @@ def init_observability(
             )
             setup_propagation()
             otel_tracing_up.set(1)
-            tracing_ok = True
+            exporter_active = (exporter != "none") and (
+                tp and getattr(tp, "_active_exporter", False)
+            )
+            tracer_exporter_active.set(1 if exporter_active else 0)
+            tracing_ok = bool(tp)
             global _tracer_provider_ref
             _tracer_provider_ref = tp
         except Exception as e:

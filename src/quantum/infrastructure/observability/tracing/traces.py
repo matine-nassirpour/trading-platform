@@ -84,7 +84,9 @@ def init_tracing(cfg: TracingConfig) -> TracerProviderInterface:
                 max_queue_size=4096,
             )
         )
-    elif cfg.exporter == "otlp":
+
+    active_exporter = None
+    if cfg.exporter == "otlp":
         exporter = _build_otlp_exporter()
         if exporter is not None:
             tracer_provider.add_span_processor(
@@ -95,12 +97,15 @@ def init_tracing(cfg: TracingConfig) -> TracerProviderInterface:
                     max_queue_size=4096,
                 )
             )
+            active_exporter = exporter
         else:
             # Soft fallback: If OTLP is unavailable (package not installed/endpoint down),
             # Init doesn't fail; no explicit export is required.
             pass
 
     set_tracer_provider(tracer_provider)
+
+    setattr(tracer_provider, "_active_exporter", active_exporter is not None)
 
     atexit.register(tracer_provider.shutdown)
 
