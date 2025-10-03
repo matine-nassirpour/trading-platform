@@ -11,17 +11,23 @@ from quantum.infrastructure.observability.logging._io_utils import (
 )
 from quantum.shared.time.naming import partition_path_components
 
+# Best-effort
+try:
+    from quantum.infrastructure.observability.metrics.health import (
+        logging_file_rotations_total,
+    )
+except Exception:
+    logging_file_rotations_total = None  # type: ignore
+
 
 class PartitionedJSONLFileHandler(logging.Handler):
     """
     Writes JSON logs to partitioned JSONL files:
-    <base>/<env>/<namespace>/<app>/<YYYY>/<MM>/<DD>/<HH>/events-YYYYMMDD-HH.jsonl
-    Quarantines malformed lines to: .../bad-logs-YYYYMMDD-HH.jsonl
+    <base>/<env>/<namespace>/<app>/<YYYY>/<MM>/<DD>/<HH>/events-YYYYMMDD-HH[.partN].jsonl
+    Quarantines malformed lines: .../bad-logs-YYYYMMDD-HH[.partN].jsonl
     Optional fsync per write with QUANTUM_LOG_FSYNC=1
-
-    Thread-safety:
-      - All state mutations and writes are protected by the base Handler lock
-        via self.acquire()/self.release().
+    Optional rollover by size with QUANTUM_LOG_MAX_BYTES
+    Thread-safe via Handler lock.
     """
 
     def __init__(
@@ -45,10 +51,22 @@ class PartitionedJSONLFileHandler(logging.Handler):
         self._bad_fh: io.TextIOWrapper | None = None
         self._fsync = os.getenv("QUANTUM_LOG_FSYNC", "0") == "1"
 
+        # Rollover config
+        try:
+            self._max_bytes = int(os.getenv("QUANTUM_LOG_MAX_BYTES", "0") or "0")
+        except (TypeError, ValueError):
+            self._max_bytes = 0
+        try:
+            self._warn_bytes = int(os.getenv("QUANTUM_LOG_WARN_BYTES", "0") or "0")
+        except (TypeError, ValueError):
+            self._warn_bytes = 0
+
+        self._part_index: int = 0  # Part index within the same hour
+
     def emit(self, record: logging.LogRecord) -> None:
         self.acquire()
         try:
-            # 1) Calculating partition paths (record time)
+            # 1) Resolve partition (by record time)
             try:
                 dt = datetime.fromtimestamp(record.created, tz=timezone.utc)
                 yyyy, mm, dd, hh = partition_path_components(dt)
@@ -62,8 +80,24 @@ class PartitionedJSONLFileHandler(logging.Handler):
                     / dd
                     / hh
                 )
-                file_path = dir_path / f"events-{yyyy}{mm}{dd}-{hh}.jsonl"
-                bad_path = dir_path / f"bad-logs-{yyyy}{mm}{dd}-{hh}.jsonl"
+                # build target paths for current part index
+                file_path = dir_path / self._events_filename(
+                    yyyy, mm, dd, hh, self._part_index
+                )
+                bad_path = dir_path / self._bad_filename(
+                    yyyy, mm, dd, hh, self._part_index
+                )
+
+                # hour changed? reset part index to 0
+                if self._current_path is None or self._current_path.parent != dir_path:
+                    self._part_index = 0
+                    file_path = dir_path / self._events_filename(
+                        yyyy, mm, dd, hh, self._part_index
+                    )
+                    bad_path = dir_path / self._bad_filename(
+                        yyyy, mm, dd, hh, self._part_index
+                    )
+
                 if file_path != self._current_path:
                     self._reopen(file_path, bad_path)
             except (OSError, ValueError):
@@ -71,7 +105,7 @@ class PartitionedJSONLFileHandler(logging.Handler):
                 self.handleError(record)
                 return
 
-            # 2) Format + writing, otherwise quarantine
+            # 2) Write
             try:
                 msg = self.format(record)
                 assert self._fh is not None
@@ -82,6 +116,7 @@ class PartitionedJSONLFileHandler(logging.Handler):
                 else:
                     self._fh.flush()
             except (OSError, ValueError, TypeError) as e:
+                # quarantine
                 try:
                     assert self._bad_fh is not None
                     safe = {
@@ -94,9 +129,8 @@ class PartitionedJSONLFileHandler(logging.Handler):
                     }
                     try:
                         safe["raw_message"] = record.getMessage()
-                    except (ValueError, TypeError, AttributeError):
+                    except Exception:
                         safe["raw_message"] = None
-
                     self._bad_fh.write(
                         json.dumps(safe, ensure_ascii=False, separators=(",", ":"))
                         + "\n"
@@ -109,15 +143,58 @@ class PartitionedJSONLFileHandler(logging.Handler):
                 except (OSError, ValueError, TypeError):
                     inc_disk_error_counter()
                     self.handleError(record)
+                    return
+
+            # 3) Rollover by size (best effort, post-write)
+            if self._max_bytes > 0 and self._fh is not None:
+                try:
+                    size = os.fstat(self._fh.fileno()).st_size
+                    if self._warn_bytes and size >= self._warn_bytes:
+                        logging.getLogger(__name__).warning(
+                            "log file nearing size threshold",
+                            extra={
+                                "attrs": {
+                                    "path": str(self._current_path),
+                                    "size": size,
+                                    "warn_bytes": self._warn_bytes,
+                                }
+                            },
+                        )
+                    if size >= self._max_bytes:
+                        self._part_index += 1
+                        yyyy, mm, dd, hh = partition_path_components(
+                            datetime.fromtimestamp(record.created, tz=timezone.utc)
+                        )
+                        dir_path = self._current_path.parent  # same hour directory
+                        next_file = dir_path / self._events_filename(
+                            yyyy, mm, dd, hh, self._part_index
+                        )
+                        next_bad = dir_path / self._bad_filename(
+                            yyyy, mm, dd, hh, self._part_index
+                        )
+                        self._reopen(next_file, next_bad)
+                        if logging_file_rotations_total:
+                            try:
+                                logging_file_rotations_total.inc()
+                            except Exception:
+                                pass
+                except Exception:
+                    # Rollover errors should not interrupt the pipeline
+                    inc_disk_error_counter()
+                    # we leave the current file active
         finally:
             self.release()
 
+    @staticmethod
+    def _events_filename(yyyy: str, mm: str, dd: str, hh: str, part: int) -> str:
+        return f"events-{yyyy}{mm}{dd}-{hh}{''.join(['.part', str(part)] if part > 0 else '')}.jsonl"
+
+    @staticmethod
+    def _bad_filename(yyyy: str, mm: str, dd: str, hh: str, part: int) -> str:
+        return f"bad-logs-{yyyy}{mm}{dd}-{hh}{''.join(['.part', str(part)] if part > 0 else '')}.jsonl"
+
     def _reopen(self, path: Path, bad_path: Path) -> None:
-        """
-        (Lock must already be held by caller.)
-        Close previous files and open (or create) the partition files for the new hour.
-        """
-        # Close previous files (best effort)
+        # close previous
         for fh in (self._fh, self._bad_fh):
             if fh:
                 try:
@@ -125,15 +202,11 @@ class PartitionedJSONLFileHandler(logging.Handler):
                     fh.close()
                 except (OSError, ValueError):
                     pass
-
-        # Prepare the directory and open the new files
         path.parent.mkdir(parents=True, exist_ok=True)
         self._fh = open(path, "a", encoding=self.encoding, newline="\n")
         self._bad_fh = open(bad_path, "a", encoding=self.encoding, newline="\n")
         self._current_path = path
         self._bad_path = bad_path
-
-        # Fsync the parent directory to ensure visibility/durability of entries
         fsync_dir(path.parent)
 
     def close(self) -> None:

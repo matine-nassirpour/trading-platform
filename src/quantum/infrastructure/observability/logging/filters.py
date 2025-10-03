@@ -1,5 +1,9 @@
 import logging
+import os
+import threading
 import time
+
+from quantum.infrastructure.observability.logging.constants import get_audit_whitelist
 
 NOISY_LOGGERS = {
     "urllib3.connectionpool",
@@ -35,18 +39,17 @@ class MonotonicTimestampFilter(logging.Filter):
 
 
 class AuditEventFilter(logging.Filter):
-    AUDIT_EVENTS = {
-        "order_submit_v1",
-        "order_ack_v1",
-        "order_fill_v1",
-        "order_reject_v1",
-        "killswitch_trigger_v1",
-        "reconciliation_v1",
-    }
+    def __init__(self) -> None:
+        super().__init__()
+        self._version = os.getenv("QUANTUM_AUDIT_EVENTS_VERSION", "v1")
+        self._whitelist = get_audit_whitelist(self._version)
 
     def filter(self, record: logging.LogRecord) -> bool:
         ev = getattr(record, "event", None)
-        return isinstance(ev, dict) and ev.get("event_name") in self.AUDIT_EVENTS
+        if not isinstance(ev, dict):
+            return False
+        name = ev.get("event_name")
+        return isinstance(name, str) and name in self._whitelist
 
 
 class RedactFilter(logging.Filter):
@@ -97,17 +100,19 @@ class RateLimitFilter(logging.Filter):
         self._tokens = max_per_sec
         self._rate = max_per_sec
         self._t = time.monotonic()
+        self._lock = threading.Lock()
 
     def filter(self, record: logging.LogRecord) -> bool:
-        now = time.monotonic()
-        self._tokens += (now - self._t) * self._rate
-        self._t = now
-        if self._tokens > self._rate:
-            self._tokens = self._rate
-        if self._tokens >= 1.0:
-            self._tokens -= 1.0
-            return True
-        return False
+        with self._lock:
+            now = time.monotonic()
+            self._tokens += (now - self._t) * self._rate
+            self._t = now
+            if self._tokens > self._rate:
+                self._tokens = self._rate
+            if self._tokens >= 1.0:
+                self._tokens -= 1.0
+                return True
+            return False
 
 
 class InfoSamplerFilter(logging.Filter):
@@ -115,9 +120,11 @@ class InfoSamplerFilter(logging.Filter):
         super().__init__()
         self._i = 0
         self._n = sample_every
+        self._lock = threading.Lock()
 
     def filter(self, record: logging.LogRecord) -> bool:
         if record.levelno != logging.INFO:
             return True
-        self._i = (self._i + 1) % self._n
-        return self._i == 0
+        with self._lock:
+            self._i = (self._i + 1) % self._n
+            return self._i == 0

@@ -7,6 +7,9 @@ from typing import ParamSpec, TypeVar
 from opentelemetry import trace
 from prometheus_client import Counter, Histogram
 
+from quantum.infrastructure.observability.tracing.propagation import (
+    refresh_baggage_from_context,
+)
 from quantum.shared.correlation.correlation_id import (
     correlation_context,
     new_correlation_id,
@@ -43,20 +46,21 @@ def ui_action(name: str) -> Callable[[Callable[P, R]], Callable[P, R]]:
         def _inner(*args: P.args, **kwargs: P.kwargs) -> R:
             cid = new_correlation_id()
             start = time.monotonic_ns()
-            with (
-                correlation_context(cid),
-                _TRACER.start_as_current_span(f"ui.action.{name}"),
-            ):
-                try:
-                    return fn(*args, **kwargs)
-                finally:
-                    dur_ms = (time.monotonic_ns() - start) // 1_000_000
-                    ui_actions_total.labels(name).inc()
-                    ui_action_latency_ms.labels(name).observe(dur_ms)
-                    logging.getLogger("quantum.ui").info(
-                        "ui action completed",
-                        extra={"attrs": {"ui.action": name, "ui.latency_ms": dur_ms}},
-                    )
+            with correlation_context(cid):
+                refresh_baggage_from_context()
+                with _TRACER.start_as_current_span(f"ui.action.{name}"):
+                    try:
+                        return fn(*args, **kwargs)
+                    finally:
+                        dur_ms = (time.monotonic_ns() - start) // 1_000_000
+                        ui_actions_total.labels(name).inc()
+                        ui_action_latency_ms.labels(name).observe(dur_ms)
+                        logging.getLogger("quantum.ui").info(
+                            "ui action completed",
+                            extra={
+                                "attrs": {"ui.action": name, "ui.latency_ms": dur_ms}
+                            },
+                        )
 
         return _inner
 

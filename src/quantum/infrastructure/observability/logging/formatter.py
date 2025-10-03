@@ -49,9 +49,10 @@ class JsonFormatter(logging.Formatter):
         is_valid = span_context.is_valid if hasattr(span_context, "is_valid") else False
         trace_id = format(span_context.trace_id, "032x") if is_valid else None
         span_id = format(span_context.span_id, "016x") if is_valid else None
-        is_sampled = span_context.trace_flags.sampled
+        is_sampled = span_context.trace_flags.sampled if is_valid else None
 
         service_name = os.getenv("QUANTUM_APP_NAME")
+        service_version = os.getenv("QUANTUM_APP_VERSION")
         service_namespace = os.getenv("QUANTUM_NS")
 
         correlation_id = get_correlation_id()
@@ -70,6 +71,7 @@ class JsonFormatter(logging.Formatter):
             "env": getattr(record, "env", "unknown"),
             "instance": INSTANCE_ID,
             "service_name": service_name,
+            "service_version": service_version,
             "service_namespace": service_namespace,
             "trace_id": trace_id,
             "span_id": span_id,
@@ -104,4 +106,12 @@ class JsonFormatter(logging.Formatter):
             # Fallback JSON
             payload_dict["log_schema_version"] = "fallback"
             payload_dict["validation_error"] = str(e)
+            try:
+                from quantum.infrastructure.observability.metrics.health import (
+                    logging_schema_validation_errors_total,
+                )
+
+                logging_schema_validation_errors_total.inc()
+            except Exception:
+                pass
             return json.dumps(payload_dict, ensure_ascii=False, separators=(",", ":"))

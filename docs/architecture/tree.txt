@@ -18,6 +18,7 @@ trading-platform/
 │   └── architecture/
 │       └── tree.txt
 ├── scripts/
+│   ├── obs_smoke.py
 │   └── print_tree.py
 ├── src/
 │   └── quantum/
@@ -78,6 +79,7 @@ trading-platform/
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── _io_utils.py
 │       │   │   │   ├── audit_sink.py
+│       │   │   │   ├── constants.py
 │       │   │   │   ├── event_emitter.py
 │       │   │   │   ├── filters.py
 │       │   │   │   ├── formatter.py
@@ -107,6 +109,7 @@ trading-platform/
 │       ├── shared/
 │       │   ├── config/
 │       │   │   ├── __init__.py
+│       │   │   ├── dotenv_loader.py
 │       │   │   └── env.py
 │       │   ├── context/
 │       │   │   ├── __init__.py
@@ -144,7 +147,7 @@ trading-platform/
 │   │   ├── shared/
 │   │   │   ├── serialization/
 │   │   │   │   ├── __init__.py
-│   │   │   │   └── test_schema_registry.py
+│   │   │   │   └── test_dummy.py
 │   │   │   └── __init__.py
 │   │   └── __init__.py
 │   └── __init__.py

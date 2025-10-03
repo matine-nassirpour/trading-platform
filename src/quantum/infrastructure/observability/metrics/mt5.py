@@ -27,6 +27,11 @@ requotes_total = Counter("mt5_requotes_total", "Total requotes", ["symbol"])
 order_reject_total = Counter(
     "mt5_order_reject_total", "Total order rejects", ["symbol", "error_code"]
 )
+order_reject_class_total = Counter(
+    "mt5_order_reject_class_total",
+    "Total order rejects by error class",
+    ["symbol", "error_class"],
+)
 partial_fills_total = Counter("mt5_partial_fills_total", "Total partial fills")
 
 slippage_points = Histogram(
@@ -52,3 +57,32 @@ orders_total = Counter(
 )  # market/limit/stop
 deals_total = Counter("mt5_deals_total", "Total deals")
 positions_open = Gauge("mt5_positions_open", "Open positions count")
+
+
+def classify_error_code(error_code: int | str) -> str:
+    """
+    Groups MT5 error codes into stable (low cardinality) classes.
+
+    - This mapping can be enriched/adjusted depending on the broker/use.
+    """
+    try:
+        code = int(error_code)
+    except (TypeError, ValueError):
+        return "unknown"
+
+    # examples of classes (for information / generic)
+    if code in {0}:
+        return "ok"
+    if code in {10004, 10006, 10009}:
+        return "network_io"  # timeouts, network
+    if code in {4106, 4107, 4110}:
+        return "trade_context"  # busy/disabled
+    if code in {10030, 10031, 10032}:
+        return "server_overload"
+    if 130 <= code <= 139:
+        return "invalid_stops"  # stoploss/takeprofit invalids
+    if 140 <= code <= 149:
+        return "price_related"  # price changed/off quotes
+    if 4100 <= code <= 4199:
+        return "trade_errors"  # large famille MT5 trade errors
+    return "other"

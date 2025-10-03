@@ -19,10 +19,17 @@ class _ReconcileStub:
 
 def main() -> None:
     init_cli()
-    logger.info("Quantum trading core started.")
+    try:
+        logger.info("Quantum trading core started.")
+        refresh_market(_RefreshMarketStub(), symbol=None)
+        reconcile(_ReconcileStub())
+    finally:
+        # clean shutdown to avoid orphaned handlers in tests/e2e
+        from quantum.infrastructure.observability.init_observability import (
+            shutdown_observability,
+        )
 
-    refresh_market(_RefreshMarketStub(), symbol=None)
-    reconcile(_ReconcileStub())
+        shutdown_observability()
 
 
 if __name__ == "__main__":

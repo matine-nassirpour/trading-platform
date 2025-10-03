@@ -49,6 +49,8 @@ DEFAULT_EXCLUDES = (
     ".DS_Store",
     "htmlcov",
     "test-results",
+    "_logs",
+    "_audit",
 )
 
 

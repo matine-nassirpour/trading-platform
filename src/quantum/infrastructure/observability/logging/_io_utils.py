@@ -10,7 +10,7 @@ def inc_disk_error_counter() -> None:
     Avoids a hard dependency on metrics.health.
     """
     try:
-        from quantum.infrastructure.observability.metrics.health import (  # type: ignore; noqa: F401
+        from quantum.infrastructure.observability.metrics.health import (
             logging_disk_errors_total,
         )
 
@@ -21,17 +21,18 @@ def inc_disk_error_counter() -> None:
 
 def fsync_dir(path: Path) -> None:
     """
-    Performs a fsync of the parent directory to ensure the rename is durable (os.replace).
-    Most POSIX FSs support this. On platforms where O_DIRECTORY doesn't exist,
-    or if the FS doesn't allow it, it's silently ignored.
+    Performs a fsync of the parent directory (POSIX).
     """
     try:
-        dir_fd = os.open(str(path), os.O_DIRECTORY)  # type: ignore[attr-defined]
+        O_DIRECTORY = getattr(os, "O_DIRECTORY", None)
+        if O_DIRECTORY is None:  # Windows / FS sans O_DIRECTORY
+            return
+        dir_fd = os.open(str(path), O_DIRECTORY)  # type: ignore[attr-defined]
         try:
             os.fsync(dir_fd)
         finally:
             os.close(dir_fd)
-    except OSError:
+    except (OSError, AttributeError):
         # Best-effort only
         pass
 
@@ -41,6 +42,7 @@ def safe_unlink(path: Path) -> None:
     Deletes a file in best-effort, silent on error.
     """
     try:
-        path.unlink(missing_ok=True)  # type: ignore[arg-type]
+        if path is not None:
+            path.unlink(missing_ok=True)  # type: ignore[arg-type]
     except OSError:
         pass

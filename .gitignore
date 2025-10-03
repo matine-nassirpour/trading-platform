@@ -2,6 +2,10 @@
 .idea
 .vscode/
 
+# Local observability artifacts (runtime logs & audit records).
+_logs/
+_audit/
+
 # Import Linter cache
 .import_linter_cache/
 
