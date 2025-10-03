@@ -89,3 +89,35 @@ class RedactFilter(logging.Filter):
         if isinstance(msg, str) and len(msg) > self.MAX_VALUE_LEN:
             record.msg = msg[: self.MAX_VALUE_LEN] + "…"
         return True
+
+
+class RateLimitFilter(logging.Filter):
+    def __init__(self, max_per_sec: float = 100.0):
+        super().__init__()
+        self._tokens = max_per_sec
+        self._rate = max_per_sec
+        self._t = time.monotonic()
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        now = time.monotonic()
+        self._tokens += (now - self._t) * self._rate
+        self._t = now
+        if self._tokens > self._rate:
+            self._tokens = self._rate
+        if self._tokens >= 1.0:
+            self._tokens -= 1.0
+            return True
+        return False
+
+
+class InfoSamplerFilter(logging.Filter):
+    def __init__(self, sample_every: int = 10):
+        super().__init__()
+        self._i = 0
+        self._n = sample_every
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if record.levelno != logging.INFO:
+            return True
+        self._i = (self._i + 1) % self._n
+        return self._i == 0

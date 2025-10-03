@@ -8,8 +8,10 @@ from quantum.infrastructure.observability.logging.audit_sink import (
 from quantum.infrastructure.observability.logging.filters import (
     AuditEventFilter,
     IgnoreLibrariesFilter,
+    InfoSamplerFilter,
     LoggingContextFilter,
     MonotonicTimestampFilter,
+    RateLimitFilter,
     RedactFilter,
 )
 from quantum.infrastructure.observability.logging.formatter import JsonFormatter
@@ -36,22 +38,53 @@ def init_logging(cfg: LoggingConfig) -> None:
     # Common log level
     level = getattr(logging, cfg.log_level.upper(), logging.INFO)
 
-    def _add_filters(handler: logging.Handler, env: str) -> None:
+    def _add_base_filters(handler: logging.Handler, env: str) -> None:
         handler.addFilter(LoggingContextFilter(env=env))
         handler.addFilter(IgnoreLibrariesFilter())
         handler.addFilter(MonotonicTimestampFilter())
         handler.addFilter(RedactFilter())
 
+    # Parse env for rate limiting & sampling
+    enable_rate_limit = os.getenv("QUANTUM_LOG_RATELIMIT", "0") == "1"
+    try:
+        rate_limit_rps = float(os.getenv("QUANTUM_LOG_RPS", "100"))
+        if rate_limit_rps <= 0:
+            enable_rate_limit = False
+    except (TypeError, ValueError):
+        enable_rate_limit = False
+        rate_limit_rps = 100.0
+
+    sample_info_every_env = os.getenv("QUANTUM_LOG_SAMPLE_INFO", "").strip()
+    enable_info_sampling = False
+    sample_info_every = 10
+    if sample_info_every_env:
+        try:
+            sample_info_every = int(sample_info_every_env)
+            enable_info_sampling = sample_info_every > 1
+        except (TypeError, ValueError):
+            enable_info_sampling = False
+
+    def _maybe_add_ratelimit_and_sampling(
+        handler: logging.Handler, *, allow_sampling: bool
+    ) -> None:
+        # Rate limit applies to all levels, including bursty WARNING/ERROR
+        if enable_rate_limit:
+            handler.addFilter(RateLimitFilter(max_per_sec=rate_limit_rps))
+        # INFO sampling only if explicitly allowed (never for audit)
+        if allow_sampling and enable_info_sampling:
+            handler.addFilter(InfoSamplerFilter(sample_every=sample_info_every))
+
     # Console handler (stderr) in JSON format
     stderr_handler = logging.StreamHandler(sys.stderr)
     stderr_handler.setLevel(level)
     stderr_handler.setFormatter(JsonFormatter())
-    _add_filters(stderr_handler, cfg.environment)
+    _add_base_filters(stderr_handler, cfg.environment)
+    _maybe_add_ratelimit_and_sampling(stderr_handler, allow_sampling=True)
 
     partition_handler: logging.Handler | None = None
     audit_handler: logging.Handler | None = None
 
-    # Partitioned JSONL (ENV opt-in)d
+    # Partitioned JSONL (ENV opt-in)
     partition_base = os.getenv("QUANTUM_LOG_DIR")  # e.g. /var/log/quantum
     if partition_base:
         partition_handler = PartitionedJSONLFileHandler(
@@ -62,9 +95,10 @@ def init_logging(cfg: LoggingConfig) -> None:
         )
         partition_handler.setLevel(level)
         partition_handler.setFormatter(JsonFormatter())
-        _add_filters(partition_handler, cfg.environment)
+        _add_base_filters(partition_handler, cfg.environment)
+        _maybe_add_ratelimit_and_sampling(partition_handler, allow_sampling=True)
 
-    # Audit per-event files (ENV opt-in) ---
+    # Audit per-event files (ENV opt-in)
     audit_base = os.getenv("QUANTUM_AUDIT_DIR")  # e.g. /var/log/quantum/audit
     if audit_base:
         audit_handler = AuditEventFileHandler(
@@ -75,8 +109,9 @@ def init_logging(cfg: LoggingConfig) -> None:
         )
         # No formatter: we write the raw 'event' payload (already structured Pydantic)
         audit_handler.setLevel(level)
-        _add_filters(audit_handler, cfg.environment)
+        _add_base_filters(audit_handler, cfg.environment)
         audit_handler.addFilter(AuditEventFilter())
+        # Intentionally: no RateLimitFilter / InfoSamplerFilter here
 
     # Root logger: clear all existing handlers
     root_logger = logging.getLogger()

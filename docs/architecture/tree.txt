@@ -41,7 +41,6 @@ trading-platform/
 │       │   │   │   │   ├── breakeven_trigger_event.py
 │       │   │   │   │   ├── killswitch_trigger_event.py
 │       │   │   │   │   ├── latency_probe_event.py
-│       │   │   │   │   ├── market_data_gap_event.py
 │       │   │   │   │   ├── mt5_health_event.py
 │       │   │   │   │   ├── order_ack_event.py
 │       │   │   │   │   ├── order_check_event.py
@@ -77,6 +76,7 @@ trading-platform/
 │       │   │   │   │   ├── __init__.py
 │       │   │   │   │   └── log_payload_v1.py
 │       │   │   │   ├── __init__.py
+│       │   │   │   ├── _io_utils.py
 │       │   │   │   ├── audit_sink.py
 │       │   │   │   ├── event_emitter.py
 │       │   │   │   ├── filters.py

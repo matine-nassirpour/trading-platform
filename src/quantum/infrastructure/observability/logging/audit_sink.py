@@ -4,6 +4,11 @@ import os
 from datetime import datetime, timezone
 from pathlib import Path
 
+from quantum.infrastructure.observability.logging._io_utils import (
+    fsync_dir,
+    inc_disk_error_counter,
+    safe_unlink,
+)
 from quantum.shared.time.naming import generate_audit_blob_name
 
 
@@ -36,8 +41,8 @@ class AuditEventFileHandler(logging.Handler):
         if not isinstance(event, dict):  # only care about structured trading events
             return
 
+        # 1) Path resolution and directory creation
         try:
-            # timestamp directory from record.created
             dt = datetime.fromtimestamp(record.created, tz=timezone.utc)
             blob_name = generate_audit_blob_name(now=dt)
             path = (
@@ -45,9 +50,12 @@ class AuditEventFileHandler(logging.Handler):
             )
             path.parent.mkdir(parents=True, exist_ok=True)
         except OSError:
+            inc_disk_error_counter()
             self.handleError(record)
             return
 
+        # 2) Atomic write + fsync file + fsync parent directory
+        tmp_path: Path | None = None
         try:
             tmp_path = path.with_suffix(".json.tmp")
             with open(tmp_path, "w", encoding=self.encoding, newline="\n") as f:
@@ -56,6 +64,11 @@ class AuditEventFileHandler(logging.Handler):
                 )
                 f.flush()
                 os.fsync(f.fileno())
-            os.replace(tmp_path, path)
+
+            os.replace(tmp_path, path)  # atomic move
+            fsync_dir(path.parent)  # ensure directory entry is durable
         except (OSError, TypeError, ValueError):
+            inc_disk_error_counter()
+            # Best-effort cleanup of tmp file
+            safe_unlink(tmp_path)
             self.handleError(record)
