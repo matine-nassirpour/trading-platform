@@ -31,7 +31,7 @@ class OrderIntentEvent(BaseEvent):
 
     @classmethod
     def _price_consistency(cls, v: Decimal | None, info):
-        typ: OrderType | None = info.data.get("type")
+        typ: OrderType | None = info.data.get("types")
         if typ in {OrderType.LIMIT, OrderType.STOP, OrderType.STOP_LIMIT} and v is None:
             raise ValueError(f"price required for {typ}")
         if typ == OrderType.MARKET and v is not None:

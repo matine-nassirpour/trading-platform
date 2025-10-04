@@ -1,6 +1,5 @@
 import json
 import logging
-import os
 import socket
 from typing import Any
 
@@ -51,9 +50,9 @@ class JsonFormatter(logging.Formatter):
         span_id = format(span_context.span_id, "016x") if is_valid else None
         is_sampled = span_context.trace_flags.sampled if is_valid else None
 
-        service_name = os.getenv("QUANTUM_APP_NAME")
-        service_version = os.getenv("QUANTUM_APP_VERSION")
-        service_namespace = os.getenv("QUANTUM_NS")
+        service_name = getattr(record, "service_name", None)
+        service_version = getattr(record, "service_version", None)
+        service_namespace = getattr(record, "service_namespace", None)
 
         correlation_id = get_correlation_id()
         run_id = get_run_id()

@@ -2,7 +2,9 @@ import json
 import logging
 import os
 import time
+from datetime import datetime, timezone
 from pathlib import Path
+from typing import Literal
 
 import streamlit as st
 from opentelemetry import trace
@@ -187,39 +189,148 @@ with mt5_cols[3]:
 st.divider()
 
 
-# ------- Log tail (best-effort) ---------------------------------------------
+# ------- Log tail -----------------------------------------------------------
 st.subheader("Recent logs (JSONL tail)")
+
+_LEVEL_EMOJI = {
+    "DEBUG": "🐛",
+    "INFO": "ℹ️",
+    "WARNING": "⚠️",
+    "ERROR": "❌",
+    "CRITICAL": "🛑",
+}
+
+
+def _tail_jsonl_complete_lines(
+    path: Path,
+    *,
+    chunk_bytes: int = 256_000,
+    encoding: str = "utf-8",
+) -> list[str]:
+    try:
+        with open(path, "rb") as fh:
+            fh.seek(0, os.SEEK_END)
+            file_end = fh.tell()
+            start_offset = max(0, file_end - chunk_bytes)
+            fh.seek(start_offset)
+            buf = fh.read().decode(encoding, "replace")
+
+        if start_offset > 0:
+            # remove the first partial line if we started mid-file
+            buf = buf.split("\n", 1)[-1]
+
+        buf = buf.replace("\r\n", "\n")
+        raw_lines: list[str] = buf.split("\n")
+
+        # drop the last potentially incomplete line if file didn't end with '\n'
+        if raw_lines and buf and not buf.endswith("\n"):
+            raw_lines = raw_lines[:-1]
+
+        # keep only non-empty, trimmed lines
+        return [line for line in raw_lines if line.strip()]
+    except (OSError, UnicodeDecodeError):
+        # file missing/rotated/permission or bad bytes
+        return []
+
+
+def _shorten(s: str, max_len: int = 80) -> str:
+    s = s.replace("\n", " ").strip()
+    return (s[: max_len - 1] + "…") if len(s) > max_len else s
+
+
+def _fmt_dt(obj: dict, *, tz_mode: str = "utc") -> str:
+    """
+    Returns 'YYYY-MM-DD HH:MM:SS.mmmZ' (UTC) or local (without 'Z').
+    tz_mode: 'utc' | 'local'
+    """
+    # 1) timestamp RFC3339 ms
+    ts = obj.get("timestamp")
+    dt: datetime | None = None
+    if isinstance(ts, str):
+        try:
+            dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+        except ValueError:
+            dt = None
+    # 2) fallback sur ts_unix_ms
+    if dt is None:
+        ms = obj.get("ts_unix_ms")
+        if isinstance(ms, (int, float)):
+            dt = datetime.fromtimestamp(ms / 1000.0, tz=timezone.utc)
+
+    if dt is None:
+        return "—"
+
+    if tz_mode == "local":
+        dt = dt.astimezone()  # local time zone
+        return dt.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]  # ex: 2025-10-04 19:18:24.840
+    else:
+        dt = dt.astimezone(timezone.utc)
+        return (
+            dt.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3] + "Z"
+        )  # ex: 2025-10-04 17:18:24.840Z
+
+
+def _expander_title_from_obj(obj: dict) -> str:
+    lvl = str(obj.get("level", "INFO")).upper()
+    emoji = _LEVEL_EMOJI.get(lvl, "•")
+    logger_name = str(obj.get("logger") or obj.get("service_name") or "log")
+
+    tz_mode = os.getenv("STREAMLIT_LOG_TZ", "utc").strip().lower()
+    dt_str = _fmt_dt(obj, tz_mode=tz_mode if tz_mode in {"utc", "local"} else "utc")
+
+    return f"{emoji} {logger_name} | {dt_str}"
+
+
+def _render_log(
+    line: str,
+    *,
+    render_mode: Literal["code", "json"] = "code",
+    default_expanded: bool = False,
+) -> None:
+    """Renders a log in an expander with its own title."""
+    try:
+        obj = json.loads(line)
+        title = _expander_title_from_obj(obj)
+        with st.expander(title, expanded=default_expanded):
+            if render_mode == "json":
+                st.json(obj)
+            else:
+                st.code(json.dumps(obj, ensure_ascii=False, indent=2), language="json")
+    except (json.JSONDecodeError, TypeError):
+        # Invalid/incomplete line: togglable + raw rendering
+        title = f"raw • {_shorten(line)}"
+        with st.expander(title, expanded=default_expanded):
+            st.code(line, language="json")
+
+
 base = os.getenv("QUANTUM_LOG_DIR")
 if not base:
     st.info("QUANTUM_LOG_DIR is not set. Enable partitioned file logging to see tail.")
 else:
     base_p = Path(base)
     files = sorted(
-        base_p.rglob("events-*.jsonl"), key=lambda p: p.stat().st_mtime, reverse=True
+        base_p.rglob("events-*.jsonl"),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
     )
     if not files:
         st.write("No JSONL files yet.")
     else:
-        # Concatenate last N lines across up to 2 most recent files
         lines: list[str] = []
         for fp in files[:2]:
-            try:
-                with open(fp, "rb") as f:
-                    f.seek(0, os.SEEK_END)
-                    size = f.tell()
-                    f.seek(max(0, size - 64_000), os.SEEK_SET)
-                    chunk = f.read().decode("utf-8", "replace").splitlines()
-                    lines.extend(chunk[-100:])
-            except Exception:
-                continue
-        # Keep last 100 overall
-        lines = lines[-100:]
-        for ln in lines:
-            try:
-                js = json.loads(ln)
-                st.json(js)
-            except Exception:
-                st.code(ln)
+            lines.extend(_tail_jsonl_complete_lines(fp))
+
+        mode_env = os.getenv("STREAMLIT_LOG_RENDERER", "code").strip().lower()
+        render_mode: Literal["code", "json"] = "json" if mode_env == "json" else "code"
+        expanded = os.getenv("STREAMLIT_LOG_EXPANDED", "0").strip().lower() in {
+            "1",
+            "true",
+            "yes",
+            "on",
+        }
+
+        for ln in lines[-100:]:
+            _render_log(ln, render_mode=render_mode, default_expanded=expanded)
 
 
 # ------- Actions (emit logs / spans / audit) --------------------------------

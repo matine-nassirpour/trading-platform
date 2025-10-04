@@ -25,7 +25,7 @@ from quantum.infrastructure.observability.tracing.traces import (
     TracingConfig,
     init_tracing,
 )
-from quantum.shared.config.env import load_local_env
+from quantum.shared.config.env_loader import load_env
 from quantum.shared.context.run_id import generate_run_id
 
 _initialized = False
@@ -112,7 +112,7 @@ def init_observability(
         pipeline_tracing_ok.set(0)
         pipeline_metrics_http_ok.set(0)
 
-        load_local_env()
+        load_env()  # does not overwrite existing env by default
         generate_run_id()
 
         # Read config from environment (OS > .env)
@@ -120,6 +120,7 @@ def init_observability(
         environment = os.getenv("QUANTUM_ENV", environment)
         namespace = os.getenv("QUANTUM_NS", namespace)
         log_level = os.getenv("QUANTUM_LOG_LEVEL", log_level)
+        app_version = os.getenv("QUANTUM_APP_VERSION", "0.0.0")
         try:
             sample_ratio = float(os.getenv("QUANTUM_TRACE_SAMPLE", sample_ratio))
         except (TypeError, ValueError):
@@ -137,6 +138,7 @@ def init_observability(
                     environment=environment,
                     namespace=namespace,
                     log_level=log_level,
+                    app_version=app_version,
                 )
             )
             if _probe_logging_sinks():

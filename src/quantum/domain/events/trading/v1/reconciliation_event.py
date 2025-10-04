@@ -2,7 +2,7 @@ from typing import Any, ClassVar, Literal
 
 from quantum.domain.events.base import BaseEvent
 from quantum.domain.types.enums import App
-from quantum.shared.typing.time import EpochMs
+from quantum.shared.types.time import EpochMs
 
 
 class ReconciliationEvent(BaseEvent):

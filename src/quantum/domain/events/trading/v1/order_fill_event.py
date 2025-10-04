@@ -5,7 +5,7 @@ from pydantic import field_validator
 
 from quantum.domain.events.base import BaseEvent
 from quantum.domain.types.enums import App
-from quantum.shared.typing.time import EpochMs
+from quantum.shared.types.time import EpochMs
 
 
 class OrderFillEvent(BaseEvent):

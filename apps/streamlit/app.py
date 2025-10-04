@@ -3,12 +3,10 @@ import streamlit as st
 from apps.streamlit.bootstrap import init_streamlit
 from apps.streamlit.lib.obs import PageTimer, ui_action
 from quantum.interface.streamlit.entrypoints import get_positions
-
-# Load the .env as soon as possible (no Streamlit API used here)
-from quantum.shared.config.dotenv_loader import load_dotenv_if_present
+from quantum.shared.config.env_loader import load_env
 from quantum.shared.correlation.correlation_id import get_correlation_id
 
-load_dotenv_if_present()  # does not overwrite existing env by default
+load_env()  # does not overwrite existing env by default
 
 st.set_page_config(page_title="Quantum Desk", layout="wide")
 

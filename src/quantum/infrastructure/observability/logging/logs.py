@@ -13,6 +13,7 @@ from quantum.infrastructure.observability.logging.filters import (
     MonotonicTimestampFilter,
     RateLimitFilter,
     RedactFilter,
+    StaticFieldsFilter,
 )
 from quantum.infrastructure.observability.logging.formatter import JsonFormatter
 from quantum.infrastructure.observability.logging.partitioned_handlers import (
@@ -27,11 +28,13 @@ class LoggingConfig:
         environment: str,
         log_level: str = "INFO",
         namespace: str = "default",
+        app_version: str | None = None,
     ) -> None:
         self.app_name = app_name
         self.environment = environment
         self.log_level = log_level
         self.namespace = namespace
+        self.app_version = app_version
 
 
 def init_logging(cfg: LoggingConfig) -> None:
@@ -43,6 +46,15 @@ def init_logging(cfg: LoggingConfig) -> None:
         handler.addFilter(IgnoreLibrariesFilter())
         handler.addFilter(MonotonicTimestampFilter())
         handler.addFilter(RedactFilter())
+        handler.addFilter(
+            StaticFieldsFilter(
+                service_name=cfg.app_name,
+                service_namespace=cfg.namespace,
+                service_version=(
+                    cfg.app_version or os.getenv("QUANTUM_APP_VERSION", "0.0.0")
+                ),
+            )
+        )
 
     # Parse env for rate limiting & sampling
     enable_rate_limit = os.getenv("QUANTUM_LOG_RATELIMIT", "0") == "1"
