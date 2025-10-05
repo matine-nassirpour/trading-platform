@@ -1,7 +1,7 @@
 import logging
 import os
 import threading
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from pathlib import Path
 from typing import Literal
 
@@ -18,7 +18,6 @@ from quantum.infrastructure.observability.metrics.health import (
     pipeline_metrics_http_ok,
     pipeline_tracing_ok,
     pipeline_up,
-    tracer_exporter_active,
 )
 from quantum.infrastructure.observability.tracing.propagation import setup_propagation
 from quantum.infrastructure.observability.tracing.traces import (
@@ -26,7 +25,7 @@ from quantum.infrastructure.observability.tracing.traces import (
     init_tracing,
 )
 from quantum.shared.config.env_loader import load_env
-from quantum.shared.context.run_id import generate_run_id
+from quantum.shared.context.run_id import generate_run_id, get_run_id
 
 _initialized = False
 _init_lock = threading.Lock()
@@ -73,14 +72,15 @@ def _shutdown_tracing_if_any() -> None:
     tp = _tracer_provider_ref
     if tp is None:
         return
-    try:
-        shutdown = getattr(tp, "shutdown", None)
-        if callable(shutdown):
+
+    shutdown = getattr(tp, "shutdown", None)
+    if callable(shutdown):
+        try:
             shutdown()
-    except Exception:
-        pass
-    finally:
-        _tracer_provider_ref = None
+        except (RuntimeError, OSError, TimeoutError) as e:
+            logging.getLogger(__name__).debug(f"Tracer shutdown failed: {e}")
+
+    _tracer_provider_ref = None
 
 
 def init_observability(
@@ -113,7 +113,8 @@ def init_observability(
         pipeline_metrics_http_ok.set(0)
 
         load_env()  # does not overwrite existing env by default
-        generate_run_id()
+        if not get_run_id():
+            generate_run_id()
 
         # Read config from environment (OS > .env)
         app_name = os.getenv("QUANTUM_APP_NAME", app_name)
@@ -174,10 +175,6 @@ def init_observability(
             )
             setup_propagation()
             otel_tracing_up.set(1)
-            exporter_active = (exporter != "none") and (
-                tp and getattr(tp, "_active_exporter", False)
-            )
-            tracer_exporter_active.set(1 if exporter_active else 0)
             tracing_ok = bool(tp)
             global _tracer_provider_ref
             _tracer_provider_ref = tp
@@ -253,10 +250,9 @@ def shutdown_observability(
             _shutdown_tracing_if_any()
         finally:
             if set_gauges_down:
-                try:
+                # Gauge may fail if client/registry isn't initialized
+                with suppress(ValueError, RuntimeError):
                     otel_tracing_up.set(0)
-                except Exception:
-                    pass
 
     # Logging
     if close_logging:
@@ -264,33 +260,28 @@ def shutdown_observability(
             root = logging.getLogger()
             # Copy to iterate safely
             for h in list(root.handlers):
-                try:
-                    # flush before close if possible
-                    if hasattr(h, "flush"):
-                        h.flush()  # type: ignore[attr-defined]
-                except Exception:
-                    pass
-                try:
+                # flush before close if possible
+                flush = getattr(h, "flush", None)
+                if callable(flush):
+                    with suppress(OSError, ValueError, RuntimeError, TypeError):
+                        flush()
+
+                # close handler (bad FD/state may raise)
+                with suppress(OSError, ValueError, RuntimeError, TypeError):
                     h.close()
-                except Exception:
-                    pass
-                try:
+
+                # removeHandler raises ValueError if not attached
+                with suppress(ValueError):
                     root.removeHandler(h)
-                except Exception:
-                    pass
         finally:
             if set_gauges_down:
-                try:
+                with suppress(NameError, AttributeError, ValueError, RuntimeError):
                     logging_sink_up.set(0)
-                except Exception:
-                    pass
 
     # Global pipeline (optional)
     if set_gauges_down:
-        try:
+        with suppress(NameError, AttributeError, ValueError, RuntimeError):
             pipeline_up.set(0)
-        except Exception:
-            pass
 
     if reset_state:
         _initialized = False

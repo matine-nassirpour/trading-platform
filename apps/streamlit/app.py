@@ -4,6 +4,7 @@ from apps.streamlit.bootstrap import init_streamlit
 from apps.streamlit.lib.obs import PageTimer, ui_action
 from quantum.interface.streamlit.entrypoints import get_positions
 from quantum.shared.config.env_loader import load_env
+from quantum.shared.context.run_id import get_run_id
 from quantum.shared.correlation.correlation_id import get_correlation_id
 
 load_env()  # does not overwrite existing env by default
@@ -29,7 +30,9 @@ with PageTimer():
     positions_q = _GetPositionsStub()
 
     # Displays the current corr_id (debug)
-    st.caption(f"corr_id: {get_correlation_id() or '—'}")
+    st.caption(
+        f"run_id: {get_run_id() or '—'}  •  corr_id: {get_correlation_id() or '—'}"
+    )
 
     @ui_action("refresh_market")
     def on_refresh():

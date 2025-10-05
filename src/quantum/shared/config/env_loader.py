@@ -12,6 +12,7 @@ except ImportError:
 
 _LOGGER: Final = logging.getLogger("config.env")
 _LOADED: bool = False
+_LAST_BASE_DIR: Path | None = None
 
 
 def _merge(*layers: Mapping[str, str | None]) -> dict[str, str]:
@@ -68,8 +69,9 @@ def load_env(
         The base directory used, or None if python-dotenv is absent.
     """
     global _LOADED
+    global _LAST_BASE_DIR
     if _LOADED:
-        return None
+        return _LAST_BASE_DIR
 
     if dotenv_values is None:
         _LOGGER.warning("python-dotenv not installed; skipping .env loading")
@@ -98,12 +100,17 @@ def load_env(
 
     merged = _merge(env_base or {}, env_specific or {}, env_local or {})
 
-    # Injection into os.environ
+    # Injection into os.environ (with overwrite warning)
     for k, v in merged.items():
-        if override or k not in os.environ:
-            os.environ[k] = v
+        if k in os.environ and not override:
+            continue
+        if k in os.environ and override:
+            # warn (non-sensitive)
+            _LOGGER.debug("Overriding existing env var", extra={"attrs": {"key": k}})
+        os.environ[k] = v
 
     _LOADED = True
+    _LAST_BASE_DIR = base_dir
 
     # Logging (non-sensitive)
     snap = {

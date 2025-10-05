@@ -2,6 +2,7 @@ import io
 import json
 import logging
 import os
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -16,8 +17,8 @@ try:
     from quantum.infrastructure.observability.metrics.health import (
         logging_file_rotations_total,
     )
-except Exception:
-    logging_file_rotations_total = None  # type: ignore
+except ModuleNotFoundError:
+    logging_file_rotations_total = None
 
 
 class PartitionedJSONLFileHandler(logging.Handler):
@@ -62,6 +63,7 @@ class PartitionedJSONLFileHandler(logging.Handler):
             self._warn_bytes = 0
 
         self._part_index: int = 0  # Part index within the same hour
+        self._warned_this_part: bool = False
 
     def emit(self, record: logging.LogRecord) -> None:
         self.acquire()
@@ -129,8 +131,9 @@ class PartitionedJSONLFileHandler(logging.Handler):
                     }
                     try:
                         safe["raw_message"] = record.getMessage()
-                    except Exception:
+                    except (TypeError, ValueError):
                         safe["raw_message"] = None
+
                     self._bad_fh.write(
                         json.dumps(safe, ensure_ascii=False, separators=(",", ":"))
                         + "\n"
@@ -150,16 +153,19 @@ class PartitionedJSONLFileHandler(logging.Handler):
                 try:
                     size = os.fstat(self._fh.fileno()).st_size
                     if self._warn_bytes and size >= self._warn_bytes:
-                        logging.getLogger(__name__).warning(
-                            "log file nearing size threshold",
-                            extra={
-                                "attrs": {
-                                    "path": str(self._current_path),
-                                    "size": size,
-                                    "warn_bytes": self._warn_bytes,
-                                }
-                            },
-                        )
+                        # Avoid recursion: emit a single stderr warning per part file.
+                        if not getattr(self, "_warned_this_part", False):
+                            try:
+                                sys.stderr.write(
+                                    f"[quantum.logs] nearing size threshold: "
+                                    f"path={self._current_path} size={size} "
+                                    f"warn_bytes={self._warn_bytes}\n"
+                                )
+                                sys.stderr.flush()
+                            except (OSError, ValueError):
+                                pass
+                            self._warned_this_part = True
+
                     if size >= self._max_bytes:
                         self._part_index += 1
                         yyyy, mm, dd, hh = partition_path_components(
@@ -173,12 +179,14 @@ class PartitionedJSONLFileHandler(logging.Handler):
                             yyyy, mm, dd, hh, self._part_index
                         )
                         self._reopen(next_file, next_bad)
+                        # reset one-shot warning for the new part
+                        self._warned_this_part = False
                         if logging_file_rotations_total:
                             try:
                                 logging_file_rotations_total.inc()
-                            except Exception:
+                            except (ValueError, RuntimeError):
                                 pass
-                except Exception:
+                except (OSError, ValueError):
                     # Rollover errors should not interrupt the pipeline
                     inc_disk_error_counter()
                     # we leave the current file active

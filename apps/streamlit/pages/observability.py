@@ -315,6 +315,7 @@ def _render_log(
             st.code(line, language="json")
 
 
+@st.cache_data(ttl=1.0, show_spinner=False)
 def _read_recent_jsonl_lines(
     base_dir: Path, pattern: str, *, chunk_bytes: int, max_files: int = 2
 ) -> list[str]:
@@ -398,14 +399,18 @@ def render_ui_latency_histograms() -> None:
 def render_mt5_section() -> None:
     cols = st.columns(4)
     with cols[0]:
-        hb = _gauge_value("mt5_terminal_up")
+        hb = _gauge_value("quantum_mt5_terminal_up")
         st.metric("MT5 Terminal", "✅" if hb == 1 else ("❌" if hb == 0 else "—"))
     with cols[1]:
-        st.metric("Positions open", int(_gauge_value("mt5_positions_open") or 0))
+        st.metric(
+            "Positions open", int(_gauge_value("quantum_mt5_positions_open") or 0)
+        )
     with cols[2]:
-        st.metric("Order rejects", int(_counter_value("mt5_order_reject_total") or 0))
+        st.metric(
+            "Order rejects", int(_counter_value("quantum_mt5_order_reject_total") or 0)
+        )
     with cols[3]:
-        st.metric("Requotes", int(_counter_value("mt5_requotes_total") or 0))
+        st.metric("Requotes", int(_counter_value("quantum_mt5_requotes_total") or 0))
     st.divider()
 
 

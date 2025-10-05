@@ -29,3 +29,21 @@ def now_mono_ms() -> int:
     Ideal for measuring durations/latencies and ordering events.
     """
     return time.monotonic_ns() // 1_000_000
+
+
+def elapsed_ms(start_mono_ms: int) -> int:
+    """
+    Returns elapsed milliseconds from a monotonic ms start.
+    """
+    return (time.monotonic_ns() // 1_000_000) - start_mono_ms
+
+
+def to_rfc3339_ms(dt: datetime) -> str:
+    """
+    Convert any aware/naive datetime to UTC RFC3339 with ms.
+    """
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    else:
+        dt = dt.astimezone(timezone.utc)
+    return dt.isoformat(timespec="milliseconds").replace("+00:00", "Z")

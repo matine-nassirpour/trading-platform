@@ -1,10 +1,11 @@
 import json
 import logging
 import os
+import re
 import threading
 import time
 
-from quantum.infrastructure.observability.logging.constants import get_audit_whitelist
+from quantum.infrastructure.observability.logging.constants import get_audit_allowlist
 from quantum.infrastructure.observability.metrics.health import logging_redactions_total
 
 NOISY_LOGGERS = {
@@ -13,7 +14,9 @@ NOISY_LOGGERS = {
     "opentelemetry.sdk._logs",
     "opentelemetry.sdk.trace",
     "opentelemetry.sdk.trace.export",
+    "opentelemetry.sdk._shared_internal",
 }
+_SUFFIX_V1 = re.compile(r"_v1$")
 
 
 class IgnoreLibrariesFilter(logging.Filter):
@@ -43,15 +46,20 @@ class MonotonicTimestampFilter(logging.Filter):
 class AuditEventFilter(logging.Filter):
     def __init__(self) -> None:
         super().__init__()
-        self._version = os.getenv("QUANTUM_AUDIT_EVENTS_VERSION", "v1")
-        self._whitelist = get_audit_whitelist(self._version)
+        self._version = os.getenv("QUANTUM_AUDIT_EVENTS_VERSION", "v1").lower()
+        self._allow = get_audit_allowlist(self._version)
 
     def filter(self, record: logging.LogRecord) -> bool:
         ev = getattr(record, "event", None)
         if not isinstance(ev, dict):
             return False
         name = ev.get("event_name")
-        return isinstance(name, str) and name in self._whitelist
+        if not isinstance(name, str) or not name:
+            return False
+        n = name.strip().lower()
+        if n.endswith("_v1"):
+            n = _SUFFIX_V1.sub("", n)
+        return n in self._allow
 
 
 class RedactFilter(logging.Filter):
@@ -69,6 +77,11 @@ class RedactFilter(logging.Filter):
         "session_id",
     }
     MAX_VALUE_LEN = 5_000
+    # JWT-like or long high-entropy tokens (very heuristic)
+    _JWT_RE = re.compile(
+        r"eyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}"
+    )
+    _HEX32_RE = re.compile(r"\b[0-9a-fA-F]{32,}\b")
 
     def _redact_recursive(self, obj):
         if isinstance(obj, dict):
@@ -82,8 +95,13 @@ class RedactFilter(logging.Filter):
             }
         if isinstance(obj, list):
             return [self._redact_recursive(v) for v in obj]
-        if isinstance(obj, str) and len(obj) > self.MAX_VALUE_LEN:
-            return obj[: self.MAX_VALUE_LEN] + "…"
+        if isinstance(obj, str):
+            s = obj
+            if len(s) > self.MAX_VALUE_LEN:
+                s = s[: self.MAX_VALUE_LEN] + "…"
+            if self._JWT_RE.search(s) or self._HEX32_RE.search(s):
+                return "[REDACTED]"
+            return s
         return obj
 
     def filter(self, record: logging.LogRecord) -> bool:
@@ -124,12 +142,12 @@ class RateLimitFilter(logging.Filter):
 class InfoSamplerFilter(logging.Filter):
     def __init__(self, sample_every: int = 10):
         super().__init__()
+        self._n = max(1, int(sample_every))  # <=1 → no sampling
         self._i = 0
-        self._n = sample_every
         self._lock = threading.Lock()
 
     def filter(self, record: logging.LogRecord) -> bool:
-        if record.levelno != logging.INFO:
+        if record.levelno != logging.INFO or self._n <= 1:
             return True
         with self._lock:
             self._i = (self._i + 1) % self._n

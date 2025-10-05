@@ -3,6 +3,7 @@ import os
 import socket
 from typing import Literal, cast
 
+from opentelemetry.context import Context
 from opentelemetry.sdk.resources import (
     DEPLOYMENT_ENVIRONMENT,
     SERVICE_INSTANCE_ID,
@@ -11,12 +12,18 @@ from opentelemetry.sdk.resources import (
     SERVICE_VERSION,
     Resource,
 )
-from opentelemetry.sdk.trace import SpanLimits, TracerProvider
+from opentelemetry.sdk.trace import SpanLimits
+from opentelemetry.sdk.trace import SpanProcessor as _SpanProcessor
+from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
 from opentelemetry.sdk.trace.id_generator import RandomIdGenerator
 from opentelemetry.sdk.trace.sampling import ParentBased, TraceIdRatioBased
+from opentelemetry.trace import Span
 from opentelemetry.trace import TracerProvider as TracerProviderInterface
-from opentelemetry.trace import set_tracer_provider
+from opentelemetry.trace import get_tracer_provider, set_tracer_provider
+
+from quantum.shared.context.run_id import get_run_id
+from quantum.shared.correlation.correlation_id import get_correlation_id
 
 try:
     from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
@@ -24,7 +31,7 @@ try:
     )
 
     _HAS_OTLP_HTTP = True
-except Exception:
+except ImportError:
     _HAS_OTLP_HTTP = False
 
 try:
@@ -33,7 +40,7 @@ try:
     )
 
     _HAS_OTLP_GRPC = True
-except Exception:
+except ImportError:
     _HAS_OTLP_GRPC = False
 
 
@@ -53,7 +60,28 @@ class TracingConfig:
         self.sample_ratio = sample_ratio
 
 
+class _ContextEnricherProcessor(_SpanProcessor):
+    def on_start(self, span: Span, parent_context: Context | None = None) -> None:
+        rid = get_run_id()
+        cid = get_correlation_id()
+        if rid:
+            span.set_attribute("quantum.run_id", rid)
+        if cid:
+            span.set_attribute("quantum.correlation_id", cid)
+
+    def on_end(self, span: Span) -> None:
+        pass
+
+
 def init_tracing(cfg: TracingConfig) -> TracerProviderInterface:
+    # Idempotence: If a provider SDK is already in place, do not reset.
+    existing = get_tracer_provider()
+    if isinstance(existing, TracerProvider):
+        return cast(TracerProviderInterface, existing)
+
+    # Borne le sample ratio dans [0..1]
+    sr = max(0.0, min(1.0, float(cfg.sample_ratio)))
+
     resource = Resource.create(
         {
             SERVICE_NAME: cfg.service_name,
@@ -67,13 +95,15 @@ def init_tracing(cfg: TracingConfig) -> TracerProviderInterface:
     tracer_provider = TracerProvider(
         resource=resource,
         id_generator=RandomIdGenerator(),
-        sampler=ParentBased(TraceIdRatioBased(cfg.sample_ratio)),
+        sampler=ParentBased(TraceIdRatioBased(sr)),
         span_limits=SpanLimits(
             max_attributes=128,
             max_events=128,
             max_links=32,
         ),
     )
+
+    tracer_provider.add_span_processor(_ContextEnricherProcessor())
 
     if cfg.exporter == "console":
         tracer_provider.add_span_processor(
@@ -107,15 +137,28 @@ def init_tracing(cfg: TracingConfig) -> TracerProviderInterface:
 
     setattr(tracer_provider, "_active_exporter", active_exporter is not None)
 
+    # Best-effort: expose health metric if available (no hard dep)
+    try:
+        from quantum.infrastructure.observability.metrics.health import (
+            tracer_exporter_active,
+        )
+    except ModuleNotFoundError:
+        pass
+    else:
+        try:
+            tracer_exporter_active.set(1.0 if active_exporter is not None else 0.0)
+        except (ValueError, RuntimeError):
+            pass
+
     atexit.register(tracer_provider.shutdown)
 
     # Expose a reference for controlled shutdown in init_observability
     try:
         import quantum.infrastructure.observability.init_observability as _init_mod
-
-        _init_mod._tracer_provider_ref = cast(object, tracer_provider)
-    except Exception:
+    except ModuleNotFoundError:
         pass
+    else:
+        _init_mod._tracer_provider_ref = cast(object, tracer_provider)
 
     return tracer_provider
 
@@ -152,11 +195,7 @@ def _build_otlp_exporter() -> object | None:
 
     # Compression
     comp = os.getenv("QUANTUM_TRACE_OTLP_COMPRESSION", "").strip().lower()
-    if comp in {"gzip", "gz"}:
-        os.environ["OTEL_EXPORTER_OTLP_TRACES_COMPRESSION"] = "gzip"
-        os.environ.setdefault("OTEL_EXPORTER_OTLP_COMPRESSION", "gzip")
-    elif comp in {"", "none", "0", "false", "off"}:
-        os.environ.pop("OTEL_EXPORTER_OTLP_TRACES_COMPRESSION", None)
+    compression = "gzip" if comp in {"gzip", "gz"} else None
 
     if protocol == "grpc":
         if not _HAS_OTLP_GRPC:
@@ -167,6 +206,7 @@ def _build_otlp_exporter() -> object | None:
             headers=headers or None,
             timeout=timeout,
             insecure=insecure,
+            compression=compression,
         )
     # default http/protobuf
     if not _HAS_OTLP_HTTP:
@@ -177,4 +217,5 @@ def _build_otlp_exporter() -> object | None:
         ),
         headers=headers or None,
         timeout=timeout,
+        compression=compression,
     )

@@ -24,10 +24,11 @@ def fsync_dir(path: Path) -> None:
     Performs a fsync of the parent directory (POSIX).
     """
     try:
-        O_DIRECTORY = getattr(os, "O_DIRECTORY", None)
-        if O_DIRECTORY is None:  # Windows / FS sans O_DIRECTORY
+        o_directory = getattr(os, "O_DIRECTORY", None)
+        if o_directory is None:  # Windows / FS without O_DIRECTORY
             return
-        dir_fd = os.open(str(path), O_DIRECTORY)  # type: ignore[attr-defined]
+        flags = getattr(os, "O_RDONLY", 0) | o_directory
+        dir_fd = os.open(str(path), flags)
         try:
             os.fsync(dir_fd)
         finally:

@@ -1,37 +1,44 @@
+from typing import Final
+
 from prometheus_client import Counter, Gauge, Histogram
 
 _METRIC_PREFIX = "quantum_mt5_"
+_S: Final = (0.005, 0.01, 0.025, 0.05, 0.1, 0.2, 0.4, 0.8, 1.6, 3.2, 6.4)
 
+# ──────────────────────────────────────────────────────────────────────────────
 # Latencies
-order_check_latency_ms = Histogram(
-    f"{_METRIC_PREFIX}order_check_latency_ms",
-    "Latency of OrderCheck in ms",
-    buckets=(10, 25, 50, 100, 200, 400, 800, 1600, 3200),
+# ──────────────────────────────────────────────────────────────────────────────
+order_check_latency_seconds = Histogram(
+    f"{_METRIC_PREFIX}order_check_latency_seconds",
+    "Latency of OrderCheck in seconds",
+    buckets=_S,
 )
-order_send_latency_ms = Histogram(
-    f"{_METRIC_PREFIX}order_send_latency_ms",
-    "Latency of OrderSend in ms",
-    buckets=(10, 25, 50, 100, 200, 400, 800, 1600, 3200),
+order_send_latency_seconds = Histogram(
+    f"{_METRIC_PREFIX}order_send_latency_seconds",
+    "Latency of OrderSend in seconds",
+    buckets=_S,
 )
-time_to_fill_ms = Histogram(
-    f"{_METRIC_PREFIX}time_to_fill_ms",
-    "Time from submit to fill in ms",
-    buckets=(10, 25, 50, 100, 200, 400, 800, 1600, 3200, 6400),
+time_to_fill_seconds = Histogram(
+    f"{_METRIC_PREFIX}time_to_fill_seconds",
+    "Time from submit to fill in seconds",
+    buckets=_S + (12.8, 25.6),
 )
-intent_to_ack_ms = Histogram(
-    f"{_METRIC_PREFIX}intent_to_ack_ms",
-    "Time from intent emission to broker ACK in ms",
-    buckets=(10, 25, 50, 100, 200, 400, 800, 1600, 3200),
+intent_to_ack_seconds = Histogram(
+    f"{_METRIC_PREFIX}intent_to_ack_seconds",
+    "Time from intent emission to broker ACK in seconds",
+    buckets=_S + (12.8,),
 )
 
+# ──────────────────────────────────────────────────────────────────────────────
 # Execution quality
+# ──────────────────────────────────────────────────────────────────────────────
 requotes_total = Counter(
     f"{_METRIC_PREFIX}requotes_total", "Total requotes", ["symbol"]
 )
 order_reject_total = Counter(
     f"{_METRIC_PREFIX}order_reject_total",
-    "Total order rejects",
-    ["symbol", "error_code"],
+    "Total order rejects by exact error code (high-cardinality risk)",
+    ["error_code"],
 )
 order_reject_class_total = Counter(
     f"{_METRIC_PREFIX}order_reject_class_total",
@@ -48,19 +55,23 @@ slippage_points = Histogram(
     buckets=(0.1, 0.2, 0.5, 1, 2, 5, 10),
 )
 
+# ──────────────────────────────────────────────────────────────────────────────
 # Terminal health
+# ──────────────────────────────────────────────────────────────────────────────
 terminal_up = Gauge(f"{_METRIC_PREFIX}terminal_up", "Terminal health 0/1")
 account_free_margin = Gauge(f"{_METRIC_PREFIX}account_free_margin", "Free margin")
 connection_status = Gauge(
     f"{_METRIC_PREFIX}connection_status", "Connection: 0=down,1=up,2=degraded"
 )
-tick_staleness_ms = Histogram(
-    f"{_METRIC_PREFIX}tick_staleness_ms",
-    "Market data staleness in ms",
-    buckets=(100, 250, 500, 1000, 1500, 2000, 3000, 5000),
+tick_staleness_seconds = Histogram(
+    f"{_METRIC_PREFIX}tick_staleness_seconds",
+    "Market data staleness in seconds",
+    buckets=(0.1, 0.25, 0.5, 1.0, 1.5, 2.0, 3.0, 5.0),
 )
 
+# ──────────────────────────────────────────────────────────────────────────────
 # Flow
+# ──────────────────────────────────────────────────────────────────────────────
 intents_total = Counter(f"{_METRIC_PREFIX}intents_total", "Total trade intents")
 orders_total = Counter(
     f"{_METRIC_PREFIX}orders_total", "Total orders", ["type"]

@@ -67,7 +67,9 @@ tree: ## Print repo tree into docs/architecture/tree.txt
 	@echo Done. Output: docs/architecture/tree.txt
 
 
-# --- Observability smoke/self-test commands ---
+# ──────────────────────────────────────────────────────────────────────────────
+# Observability smoke/self-test commands
+# ──────────────────────────────────────────────────────────────────────────────
 
 obs-smoke: ## Run observability smoke test (console exporter)
 	@set PYTHONPATH=src;. && poetry run python scripts/obs_smoke.py

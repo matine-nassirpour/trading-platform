@@ -1,22 +1,65 @@
 import os
+import re
+from typing import Final
 
-AUDIT_EVENT_WHITELIST_V1 = {
-    "order_submit_v1",
-    "order_ack_v1",
-    "order_fill_v1",
-    "order_reject_v1",
-    "killswitch_trigger_v1",
-    "reconciliation_v1",
-}
+_AUDIT_EVENT_BASELINE_V1: Final = frozenset(
+    {
+        "order_submit",
+        "order_ack",
+        "order_fill",
+        "order_reject",
+        "killswitch_trigger",
+        "reconciliation",
+    }
+)
+
+_SAFE: Final = re.compile(r"^[a-z0-9_]+$")  # strict snake_case, low cardinality
 
 
-def get_audit_whitelist(version: str | None = None) -> set[str]:
+def _normalize(name: str) -> str:
+    return name.strip().lower()
+
+
+def _validate(name: str) -> None:
+    if not _SAFE.match(name):
+        raise ValueError(f"Invalid audit event name: {name!r}")
+
+
+def get_audit_allowlist(version: str | None = None) -> set[str]:
     """
-    Returns the whitelist by version, extended by QUANTUM_AUDIT_EVENTS (csv).
+    Returns the allowlist of *bare* event names (no version suffix),
+    merged with QUANTUM_AUDIT_EVENTS (CSV). Version defaults to
+    QUANTUM_AUDIT_EVENTS_VERSION or "v1".
     """
-    baseline = (
-        AUDIT_EVENT_WHITELIST_V1 if (version is None or version == "v1") else set()
-    )
+    env_version = os.getenv("QUANTUM_AUDIT_EVENTS_VERSION", "v1").strip().lower()
+    ver = version or env_version
+    if ver != "v1":
+        # Future-proof: unknown versions return empty baseline.
+        baseline = set()
+    else:
+        baseline = set(_AUDIT_EVENT_BASELINE_V1)
+
     extra_csv = os.getenv("QUANTUM_AUDIT_EVENTS", "").strip()
-    extras = {x.strip() for x in extra_csv.split(",")} if extra_csv else set()
-    return set(baseline) | {e for e in extras if e}
+    extras = set()
+    if extra_csv:
+        for raw in extra_csv.split(","):
+            n = _normalize(raw)
+            if n:
+                _validate(n)
+                extras.add(n)
+
+    return baseline | extras
+
+
+def is_audit_event(event_name: str, version: str | None = None) -> bool:
+    """
+    Accepts both "bare" (e.g., 'order_submit') and suffixed (e.g., 'order_submit_v1').
+    """
+    n = _normalize(event_name)
+    if n.endswith("_v1"):
+        n = n[:-3]
+    try:
+        _validate(n)
+    except ValueError:
+        return False
+    return n in get_audit_allowlist(version)

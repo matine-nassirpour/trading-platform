@@ -4,7 +4,7 @@ from contextlib import contextmanager
 
 # ContextVar globally accessible (thread-safe, async-safe)
 correlation_id_ctx: contextvars.ContextVar[str | None] = contextvars.ContextVar(
-    "correlation_id", default=None
+    "quantum.correlation_id", default=None
 )
 
 
@@ -13,6 +13,11 @@ def get_correlation_id() -> str | None:
 
 
 def set_correlation_id(value: str | None) -> None:
+    if value is not None:
+        try:
+            uuid.UUID(value)
+        except Exception:
+            raise ValueError("correlation_id must be a valid UUID")
     correlation_id_ctx.set(value)
 
 

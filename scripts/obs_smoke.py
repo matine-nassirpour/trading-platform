@@ -8,11 +8,6 @@ Observability smoke test (E2E runtime)
 - Checks redaction and presence of key fields
 - Checks for a valid audit file
 - (Optional) Checks the /metrics endpoint
-
-Usage:
-python scripts/obs_smoke.py
-python scripts/obs_smoke.py --with-http-metrics
-python scripts/obs_smoke.py --exporter otlp --protocol http --endpoint http://127.0.0.1:4318
 """
 
 import argparse
@@ -23,7 +18,9 @@ import socket
 import sys
 import tempfile
 import time
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any, SupportsFloat, SupportsIndex, cast
 
 from opentelemetry import trace
 
@@ -41,35 +38,14 @@ from quantum.shared.correlation.correlation_id import (
     new_correlation_id,
 )
 
+NumberLike = float | int | str | bytes  # acceptable for float()
+Floatable = SupportsFloat | SupportsIndex | str | bytes | bytearray | memoryview
+
 
 def _free_port() -> int:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind(("127.0.0.1", 0))
         return s.getsockname()[1]
-
-
-def _read_last_jsonl_line(p: Path) -> dict | None:
-    """
-    Reads the LAST JSON line of a .jsonl (tail), robust even for large files.
-    """
-    try:
-        with open(p, "rb") as f:
-            f.seek(0, os.SEEK_END)
-            size = f.tell()
-            if size == 0:
-                return None
-            f.seek(max(0, size - 65536), os.SEEK_SET)
-            data = f.read().decode("utf-8", "replace").splitlines()
-            for line in reversed(data):
-                line = line.strip()
-                if line:
-                    try:
-                        return json.loads(line)
-                    except Exception:
-                        continue
-    except Exception:
-        return None
-    return None
 
 
 def _latest_matching(root: Path, pattern: str) -> Path | None:
@@ -96,21 +72,38 @@ def _any_matching(root: Path, pattern: str) -> Path | None:
     return None
 
 
-def _gauge_value(g) -> float:
+def _gauge_value(g: Any) -> float:
     """
-    Returns the value of a prometheus_client (best-effort) Gauge.
+    Returns the value of a prometheus_client Gauge.
     """
+    maybe_get = getattr(getattr(g, "_value", None), "get", None)
+    if not callable(maybe_get):
+        return -1.0
+
+    get_value = cast(Callable[[], NumberLike], maybe_get)
     try:
-        return float(g._value.get())  # type: ignore[attr-defined]
-    except Exception:
+        return float(get_value())
+    except (TypeError, ValueError, OverflowError, RuntimeError):
         return -1.0
 
 
-def _counter_value(c) -> float:
+def _counter_value(c: Any) -> float:
     """Returns the value of a prometheus_client Counter."""
+    maybe_get = getattr(getattr(c, "_value", None), "get", None)
+    if not callable(maybe_get):
+        return -1.0
+
+    get_value = cast(Callable[[], Floatable], maybe_get)
     try:
-        return float(c._value.get())  # type: ignore[attr-defined]
-    except Exception:
+        return float(get_value())
+    except (
+        AttributeError,
+        TypeError,
+        ValueError,
+        RuntimeError,
+        KeyError,
+        OverflowError,
+    ):
         return -1.0
 
 
@@ -150,7 +143,7 @@ def main() -> None:
     )
     args = ap.parse_args()
 
-    LABEL = _label_from_filename()
+    label = _label_from_filename()
 
     # Isolated space for this test
     with tempfile.TemporaryDirectory(prefix="quantum_obs_") as tmpd:
@@ -211,6 +204,15 @@ def main() -> None:
                 refresh_baggage_from_context()
                 with tracer.start_as_current_span("selftest.span") as sp:
                     sp.set_attribute("probe", True)
+                    # assert contextual enrichment (at least present on the SDK side)
+                    attrs = getattr(sp, "attributes", None)
+                    if isinstance(attrs, dict):
+                        if "quantum.run_id" not in attrs:
+                            errs.append("span missing attribute quantum.run_id")
+                            if "quantum.correlation_id" not in attrs:
+                                errs.append(
+                                    "span missing attribute quantum.correlation_id"
+                                )
 
                     # departure log with secret to write
                     log.info(
@@ -275,8 +277,8 @@ def main() -> None:
                         for line in f:
                             try:
                                 js = json.loads(line)
-                            except Exception:
-                                continue
+                            except json.JSONDecodeError:
+                                continue  # skip invalid JSON lines
                             if js.get("message") == "selftest start":
                                 found_selftest = js
                                 break
@@ -313,7 +315,7 @@ def main() -> None:
                     for line in f:
                         try:
                             js = json.loads(line)
-                        except Exception:
+                        except json.JSONDecodeError:
                             continue
                         if (
                             js.get("message") == "inside span"
@@ -341,7 +343,7 @@ def main() -> None:
                     js = json.loads(audit_any.read_text(encoding="utf-8"))
                     if js.get("event_name") != "order_submit_v1":
                         errs.append("invalid audit file (event_name)")
-                except Exception:
+                except json.JSONDecodeError:
                     errs.append("unreadable/invalid audit file")
 
             # (Option) ping /metrics
@@ -379,7 +381,7 @@ def main() -> None:
 
         # Result
         if errs:
-            print(f"{LABEL}: FAIL")
+            print(f"{label}: FAIL")
             for e in errs:
                 print(" -", e)
             # show locations for manual inspection
@@ -387,7 +389,7 @@ def main() -> None:
             print(f"audit:  {audit_dir}")
             sys.exit(1)
 
-        print(f"{LABEL}: OK")
+        print(f"{label}: OK")
         print(f"logs:   {log_dir}")
         print(f"audit:  {audit_dir}")
 
