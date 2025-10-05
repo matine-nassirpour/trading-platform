@@ -18,6 +18,7 @@ from quantum.infrastructure.observability.metrics.health import (
     pipeline_metrics_http_ok,
     pipeline_tracing_ok,
     pipeline_up,
+    refresh_build_info_from_env,
 )
 from quantum.infrastructure.observability.tracing.propagation import setup_propagation
 from quantum.infrastructure.observability.tracing.traces import (
@@ -113,6 +114,9 @@ def init_observability(
         pipeline_metrics_http_ok.set(0)
 
         load_env()  # does not overwrite existing env by default
+        with suppress(ValueError, RuntimeError, AttributeError, NameError):
+            refresh_build_info_from_env()
+
         if not get_run_id():
             generate_run_id()
 
@@ -171,7 +175,8 @@ def init_observability(
                     namespace=namespace,
                     exporter=exporter,
                     sample_ratio=sample_ratio,
-                )
+                ),
+                replace_existing=force,
             )
             setup_propagation()
             otel_tracing_up.set(1)

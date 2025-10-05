@@ -31,7 +31,7 @@ from quantum.infrastructure.observability.init_observability import (
 from quantum.infrastructure.observability.logging.event_emitter import emit_event
 from quantum.infrastructure.observability.metrics import health as m
 from quantum.infrastructure.observability.tracing.propagation import (
-    refresh_baggage_from_context,
+    baggage_context_from_ids,
 )
 from quantum.shared.correlation.correlation_id import (
     correlation_context,
@@ -201,49 +201,49 @@ def main() -> None:
 
         try:
             with correlation_context(new_correlation_id()):
-                refresh_baggage_from_context()
-                with tracer.start_as_current_span("selftest.span") as sp:
-                    sp.set_attribute("probe", True)
-                    # assert contextual enrichment (at least present on the SDK side)
-                    attrs = getattr(sp, "attributes", None)
-                    if isinstance(attrs, dict):
-                        if "quantum.run_id" not in attrs:
-                            errs.append("span missing attribute quantum.run_id")
-                            if "quantum.correlation_id" not in attrs:
-                                errs.append(
-                                    "span missing attribute quantum.correlation_id"
-                                )
+                with baggage_context_from_ids():
+                    with tracer.start_as_current_span("selftest.span") as sp:
+                        sp.set_attribute("probe", True)
+                        # assert contextual enrichment (at least present on the SDK side)
+                        attrs = getattr(sp, "attributes", None)
+                        if isinstance(attrs, dict):
+                            if "quantum.run_id" not in attrs:
+                                errs.append("span missing attribute quantum.run_id")
+                                if "quantum.correlation_id" not in attrs:
+                                    errs.append(
+                                        "span missing attribute quantum.correlation_id"
+                                    )
 
-                    # departure log with secret to write
-                    log.info(
-                        "selftest start",
-                        extra={
-                            "attrs": {
-                                "probe": "ok",
-                                "secret": "thisisafakesecret",  # pragma: allowlist secret
+                        # departure log with secret to write
+                        log.info(
+                            "selftest start",
+                            extra={
+                                "attrs": {
+                                    "probe": "ok",
+                                    "secret": "thisisafakesecret",  # pragma: allowlist secret
+                                }
+                            },
+                        )
+                        log.info("inside span", extra={"attrs": {"in_span": True}})
+
+                        # audit event (whitelisted)
+                        emit_event(
+                            {
+                                "event_name": "order_submit_v1",
+                                "event_version": "v1",
+                                "order_id": "st-1",
+                                "symbol": "EURUSD",
+                                "side": "buy",
+                                "qty": 1.0,
+                                "price": 1.23456,
+                                "ts": int(time.time() * 1000),
                             }
-                        },
-                    )
-                    log.info("inside span", extra={"attrs": {"in_span": True}})
+                        )
 
-                    # audit event (whitelisted)
-                    emit_event(
-                        {
-                            "event_name": "order_submit_v1",
-                            "event_version": "v1",
-                            "order_id": "st-1",
-                            "symbol": "EURUSD",
-                            "side": "buy",
-                            "qty": 1.0,
-                            "price": 1.23456,
-                            "ts": int(time.time() * 1000),
-                        }
-                    )
-
-                    # flood ~3KB to trigger rollover .part1
-                    payload = "X" * 256
-                    for i in range(40):
-                        log.info(f"fill {i} {payload}")
+                        # flood ~3KB to trigger rollover .part1
+                        payload = "X" * 256
+                        for i in range(40):
+                            log.info(f"fill {i} {payload}")
 
             # Asserts: in-memory metrics
             if _gauge_value(m.pipeline_up) != 1.0:

@@ -69,6 +69,6 @@ class AuditEventFileHandler(logging.Handler):
             fsync_dir(path.parent)  # ensure directory entry is durable
         except (OSError, TypeError, ValueError):
             inc_disk_error_counter()
-            # Best-effort cleanup of tmp file
+            # cleanup of tmp file
             safe_unlink(tmp_path)
             self.handleError(record)

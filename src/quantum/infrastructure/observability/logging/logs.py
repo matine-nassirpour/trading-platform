@@ -142,3 +142,9 @@ def init_logging(cfg: LoggingConfig) -> None:
         root_logger.addHandler(h)
 
     root_logger.propagate = False
+
+    # Route Python warnings → logging (console JSON)
+    try:
+        logging.captureWarnings(True)
+    except (AttributeError, RuntimeError):
+        pass

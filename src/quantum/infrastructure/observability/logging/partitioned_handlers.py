@@ -12,12 +12,11 @@ from quantum.infrastructure.observability.logging._io_utils import (
 )
 from quantum.shared.time.naming import partition_path_components
 
-# Best-effort
 try:
     from quantum.infrastructure.observability.metrics.health import (
         logging_file_rotations_total,
     )
-except ModuleNotFoundError:
+except (ModuleNotFoundError, ImportError):
     logging_file_rotations_total = None
 
 
@@ -218,6 +217,7 @@ class PartitionedJSONLFileHandler(logging.Handler):
         self._current_path = path
         self._bad_path = bad_path
         fsync_dir(path.parent)
+        self._warned_this_part = False
 
     def close(self) -> None:
         self.acquire()

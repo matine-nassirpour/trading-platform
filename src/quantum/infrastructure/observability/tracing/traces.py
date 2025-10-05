@@ -73,10 +73,12 @@ class _ContextEnricherProcessor(_SpanProcessor):
         pass
 
 
-def init_tracing(cfg: TracingConfig) -> TracerProviderInterface:
+def init_tracing(
+    cfg: TracingConfig, *, replace_existing: bool = False
+) -> TracerProviderInterface:
     # Idempotence: If a provider SDK is already in place, do not reset.
     existing = get_tracer_provider()
-    if isinstance(existing, TracerProvider):
+    if isinstance(existing, TracerProvider) and not replace_existing:
         return cast(TracerProviderInterface, existing)
 
     # Borne le sample ratio dans [0..1]
@@ -137,7 +139,7 @@ def init_tracing(cfg: TracingConfig) -> TracerProviderInterface:
 
     setattr(tracer_provider, "_active_exporter", active_exporter is not None)
 
-    # Best-effort: expose health metric if available (no hard dep)
+    # expose health metric if available (no hard dep)
     try:
         from quantum.infrastructure.observability.metrics.health import (
             tracer_exporter_active,

@@ -102,6 +102,13 @@ class JsonFormatter(logging.Formatter):
             attrs[k] = v
         attrs = _json_sanitize(attrs)
 
+        exception_text = None
+        if record.exc_info:
+            try:
+                exception_text = self.formatException(record.exc_info)
+            except Exception:
+                exception_text = "exception formatting failed"
+
         overrides = {
             # timestamps
             "timestamp": from_unix_s_to_rfc3339_ms(record.created),
@@ -121,23 +128,40 @@ class JsonFormatter(logging.Formatter):
             "run_id": get_run_id(),
             # attrs
             "attrs": attrs,
+            # exception
+            "exception": exception_text,
         }
 
         try:
-            # Centralise : severity_number + exception structuré
+            # Centralize: severity_number + structured exception
             model: LogPayloadV1 = from_log_record(record, **overrides)
             return model.to_clean_json()
         except ValidationError as e:
-            # Minimal but safe JSON fallback
+            # OTel normalization (WARN/FATAL) + severity number
+            _sev_map = {
+                logging.NOTSET: ("TRACE", 1),
+                logging.DEBUG: ("DEBUG", 5),
+                logging.INFO: ("INFO", 9),
+                logging.WARNING: ("WARN", 13),
+                logging.ERROR: ("ERROR", 17),
+                logging.CRITICAL: ("FATAL", 21),
+            }
+            sev_text, sev_num = _sev_map.get(record.levelno, ("INFO", 9))
+
+            # Safe JSON fallback
             payload_dict = {
                 "timestamp": overrides["timestamp"],
                 "ts_unix_ms": ts_unix_ms,
                 "ts_monotonic_ms": ts_mono_ms,
-                "level": record.levelname,
+                "level": sev_text,
+                "severity_number": sev_num,
                 "logger": record.name,
                 "message": record.getMessage(),
                 "env": overrides["env"],
                 "instance": INSTANCE_ID,
+                "service_name": overrides["service_name"],
+                "service_version": overrides["service_version"],
+                "service_namespace": overrides["service_namespace"],
                 "trace_id": trace_id,
                 "span_id": span_id,
                 "sampled": is_sampled,

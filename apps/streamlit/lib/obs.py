@@ -9,7 +9,7 @@ from opentelemetry.trace import get_current_span
 from prometheus_client import Counter, Histogram
 
 from quantum.infrastructure.observability.tracing.propagation import (
-    refresh_baggage_from_context,
+    baggage_context_from_ids,
 )
 from quantum.shared.correlation.correlation_id import (
     correlation_context,
@@ -56,28 +56,33 @@ def ui_action(name: str) -> Callable[[Callable[P, R]], Callable[P, R]]:
             cid = new_correlation_id()
             start = time.monotonic_ns()
             with correlation_context(cid):
-                refresh_baggage_from_context()
-                with _TRACER.start_as_current_span(f"ui.action.{name}"):
-                    try:
-                        return fn(*args, **kwargs)
-                    finally:
-                        dur_ms = (time.monotonic_ns() - start) // 1_000_000
-                        dur_s = dur_ms / 1000.0
-                        ui_actions_total.labels(name).inc()
-                        ex = _current_exemplar()
-                        if ex:
-                            try:
-                                ui_action_latency_seconds.labels(name).observe(
-                                    dur_s, exemplar=ex
-                                )
-                            except TypeError:
-                                ui_action_latency_seconds.labels(name).observe(dur_s)
-                        logging.getLogger("quantum.ui").info(
-                            "ui action completed",
-                            extra={
-                                "attrs": {"ui.action": name, "ui.latency_ms": dur_ms}
-                            },
-                        )
+                with baggage_context_from_ids():
+                    with _TRACER.start_as_current_span(f"ui.action.{name}"):
+                        try:
+                            return fn(*args, **kwargs)
+                        finally:
+                            dur_ms = (time.monotonic_ns() - start) // 1_000_000
+                            dur_s = dur_ms / 1000.0
+                            ui_actions_total.labels(name).inc()
+                            ex = _current_exemplar()
+                            if ex:
+                                try:
+                                    ui_action_latency_seconds.labels(name).observe(
+                                        dur_s, exemplar=ex
+                                    )
+                                except TypeError:
+                                    ui_action_latency_seconds.labels(name).observe(
+                                        dur_s
+                                    )
+                            logging.getLogger("quantum.ui").info(
+                                "ui action completed",
+                                extra={
+                                    "attrs": {
+                                        "ui.action": name,
+                                        "ui.latency_ms": dur_ms,
+                                    }
+                                },
+                            )
 
         return _inner
 
@@ -91,7 +96,8 @@ class PageTimer:
         cid = new_correlation_id()
         self._corr_ctx = correlation_context(cid)
         self._corr_ctx.__enter__()
-        refresh_baggage_from_context()
+        self._baggage_cm = baggage_context_from_ids()
+        self._baggage_cm.__enter__()
         self._span_cm = _TRACER.start_as_current_span("ui.page.render")
         self._span = self._span_cm.__enter__()
         return self
@@ -110,4 +116,5 @@ class PageTimer:
             "ui page rendered", extra={"attrs": {"ui.render_ms": dur_ms}}
         )
         self._span_cm.__exit__(exc_type, exc, tb)
+        self._baggage_cm.__exit__(exc_type, exc, tb)
         self._corr_ctx.__exit__(exc_type, exc, tb)

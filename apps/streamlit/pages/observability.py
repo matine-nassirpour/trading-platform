@@ -373,24 +373,24 @@ def render_logging_counters() -> None:
 
 
 def render_ui_latency_histograms() -> None:
-    q_ui_action = _histogram_quantiles("quantum_ui_action_latency_ms")
-    q_ui_render = _histogram_quantiles("quantum_ui_page_render_ms")
+    q_ui_action_s = _histogram_quantiles("quantum_ui_action_latency_seconds")
+    q_ui_render_s = _histogram_quantiles("quantum_ui_page_render_seconds")
 
     c1, c2 = st.columns(2)
     with c1:
-        st.subheader("UI Action Latency (ms)")
+        st.subheader("UI Action Latency (seconds)")
         st.write(
             {
                 k: (round(v, 2) if v is not None else None)
-                for k, v in q_ui_action.items()
+                for k, v in q_ui_action_s.items()
             }
         )
     with c2:
-        st.subheader("UI Page Render (ms)")
+        st.subheader("UI Page Render (seconds)")
         st.write(
             {
                 k: (round(v, 2) if v is not None else None)
-                for k, v in q_ui_render.items()
+                for k, v in q_ui_render_s.items()
             }
         )
     st.divider()

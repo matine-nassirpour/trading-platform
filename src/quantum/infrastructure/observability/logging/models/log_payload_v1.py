@@ -62,6 +62,8 @@ class LogPayloadV1(BaseModel):
         vv = (v or "").upper()
         if vv in ("WARNING",):  # normalize to WARN (OTel)
             return "WARN"
+        if vv == "CRITICAL":  # normalize to FATAL (OTel)
+            return "FATAL"
         if vv not in {"TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"}:
             raise ValueError(f"Invalid level: {v!r}")
         return vv

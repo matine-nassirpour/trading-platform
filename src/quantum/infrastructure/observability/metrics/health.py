@@ -6,14 +6,21 @@ from prometheus_client import Counter, Gauge, Info
 # Service / Build metadata (static, exported once)
 # ──────────────────────────────────────────────────────────────────────────────
 build_info = Info("quantum_build", "Build/Service info")
-build_info.info(
-    {
-        "service_name": os.getenv("QUANTUM_APP_NAME", "unknown"),
-        "service_version": os.getenv("QUANTUM_APP_VERSION", "0.0.0"),
-        "service_namespace": os.getenv("QUANTUM_NS", "quantum"),
-        "env": os.getenv("QUANTUM_ENV", "dev"),
-    }
-)
+
+
+def refresh_build_info_from_env() -> None:
+    build_info.info(
+        {
+            "service_name": os.getenv("QUANTUM_APP_NAME", "unknown"),
+            "service_version": os.getenv("QUANTUM_APP_VERSION", "0.0.0"),
+            "service_namespace": os.getenv("QUANTUM_NS", "quantum"),
+            "env": os.getenv("QUANTUM_ENV", "dev"),
+        }
+    )
+
+
+# will be refreshed after load_env()
+refresh_build_info_from_env()
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Pipeline health (overall & per pillar)

@@ -4,7 +4,7 @@ from typing import cast
 from .log_payload_v1 import LogPayloadV1, SeverityText
 
 _PY_TO_OTEL = {
-    5: ("TRACE", 1),  # logging.NOTSET ~ TRACE-ish if you use it
+    0: ("TRACE", 1),  # logging.NOTSET
     10: ("DEBUG", 5),
     20: ("INFO", 9),
     30: ("WARN", 13),
@@ -16,15 +16,7 @@ _PY_TO_OTEL = {
 def from_log_record(record: LogRecord, **overrides) -> LogPayloadV1:
     sev_text, sev_num = _PY_TO_OTEL.get(record.levelno, ("INFO", 9))
     sev_text = cast(SeverityText, sev_text)
-    exc = None
-    if record.exc_info:
-        etype = record.exc_info[0].__name__ if record.exc_info[0] else None
-        # message & stack are often long; leave to handler to truncate if needed
-        exc = {
-            "type": etype,
-            "message": record.getMessage(),
-            "stacktrace": record.exc_text,
-        }
+    extra_attrs = dict(overrides.get("attrs", {}))
 
     payload = LogPayloadV1(
         timestamp=overrides.get("timestamp"),
@@ -44,9 +36,9 @@ def from_log_record(record: LogRecord, **overrides) -> LogPayloadV1:
         sampled=overrides.get("sampled"),
         correlation_id=overrides.get("correlation_id"),
         run_id=overrides.get("run_id"),
-        exception=exc,
+        exception=overrides.get("exception"),
         schema_name="quantum.log",
         log_schema_version="v1",
-        attrs=overrides.get("attrs", {}),
+        attrs=extra_attrs,
     )
     return payload

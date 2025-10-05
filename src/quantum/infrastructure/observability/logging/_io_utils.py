@@ -34,7 +34,6 @@ def fsync_dir(path: Path) -> None:
         finally:
             os.close(dir_fd)
     except (OSError, AttributeError):
-        # Best-effort only
         pass
 
 

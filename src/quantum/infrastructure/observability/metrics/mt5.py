@@ -3,7 +3,7 @@ from typing import Final
 from prometheus_client import Counter, Gauge, Histogram
 
 _METRIC_PREFIX = "quantum_mt5_"
-_S: Final = (0.005, 0.01, 0.025, 0.05, 0.1, 0.2, 0.4, 0.8, 1.6, 3.2, 6.4)
+_S: Final = (0.002, 0.005, 0.01, 0.025, 0.05, 0.1, 0.2, 0.4, 0.8, 1.6, 3.2, 6.4)
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Latencies

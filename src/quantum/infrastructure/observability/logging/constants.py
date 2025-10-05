@@ -44,6 +44,9 @@ def get_audit_allowlist(version: str | None = None) -> set[str]:
     if extra_csv:
         for raw in extra_csv.split(","):
             n = _normalize(raw)
+            # strip optional _v<digits> suffix
+            if n.endswith("_v1") or n.endswith("_v2") or n.endswith("_v3"):
+                n = re.sub(r"_v\d+$", "", n)
             if n:
                 _validate(n)
                 extras.add(n)

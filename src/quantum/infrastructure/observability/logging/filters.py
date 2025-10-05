@@ -113,8 +113,16 @@ class RedactFilter(logging.Filter):
             if after_len < before_len:
                 logging_redactions_total.inc()
         msg = getattr(record, "msg", None)
-        if isinstance(msg, str) and len(msg) > self.MAX_VALUE_LEN:
-            record.msg = msg[: self.MAX_VALUE_LEN] + "…"
+        if isinstance(msg, str):
+            # Redaction by regex (JWT, long hexes)
+            redacted = self._JWT_RE.sub("[REDACTED]", msg)
+            redacted = self._HEX32_RE.sub("[REDACTED]", redacted)
+
+            # Possible truncation
+            if len(redacted) > self.MAX_VALUE_LEN:
+                redacted = redacted[: self.MAX_VALUE_LEN] + "…"
+            record.msg = redacted
+
         return True
 
 
