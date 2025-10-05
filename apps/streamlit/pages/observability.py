@@ -30,7 +30,7 @@ TZMode = Literal["utc", "local"]
 LEVEL_EMOJI: Mapping[str, str] = {
     "DEBUG": "🐛",
     "INFO": "ℹ️",
-    "WARNING": "⚠️",
+    "WARN": "⚠️",
     "ERROR": "❌",
     "CRITICAL": "🛑",
 }
