@@ -1,4 +1,5 @@
 import atexit
+import logging
 import os
 import socket
 from typing import Literal, cast
@@ -22,6 +23,7 @@ from opentelemetry.trace import Span
 from opentelemetry.trace import TracerProvider as TracerProviderInterface
 from opentelemetry.trace import get_tracer_provider, set_tracer_provider
 
+from quantum.shared.config.env_flags import get_bool
 from quantum.shared.context.run_id import get_run_id
 from quantum.shared.correlation.correlation_id import get_correlation_id
 
@@ -44,6 +46,9 @@ except ImportError:
     _HAS_OTLP_GRPC = False
 
 
+logger = logging.getLogger(__name__)
+
+
 class TracingConfig:
     def __init__(
         self,
@@ -58,6 +63,17 @@ class TracingConfig:
         self.namespace = namespace
         self.exporter = exporter
         self.sample_ratio = sample_ratio
+
+
+def _resolve_instance_id() -> str:
+    """
+    Stable instance ID for OTel Resource:
+
+    - QUANTUM_SERVICE_INSTANCE_ID if defined (source of truth)
+    - hostname as a reasonable fallback
+    """
+    iid = os.getenv("QUANTUM_SERVICE_INSTANCE_ID", "").strip()
+    return iid or socket.gethostname()
 
 
 class _ContextEnricherProcessor(_SpanProcessor):
@@ -89,7 +105,7 @@ def init_tracing(
             SERVICE_NAME: cfg.service_name,
             SERVICE_NAMESPACE: cfg.namespace,
             DEPLOYMENT_ENVIRONMENT: cfg.environment,
-            SERVICE_INSTANCE_ID: socket.gethostname(),
+            SERVICE_INSTANCE_ID: _resolve_instance_id(),
             SERVICE_VERSION: os.getenv("QUANTUM_APP_VERSION", "0.0.0"),
         }
     )
@@ -107,6 +123,7 @@ def init_tracing(
 
     tracer_provider.add_span_processor(_ContextEnricherProcessor())
 
+    # Console exporter
     if cfg.exporter == "console":
         tracer_provider.add_span_processor(
             BatchSpanProcessor(
@@ -117,9 +134,10 @@ def init_tracing(
             )
         )
 
+    # OTLP exporter
     active_exporter = None
     if cfg.exporter == "otlp":
-        exporter = _build_otlp_exporter()
+        exporter, inactive_reason = _build_otlp_exporter_with_reason()
         if exporter is not None:
             tracer_provider.add_span_processor(
                 BatchSpanProcessor(
@@ -130,13 +148,12 @@ def init_tracing(
                 )
             )
             active_exporter = exporter
+            _log_exporter_status(active=True)
         else:
-            # Soft fallback: If OTLP is unavailable (package not installed/endpoint down),
-            # Init doesn't fail; no explicit export is required.
-            pass
+            _log_exporter_status(active=False, reason=inactive_reason)
 
     set_tracer_provider(tracer_provider)
-
+    # Expose an internal flag for init_observability (read without cross-import)
     setattr(tracer_provider, "_active_exporter", active_exporter is not None)
 
     # expose health metric if available (no hard dep)
@@ -165,16 +182,15 @@ def init_tracing(
     return tracer_provider
 
 
-def _build_otlp_exporter() -> object | None:
+def _build_otlp_exporter_with_reason() -> tuple[object | None, str | None]:
     """
-    Builds a best-effort OTLP exporter (HTTP or gRPC).
+    Constructs an OTLP HTTP or gRPC exporter.
+    Returns (exporter, reason) where reason is a short string if inactive.
 
-    Supported variables (all optional):
-    - QUANTUM_TRACE_OTLP_PROTOCOL: "http" (default) or "grpc"
-    - QUANTUM_TRACE_OTLP_ENDPOINT: e.g., "http://127.0.0.1:4318" (HTTP) or "127.0.0.1:4317" (gRPC)
-    - QUANTUM_TRACE_OTLP_HEADERS: "k1=v1,k2=v2"
-    - QUANTUM_TRACE_OTLP_TIMEOUT_MS: e.g., "10000"
-    - QUANTUM_TRACE_OTLP_COMPRESSION: "gzip" | "none"
+    Possible reasons (indicative, not exhaustive):
+    - "otlp_http_package_missing"
+    - "otlp_grpc_package_missing"
+    - "unsupported_protocol"
     """
     protocol = os.getenv("QUANTUM_TRACE_OTLP_PROTOCOL", "http").strip().lower()
     endpoint = os.getenv("QUANTUM_TRACE_OTLP_ENDPOINT", "").strip() or (
@@ -195,29 +211,71 @@ def _build_otlp_exporter() -> object | None:
     except ValueError:
         timeout = None
 
-    # Compression
     comp = os.getenv("QUANTUM_TRACE_OTLP_COMPRESSION", "").strip().lower()
     compression = "gzip" if comp in {"gzip", "gz"} else None
 
     if protocol == "grpc":
         if not _HAS_OTLP_GRPC:
-            return None
-        insecure = os.getenv("QUANTUM_TRACE_OTLP_INSECURE", "1").strip() == "1"
-        return OTLPGRPCExporter(
+            return None, "otlp_grpc_package_missing"
+        insecure = get_bool("QUANTUM_TRACE_OTLP_INSECURE", default=True)
+        exp = OTLPGRPCExporter(
             endpoint=endpoint,
             headers=headers or None,
             timeout=timeout,
             insecure=insecure,
             compression=compression,
         )
-    # default http/protobuf
-    if not _HAS_OTLP_HTTP:
-        return None
-    return OTLPHTTPExporter(
-        endpoint=(
-            endpoint + "/v1/traces" if not endpoint.endswith("/v1/traces") else endpoint
-        ),
-        headers=headers or None,
-        timeout=timeout,
-        compression=compression,
+        return exp, None
+
+    if protocol == "http":
+        if not _HAS_OTLP_HTTP:
+            return None, "otlp_http_package_missing"
+        exp = OTLPHTTPExporter(
+            endpoint=(
+                endpoint + "/v1/traces"
+                if not endpoint.endswith("/v1/traces")
+                else endpoint
+            ),
+            headers=headers or None,
+            timeout=timeout,
+            compression=compression,
+        )
+        return exp, None
+
+    return None, "unsupported_protocol"
+
+
+def _log_exporter_status(*, active: bool, reason: str | None = None) -> None:
+    """
+    Reporter the status of the OTLP export in a clear and non-verbal way (once at init).
+    No secrets leak (we only log the protocol, the endpoint and the list of header keys).
+    """
+    protocol = os.getenv("QUANTUM_TRACE_OTLP_PROTOCOL", "http").strip().lower()
+    endpoint = os.getenv("QUANTUM_TRACE_OTLP_ENDPOINT", "").strip() or (
+        "http://127.0.0.1:4318" if protocol == "http" else "127.0.0.1:4317"
     )
+    comp = os.getenv("QUANTUM_TRACE_OTLP_COMPRESSION", "").strip().lower() or "none"
+    headers_csv = os.getenv("QUANTUM_TRACE_OTLP_HEADERS", "").strip()
+    header_keys = []
+    if headers_csv:
+        for kv in headers_csv.split(","):
+            if "=" in kv:
+                k, _ = kv.split("=", 1)
+                header_keys.append(k.strip())
+    insecure = get_bool("QUANTUM_TRACE_OTLP_INSECURE", default=True)
+
+    base = {
+        "exporter": "otlp",
+        "protocol": protocol,
+        "endpoint": endpoint,
+        "compression": comp,
+        "insecure": insecure if protocol == "grpc" else None,
+        "header_keys": header_keys or None,
+    }
+
+    if active:
+        logger.info("OTLP exporter active", extra={"attrs": base})
+    else:
+        attrs = dict(base)
+        attrs["reason"] = reason or "unknown"
+        logger.warning("OTLP exporter configured but INACTIVE", extra={"attrs": attrs})

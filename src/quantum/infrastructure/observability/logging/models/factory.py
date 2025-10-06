@@ -36,9 +36,15 @@ def from_log_record(record: LogRecord, **overrides) -> LogPayloadV1:
         sampled=overrides.get("sampled"),
         correlation_id=overrides.get("correlation_id"),
         run_id=overrides.get("run_id"),
+        # exceptions (structured)
         exception=overrides.get("exception"),
+        exception_type=overrides.get("exception_type"),
+        exception_message=overrides.get("exception_message"),
+        exception_stacktrace=overrides.get("exception_stacktrace"),
+        # schema
         schema_name="quantum.log",
         log_schema_version="v1",
+        # attrs
         attrs=extra_attrs,
     )
     return payload

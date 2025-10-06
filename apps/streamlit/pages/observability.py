@@ -13,6 +13,7 @@ from opentelemetry import trace
 from prometheus_client import REGISTRY
 
 from quantum.infrastructure.observability.logging.event_emitter import emit_event
+from quantum.shared.config.env_flags import get_bool
 from quantum.shared.correlation.correlation_id import (
     correlation_context,
     new_correlation_id,
@@ -52,16 +53,6 @@ class PageConfig:
 
     @staticmethod
     def from_env(env: Mapping[str, str]) -> "PageConfig":
-        def _bool(var: str, default: bool = False) -> bool:
-            v = env.get(var, str(int(default))).strip().lower()
-            return v in {"1", "true", "yes", "on"}
-
-        def _int(var: str, default: int) -> int:
-            try:
-                return int(env.get(var, str(default)))
-            except (TypeError, ValueError):
-                return default
-
         log_dir_env = env.get("QUANTUM_LOG_DIR")
         log_dir = Path(log_dir_env) if log_dir_env else None
 
@@ -71,10 +62,16 @@ class PageConfig:
         tz = env.get("STREAMLIT_LOG_TZ", "utc").strip().lower()
         log_tz_mode: TZMode = "local" if tz == "local" else "utc"
 
+        def _int(var: str, default: int) -> int:
+            try:
+                return int(env.get(var, str(default)))
+            except (TypeError, ValueError):
+                return default
+
         return PageConfig(
             log_dir=log_dir,
             log_renderer=log_renderer,
-            log_expanded=_bool("STREAMLIT_LOG_EXPANDED", False),
+            log_expanded=get_bool("STREAMLIT_LOG_EXPANDED", default=False, env=env),
             log_chunk_bytes=_int("STREAMLIT_LOG_CHUNK_BYTES", 256_000),
             log_tail_max_lines=_int("STREAMLIT_LOG_TAIL_MAX_LINES", 100),
             log_glob=env.get("STREAMLIT_LOG_GLOB", "events-*.jsonl"),

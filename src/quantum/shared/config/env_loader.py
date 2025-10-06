@@ -1,5 +1,6 @@
 import logging
 import os
+import threading
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Final
@@ -11,8 +12,12 @@ except ImportError:
     find_dotenv = None
 
 _LOGGER: Final = logging.getLogger("config.env")
+
+# Idempotence & diagnostics
 _LOADED: bool = False
 _LAST_BASE_DIR: Path | None = None
+_INIT_LOCK: Final = threading.Lock()
+_WARNED_DOTENV_ABSENT: bool = False
 
 
 def _merge(*layers: Mapping[str, str | None]) -> dict[str, str]:
@@ -29,6 +34,7 @@ def _resolve_base_dir(
 ) -> tuple[Path | None, Path | None]:
     """
     Returns (base_dir, explicit_env_file).
+
     - If env_file is provided and exists -> use it (explicit_env_file), base_dir = its parent.
     - Else if root is provided -> base_dir = root (directory), read base_dir/.env
     - Else try to find .env by walking up from CWD (if python-dotenv present).
@@ -68,62 +74,73 @@ def load_env(
     Returns:
         The base directory used, or None if python-dotenv is absent.
     """
-    global _LOADED
-    global _LAST_BASE_DIR
+    global _LOADED, _LAST_BASE_DIR, _WARNED_DOTENV_ABSENT
+
     if _LOADED:
         return _LAST_BASE_DIR
 
-    if dotenv_values is None:
-        _LOGGER.warning("python-dotenv not installed; skipping .env loading")
-        return None
+    # Protected critical section (double-checked locking)
+    with _INIT_LOCK:
+        if _LOADED:
+            return _LAST_BASE_DIR
 
-    base_dir, explicit_file = _resolve_base_dir(root, env_file)
-    if base_dir is None:
-        base_dir = Path.cwd()
+        if dotenv_values is None:
+            # Preserve historical behavior: do not mark as _LOADED
+            # to allow for possible future loading if the environment changes.
+            if not _WARNED_DOTENV_ABSENT:
+                _LOGGER.warning("python-dotenv not installed; skipping .env loading")
+                _WARNED_DOTENV_ABSENT = True
+            return None
 
-    # Read the layers
-    env_base = (
-        dotenv_values(explicit_file)
-        if explicit_file
-        else dotenv_values(base_dir / ".env")
-    )
-    current_env = (
-        os.getenv("QUANTUM_ENV")
-        or (env_base.get("QUANTUM_ENV") if env_base else "")
-        or ""
-    )
+        base_dir, explicit_file = _resolve_base_dir(root, env_file)
+        if base_dir is None:
+            base_dir = Path.cwd()
 
-    env_specific = (
-        dotenv_values(base_dir / f".env.{current_env}") if current_env else {}
-    )
-    env_local = dotenv_values(base_dir / ".env.local")
+        # Read the layers
+        env_base = (
+            dotenv_values(explicit_file)
+            if explicit_file
+            else dotenv_values(base_dir / ".env")
+        )
+        current_env = (
+            os.getenv("QUANTUM_ENV")
+            or (env_base.get("QUANTUM_ENV") if env_base else "")
+            or ""
+        )
 
-    merged = _merge(env_base or {}, env_specific or {}, env_local or {})
+        env_specific = (
+            dotenv_values(base_dir / f".env.{current_env}") if current_env else {}
+        )
+        env_local = dotenv_values(base_dir / ".env.local")
 
-    # Injection into os.environ (with overwrite warning)
-    for k, v in merged.items():
-        if k in os.environ and not override:
-            continue
-        if k in os.environ and override:
-            # warn (non-sensitive)
-            _LOGGER.debug("Overriding existing env var", extra={"attrs": {"key": k}})
-        os.environ[k] = v
+        merged = _merge(env_base or {}, env_specific or {}, env_local or {})
 
-    _LOADED = True
-    _LAST_BASE_DIR = base_dir
+        # Injection into os.environ (with overwrite warning)
+        for k, v in merged.items():
+            if k in os.environ and not override:
+                continue
+            if k in os.environ and override:
+                # warn (non-sensitive)
+                _LOGGER.debug(
+                    "Overriding existing env var", extra={"attrs": {"key": k}}
+                )
+            os.environ[k] = v
 
-    # Logging (non-sensitive)
-    snap = {
-        "base_dir": str(base_dir),
-        "env_file": str(explicit_file) if explicit_file else None,
-        "QUANTUM_ENV": os.getenv("QUANTUM_ENV"),
-        "QUANTUM_APP_NAME": os.getenv("QUANTUM_APP_NAME"),
-        "QUANTUM_TRACE_EXPORTER": os.getenv("QUANTUM_TRACE_EXPORTER"),
-        "QUANTUM_METRICS_PORT": os.getenv("QUANTUM_METRICS_PORT"),
-        "override": override,
-    }
-    _LOGGER.info("Environment loaded", extra={"attrs": snap})
-    return base_dir
+        _LOADED = True
+        _LAST_BASE_DIR = base_dir
+
+        # Logging (non-sensitive snapshot)
+        snap = {
+            "base_dir": str(base_dir),
+            "env_file": str(explicit_file) if explicit_file else None,
+            "QUANTUM_ENV": os.getenv("QUANTUM_ENV"),
+            "QUANTUM_APP_NAME": os.getenv("QUANTUM_APP_NAME"),
+            "QUANTUM_TRACE_EXPORTER": os.getenv("QUANTUM_TRACE_EXPORTER"),
+            "QUANTUM_METRICS_PORT": os.getenv("QUANTUM_METRICS_PORT"),
+            "override": override,
+        }
+        _LOGGER.info("Environment loaded", extra={"attrs": snap})
+        return base_dir
 
 
 def require_env(keys: list[str]) -> None:
@@ -131,3 +148,13 @@ def require_env(keys: list[str]) -> None:
     missing = [k for k in keys if not os.getenv(k)]
     if missing:
         raise RuntimeError(f"Missing environment variables: {', '.join(missing)}")
+
+
+def is_loaded() -> bool:
+    """Return True if load_env() has completed successfully at least once."""
+    return _LOADED
+
+
+def get_base_dir() -> Path | None:
+    """Return the last base directory used by load_env(), or None if never loaded."""
+    return _LAST_BASE_DIR

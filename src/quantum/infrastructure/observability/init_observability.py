@@ -20,11 +20,16 @@ from quantum.infrastructure.observability.metrics.health import (
     pipeline_up,
     refresh_build_info_from_env,
 )
-from quantum.infrastructure.observability.tracing.propagation import setup_propagation
+from quantum.infrastructure.observability.tracing.propagation import (
+    detach_process_baggage_if_any,
+    install_process_baggage,
+    setup_propagation,
+)
 from quantum.infrastructure.observability.tracing.traces import (
     TracingConfig,
     init_tracing,
 )
+from quantum.shared.config.env_flags import get_bool
 from quantum.shared.config.env_loader import load_env
 from quantum.shared.context.run_id import generate_run_id, get_run_id
 
@@ -48,7 +53,7 @@ def _probe_logging_sinks() -> bool:
                 os.makedirs(base_dir, exist_ok=True)
                 if not os.access(base_dir, os.W_OK):
                     ok = False
-                if os.getenv("QUANTUM_LOG_DEEP_PROBE", "0") == "1":
+                if get_bool("QUANTUM_LOG_DEEP_PROBE", default=False):
                     test_dir = Path(base_dir) / "__probe__/yyyy/mm/dd/hh"
                     test_dir.mkdir(parents=True, exist_ok=True)
                     test_file = test_dir / "probe.jsonl"
@@ -179,6 +184,10 @@ def init_observability(
                 replace_existing=force,
             )
             setup_propagation()
+
+            # Do not re-attach if already present.
+            install_process_baggage()
+
             otel_tracing_up.set(1)
             tracing_ok = bool(tp)
             global _tracer_provider_ref
@@ -198,6 +207,7 @@ def init_observability(
                     )
                 )
                 setup_propagation()
+                install_process_baggage()
                 otel_tracing_up.set(1)
                 tracing_ok = True
                 _tracer_provider_ref = tp
@@ -252,8 +262,9 @@ def shutdown_observability(
     # Tracing
     if shutdown_tracing:
         try:
-            _shutdown_tracing_if_any()
+            detach_process_baggage_if_any()
         finally:
+            _shutdown_tracing_if_any()
             if set_gauges_down:
                 # Gauge may fail if client/registry isn't initialized
                 with suppress(ValueError, RuntimeError):

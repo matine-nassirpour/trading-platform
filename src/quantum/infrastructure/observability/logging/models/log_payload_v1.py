@@ -37,7 +37,10 @@ class LogPayloadV1(BaseModel):
     run_id: str | None
 
     # Exceptions (structured)
-    exception: str | None = None
+    exception: str | None = None  # legacy (string)
+    exception_type: str | None = None  # short type (e.g. ValueError)
+    exception_message: str | None = None  # short message
+    exception_stacktrace: str | None = None  # full formatted traceback
 
     # Schema
     schema_name: str = Field(  # avoid shadowing BaseModel.schema

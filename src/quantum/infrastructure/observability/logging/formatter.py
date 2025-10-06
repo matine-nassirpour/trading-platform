@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import socket
 from contextlib import suppress
 from typing import Any
@@ -15,7 +16,9 @@ from quantum.shared.context.run_id import get_run_id
 from quantum.shared.correlation.correlation_id import get_correlation_id
 from quantum.shared.time.rfc3339 import from_unix_s_to_rfc3339_ms, now_mono_ms
 
-INSTANCE_ID = socket.gethostname()
+INSTANCE_ID = (
+    os.getenv("QUANTUM_SERVICE_INSTANCE_ID", "").strip() or socket.gethostname()
+)
 EXCLUDED_STD_FIELDS = {
     "args",
     "asctime",
@@ -102,12 +105,24 @@ class JsonFormatter(logging.Formatter):
             attrs[k] = v
         attrs = _json_sanitize(attrs)
 
+        # Exceptions (structured)
         exception_text = None
+        exception_type = None
+        exception_message = None
+        exception_stacktrace = None
         if record.exc_info:
             try:
-                exception_text = self.formatException(record.exc_info)
+                etype, evalue, _tb = record.exc_info  # type: ignore[misc]
+                exception_type = getattr(etype, "__name__", str(etype))
+                exception_message = str(evalue) if evalue is not None else None
+                exception_stacktrace = self.formatException(record.exc_info)
+                # legacy field maintained (short string)
+                exception_text = exception_stacktrace
             except Exception:
                 exception_text = "exception formatting failed"
+                exception_type = "Exception"
+                exception_message = None
+                exception_stacktrace = None
 
         overrides = {
             # timestamps
@@ -128,8 +143,11 @@ class JsonFormatter(logging.Formatter):
             "run_id": get_run_id(),
             # attrs
             "attrs": attrs,
-            # exception
-            "exception": exception_text,
+            # exceptions (structured + legacy)
+            "exception": exception_text,  # legacy key retained
+            "exception_type": exception_type,
+            "exception_message": exception_message,
+            "exception_stacktrace": exception_stacktrace,
         }
 
         try:
@@ -171,6 +189,11 @@ class JsonFormatter(logging.Formatter):
                 "log_schema_version": "fallback",
                 "validation_error": str(e),
                 "attrs": attrs,
+                # structured exceptions in fallback too
+                "exception": overrides["exception"],
+                "exception_type": overrides["exception_type"],
+                "exception_message": overrides["exception_message"],
+                "exception_stacktrace": overrides["exception_stacktrace"],
             }
 
             with suppress(

@@ -1,13 +1,40 @@
+import os
 from typing import Final
 
 from prometheus_client import Counter, Gauge, Histogram
 
+# ──────────────────────────────────────────────────────────────────────────────
+# Configuration (anti-cardinality)
+# ──────────────────────────────────────────────────────────────────────────────
+_ENABLE_ERROR_CODE_METRIC: Final = os.getenv(
+    "QUANTUM_MT5_ENABLE_ERROR_CODE_METRIC", "0"
+).strip() in {"1", "true", "yes", "on"}
+
+
+def _parse_allowlist(env: str | None) -> set[str]:
+    if not env:
+        return set()
+    out: set[str] = set()
+    for tok in env.split(","):
+        t = tok.strip()
+        if not t:
+            continue
+        out.add(str(int(t)) if t.isdigit() else t)
+    return out
+
+
+_ERROR_CODE_ALLOWLIST: Final = _parse_allowlist(
+    os.getenv("QUANTUM_MT5_ERROR_CODE_ALLOWLIST", "")
+)
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# MT5 Metrics
+# ──────────────────────────────────────────────────────────────────────────────
 _METRIC_PREFIX = "quantum_mt5_"
 _S: Final = (0.002, 0.005, 0.01, 0.025, 0.05, 0.1, 0.2, 0.4, 0.8, 1.6, 3.2, 6.4)
 
-# ──────────────────────────────────────────────────────────────────────────────
 # Latencies
-# ──────────────────────────────────────────────────────────────────────────────
 order_check_latency_seconds = Histogram(
     f"{_METRIC_PREFIX}order_check_latency_seconds",
     "Latency of OrderCheck in seconds",
@@ -29,22 +56,38 @@ intent_to_ack_seconds = Histogram(
     buckets=_S + (12.8,),
 )
 
-# ──────────────────────────────────────────────────────────────────────────────
 # Execution quality
-# ──────────────────────────────────────────────────────────────────────────────
 requotes_total = Counter(
     f"{_METRIC_PREFIX}requotes_total", "Total requotes", ["symbol"]
 )
-order_reject_total = Counter(
-    f"{_METRIC_PREFIX}order_reject_total",
-    "Total order rejects by exact error code (high-cardinality risk)",
-    ["error_code"],
-)
+
+# We keep the metric by error CLASS (stable)
 order_reject_class_total = Counter(
     f"{_METRIC_PREFIX}order_reject_class_total",
     "Total order rejects by error class",
     ["symbol", "error_class"],
 )
+
+# Optional: metric by exact code (high cardinality) → opt-in & bounded
+if _ENABLE_ERROR_CODE_METRIC:
+    order_reject_total = Counter(
+        f"{_METRIC_PREFIX}order_reject_total",
+        "Total order rejects by exact error code (bounded via allowlist or 'other')",
+        ["error_code"],
+    )
+else:
+
+    class _NoopChild:
+        @staticmethod
+        def inc(*_args, **_kwargs):  # noqa: D401
+            return None
+
+    class _NoopCounter:
+        @staticmethod
+        def labels(*_args, **_kwargs):
+            return _NoopChild()
+
+    order_reject_total = _NoopCounter()  # type: ignore
 partial_fills_total = Counter(
     f"{_METRIC_PREFIX}partial_fills_total", "Total partial fills"
 )
@@ -55,9 +98,7 @@ slippage_points = Histogram(
     buckets=(0.1, 0.2, 0.5, 1, 2, 5, 10),
 )
 
-# ──────────────────────────────────────────────────────────────────────────────
 # Terminal health
-# ──────────────────────────────────────────────────────────────────────────────
 terminal_up = Gauge(f"{_METRIC_PREFIX}terminal_up", "Terminal health 0/1")
 account_free_margin = Gauge(f"{_METRIC_PREFIX}account_free_margin", "Free margin")
 connection_status = Gauge(
@@ -69,9 +110,7 @@ tick_staleness_seconds = Histogram(
     buckets=(0.1, 0.25, 0.5, 1.0, 1.5, 2.0, 3.0, 5.0),
 )
 
-# ──────────────────────────────────────────────────────────────────────────────
 # Flow
-# ──────────────────────────────────────────────────────────────────────────────
 intents_total = Counter(f"{_METRIC_PREFIX}intents_total", "Total trade intents")
 orders_total = Counter(
     f"{_METRIC_PREFIX}orders_total", "Total orders", ["type"]
@@ -107,3 +146,26 @@ def classify_error_code(error_code: int | str) -> str:
     if 4100 <= code <= 4199:
         return "trade_errors"  # large famille MT5 trade errors
     return "other"
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Utility API
+# ──────────────────────────────────────────────────────────────────────────────
+def record_order_reject(error_code: int | str, *, symbol: str | None = None) -> None:
+    """
+    Increments rejection metrics in a controlled manner:
+
+    - Always: `order_reject_class_total{symbol,error_class}`
+    - Optional (opt-in): `order_reject_total{error_code}` with limit
+    by allowlist; unauthorized codes are aggregated into "other".
+    """
+    error_class = classify_error_code(error_code)
+    order_reject_class_total.labels(symbol or "UNKNOWN", error_class).inc()
+
+    if _ENABLE_ERROR_CODE_METRIC:
+        code_str = str(error_code)
+        if _ERROR_CODE_ALLOWLIST:
+            label = code_str if code_str in _ERROR_CODE_ALLOWLIST else "other"
+        else:
+            label = "other"
+        order_reject_total.labels(label).inc()

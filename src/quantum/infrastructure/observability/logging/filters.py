@@ -16,7 +16,9 @@ NOISY_LOGGERS = {
     "opentelemetry.sdk.trace.export",
     "opentelemetry.sdk._shared_internal",
 }
-_SUFFIX_V1 = re.compile(r"_v1$")
+
+# Generic version suffix (eg: _v1, _v2, _v10)
+_SUFFIX_VERSION_RE = re.compile(r"_v\d+$")
 
 
 class IgnoreLibrariesFilter(logging.Filter):
@@ -46,6 +48,8 @@ class MonotonicTimestampFilter(logging.Filter):
 class AuditEventFilter(logging.Filter):
     def __init__(self) -> None:
         super().__init__()
+        # We keep reading the version from the env for compat, but the returned allowlist
+        # is version-agnostic anyway (see constants.py).
         self._version = os.getenv("QUANTUM_AUDIT_EVENTS_VERSION", "v1").lower()
         self._allow = get_audit_allowlist(self._version)
 
@@ -57,8 +61,7 @@ class AuditEventFilter(logging.Filter):
         if not isinstance(name, str) or not name:
             return False
         n = name.strip().lower()
-        if n.endswith("_v1"):
-            n = _SUFFIX_V1.sub("", n)
+        n = _SUFFIX_VERSION_RE.sub("", n)
         return n in self._allow
 
 

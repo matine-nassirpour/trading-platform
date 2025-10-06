@@ -19,6 +19,7 @@ from quantum.infrastructure.observability.logging.formatter import JsonFormatter
 from quantum.infrastructure.observability.logging.partitioned_handlers import (
     PartitionedJSONLFileHandler,
 )
+from quantum.shared.config.env_flags import get_bool
 
 
 class LoggingConfig:
@@ -38,7 +39,7 @@ class LoggingConfig:
 
 
 def init_logging(cfg: LoggingConfig) -> None:
-    # Common log level
+    # Common log level (root)
     level = getattr(logging, cfg.log_level.upper(), logging.INFO)
 
     def _add_base_filters(handler: logging.Handler, env: str) -> None:
@@ -57,7 +58,7 @@ def init_logging(cfg: LoggingConfig) -> None:
         )
 
     # Parse env for rate limiting & sampling
-    enable_rate_limit = os.getenv("QUANTUM_LOG_RATELIMIT", "0") == "1"
+    enable_rate_limit = get_bool("QUANTUM_LOG_RATELIMIT", default=False)
     try:
         rate_limit_rps = float(os.getenv("QUANTUM_LOG_RPS", "100"))
         if rate_limit_rps <= 0:
@@ -94,7 +95,6 @@ def init_logging(cfg: LoggingConfig) -> None:
     _maybe_add_ratelimit_and_sampling(stderr_handler, allow_sampling=True)
 
     partition_handler: logging.Handler | None = None
-    audit_handler: logging.Handler | None = None
 
     # Partitioned JSONL (ENV opt-in)
     partition_base = os.getenv("QUANTUM_LOG_DIR")  # e.g. /var/log/quantum
@@ -110,21 +110,6 @@ def init_logging(cfg: LoggingConfig) -> None:
         _add_base_filters(partition_handler, cfg.environment)
         _maybe_add_ratelimit_and_sampling(partition_handler, allow_sampling=True)
 
-    # Audit per-event files (ENV opt-in)
-    audit_base = os.getenv("QUANTUM_AUDIT_DIR")  # e.g. /var/log/quantum/audit
-    if audit_base:
-        audit_handler = AuditEventFileHandler(
-            base_dir=audit_base,
-            app=cfg.app_name,
-            environment=cfg.environment,
-            namespace=cfg.namespace,
-        )
-        # No formatter: we write the raw 'event' payload (already structured Pydantic)
-        audit_handler.setLevel(level)
-        _add_base_filters(audit_handler, cfg.environment)
-        audit_handler.addFilter(AuditEventFilter())
-        # Intentionally: no RateLimitFilter / InfoSamplerFilter here
-
     # Root logger: clear all existing handlers
     root_logger = logging.getLogger()
     if root_logger.hasHandlers():
@@ -134,14 +119,47 @@ def init_logging(cfg: LoggingConfig) -> None:
     handlers: list[logging.Handler] = [stderr_handler]
     if partition_handler is not None:
         handlers.append(partition_handler)
-    if audit_handler is not None:
-        handlers.append(audit_handler)
 
     root_logger.setLevel(level)
     for h in handlers:
         root_logger.addHandler(h)
-
     root_logger.propagate = False
+
+    # AUDIT: handler independent of root (always captured)
+    audit_base = os.getenv("QUANTUM_AUDIT_DIR")  # e.g. /var/log/quantum/audit
+    if audit_base:
+        audit_handler = AuditEventFileHandler(
+            base_dir=audit_base,
+            app=cfg.app_name,
+            environment=cfg.environment,
+            namespace=cfg.namespace,
+        )
+        # Handler level: NOTSET → do not filter here (we want to capture EVERYTHING on the audit side)
+        audit_handler.setLevel(logging.NOTSET)
+        # No formatter: we write the raw "event" payload (already structured)
+        _add_base_filters(audit_handler, cfg.environment)
+        audit_handler.addFilter(AuditEventFilter())
+        # Intentionally: no RateLimitFilter / InfoSamplerFilter here
+
+        # Attach the handler directly to the structured event logger
+        # (used by emit_event). Set it to DEBUG to allow all levels to pass.
+        audit_logger = logging.getLogger("quantum.trading")
+
+        # Avoid duplicates when re-initing: remove any existing AuditEventFileHandler
+        # before adding the new one (and close properly).
+        for h in list(audit_logger.handlers):
+            if isinstance(h, AuditEventFileHandler):
+                try:
+                    h.close()
+                except OSError as e:
+                    logging.getLogger(__name__).warning(
+                        f"Failed to close audit handler: {e}"
+                    )
+
+                audit_logger.removeHandler(h)
+
+        audit_logger.addHandler(audit_handler)
+        audit_logger.setLevel(logging.DEBUG)  # does not filter by level
 
     # Route Python warnings → logging (console JSON)
     try:

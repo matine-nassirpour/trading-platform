@@ -10,6 +10,7 @@ from quantum.infrastructure.observability.logging._io_utils import (
     fsync_dir,
     inc_disk_error_counter,
 )
+from quantum.shared.config.env_flags import get_bool
 from quantum.shared.time.naming import partition_path_components
 
 try:
@@ -49,7 +50,7 @@ class PartitionedJSONLFileHandler(logging.Handler):
         self._bad_path: Path | None = None
         self._fh: io.TextIOWrapper | None = None
         self._bad_fh: io.TextIOWrapper | None = None
-        self._fsync = os.getenv("QUANTUM_LOG_FSYNC", "0") == "1"
+        self._fsync = get_bool("QUANTUM_LOG_FSYNC", default=False)
 
         # Rollover config
         try:
