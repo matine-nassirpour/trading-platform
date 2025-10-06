@@ -9,6 +9,7 @@ from prometheus_client import start_http_server
 
 from quantum.infrastructure.observability.logging.logs import (
     LoggingConfig,
+    close_and_remove_all_handlers,
     init_logging,
 )
 from quantum.infrastructure.observability.metrics.health import (
@@ -39,34 +40,63 @@ _metrics_httpd_started = False
 _tracer_provider_ref: object | None = None
 
 
+def _iter_persistent_handlers() -> list[logging.Handler]:
+    """
+    Returns the list of handlers considered "persistent" (write to disk), i.e., handlers that expose a `base_dir` attribute, by aggregating:
+
+    - root.handlers (partitioned JSONL if enabled)
+    - logger 'quantum.trading' (audit handler if enabled)
+    """
+    handlers: list[logging.Handler] = []
+    root = logging.getLogger()
+    handlers.extend([h for h in root.handlers if getattr(h, "base_dir", None)])
+    audit_logger = logging.getLogger("quantum.trading")
+    handlers.extend([h for h in audit_logger.handlers if getattr(h, "base_dir", None)])
+    return handlers
+
+
+def _probe_path_writable(base_dir: str | os.PathLike[str]) -> bool:
+    """
+    Checks that a directory is writable. If QUANTUM_LOG_DEEP_PROBE=1,
+    attempts a minimal write/read and cleanup.
+    """
+    try:
+        os.makedirs(base_dir, exist_ok=True)
+        if not os.access(base_dir, os.W_OK):
+            return False
+
+        if get_bool("QUANTUM_LOG_DEEP_PROBE", default=False):
+            base = Path(base_dir)
+            test_dir = base / "__probe__/yyyy/mm/dd/hh"
+            test_dir.mkdir(parents=True, exist_ok=True)
+            test_file = test_dir / "probe.jsonl"
+            with open(test_file, "a", encoding="utf-8") as f:
+                f.write("{}\n")
+            test_file.unlink(missing_ok=True)
+            with suppress(OSError):
+                test_dir.rmdir()
+        return True
+    except OSError:
+        return False
+
+
 def _probe_logging_sinks() -> bool:
     """
-    Lightweight heuristics to verify that persistent handlers are operational.
-    We avoid writing anything: we simply check the accessibility of the folders.
+    Semantics A: Returns True if **at least one** persistent sink (partition or audit)
+    is present **and** writable. If no persistent sink is attached, returns False.
     """
-    ok = True
-    root = logging.getLogger()
-    for h in root.handlers:
+    persistent_handlers = _iter_persistent_handlers()
+    if not persistent_handlers:
+        return False
+
+    any_writable = False
+    for h in persistent_handlers:
         base_dir = getattr(h, "base_dir", None)
-        if base_dir is not None:
-            try:
-                os.makedirs(base_dir, exist_ok=True)
-                if not os.access(base_dir, os.W_OK):
-                    ok = False
-                if get_bool("QUANTUM_LOG_DEEP_PROBE", default=False):
-                    test_dir = Path(base_dir) / "__probe__/yyyy/mm/dd/hh"
-                    test_dir.mkdir(parents=True, exist_ok=True)
-                    test_file = test_dir / "probe.jsonl"
-                    with open(test_file, "a", encoding="utf-8") as f:
-                        f.write("{}\n")
-                    test_file.unlink(missing_ok=True)
-                    try:
-                        test_dir.rmdir()
-                    except OSError:
-                        pass
-            except OSError:
-                ok = False
-    return ok
+        if not base_dir:
+            continue
+        if _probe_path_writable(base_dir):
+            any_writable = True
+    return any_writable
 
 
 def _shutdown_tracing_if_any() -> None:
@@ -135,12 +165,13 @@ def init_observability(
             sample_ratio = float(os.getenv("QUANTUM_TRACE_SAMPLE", sample_ratio))
         except (TypeError, ValueError):
             sample_ratio = 1.0
-        sample_ratio = (
-            0.0 if sample_ratio < 0.0 else (1.0 if sample_ratio > 1.0 else sample_ratio)
-        )
+        sample_ratio = max(0.0, min(1.0, sample_ratio))
 
-        # Logging JSON
-        logging_ok = False
+        if force:
+            close_and_remove_all_handlers(logging.getLogger())
+
+        # JSON logging (initialization)
+        logging_initialized = False
         try:
             init_logging(
                 LoggingConfig(
@@ -151,26 +182,27 @@ def init_observability(
                     app_version=app_version,
                 )
             )
-            if _probe_logging_sinks():
-                logging_sink_up.set(1)
-                logging_ok = True
-            else:
-                logging.getLogger(__name__).warning("Logging sinks not writable")
+            logging_initialized = True
         except Exception as e:
             logging.getLogger(__name__).exception(f"Logging initialization failed: {e}")
 
-        exp_env = os.getenv("QUANTUM_TRACE_EXPORTER", "").strip().lower()
-        # supports: otlp | console | none (default: console)
-        exporter: Literal["otlp", "console", "none"]
-        if exp_env in {"otlp", "console", "none"}:
-            exporter = exp_env  # type: ignore[assignment]
-        else:
-            exporter = "console"  # safe default
+        pipeline_logging_ok.set(1 if logging_initialized else 0)
 
-        pipeline_logging_ok.set(1 if logging_ok else 0)
+        # Persistent sinks up? (partition and/or audit)
+        try:
+            sinks_ok = _probe_logging_sinks()
+        except Exception as e:
+            logging.getLogger(__name__).warning(f"Logging sinks probe failed: {e}")
+            sinks_ok = False
+
+        logging_sink_up.set(1 if sinks_ok else 0)
 
         # Tracing OTel
         tracing_ok = False
+        exp_env = os.getenv("QUANTUM_TRACE_EXPORTER", "").strip().lower()
+        exporter: Literal["otlp", "console", "none"] = (
+            exp_env if exp_env in {"otlp", "console", "none"} else "console"
+        )
         try:
             _shutdown_tracing_if_any()
             tp = init_tracing(
@@ -184,10 +216,8 @@ def init_observability(
                 replace_existing=force,
             )
             setup_propagation()
-
             # Do not re-attach if already present.
             install_process_baggage()
-
             otel_tracing_up.set(1)
             tracing_ok = bool(tp)
             global _tracer_provider_ref
@@ -237,7 +267,7 @@ def init_observability(
             # No HTTP exposure requested → stay at 0 (this is intentional and non-blocking)
             pipeline_metrics_http_ok.set(1 if _metrics_httpd_started else 0)
 
-        ok = logging_ok and tracing_ok
+        ok = logging_initialized and tracing_ok
         pipeline_up.set(1 if ok else 0)
         _initialized = bool(ok)
 
@@ -273,22 +303,7 @@ def shutdown_observability(
     # Logging
     if close_logging:
         try:
-            root = logging.getLogger()
-            # Copy to iterate safely
-            for h in list(root.handlers):
-                # flush before close if possible
-                flush = getattr(h, "flush", None)
-                if callable(flush):
-                    with suppress(OSError, ValueError, RuntimeError, TypeError):
-                        flush()
-
-                # close handler (bad FD/state may raise)
-                with suppress(OSError, ValueError, RuntimeError, TypeError):
-                    h.close()
-
-                # removeHandler raises ValueError if not attached
-                with suppress(ValueError):
-                    root.removeHandler(h)
+            close_and_remove_all_handlers(logging.getLogger())
         finally:
             if set_gauges_down:
                 with suppress(NameError, AttributeError, ValueError, RuntimeError):

@@ -94,60 +94,40 @@ tracer = trace.get_tracer("quantum.ui.demo")
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Prometheus access helpers
-# NOTE: prometheus_client does not provide a public in-process read API.
-# We encapsulate internal usage (_collector_to_names) with safeguards.
 # ──────────────────────────────────────────────────────────────────────────────
 
 
-def _collect_metric_by_name(name: str):
-    mapping = getattr(REGISTRY, "_collector_to_names", None)
-    if mapping is None:
-        return None
-
+def _iter_metrics():
+    """
+    Iterates over all metrics exposed by the registry via the public API.
+    Gracefully degrades on error (no yield).
+    """
     try:
-        items = (
-            mapping.items()
-        )  # may raise AttributeError if the object is not dict-like
-    except AttributeError:
-        return None
-
-    for collector, names in items:
-        if name not in names:
-            continue
-
-        try:
-            for metric in collector.collect():
-                if getattr(metric, "name", None) == name:
-                    return metric
-        except (RuntimeError, TypeError, ValueError) as exc:
-            logging.getLogger(__name__).debug(
-                "Prometheus collector %r collect() failed: %s", collector, exc
-            )
-            # We continue: a faulty collector must not block the page
-            continue
-
-    return None
+        yield from REGISTRY.collect()
+    except Exception as exc:
+        logging.getLogger(__name__).debug(f"REGISTRY.collect() failed: {exc}")
 
 
 def _gauge_value(name: str) -> float | None:
-    m = _collect_metric_by_name(name)
-    if not m:
-        return None
-    for s in m.samples:
-        if s.name == name and not s.labels:
-            try:
-                return float(s.value)
-            except (TypeError, ValueError):
-                return None
-    # Fallback: premier sample
+    """
+    Returns the value of a Gauge (or Counter) without exact labels.
+    Searches for the sample `name{}` among all collectors.
+    """
     try:
-        return float(m.samples[0].value) if m.samples else None
-    except (TypeError, ValueError):
+        for metric in _iter_metrics():
+            for s in getattr(metric, "samples", ()):
+                if s.name == name and not s.labels:
+                    try:
+                        return float(s.value)
+                    except (TypeError, ValueError):
+                        return None
+        return None
+    except Exception as exc:
+        logging.getLogger(__name__).debug("gauge_value(%s) failed: %s", name, exc)
         return None
 
 
 def _counter_value(name: str) -> float | None:
-    # Same reading as client-side gauge; server-side Prom prometheus distinguishes
     return _gauge_value(name)
 
 
@@ -155,66 +135,75 @@ def _histogram_quantiles(
     metric_name_prefix: str, quantiles: Iterable[float] = (0.5, 0.95, 0.99)
 ) -> dict[str, float | None]:
     """
-    Approximates the quantiles of a Prometheus histogram from the cumulative buckets.
-    Aggregates across all labels if present.
+    Approximates histogram quantiles from cumulative buckets.
+
+    Aggregates over **all** possible labels: sums all buckets
+    `metric_name_prefix_bucket{...}` for a given bound `le`, and uses
+    `metric_name_prefix_count` for the total if available.
+
+    API used: REGISTRY.collect() (public).
     """
-    m = _collect_metric_by_name(metric_name_prefix + "_bucket")
-    quantile_keys = [f"p{int(q * 100)}" for q in quantiles]
-    if not m:
-        return {k: None for k in quantile_keys}
+    try:
+        # cumulative buckets across label sets
+        buckets: dict[float, float] = {}
+        total_count = 0.0
 
-    # Cumulative aggregation by upper bound
-    buckets: dict[float, float] = {}
-    for s in m.samples:
-        if not s.name.endswith("_bucket"):
-            continue
-        le = s.labels.get("le") if s.labels else None
-        if le is None:
-            continue
-        try:
-            bound = float("inf") if le == "+Inf" else float(le)
-            buckets[bound] = buckets.get(bound, 0.0) + float(s.value)
-        except (TypeError, ValueError):
-            continue
+        for metric in _iter_metrics():
+            if getattr(metric, "name", None) != metric_name_prefix:
+                continue
+            for s in getattr(metric, "samples", ()):
+                n = s.name
+                if not isinstance(n, str):
+                    continue
+                if n.endswith("_bucket"):
+                    le = s.labels.get("le") if s.labels else None  # type: ignore[attr-defined]
+                    if le is None:
+                        continue
+                    try:
+                        bound = float("inf") if le == "+Inf" else float(le)
+                        buckets[bound] = buckets.get(bound, 0.0) + float(s.value)
+                    except (TypeError, ValueError):
+                        continue
+                elif n.endswith("_count"):
+                    try:
+                        total_count = max(total_count, float(s.value))
+                    except (TypeError, ValueError):
+                        pass
 
-    # total_count via *_count if available, otherwise last terminal
-    total_count = 0.0
-    m_count = _collect_metric_by_name(metric_name_prefix + "_count")
-    if m_count:
-        for s in m_count.samples:
-            if s.name.endswith("_count"):
-                try:
-                    total_count = max(total_count, float(s.value))
-                except (TypeError, ValueError):
-                    pass
+        quantile_keys = [f"p{int(q * 100)}" for q in quantiles]
 
-    if not buckets:
-        return {k: None for k in quantile_keys}
+        if not buckets:
+            return {k: None for k in quantile_keys}
 
-    sorted_bounds = sorted(buckets.items(), key=lambda kv: kv[0])
+        sorted_bounds = sorted(buckets.items(), key=lambda kv: kv[0])
 
-    def _q(q: float) -> float | None:
-        total = total_count or sorted_bounds[-1][1]
-        if total <= 0:
+        def _q(q: float) -> float | None:
+            total = total_count or sorted_bounds[-1][1]
+            if total <= 0:
+                return None
+
+            rank = q * total
+            prev_bound = 0.0
+            prev_count = 0.0
+
+            for upper_bound, cum in sorted_bounds:
+                if rank <= cum:
+                    in_bucket = cum - prev_count
+                    if in_bucket <= 0:
+                        return upper_bound
+                    if upper_bound == float("inf"):
+                        return prev_bound
+                    frac = (rank - prev_count) / max(in_bucket, 1e-9)
+                    return prev_bound + frac * (upper_bound - prev_bound)
+                prev_bound, prev_count = upper_bound, cum
             return None
 
-        rank = q * total
-        prev_bound = 0.0
-        prev_count = 0.0
-
-        for upper_bound, cum in sorted_bounds:
-            if rank <= cum:
-                in_bucket = cum - prev_count
-                if in_bucket <= 0:
-                    return upper_bound
-                if upper_bound == float("inf"):
-                    return prev_bound
-                frac = (rank - prev_count) / max(in_bucket, 1e-9)
-                return prev_bound + frac * (upper_bound - prev_bound)
-            prev_bound, prev_count = upper_bound, cum
-        return None
-
-    return {f"p{int(q * 100)}": _q(q) for q in quantiles}
+        return {f"p{int(q * 100)}": _q(q) for q in quantiles}
+    except Exception as exc:
+        logging.getLogger(__name__).debug(
+            "histogram_quantiles(%s) failed: %s", metric_name_prefix, exc
+        )
+        return {f"p{int(q * 100)}": None for q in quantiles}
 
 
 # ──────────────────────────────────────────────────────────────────────────────

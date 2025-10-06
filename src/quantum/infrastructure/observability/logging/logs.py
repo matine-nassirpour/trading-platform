@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+from contextlib import suppress
 
 from quantum.infrastructure.observability.logging.audit_sink import (
     AuditEventFileHandler,
@@ -36,6 +37,25 @@ class LoggingConfig:
         self.log_level = log_level
         self.namespace = namespace
         self.app_version = app_version
+
+
+def close_and_remove_all_handlers(logger: logging.Logger) -> None:
+    """
+    Cleanly closes and then detaches all handlers from a logger.
+    Idempotent and fault-tolerant (protected flush/close/remove).
+    """
+    for h in list(logger.handlers):
+        # flush before close if possible
+        flush = getattr(h, "flush", None)
+        if callable(flush):
+            with suppress(OSError, ValueError, RuntimeError, TypeError):
+                flush()
+        # close handler (bad FD/state may raise)
+        with suppress(OSError, ValueError, RuntimeError, TypeError):
+            h.close()
+        # removeHandler raises ValueError if not attached
+        with suppress(ValueError):
+            logger.removeHandler(h)
 
 
 def init_logging(cfg: LoggingConfig) -> None:
@@ -87,6 +107,10 @@ def init_logging(cfg: LoggingConfig) -> None:
         if allow_sampling and enable_info_sampling:
             handler.addFilter(InfoSamplerFilter(sample_every=sample_info_every))
 
+    root_logger = logging.getLogger()
+    if root_logger.handlers:
+        close_and_remove_all_handlers(root_logger)
+
     # Console handler (stderr) in JSON format
     stderr_handler = logging.StreamHandler(sys.stderr)
     stderr_handler.setLevel(level)
@@ -109,11 +133,6 @@ def init_logging(cfg: LoggingConfig) -> None:
         partition_handler.setFormatter(JsonFormatter())
         _add_base_filters(partition_handler, cfg.environment)
         _maybe_add_ratelimit_and_sampling(partition_handler, allow_sampling=True)
-
-    # Root logger: clear all existing handlers
-    root_logger = logging.getLogger()
-    if root_logger.hasHandlers():
-        root_logger.handlers.clear()
 
     # Build the definitive handler list (only non-None)
     handlers: list[logging.Handler] = [stderr_handler]
@@ -149,20 +168,16 @@ def init_logging(cfg: LoggingConfig) -> None:
         # before adding the new one (and close properly).
         for h in list(audit_logger.handlers):
             if isinstance(h, AuditEventFileHandler):
-                try:
+                with suppress(OSError, ValueError, RuntimeError, TypeError):
+                    h.flush() if hasattr(h, "flush") else None
+                with suppress(OSError, ValueError, RuntimeError, TypeError):
                     h.close()
-                except OSError as e:
-                    logging.getLogger(__name__).warning(
-                        f"Failed to close audit handler: {e}"
-                    )
-
-                audit_logger.removeHandler(h)
+                with suppress(ValueError):
+                    audit_logger.removeHandler(h)
 
         audit_logger.addHandler(audit_handler)
         audit_logger.setLevel(logging.DEBUG)  # does not filter by level
 
     # Route Python warnings → logging (console JSON)
-    try:
+    with suppress(AttributeError, RuntimeError):
         logging.captureWarnings(True)
-    except (AttributeError, RuntimeError):
-        pass

@@ -48,6 +48,33 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+_ATEXIT_REGISTERED: bool = False
+
+
+def _atexit_shutdown_current_provider() -> None:
+    """
+    Closes the current OTel provider (if it is indeed a TracerProvider SDK).
+    Tolerant of multiple calls and providers that have already been stopped.
+    """
+    try:
+        tp = get_tracer_provider()
+        shutdown = getattr(tp, "shutdown", None)
+        if callable(shutdown):
+            shutdown()
+    except Exception as e:
+        logger.debug(f"Tracer provider shutdown at exit failed: {e}")
+
+
+def _ensure_atexit_registered() -> None:
+    global _ATEXIT_REGISTERED
+    if _ATEXIT_REGISTERED:
+        return
+    try:
+        atexit.register(_atexit_shutdown_current_provider)
+        _ATEXIT_REGISTERED = True
+    except Exception as e:
+        logger.debug(f"Failed to register atexit tracer shutdown: {e}")
+
 
 class TracingConfig:
     def __init__(
@@ -95,6 +122,7 @@ def init_tracing(
     # Idempotence: If a provider SDK is already in place, do not reset.
     existing = get_tracer_provider()
     if isinstance(existing, TracerProvider) and not replace_existing:
+        _ensure_atexit_registered()
         return cast(TracerProviderInterface, existing)
 
     # Borne le sample ratio dans [0..1]
@@ -169,7 +197,7 @@ def init_tracing(
         except (ValueError, RuntimeError):
             pass
 
-    atexit.register(tracer_provider.shutdown)
+    _ensure_atexit_registered()
 
     # Expose a reference for controlled shutdown in init_observability
     try:

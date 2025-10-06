@@ -49,7 +49,7 @@ def _json_sanitize(obj: Any) -> Any:
     """
     Recursively converts to JSON-safe types.
 
-    - bytes -> base64-like str (here: short repr)
+    - bytes -> base64-like str (ici: repr court)
     - set/tuple -> list
     - unknown objects -> truncated str(obj)
     """
@@ -64,18 +64,75 @@ def _json_sanitize(obj: Any) -> Any:
         return {str(k): _json_sanitize(v) for k, v in obj.items()}
     if isinstance(obj, bytes):
         return repr(obj[:64]) + ("… (truncated)" if len(obj) > 64 else "")
-    return str(obj)[:max_str] + ("…" if len(str(obj)) > max_str else "")
+    s = str(obj)
+    return s[:max_str] + ("…" if len(s) > max_str else "")
+
+
+def _extract_trace_context() -> tuple[str | None, str | None, bool | None]:
+    """
+    Cross-version extraction of (trace_id, span_id, sampled) from the current OTel span.
+
+    - Works with SpanContext.trace_flags as:
+        * bool property `.sampled` (some SDK versions)
+        * callable `.sampled()` (older forms)
+        * Int/IntFlag bitmask (use bit 0x01)
+    - Returns (None, None, None) when unavailable.
+    """
+    try:
+        span = get_current_span()
+        sc = span.get_span_context()
+    except (AttributeError, TypeError):
+        return None, None, None
+
+    # Validity flag can differ across versions; guard it.
+    try:
+        is_valid = bool(getattr(sc, "is_valid", False))
+    except (AttributeError, TypeError, ValueError):
+        is_valid = False
+
+    if not is_valid:
+        return None, None, None
+
+    # IDs as fixed-width hex if possible
+    try:
+        tid = getattr(sc, "trace_id", 0)
+        sid = getattr(sc, "span_id", 0)
+        # Some SDKs may already return ints; others an int-like
+        trace_id = f"{int(tid):032x}"
+        span_id = f"{int(sid):016x}"
+    except (AttributeError, TypeError, ValueError):
+        trace_id = None
+        span_id = None
+
+    # Sampling flag resolution (robust to SDK variants)
+    tf = getattr(sc, "trace_flags", None)
+    if tf is None:
+        sampled = None
+    else:
+        # Variant 1: boolean attribute
+        attr = getattr(tf, "sampled", None)
+        if isinstance(attr, bool):
+            sampled = attr
+        elif callable(attr):
+            # Variant 2: callable sampled()
+            try:
+                sampled = bool(attr())
+            except (TypeError, ValueError):
+                sampled = None
+        else:
+            # Variant 3: Int/IntFlag mask (bit 0x01)
+            try:
+                sampled = bool(int(tf) & 0x01)
+            except (TypeError, ValueError):
+                sampled = None
+
+    return trace_id, span_id, sampled
 
 
 class JsonFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
-        # OTEL context
-        span = get_current_span()
-        sc = span.get_span_context()
-        is_valid = getattr(sc, "is_valid", False)
-        trace_id = format(sc.trace_id, "032x") if is_valid else None
-        span_id = format(sc.span_id, "016x") if is_valid else None
-        is_sampled = sc.trace_flags.sampled if is_valid else None
+        # OTEL context (cross-version safe extraction)
+        trace_id, span_id, is_sampled = _extract_trace_context()
 
         # Timestamps
         ts_unix_ms = int(record.created * 1000)
@@ -112,7 +169,7 @@ class JsonFormatter(logging.Formatter):
         exception_stacktrace = None
         if record.exc_info:
             try:
-                etype, evalue, _tb = record.exc_info  # type: ignore[misc]
+                etype, evalue, _tb = record.exc_info
                 exception_type = getattr(etype, "__name__", str(etype))
                 exception_message = str(evalue) if evalue is not None else None
                 exception_stacktrace = self.formatException(record.exc_info)

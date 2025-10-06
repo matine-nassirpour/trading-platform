@@ -1,6 +1,7 @@
 import os
 
 from quantum.infrastructure.observability.init_observability import init_observability
+from quantum.shared.context.run_id import generate_run_id, get_run_id
 
 
 def init_streamlit() -> None:
@@ -9,6 +10,9 @@ def init_streamlit() -> None:
         sample_ratio = float(os.getenv("QUANTUM_TRACE_SAMPLE", "1.0"))
     except (TypeError, ValueError):
         sample_ratio = 1.0
+
+    if not get_run_id():
+        generate_run_id()
 
     init_observability(
         app_name="streamlit_ui",

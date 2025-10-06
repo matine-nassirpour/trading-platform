@@ -8,6 +8,7 @@ Observability smoke test (E2E runtime)
 - Checks redaction and presence of key fields
 - Checks for a valid audit file
 - (Optional) Checks the /metrics endpoint
+- Verifies severity mapping (WARNING→WARN, CRITICAL→FATAL) and severity_number bounds
 """
 
 import argparse
@@ -226,6 +227,9 @@ def main() -> None:
                         )
                         log.info("inside span", extra={"attrs": {"in_span": True}})
 
+                        log.warning("severity probe warning")
+                        log.critical("severity probe critical")
+
                         # audit event (whitelisted)
                         emit_event(
                             {
@@ -266,12 +270,15 @@ def main() -> None:
             if not list(log_dir.rglob("*.part1.jsonl")):
                 errs.append("rollover not detected (missing .part1.jsonl)")
 
-            # Asserts: JSON content (last line) + redaction + key fields
+            # Asserts: JSON content + redaction + key fields + severity mapping
             events_files = _all_matching(log_dir, "events-*.jsonl")
             if not events_files:
                 errs.append("no events-*.jsonl file generated (scan)")
             else:
                 found_selftest = None
+                found_warn = None
+                found_crit = None
+
                 for fp in events_files:
                     with open(fp, encoding="utf-8") as f:
                         for line in f:
@@ -279,11 +286,20 @@ def main() -> None:
                                 js = json.loads(line)
                             except json.JSONDecodeError:
                                 continue  # skip invalid JSON lines
-                            if js.get("message") == "selftest start":
+                            msg = js.get("message")
+                            if msg == "selftest start" and not found_selftest:
                                 found_selftest = js
+                            elif msg == "severity probe warning" and not found_warn:
+                                found_warn = js
+                            elif msg == "severity probe critical" and not found_crit:
+                                found_crit = js
+                            # optimisation: stop early si on a tout
+                            if found_selftest and found_warn and found_crit:
                                 break
-                    if found_selftest:
+                    if found_selftest and found_warn and found_crit:
                         break
+
+                # selftest start basic checks (schema, redaction, fields)
                 if not found_selftest:
                     errs.append("could not find 'selftest start' log entry")
                 else:
@@ -307,6 +323,34 @@ def main() -> None:
                         errs.append(
                             "redaction not applied (attrs.secret != [REDACTED])"
                         )
+
+                def _check_severity(obj: dict, expected_level: str, expected_num: int):
+                    if not obj:
+                        errs.append(
+                            f"missing log for severity probe ({expected_level})"
+                        )
+                        return
+                    lvl = obj.get("level")
+                    if lvl != expected_level:
+                        errs.append(
+                            f"level mapping failed: expected {expected_level}, got {lvl!r}"
+                        )
+                    num = obj.get("severity_number")
+                    if not isinstance(num, int):
+                        errs.append("severity_number missing or not an int")
+                    else:
+                        if not (1 <= num <= 24):
+                            errs.append(
+                                f"severity_number out of range [1..24]: got {num}"
+                            )
+                        # stricter check (expected OTel mapping used in code)
+                        if num != expected_num:
+                            errs.append(
+                                f"unexpected severity_number for {expected_level}: got {num}, expected {expected_num}"
+                            )
+
+                _check_severity(found_warn, "WARN", 13)
+                _check_severity(found_crit, "FATAL", 21)
 
             # Check that at least one log UNDER SPAN contains trace_id/span_id
             has_trace = False
