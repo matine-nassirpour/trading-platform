@@ -143,9 +143,8 @@ trading-platform/
 │   ├── integration/
 │   │   ├── infrastructure/
 │   │   │   ├── observability/
-│   │   │   │   ├── logging/
-│   │   │   │   │   └── __init__.py
-│   │   │   │   └── __init__.py
+│   │   │   │   ├── __init__.py
+│   │   │   │   └── test_pipeline_contract.py
 │   │   │   └── __init__.py
 │   │   └── __init__.py
 │   ├── unit/
@@ -155,7 +154,8 @@ trading-platform/
 │   │   │   │   └── test_dummy.py
 │   │   │   └── __init__.py
 │   │   └── __init__.py
-│   └── __init__.py
+│   ├── __init__.py
+│   └── conftest.py
 ├── .coveragerc
 ├── .env.example
 ├── .gitignore
