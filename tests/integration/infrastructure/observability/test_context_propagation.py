@@ -23,31 +23,26 @@ def test_context_propagation_threads_and_executor(
     obs_session, tmp_workspace, assert_jsonl_tail
 ):
     """
-    Contract: Context propagation (OTel + ContextVars) works between threads and executors.
+    Contract: OTel + ContextVars propagate across threads and executors.
 
     Expectations:
-        - Logs emitted under child spans in a thread and via an executor contain a valid trace_id/span_id (32/16 hex).
-
-        - Child spans carry the 'quantum.run_id' and 'quantum.correlation_id' attributes injected by the enrichment SpanProcessor.
+      - Logs emitted under child spans contain valid trace_id/span_id (32/16 hex).
+      - Child spans carry 'quantum.run_id' and 'quantum.correlation_id' attributes.
     """
     tracer = trace.get_tracer("quantum.test.ctx")
     log = logging.getLogger("ctx")
 
-    # Parent context: create a correlation_id, inject it into baggage,
-    # and open a parent span in the current thread.
+    # Parent context: correlation_id + baggage + parent span
     with correlation_context(new_correlation_id()):
         with baggage_context_from_ids():
             with tracer.start_as_current_span("ctx.parent"):
-                # Capture a snapshot for explicit propagation.
-                snap = capture_context_snapshot()
+                snapshot = capture_context_snapshot()
 
-                # THREAD: execute a payload under ContextPropagatingThread
+                # THREAD
                 thread_attrs_ok = {"ok": False}
 
                 def _thread_target() -> None:
-                    # Child span in thread
                     with tracer.start_as_current_span("ctx.thread.child") as sp:
-                        # Check the presence of attributes on the span
                         attrs = getattr(sp, "attributes", {}) or {}
                         if (
                             "quantum.run_id" in attrs
@@ -55,17 +50,15 @@ def test_context_propagation_threads_and_executor(
                             and attrs["quantum.correlation_id"]
                         ):
                             thread_attrs_ok["ok"] = True
-                        # Log under child span → must have trace_id/span_id
                         log.info(
-                            "inside thread child",
-                            extra={"attrs": {"in_thread": True}},
+                            "inside thread child", extra={"attrs": {"in_thread": True}}
                         )
 
-                t = ContextPropagatingThread(target=_thread_target, snapshot=snap)
+                t = ContextPropagatingThread(target=_thread_target, snapshot=snapshot)
                 t.start()
                 t.join()
 
-                # EXECUTOR: execute a payload via submit_with_context
+                # EXECUTOR
                 def _executor_fn() -> bool:
                     with tracer.start_as_current_span("ctx.exec.child") as sp:
                         attrs = getattr(sp, "attributes", {}) or {}
@@ -81,32 +74,33 @@ def test_context_propagation_threads_and_executor(
                         return bool(ok)
 
                 with ThreadPoolExecutor(max_workers=1) as ex:
-                    fut = submit_with_context(ex, _executor_fn, snapshot=snap)
+                    fut = submit_with_context(ex, _executor_fn, snapshot=snapshot)
                     exec_attrs_ok = fut.result()
 
-    # Asserts on child spans (attributes present)
+    # Child span attributes present
     assert (
         thread_attrs_ok["ok"] is True
     ), "child span in thread missing quantum.* attributes"
     assert exec_attrs_ok is True, "child span in executor missing quantum.* attributes"
 
-    # Asserts on JSONL logs: presence of valid trace_id/span_id
+    # JSONL logs contain valid trace IDs
     logs_dir = tmp_workspace["logs"]
 
     def _has_trace_ids(obj: dict) -> bool:
         tid = obj.get("trace_id")
         sid = obj.get("span_id")
-        if not (isinstance(tid, str) and isinstance(sid, str)):
-            return False
-        return len(tid) == 32 and len(sid) == 16
+        return (
+            isinstance(tid, str)
+            and len(tid) == 32
+            and isinstance(sid, str)
+            and len(sid) == 16
+        )
 
-    # log from the thread
     hits_thread = assert_jsonl_tail(
         logs_dir,
         match=lambda o: o.get("message") == "inside thread child" and _has_trace_ids(o),
         min_count=1,
     )
-    # log from the executor
     hits_exec = assert_jsonl_tail(
         logs_dir,
         match=lambda o: o.get("message") == "inside executor child"
@@ -114,6 +108,6 @@ def test_context_propagation_threads_and_executor(
         min_count=1,
     )
 
-    # Additional Sanity: Ensure that logs contain the marked attribute
+    # Sanity: custom marker attribute present
     assert hits_thread[0]["attrs"].get("in_thread") is True
     assert hits_exec[0]["attrs"].get("in_executor") is True

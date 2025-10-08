@@ -4,26 +4,12 @@ import json
 import logging
 import os
 import time
-from collections.abc import Callable
 from pathlib import Path
-from typing import Any, cast
 
 import pytest
 
 from quantum.infrastructure.observability.metrics import health as m
-
-_NumberLike = float | int | str | bytes
-
-
-# Prometheus Helpers (gets the value of a Gauge/Counter created by health.py)
-def _gauge_value(g: Any) -> float:
-    maybe_get = getattr(getattr(g, "_value", None), "get", None)
-    if not callable(maybe_get):
-        return -1.0
-    try:
-        return float(cast(Callable[[], _NumberLike], maybe_get)())
-    except Exception:
-        return -1.0
+from tests.support.logging_utils import counter_value
 
 
 def _any_file(root: Path, pattern: str) -> Path | None:
@@ -46,19 +32,18 @@ def test_pipeline_contract(obs_session, tmp_workspace, assert_jsonl_tail):
     Contract / Integration (top-down)
 
     - pipeline_up=1, pipeline_logging_ok=1, pipeline_tracing_ok=1, logging_sink_up=1
-    - whitelist event emitted -> valid JSON audit file
-    - INFO/WARN/CRITICAL log emitted -> JSONL present
+    - whitelist event emitted → valid JSON audit file
+    - INFO/WARN/CRITICAL log emitted → JSONL present
         * severity mapping: WARNING→WARN(13), CRITICAL→FATAL(21)
-        * redaction on attrs.secret -> "[REDACTED]"
+        * redaction on attrs.secret → "[REDACTED]"
     """
-    # Sanity Prometheus health gauges
-    assert _gauge_value(m.pipeline_logging_ok) == 1.0, "pipeline_logging_ok != 1"
-    assert _gauge_value(m.pipeline_tracing_ok) == 1.0, "pipeline_tracing_ok != 1"
-    # logging_sink_up measures **persistence** (partition/audit), not console:
-    assert _gauge_value(m.logging_sink_up) == 1.0, "logging_sink_up != 1"
-    assert _gauge_value(m.pipeline_up) == 1.0, "pipeline_up != 1"
+    # Health gauges
+    assert counter_value(m.pipeline_logging_ok) == 1.0, "pipeline_logging_ok != 1"
+    assert counter_value(m.pipeline_tracing_ok) == 1.0, "pipeline_tracing_ok != 1"
+    assert counter_value(m.logging_sink_up) == 1.0, "logging_sink_up != 1"
+    assert counter_value(m.pipeline_up) == 1.0, "pipeline_up != 1"
 
-    # Issue an audit event whitelist (order_submit_v1)
+    # Emit an allowlisted audit event
     from quantum.infrastructure.observability.logging.event_emitter import emit_event
 
     emit_event(
@@ -74,7 +59,7 @@ def test_pipeline_contract(obs_session, tmp_workspace, assert_jsonl_tail):
         }
     )
 
-    # Issue logs at different levels + secrecy for redaction
+    # Logs at different levels + secret for redaction
     log = logging.getLogger("contract")
     log.info(
         "contract start",
@@ -88,13 +73,11 @@ def test_pipeline_contract(obs_session, tmp_workspace, assert_jsonl_tail):
     log.warning("severity probe warning")
     log.critical("severity probe critical")
 
-    # Assertions on JSONL (tail)
+    # Assertions on JSONL tail
     logs_dir: Path = tmp_workspace["logs"]
-    # presence of key entries
+
     start_hits = assert_jsonl_tail(
-        logs_dir,
-        match=lambda o: o.get("message") == "contract start",
-        min_count=1,
+        logs_dir, match=lambda o: o.get("message") == "contract start", min_count=1
     )
     warn_hits = assert_jsonl_tail(
         logs_dir,
@@ -111,7 +94,7 @@ def test_pipeline_contract(obs_session, tmp_workspace, assert_jsonl_tail):
     warn_obj = warn_hits[0]
     crit_obj = crit_hits[0]
 
-    # essential fields present
+    # Essential fields present
     for obj in (start_obj, warn_obj, crit_obj):
         for key in (
             "service_name",
@@ -125,14 +108,14 @@ def test_pipeline_contract(obs_session, tmp_workspace, assert_jsonl_tail):
         ):
             assert key in obj, f"missing field {key!r} in JSON log"
 
-    # writing applied to attrs.secret
+    # Redaction applied to attrs.secret
     attrs = start_obj.get("attrs", {})
     assert attrs.get("secret") == "[REDACTED]", "redaction not applied on attrs.secret"
 
-    # severity mapping (text + OTel number)
-    def _assert_sev(obj: dict, expected_level: str, expected_num: int) -> None:
-        lvl = obj.get("level")
-        num = obj.get("severity_number")
+    # Severity mapping (text + OTel number)
+    def _assert_sev(entry: dict, expected_level: str, expected_num: int) -> None:
+        lvl = entry.get("level")
+        num = entry.get("severity_number")
         assert lvl == expected_level, f"expected level={expected_level}, got {lvl!r}"
         assert isinstance(num, int), "severity_number missing/not int"
         assert 1 <= num <= 24, f"severity_number out of range: {num}"
@@ -143,25 +126,22 @@ def test_pipeline_contract(obs_session, tmp_workspace, assert_jsonl_tail):
     _assert_sev(warn_obj, "WARN", 13)
     _assert_sev(crit_obj, "FATAL", 21)
 
-    # Assertions on the audit file
+    # Audit file presence under <base>/<env>/<ns>/<app>/YYYY/MM/DD/...
     audit_dir: Path = tmp_workspace["audit"]
-    # the audit file is written under <base>/<env>/<namespace>/<app>/<YYYY>/<MM>/<DD>/<HHMMSS-UUID>.json
     env_ = os.environ.get("QUANTUM_ENV", "test")
     ns = os.environ.get("QUANTUM_NS", "quantum")
     app = os.environ.get("QUANTUM_APP_NAME", "test_app")
 
-    # Check for the presence of a .json in the expected tree structure
     nested_root = audit_dir / env_ / ns / app
     any_audit = _any_file(nested_root, "*.json")
     if any_audit is None:
-        # we re-sweep everything _audit by tolerance
         any_audit = _any_file(audit_dir, "*.json")
     assert any_audit is not None, "no audit file generated"
 
-    # Readable and good JSON event_name
+    # JSON is valid and event_name ok
     data = json.loads(any_audit.read_text(encoding="utf-8"))
     assert data.get("event_name") == "order_submit_v1", "invalid audit file payload"
 
-    # A recent events-*.jsonl file does exist
+    # A recent events-*.jsonl file exists
     latest_events = _latest(logs_dir, "events-*.jsonl")
     assert latest_events is not None, "no events-*.jsonl produced"

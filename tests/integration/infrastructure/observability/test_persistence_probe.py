@@ -1,23 +1,11 @@
 from __future__ import annotations
 
 import os
-from collections.abc import Callable
 from pathlib import Path
-from typing import Any, cast
 
 import pytest
 
-_NumberLike = float | int | str | bytes
-
-
-def _gauge_value(g: Any) -> float:
-    maybe_get = getattr(getattr(g, "_value", None), "get", None)
-    if not callable(maybe_get):
-        return -1.0
-    try:
-        return float(cast(Callable[[], _NumberLike], maybe_get)())
-    except Exception:
-        return -1.0
+from tests.support.logging_utils import counter_value
 
 
 def _init_then_assert_then_shutdown(assert_fn) -> None:
@@ -49,8 +37,11 @@ class TestPersistenceProbe:
         os.environ.pop("QUANTUM_AUDIT_DIR", None)
 
         def _assert():
-            assert _gauge_value(m.pipeline_logging_ok) in (0.0, 1.0)  # init can succeed
-            assert _gauge_value(m.logging_sink_up) == 0.0
+            assert counter_value(m.pipeline_logging_ok) in (
+                0.0,
+                1.0,
+            )  # init can succeed
+            assert counter_value(m.logging_sink_up) == 0.0
 
         _init_then_assert_then_shutdown(_assert)
 
@@ -62,7 +53,7 @@ class TestPersistenceProbe:
         os.environ.pop("QUANTUM_AUDIT_DIR", None)
 
         def _assert():
-            assert _gauge_value(m.logging_sink_up) == 1.0
+            assert counter_value(m.logging_sink_up) == 1.0
 
         _init_then_assert_then_shutdown(_assert)
 
@@ -74,7 +65,7 @@ class TestPersistenceProbe:
         os.environ.pop("QUANTUM_LOG_DIR", None)
 
         def _assert():
-            assert _gauge_value(m.logging_sink_up) == 1.0
+            assert counter_value(m.logging_sink_up) == 1.0
 
         _init_then_assert_then_shutdown(_assert)
 
@@ -86,7 +77,7 @@ class TestPersistenceProbe:
         os.environ["QUANTUM_AUDIT_DIR"] = str(tmp_workspace["audit"])
 
         def _assert():
-            assert _gauge_value(m.logging_sink_up) == 1.0
+            assert counter_value(m.logging_sink_up) == 1.0
 
         _init_then_assert_then_shutdown(_assert)
 
@@ -99,11 +90,11 @@ class TestPersistenceProbe:
 
         bogus = Path(tmp_path) / "not_a_dir.jsonl"
         bogus.write_text("x", encoding="utf-8")
-        os.environ["QUANTUM_LOG_DIR"] = str(bogus)  # <-- pas un dossier
+        os.environ["QUANTUM_LOG_DIR"] = str(bogus)  # not a directory
         os.environ.pop("QUANTUM_AUDIT_DIR", None)
 
         def _assert():
-            assert _gauge_value(m.logging_sink_up) == 0.0
+            assert counter_value(m.logging_sink_up) == 0.0
 
         _init_then_assert_then_shutdown(_assert)
 
@@ -117,14 +108,14 @@ class TestPersistenceProbe:
         os.environ["QUANTUM_AUDIT_DIR"] = str(tmp_workspace["audit"])
 
         def _assert():
-            assert _gauge_value(m.logging_sink_up) == 1.0
+            assert counter_value(m.logging_sink_up) == 1.0
 
         _init_then_assert_then_shutdown(_assert)
 
     def test_deep_probe_enabled_keeps_logging_sink_up_1(self, tmp_workspace):
         """
         With QUANTUM_LOG_DIR + QUANTUM_LOG_DEEP_PROBE=1 → the write/read/cleanup probe passes,
-        logging_sink_up == 1. (We don't care about the presence of __probe__ because the code is partially clean.)
+        logging_sink_up == 1.
         """
         from quantum.infrastructure.observability.metrics import health as m
 
@@ -133,8 +124,7 @@ class TestPersistenceProbe:
         os.environ["QUANTUM_LOG_DEEP_PROBE"] = "1"
 
         def _assert():
-            assert _gauge_value(m.logging_sink_up) == 1.0
+            assert counter_value(m.logging_sink_up) == 1.0
 
         _init_then_assert_then_shutdown(_assert)
-        # Cleaning approx.
         os.environ.pop("QUANTUM_LOG_DEEP_PROBE", None)

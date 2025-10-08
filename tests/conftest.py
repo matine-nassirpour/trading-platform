@@ -1,5 +1,9 @@
 """
-Goals: Hermeticity, no shared states, zero FD/handler leaks.
+Goals: full test hermeticity, no shared state, and zero FD/handler leaks.
+- Isolated environment variables per test
+- Isolated Prometheus registry per test
+- Sealed temporary workspace for filesystem interactions
+- Defensive teardown for logging handlers between tests
 """
 
 from __future__ import annotations
@@ -11,19 +15,21 @@ import shutil
 import sys
 import tempfile
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Generator
 from contextlib import contextmanager, suppress
 from pathlib import Path
 
 import pytest
 
+from tests.support.types import Workspace
+
 # ──────────────────────────────────────────────────────────────────────────────
-# sys.path: add "src/" to the test runner's PYTHONPATH
+# sys.path: add "src/" to the test runner's PYTHONPATH (local code has priority)
 # ──────────────────────────────────────────────────────────────────────────────
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 _SRC = _PROJECT_ROOT / "src"
 if str(_SRC) not in sys.path:
-    sys.path.insert(0, str(_SRC))  # priority to the local version
+    sys.path.insert(0, str(_SRC))  # prefer local sources during tests
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -49,8 +55,12 @@ def _read_tail_complete_lines(
     path: Path, *, chunk_bytes: int, encoding: str = "utf-8"
 ) -> list[str]:
     """
-    Reads the end of a JSONL file, preserving only complete lines.
-    Robust to rotations/permissions/encoding.
+    Read the tail of a JSONL file, preserving only complete lines.
+
+    Robust to rotations/permissions/encoding:
+    - Seeks near the end of file (chunk_bytes)
+    - Drops a potentially truncated first/last line
+    - Normalizes newlines
     """
     try:
         with open(path, "rb") as fh:
@@ -61,7 +71,7 @@ def _read_tail_complete_lines(
             buf = fh.read().decode(encoding, "replace")
 
         if start_offset > 0:
-            buf = buf.split("\n", 1)[-1]  # drop 1st line potentially truncated
+            buf = buf.split("\n", 1)[-1]  # drop possibly truncated first line
 
         buf = buf.replace("\r\n", "\n")
         raw_lines = buf.split("\n")
@@ -80,8 +90,10 @@ def _read_tail_complete_lines(
 @pytest.fixture(scope="function")
 def iso_env():
     """
-    Isolates the process environment for testing.
-    Fully restores os.environ in teardown.
+    Isolate the process environment for a single test function.
+
+    Fully restores os.environ during teardown. Ensures any change to environment
+    variables in one test does not leak to the next one.
     """
     with _preserve_environ():
         yield
@@ -90,15 +102,17 @@ def iso_env():
 @pytest.fixture(scope="function")
 def clean_registry(monkeypatch):
     """
-    Isolates the Prometheus registry per test (Counter/Gauge/Histogram).
-    Avoids name collisions and shared state between tests.
+    Isolate the Prometheus registry per test (Counter/Gauge/Histogram).
+
+    Avoids metric name collisions and shared state across tests by providing
+    a fresh CollectorRegistry and monkeypatching common access points.
     """
     try:
         import prometheus_client
         from prometheus_client import CollectorRegistry
         from prometheus_client import core as pc_core
     except Exception:
-        # Prometheus not present / not used in the test
+        # Prometheus not present / not used by the test
         yield
         return
 
@@ -112,10 +126,15 @@ def clean_registry(monkeypatch):
 
 
 @pytest.fixture(scope="function")
-def tmp_workspace(iso_env, clean_registry):
+def tmp_workspace(iso_env, clean_registry) -> Generator[Workspace]:
     """
-    Create a temporary, sealed workspace with _logs and _audit.
-    Export the necessary QUANTUM_* variables and clean up in teardown.
+    Create a temporary, sealed workspace with subfolders: `_logs` and `_audit`.
+
+    Exports QUANTUM_* environment variables to point to those folders and
+    configures defaults for a quiet but functional observability pipeline.
+
+    Returns:
+        dict[str, Path]: mapping with keys "root", "logs", "audit".
     """
     tmpdir = Path(tempfile.mkdtemp(prefix="quantum_test_"))
     log_dir = tmpdir / "_logs"
@@ -135,10 +154,10 @@ def tmp_workspace(iso_env, clean_registry):
     # No Prometheus HTTP exposure in unit tests
     os.environ.setdefault("QUANTUM_METRICS_PORT", "0")
 
-    # Shortcuts & Safety
-    os.environ.setdefault("QUANTUM_LOG_FSYNC", "0")  # faster
-    os.environ.setdefault("QUANTUM_LOG_RATELIMIT", "0")  # no drop
-    os.environ.setdefault("QUANTUM_LOG_SAMPLE_INFO", "")  # no sampling
+    # Shortcuts & safety (faster, deterministic)
+    os.environ.setdefault("QUANTUM_LOG_FSYNC", "0")
+    os.environ.setdefault("QUANTUM_LOG_RATELIMIT", "0")
+    os.environ.setdefault("QUANTUM_LOG_SAMPLE_INFO", "")
     os.environ.setdefault("QUANTUM_LOG_MAX_BYTES", "1048576")  # 1 MiB
     os.environ.setdefault("QUANTUM_LOG_WARN_BYTES", "0")
     os.environ.setdefault("QUANTUM_TRACE_SAMPLE", "1.0")
@@ -146,8 +165,10 @@ def tmp_workspace(iso_env, clean_registry):
     os.environ.setdefault("QUANTUM_AUDIT_EVENTS_VERSION", "v1")
     os.environ.setdefault("QUANTUM_AUDIT_EVENTS", "order_submit_v1")
 
+    payload: Workspace = {"root": tmpdir, "logs": log_dir, "audit": audit_dir}
+
     try:
-        yield {"root": tmpdir, "logs": log_dir, "audit": audit_dir}
+        yield payload
     finally:
         # Teardown: pipeline shutdown + cleanup
         with suppress(Exception):
@@ -173,8 +194,9 @@ def tmp_workspace(iso_env, clean_registry):
 @pytest.fixture(scope="function")
 def no_rate_limit_no_sampling():
     """
-    Disables rate limiting and sampling INFO for tests that validate
-    the presence of inputs (less flakiness).
+    Disable INFO sampling and rate limiting for tests that assert presence of logs.
+
+    This reduces flakiness for tests that need to observe records deterministically.
     """
     prev = {
         "QUANTUM_LOG_RATELIMIT": os.environ.get("QUANTUM_LOG_RATELIMIT"),
@@ -198,8 +220,8 @@ def no_rate_limit_no_sampling():
 @pytest.fixture(scope="function")
 def obs_session(tmp_workspace):
     """
-    Opens a full observability session in a controlled context,
-    and guarantees a clean closure (freeing FDs/handlers).
+    Open a full observability session in a controlled context and guarantee
+    a clean closure (freeing FDs/handlers).
     """
     from quantum.infrastructure.observability.init_observability import (
         observability_session,
@@ -215,15 +237,15 @@ def obs_session(tmp_workspace):
     ):
         yield
 
-    # For security (observability_session already does the shutdown)
+    # Safety (observability_session already performs the shutdown)
     _close_all_handlers()
 
 
 @pytest.fixture(scope="function")
 def monotonic_stepper(monkeypatch):
     """
-    Monkeypatches time.monotonic_ns() with a deterministic generator.
-    Useful for stabilizing latency/rollover measurements.
+    Monkeypatch time.monotonic_ns() with a deterministic generator.
+    Useful for stabilizing latency/rollover measurements across tests.
     """
     step_ns = 5_000_000  # 5 ms
     t = 1_000_000_000_000  # arbitrary base in ns
@@ -243,8 +265,8 @@ def monotonic_stepper(monkeypatch):
 @pytest.fixture(scope="function")
 def read_jsonl():
     """
-    Returns a function: (base_dir, pattern, chunk_bytes=...) -> list[dict]
-    Robust reading inspired by the Streamlit page (only valid JSON).
+    Return a function: (base_dir, pattern, chunk_bytes=...) -> list[dict]
+    Reads the latest JSON objects from JSONL files (tail), skipping invalid lines.
     """
 
     def _reader(
@@ -268,8 +290,17 @@ def read_jsonl():
 @pytest.fixture(scope="function")
 def assert_jsonl_tail(read_jsonl):
     """
-    Returns a convenient assertion function on the JSONL tail:
-    assert_jsonl_tail(base_dir, match=lambda obj: bool, min_count=1, pattern='events-*.jsonl')
+    Return a convenient assertion function on the JSONL tail.
+
+    Usage:
+        assert_jsonl_tail(
+            base_dir,
+            match=lambda obj: bool,
+            min_count=1,
+            pattern="events-*.jsonl",
+            timeout_s=1.5,
+            poll_s=0.05,
+        ) -> list[dict]
     """
 
     def _assert(
@@ -292,7 +323,8 @@ def assert_jsonl_tail(read_jsonl):
             time.sleep(poll_s)
         # Failure → explicit raise with hint
         raise AssertionError(
-            f"Expected at least {min_count} matching JSON logs in tail, got {len([o for o in last if _safe_bool(match, o)])}.\n"
+            f"Expected at least {min_count} matching JSON logs in tail, "
+            f"got {len([o for o in last if _safe_bool(match, o)])}.\n"
             f"Scanned files under: {base_dir} (pattern={pattern})"
         )
 
@@ -308,10 +340,28 @@ def _safe_bool(fn: Callable[[dict], bool], obj: dict) -> bool:
 # ──────────────────────────────────────────────────────────────────────────────
 # Defensive global teardown: closing handlers between tests
 # ──────────────────────────────────────────────────────────────────────────────
+def _iter_all_loggers() -> list[logging.Logger]:
+    """
+    Return all known loggers including root and children registered in the manager.
+
+    This helps aggressively close/flush every handler that may have been added
+    by the code under test, avoiding FD leaks across tests.
+    """
+    # Start with root
+    loggers: list[logging.Logger] = [logging.getLogger()]
+    # Add any named loggers present in the registry
+    for name in list(logging.root.manager.loggerDict.keys()):
+        try:
+            loggers.append(logging.getLogger(name))
+        except Exception:
+            # Defensive: ignore malformed entries
+            continue
+    return loggers
+
+
 def _close_all_handlers():
-    """Cleanly closes and detaches all known logger handlers."""
-    for name in ("", "quantum.trading"):
-        logger = logging.getLogger(name)
+    """Cleanly flush/close and detach all handlers of all known loggers."""
+    for logger in _iter_all_loggers():
         for h in list(logger.handlers):
             with suppress(Exception):
                 h.flush()
@@ -324,16 +374,27 @@ def _close_all_handlers():
 @pytest.fixture(autouse=True)
 def _auto_cleanup_handlers():
     """
-    Auto-use fixture: In case a test forgets to close the pipeline,
+    Auto-use fixture: if a test forgets to close the pipeline,
     we clean up the handlers after each test to avoid FD leaks.
+
+    Cost note: this scans the logger registry per test; keep it lightweight in your
+    code under test to avoid registering an excessive number of loggers.
     """
     yield
     _close_all_handlers()
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Quality of life: more readable pytest logging (optional)
+# Pytest configuration hooks
 # ──────────────────────────────────────────────────────────────────────────────
-def pytest_configure(config):
-    # By default, we let pytest handle the capture. Nothing mandatory here.
-    pass
+def pytest_configure(config: pytest.Config) -> None:
+    """
+    Register commonly used custom markers to avoid warnings and improve test filtering.
+    """
+    for marker in (
+        "unit",
+        "filesystem",
+        "prometheus",
+        "otlp",
+    ):
+        config.addinivalue_line("markers", marker)

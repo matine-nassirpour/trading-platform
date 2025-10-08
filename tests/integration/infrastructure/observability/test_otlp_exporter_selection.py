@@ -1,67 +1,18 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Callable
-from contextlib import contextmanager
-from typing import Any, cast
 
 import pytest
 
-_NumberLike = float | int | str | bytes
+from tests.support.logging_utils import capture_logger, counter_value, propagate_logger
 
-
-def _gauge_value(g: Any) -> float:
-    """Simple reading of Gauge/Counter prometheus_client (isolated registry via fixture)."""
-    maybe_get = getattr(getattr(g, "_value", None), "get", None)
-    if not callable(maybe_get):
-        return -1.0
-    try:
-        return float(cast(Callable[[], _NumberLike], maybe_get)())
-    except Exception:
-        return -1.0
-
-
-@contextmanager
-def _propagate(logger_name: str):
-    """
-    Temporarily forces propagate=True on a given logger,
-    so that caplog (connected to root) captures its records.
-    """
-    lg = logging.getLogger(logger_name)
-    old = lg.propagate
-    try:
-        lg.propagate = True
-        yield
-    finally:
-        lg.propagate = old
-
-
-@contextmanager
-def _capture_logger(logger_name: str, level: int = logging.INFO):
-    """
-    Temporarily attaches a memory handler to `logger_name`.
-    Returns a `records` list of captured LogRecords.
-    """
-    lg = logging.getLogger(logger_name)
-    records: list[logging.LogRecord] = []
-
-    class _ListHandler(logging.Handler):
-        def emit(self, record: logging.LogRecord) -> None:
-            records.append(record)
-
-    h = _ListHandler(level=level)
-    old_level = lg.level
-    lg.addHandler(h)
-    lg.setLevel(min(old_level or level, level))
-    try:
-        yield records
-    finally:
-        lg.removeHandler(h)
-        lg.setLevel(old_level)
+# ──────────────────────────────────────────────────────────────────────────────
+# Helpers
+# ──────────────────────────────────────────────────────────────────────────────
 
 
 def _init_then_shutdown(*, force: bool = True) -> None:
-    """Starts then stops cleanly (to isolate each scenario)."""
+    """Start then stop cleanly (isolate each scenario)."""
     from quantum.infrastructure.observability.init_observability import (
         init_observability,
         shutdown_observability,
@@ -74,6 +25,48 @@ def _init_then_shutdown(*, force: bool = True) -> None:
         reset_state=True,
         set_gauges_down=True,
     )
+
+
+def _assert_inactive_with_reason(
+    caplog: pytest.LogCaptureFixture,
+    *,
+    reason_expected: str,
+    log_name: str = "quantum.infrastructure.observability.tracing.traces",
+) -> None:
+    """
+    Common assertion for 'inactive' scenarios:
+      - pipeline_tracing_ok == 1.0
+      - tracer_exporter_active == 0.0
+      - warning log "OTLP exporter configured but INACTIVE" containing the expected reason
+    """
+    from quantum.infrastructure.observability.metrics import health as m
+
+    caplog.clear()
+    caplog.set_level(logging.INFO)
+
+    with propagate_logger(log_name):
+        with capture_logger(log_name) as recs:
+            _init_then_shutdown(force=True)
+
+    assert counter_value(m.pipeline_tracing_ok) == 1.0
+    assert counter_value(m.tracer_exporter_active) == 0.0
+
+    reasons = [
+        r
+        for r in recs
+        if "OTLP exporter configured but INACTIVE" in (r.getMessage() or "")
+    ]
+    assert reasons, "Expected INACTIVE warning log"
+    assert any(
+        (getattr(r, "attrs", {}) or {}).get("reason") == reason_expected
+        or reason_expected in r.getMessage()
+        for r in reasons
+    ), f"Expected reason {reason_expected!r} in warning log"
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Tests
+# ──────────────────────────────────────────────────────────────────────────────
 
 
 @pytest.mark.usefixtures("no_rate_limit_no_sampling")
@@ -96,8 +89,8 @@ class TestOTLPExporterSelection:
 
             _init_then_shutdown(force=True)
 
-            assert _gauge_value(m.pipeline_tracing_ok) == 1.0
-            assert _gauge_value(m.tracer_exporter_active) == 0.0
+            assert counter_value(m.pipeline_tracing_ok) == 1.0
+            assert counter_value(m.tracer_exporter_active) == 0.0
 
     def test_otlp_http_active_when_pkg_present(
         self, tmp_workspace, monkeypatch, caplog
@@ -118,11 +111,11 @@ class TestOTLPExporterSelection:
         caplog.clear()
         caplog.set_level(logging.INFO)
 
-        with _propagate("quantum.infrastructure.observability.tracing.traces"):
+        with propagate_logger("quantum.infrastructure.observability.tracing.traces"):
             _init_then_shutdown(force=True)
 
-        assert _gauge_value(m.pipeline_tracing_ok) == 1.0
-        assert _gauge_value(m.tracer_exporter_active) == 1.0
+        assert counter_value(m.pipeline_tracing_ok) == 1.0
+        assert counter_value(m.tracer_exporter_active) == 1.0
         assert not any(
             "OTLP exporter configured but INACTIVE" in r.message for r in caplog.records
         )
@@ -135,7 +128,6 @@ class TestOTLPExporterSelection:
         """
         import os
 
-        from quantum.infrastructure.observability.metrics import health as m
         from quantum.infrastructure.observability.tracing import traces as tmod
 
         monkeypatch.setattr(tmod, "_HAS_OTLP_HTTP", False, raising=True)
@@ -143,29 +135,9 @@ class TestOTLPExporterSelection:
         os.environ["QUANTUM_TRACE_EXPORTER"] = "otlp"
         os.environ["QUANTUM_TRACE_OTLP_PROTOCOL"] = "http"
 
-        caplog.clear()
-        caplog.set_level(logging.INFO)
-
-        with _propagate("quantum.infrastructure.observability.tracing.traces"):
-            with _capture_logger(
-                "quantum.infrastructure.observability.tracing.traces"
-            ) as recs:
-                _init_then_shutdown(force=True)
-
-        assert _gauge_value(m.pipeline_tracing_ok) == 1.0
-        assert _gauge_value(m.tracer_exporter_active) == 0.0
-
-        reasons = [
-            r
-            for r in recs
-            if "OTLP exporter configured but INACTIVE" in (r.getMessage() or "")
-        ]
-        assert reasons, "Expected INACTIVE warning log"
-        assert any(
-            (getattr(r, "attrs", {}) or {}).get("reason") == "otlp_http_package_missing"
-            or "otlp_http_package_missing" in r.getMessage()
-            for r in reasons
-        ), "Expected reason 'otlp_http_package_missing' in warning log"
+        _assert_inactive_with_reason(
+            caplog, reason_expected="otlp_http_package_missing"
+        )
 
     def test_otlp_grpc_active_when_pkg_present(
         self, tmp_workspace, monkeypatch, caplog
@@ -187,21 +159,20 @@ class TestOTLPExporterSelection:
         caplog.clear()
         caplog.set_level(logging.INFO)
 
-        with _propagate("quantum.infrastructure.observability.tracing.traces"):
+        with propagate_logger("quantum.infrastructure.observability.tracing.traces"):
             _init_then_shutdown(force=True)
 
-        assert _gauge_value(m.pipeline_tracing_ok) == 1.0
-        assert _gauge_value(m.tracer_exporter_active) == 1.0
+        assert counter_value(m.pipeline_tracing_ok) == 1.0
+        assert counter_value(m.tracer_exporter_active) == 1.0
 
     def test_otlp_grpc_inactive_when_pkg_missing(
         self, tmp_workspace, monkeypatch, caplog
     ):
         """
-        export=otlp, protocol=grpc, package missing → inactive=0.0 and log reason='otlp_grpc_package_missing'.
+        exporter=otlp, protocol=grpc, package missing → inactive=0.0 and log reason='otlp_grpc_package_missing'.
         """
         import os
 
-        from quantum.infrastructure.observability.metrics import health as m
         from quantum.infrastructure.observability.tracing import traces as tmod
 
         monkeypatch.setattr(tmod, "_HAS_OTLP_GRPC", False, raising=True)
@@ -210,72 +181,27 @@ class TestOTLPExporterSelection:
         os.environ["QUANTUM_TRACE_OTLP_PROTOCOL"] = "grpc"
         os.environ["QUANTUM_TRACE_OTLP_INSECURE"] = "1"
 
-        caplog.clear()
-        caplog.set_level(logging.INFO)
-
-        with _propagate("quantum.infrastructure.observability.tracing.traces"):
-            with _capture_logger(
-                "quantum.infrastructure.observability.tracing.traces"
-            ) as recs:
-                _init_then_shutdown(force=True)
-
-        assert _gauge_value(m.pipeline_tracing_ok) == 1.0
-        assert _gauge_value(m.tracer_exporter_active) == 0.0
-
-        reasons = [
-            r
-            for r in recs
-            if "OTLP exporter configured but INACTIVE" in (r.getMessage() or "")
-        ]
-        assert reasons, "Expected INACTIVE warning log"
-        assert any(
-            (getattr(r, "attrs", {}) or {}).get("reason") == "otlp_grpc_package_missing"
-            or "otlp_grpc_package_missing" in r.getMessage()
-            for r in reasons
-        ), "Expected reason 'otlp_grpc_package_missing' in warning log"
+        _assert_inactive_with_reason(
+            caplog, reason_expected="otlp_grpc_package_missing"
+        )
 
     def test_otlp_unsupported_protocol_is_inactive(self, tmp_workspace, caplog):
         """
-        exporter=otlp, protocol inconnu → inactive=0.0
-        et log reason='unsupported_protocol'.
+        exporter=otlp, unknown protocol → inactive=0.0 and log reason='unsupported_protocol'.
         """
         import os
 
-        from quantum.infrastructure.observability.metrics import health as m
-
         os.environ["QUANTUM_TRACE_EXPORTER"] = "otlp"
-        os.environ["QUANTUM_TRACE_OTLP_PROTOCOL"] = "ws"  # invalide
+        os.environ["QUANTUM_TRACE_OTLP_PROTOCOL"] = "ws"  # invalid
 
-        caplog.clear()
-        caplog.set_level(logging.INFO)
-
-        with _propagate("quantum.infrastructure.observability.tracing.traces"):
-            with _capture_logger(
-                "quantum.infrastructure.observability.tracing.traces"
-            ) as recs:
-                _init_then_shutdown(force=True)
-
-        assert _gauge_value(m.pipeline_tracing_ok) == 1.0
-        assert _gauge_value(m.tracer_exporter_active) == 0.0
-
-        reasons = [
-            r
-            for r in recs
-            if "OTLP exporter configured but INACTIVE" in (r.getMessage() or "")
-        ]
-        assert reasons, "Expected INACTIVE warning log"
-        assert any(
-            (getattr(r, "attrs", {}) or {}).get("reason") == "unsupported_protocol"
-            or "unsupported_protocol" in r.getMessage()
-            for r in reasons
-        ), "Expected reason 'unsupported_protocol' in warning log"
+        _assert_inactive_with_reason(caplog, reason_expected="unsupported_protocol")
 
     def test_otlp_init_failure_triggers_fallback(
         self, tmp_workspace, monkeypatch, caplog
     ):
         """
-        If init_tracing throws an exception (e.g., an OTLP constructor crashes),
-        init_observability applies the fallback: exporter=none, sample_ratio=0.0
+        If init_tracing raises (e.g., OTLP constructor crashes), init_observability
+        falls back to exporter=none, sample_ratio=0.0.
 
         - pipeline_tracing_ok == 1.0
         - tracer_exporter_active == 0.0
@@ -303,15 +229,17 @@ class TestOTLPExporterSelection:
         caplog.clear()
         caplog.set_level(logging.INFO)
 
-        with _propagate("quantum.infrastructure.observability.tracing.traces"):
-            with _propagate("quantum.infrastructure.observability.init_observability"):
-                with _capture_logger(
+        with propagate_logger("quantum.infrastructure.observability.tracing.traces"):
+            with propagate_logger(
+                "quantum.infrastructure.observability.init_observability"
+            ):
+                with capture_logger(
                     "quantum.infrastructure.observability.init_observability"
                 ) as recs:
                     init_observability(force=True)
                     try:
-                        assert _gauge_value(m.pipeline_tracing_ok) == 1.0
-                        assert _gauge_value(m.tracer_exporter_active) == 0.0
+                        assert counter_value(m.pipeline_tracing_ok) == 1.0
+                        assert counter_value(m.tracer_exporter_active) == 0.0
                         assert any(
                             "Tracing fallback activated" in (r.getMessage() or "")
                             for r in recs

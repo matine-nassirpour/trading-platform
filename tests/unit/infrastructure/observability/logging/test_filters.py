@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Callable
-from typing import Any, cast
 
 import pytest
 
@@ -17,44 +15,8 @@ from quantum.infrastructure.observability.logging.filters import (
     RedactFilter,
     StaticFieldsFilter,
 )
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Helpers
-# ──────────────────────────────────────────────────────────────────────────────
-
-_NumberLike = float | int | str | bytes
-
-
-def _make_record(
-    name: str = "t",
-    level: int = logging.INFO,
-    msg: str = "hello",
-    *,
-    extra: dict[str, Any] | None = None,
-    exc_info: Any = None,
-) -> logging.LogRecord:
-    logger = logging.getLogger(name)
-    rec = logger.makeRecord(
-        name=name, level=level, fn="x.py", lno=123, msg=msg, args=(), exc_info=exc_info
-    )
-    if extra:
-        for k, v in extra.items():
-            setattr(rec, k, v)
-    return rec
-
-
-def _counter_value(c: Any) -> float:
-    """
-    Safe read of prometheus_client Counter (isolated registry via conftest fixture).
-    """
-    maybe_get = getattr(getattr(c, "_value", None), "get", None)
-    if not callable(maybe_get):
-        return -1.0
-    try:
-        return float(cast(Callable[[], _NumberLike], maybe_get)())
-    except Exception:
-        return -1.0
-
+from tests.support.factories import make_record
+from tests.support.logging_utils import counter_value
 
 # ──────────────────────────────────────────────────────────────────────────────
 # IgnoreLibrariesFilter / LoggingContextFilter / MonotonicTimestampFilter
@@ -62,6 +24,11 @@ def _counter_value(c: Any) -> float:
 
 
 def test_ignore_libraries_filter_blocks_known_prefixes():
+    """
+    Given noisy library logger prefixes
+    When passing records through IgnoreLibrariesFilter
+    Then those records are dropped and others pass through
+    """
     f = IgnoreLibrariesFilter()
     blocked = [
         "urllib3.connectionpool",
@@ -72,33 +39,43 @@ def test_ignore_libraries_filter_blocks_known_prefixes():
         "opentelemetry.sdk._shared_internal",
     ]
     for name in blocked:
-        rec = _make_record(name=name)
+        rec = make_record(name=name)
         assert f.filter(rec) is False, f"should block {name}"
 
-    # non bloqué
-    rec2 = _make_record(name="my.app.component")
+    # Non-blocked prefix should pass
+    rec2 = make_record(name="my.app.component")
     assert f.filter(rec2) is True
 
 
 def test_logging_context_filter_injects_env():
+    """
+    Given a LoggingContextFilter configured with env='prod'
+    When a record passes through
+    Then 'env' is injected (unless already present)
+    """
     f = LoggingContextFilter(env="prod")
-    rec = _make_record(name="x")
+    rec = make_record(name="x")
     assert f.filter(rec) is True
     assert getattr(rec, "env") == "prod"
 
 
 def test_monotonic_timestamp_filter_injects_once():
+    """
+    Given a record without ts_monotonic_ms
+    When it passes through MonotonicTimestampFilter
+    Then the field is injected exactly once and not overwritten if already present
+    """
     f = MonotonicTimestampFilter()
-    rec = _make_record()
+    rec = make_record()
     assert not hasattr(rec, "ts_monotonic_ms")
     assert f.filter(rec) is True
-    first = rec.ts_monotonic_ms
+    first = getattr(rec, "ts_monotonic_ms")
     assert isinstance(first, int)
 
-    # ne réécrit pas si déjà présent
-    rec2 = _make_record(extra={"ts_monotonic_ms": 123})
+    # Do not rewrite if already present
+    rec2 = make_record(extra={"ts_monotonic_ms": 123})
     assert f.filter(rec2) is True
-    assert rec2.ts_monotonic_ms == 123
+    assert getattr(rec2, "ts_monotonic_ms") == 123
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -107,36 +84,41 @@ def test_monotonic_timestamp_filter_injects_once():
 
 
 def test_audit_event_filter_allowlist_and_suffix(monkeypatch):
-    # Étend l'allowlist via l'env (CSV), sans suffixes (normalisation)
+    """
+    Given QUANTUM_AUDIT_EVENTS extends the allowlist
+    When AuditEventFilter evaluates various payloads
+    Then only dicts with an allowed event_name (version-agnostic) pass
+    """
+    # Extend the allowlist via environment (CSV), version suffix normalization
     monkeypatch.setenv("QUANTUM_AUDIT_EVENTS", "custom_evt_v1,order_fill_v2")
     monkeypatch.setenv("QUANTUM_AUDIT_EVENTS_VERSION", "v1")
 
-    # sanity: set résultant inclut baseline + custom
+    # Sanity: resulting set includes baseline + custom
     al = get_audit_allowlist("v1")
     assert "order_submit" in al  # baseline
-    assert "order_fill" in al  # baseline (suffix retiré)
+    assert "order_fill" in al  # baseline (suffix stripped)
     assert "custom_evt" in al
 
     f = AuditEventFilter()
 
-    # 1) non-dict → rejet
-    rec = _make_record(extra={"event": "not a dict"})
+    # 1) non-dict → reject
+    rec = make_record(extra={"event": "not a dict"})
     assert f.filter(rec) is False
 
-    # 2) dict sans event_name → rejet
-    rec2 = _make_record(extra={"event": {"foo": "bar"}})
+    # 2) dict without event_name → reject
+    rec2 = make_record(extra={"event": {"foo": "bar"}})
     assert f.filter(rec2) is False
 
-    # 3) event_name inconnu → rejet
-    rec3 = _make_record(extra={"event": {"event_name": "unknown_evt"}})
+    # 3) unknown event_name → reject
+    rec3 = make_record(extra={"event": {"event_name": "unknown_evt"}})
     assert f.filter(rec3) is False
 
-    # 4) suffix version _v2 accepté si base présent
-    rec4 = _make_record(extra={"event": {"event_name": "order_fill_v2"}})
+    # 4) version suffix accepted if base present
+    rec4 = make_record(extra={"event": {"event_name": "order_fill_v2"}})
     assert f.filter(rec4) is True
 
-    # 5) notre custom (avec suffixe v1) → accepté
-    rec5 = _make_record(extra={"event": {"event_name": "custom_evt_v1"}})
+    # 5) our custom (with suffix v1) → accepted
+    rec5 = make_record(extra={"event": {"event_name": "custom_evt_v1"}})
     assert f.filter(rec5) is True
 
 
@@ -148,19 +130,20 @@ def test_audit_event_filter_allowlist_and_suffix(monkeypatch):
 @pytest.mark.usefixtures("no_rate_limit_no_sampling")
 def test_redact_filter_attrs_and_msg_and_counter(monkeypatch):
     """
-    - Redaction des clés sensibles dans attrs (→ compteur ++ si plus court)
-    - Redaction JWT/HEX32 dans msg
-    - Troncature longue chaîne msg (> MAX_VALUE_LEN)
+    Given sensitive keys in attrs and secrets in msg (JWT/HEX)
+    When passing through RedactFilter
+    Then sensitive values are redacted, long strings are truncated,
+         and a redaction counter is incremented when shrink occurs
     """
     from quantum.infrastructure.observability.metrics.health import (
         logging_redactions_total as red_counter,
     )
 
-    before = _counter_value(red_counter)
+    before = counter_value(red_counter)
 
     f = RedactFilter()
 
-    # --- attrs secrets + long string (assure réduction mesurable) ---
+    # --- attrs secrets + long string (ensure measurable reduction) ---
     long_secret = "s" * (RedactFilter.MAX_VALUE_LEN + 100)
     attrs = {
         "password": "p@ss",  # pragma: allowlist secret
@@ -169,11 +152,11 @@ def test_redact_filter_attrs_and_msg_and_counter(monkeypatch):
         "plain": "fine",
         "long": long_secret,
     }
-    rec = _make_record(msg="no jwt yet", extra={"attrs": attrs})
+    rec = make_record(msg="no jwt yet", extra={"attrs": attrs})
     assert f.filter(rec) is True
 
-    # secrets masqués + troncature appliquée
-    red = rec.attrs
+    # Secrets redacted + truncation applied
+    red = getattr(rec, "attrs")
     assert red["password"] == "[REDACTED]"
     assert red["nested"]["client_secret"] == "[REDACTED]"
     assert isinstance(red["plain"], str) and red["plain"] == "fine"
@@ -181,10 +164,10 @@ def test_redact_filter_attrs_and_msg_and_counter(monkeypatch):
         red["long"].endswith("…") and len(red["long"]) == RedactFilter.MAX_VALUE_LEN + 1
     )
 
-    after = _counter_value(red_counter)
+    after = counter_value(red_counter)
     assert after == before + 1.0, "redactions counter should increment on attrs shrink"
 
-    # --- msg: JWT-like + HEX32 + troncature ---
+    # --- msg: JWT-like + HEX32 + truncation ---
     jwt_like = (
         "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
         "eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6Imp3dCIsImlhdCI6MTUxNjIzOTAyMn0."
@@ -193,12 +176,12 @@ def test_redact_filter_attrs_and_msg_and_counter(monkeypatch):
     hex32 = "a" * 32
     very_long = "X" * (RedactFilter.MAX_VALUE_LEN + 500)
 
-    rec2 = _make_record(msg=f"token={jwt_like} hex={hex32} long={very_long}")
+    rec2 = make_record(msg=f"token={jwt_like} hex={hex32} long={very_long}")
     assert f.filter(rec2) is True
-    # message nettoyé
+    # message cleaned
     assert "[REDACTED]" in rec2.msg
     assert "token=" in rec2.msg and "hex=" in rec2.msg
-    # troncature
+    # truncation
     assert rec2.msg.endswith("…")
     assert len(rec2.msg) == RedactFilter.MAX_VALUE_LEN + 1
 
@@ -210,13 +193,15 @@ def test_redact_filter_attrs_and_msg_and_counter(monkeypatch):
 
 def test_rate_limit_filter_bucket_and_refill(monkeypatch):
     """
-    max_per_sec=2 → 2 premières acceptées, 3e rejettée sans avance de temps.
-    Puis +0.5s (toujours 3e rejetée), puis +1s (devient acceptée).
-    On monkeypatch `time.monotonic` du module filters pour contrôler l'horloge.
+    Given max_per_sec=2
+    When consuming tokens without advancing time
+    Then the 3rd INFO is dropped
+    And after +0.5s exactly one token is refilled (with rate=2/s)
+    And after +1.0s two more tokens are available
     """
     import quantum.infrastructure.observability.logging.filters as fmod
 
-    # horloge contrôlée
+    # Controlled monotonic clock
     t = [1000.0]
 
     def _mono():
@@ -226,24 +211,26 @@ def test_rate_limit_filter_bucket_and_refill(monkeypatch):
 
     rl = RateLimitFilter(max_per_sec=2.0)
 
-    # Au départ, le seau contient 2 jetons (voir init)
-    r1 = rl.filter(_make_record())
-    r2 = rl.filter(_make_record())
-    r3 = rl.filter(_make_record())
-    assert r1 is True and r2 is True and r3 is False, "3e doit être rejetée sans refill"
+    # Initially, bucket holds 2 tokens (per init)
+    r1 = rl.filter(make_record())
+    r2 = rl.filter(make_record())
+    r3 = rl.filter(make_record())
+    assert (
+        r1 is True and r2 is True and r3 is False
+    ), "3rd must be dropped without refill"
 
-    # avance +0.5s → refill = 1 jeton/s * 0.5 * 2 = 1.0 ? Non: rate=2/s → +1.0 jeton
+    # +0.5s → refill = 2/s * 0.5 = +1 token
     t[0] += 0.5
-    r4 = rl.filter(_make_record())
-    assert r4 is True  # consomme le jeton reconstitué
-    r5 = rl.filter(_make_record())
+    r4 = rl.filter(make_record())
+    assert r4 is True  # consumes the refilled token
+    r5 = rl.filter(make_record())
     assert r5 is False
 
-    # avance encore +1s → +2 jetons → 2 acceptées
+    # +1.0s → +2 tokens → 2 accepted, 3rd dropped
     t[0] += 1.0
-    r6 = rl.filter(_make_record())
-    r7 = rl.filter(_make_record())
-    r8 = rl.filter(_make_record())
+    r6 = rl.filter(make_record())
+    r7 = rl.filter(make_record())
+    r8 = rl.filter(make_record())
     assert r6 is True and r7 is True and r8 is False
 
 
@@ -254,17 +241,18 @@ def test_rate_limit_filter_bucket_and_refill(monkeypatch):
 
 def test_info_sampler_filter_every_3():
     """
-    sample_every=3 → 1er & 2e INFO droppés, 3e accepté, etc.
-    Non-INFO toujours accepté.
+    Given sample_every=3
+    When sending INFO logs
+    Then the 1st & 2nd are dropped, the 3rd is accepted, and so on
+    Non-INFO levels always pass
     """
     s = InfoSamplerFilter(sample_every=3)
 
-    # Non-INFO -> toujours True
-    assert s.filter(_make_record(level=logging.WARNING)) is True
+    # Non-INFO → always True
+    assert s.filter(make_record(level=logging.WARNING)) is True
 
     # INFO: 1 → drop ; 2 → drop ; 3 → pass ; 4 → drop ; 5 → drop ; 6 → pass
-    results = [s.filter(_make_record(level=logging.INFO)) for _ in range(6)]
-    # on n'a que des INFO ci-dessus ; attendus: [False, False, True, False, False, True]
+    results = [s.filter(make_record(level=logging.INFO)) for _ in range(6)]
     assert results == [False, False, True, False, False, True]
 
 
@@ -274,19 +262,24 @@ def test_info_sampler_filter_every_3():
 
 
 def test_static_fields_filter_sets_and_does_not_overwrite():
+    """
+    Given StaticFieldsFilter(service_name/namespace/version)
+    When a record passes with/without existing fields
+    Then fields are injected when missing and never overwritten if present
+    """
     f = StaticFieldsFilter(
         service_name="svcA", service_namespace="nsA", service_version="1.0.0"
     )
 
-    # injecte si absent
-    rec = _make_record()
+    # Inject when absent
+    rec = make_record()
     assert f.filter(rec) is True
-    assert rec.service_name == "svcA"
-    assert rec.service_namespace == "nsA"
-    assert rec.service_version == "1.0.0"
+    assert getattr(rec, "service_name") == "svcA"
+    assert getattr(rec, "service_namespace") == "nsA"
+    assert getattr(rec, "service_version") == "1.0.0"
 
-    # ne remplace pas si déjà présent
-    rec2 = _make_record(
+    # Do not replace when already present
+    rec2 = make_record(
         extra={
             "service_name": "svcB",
             "service_namespace": "nsB",
@@ -294,6 +287,6 @@ def test_static_fields_filter_sets_and_does_not_overwrite():
         }
     )
     assert f.filter(rec2) is True
-    assert rec2.service_name == "svcB"
-    assert rec2.service_namespace == "nsB"
-    assert rec2.service_version == "2.0.0"
+    assert getattr(rec2, "service_name") == "svcB"
+    assert getattr(rec2, "service_namespace") == "nsB"
+    assert getattr(rec2, "service_version") == "2.0.0"
