@@ -144,14 +144,38 @@ trading-platform/
 │   │   ├── infrastructure/
 │   │   │   ├── observability/
 │   │   │   │   ├── __init__.py
+│   │   │   │   ├── test_bootstrap_shutdown.py
+│   │   │   │   ├── test_context_propagation.py
+│   │   │   │   ├── test_metrics_http_endpoint.py
+│   │   │   │   ├── test_otlp_exporter_selection.py
+│   │   │   │   ├── test_persistence_probe.py
 │   │   │   │   └── test_pipeline_contract.py
 │   │   │   └── __init__.py
 │   │   └── __init__.py
 │   ├── unit/
+│   │   ├── infrastructure/
+│   │   │   ├── observability/
+│   │   │   │   ├── logging/
+│   │   │   │   │   ├── __init__.py
+│   │   │   │   │   ├── test_audit_sink.py
+│   │   │   │   │   ├── test_constants.py
+│   │   │   │   │   ├── test_event_emitter.py
+│   │   │   │   │   ├── test_filters.py
+│   │   │   │   │   ├── test_formatter.py
+│   │   │   │   │   ├── test_models_factory.py
+│   │   │   │   │   └── test_partitioned_handlers.py
+│   │   │   │   ├── tracing/
+│   │   │   │   │   ├── __init__.py
+│   │   │   │   │   └── test_propagation.py
+│   │   │   │   └── __init__.py
+│   │   │   └── __init__.py
 │   │   ├── shared/
-│   │   │   ├── serialization/
+│   │   │   ├── config/
 │   │   │   │   ├── __init__.py
-│   │   │   │   └── test_dummy.py
+│   │   │   │   └── test_env_flags.py
+│   │   │   ├── time/
+│   │   │   │   ├── __init__.py
+│   │   │   │   └── test_time_utils.py
 │   │   │   └── __init__.py
 │   │   └── __init__.py
 │   ├── __init__.py
