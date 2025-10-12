@@ -1,0 +1,49 @@
+import time
+from datetime import datetime, timezone
+
+
+def now_rfc3339_ms() -> str:
+    """
+    Current UTC time as RFC3339 string with millisecond precision.
+    Example: '2025-09-29T14:12:45.123Z'
+    """
+    dt = datetime.now(tz=timezone.utc)
+    return dt.isoformat(timespec="milliseconds").replace("+00:00", "Z")
+
+
+def from_unix_s_to_rfc3339_ms(seconds: float) -> str:
+    """
+    Convert a UNIX timestamp (seconds since epoch) to RFC3339 with ms precision.
+    Useful to format logging.LogRecord.created or any float UNIX timestamp.
+
+    Args:
+        seconds: UNIX epoch time in seconds (float allowed).
+    """
+    dt = datetime.fromtimestamp(seconds, tz=timezone.utc)
+    return dt.isoformat(timespec="milliseconds").replace("+00:00", "Z")
+
+
+def now_mono_ms() -> int:
+    """
+    Monotonic clock in milliseconds (not subject to system clock changes).
+    Ideal for measuring durations/latencies and ordering events.
+    """
+    return time.monotonic_ns() // 1_000_000
+
+
+def elapsed_ms(start_mono_ms: int) -> int:
+    """
+    Returns elapsed milliseconds from a monotonic ms start.
+    """
+    return (time.monotonic_ns() // 1_000_000) - start_mono_ms
+
+
+def to_rfc3339_ms(dt: datetime) -> str:
+    """
+    Convert any aware/naive datetime to UTC RFC3339 with ms.
+    """
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    else:
+        dt = dt.astimezone(timezone.utc)
+    return dt.isoformat(timespec="milliseconds").replace("+00:00", "Z")

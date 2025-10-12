@@ -1,0 +1,121 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_PROMETHEUS",
+      "label": "Prometheus",
+      "description": "Prometheus datasource",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "pluginName": "Prometheus"
+    }
+  ],
+  "__requires": [
+    { "type": "panel", "id": "stat", "name": "Stat", "version": "8.0.0" },
+    { "type": "panel", "id": "graph", "name": "Graph (old)", "version": "8.0.0" },
+    { "type": "panel", "id": "timeseries", "name": "Time series", "version": "8.0.0" },
+    { "type": "datasource", "id": "prometheus", "name": "Prometheus", "version": "2.0.0" }
+  ],
+  "title": "Quantum Observability",
+  "schemaVersion": 36,
+  "version": 1,
+  "tags": ["quantum", "observability"],
+  "timezone": "browser",
+  "editable": true,
+  "refresh": "10s",
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Pipeline Up",
+      "gridPos": {"x": 0, "y": 0, "w": 4, "h": 4},
+      "datasource": "${DS_PROMETHEUS}",
+      "targets": [{"expr": "quantum_pipeline_up"}],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}}
+    },
+    {
+      "type": "stat",
+      "title": "Tracer Exporter Active",
+      "gridPos": {"x": 4, "y": 0, "w": 4, "h": 4},
+      "datasource": "${DS_PROMETHEUS}",
+      "targets": [{"expr": "quantum_tracer_exporter_active"}],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}}
+    },
+    {
+      "type": "stat",
+      "title": "Logging Sinks",
+      "gridPos": {"x": 8, "y": 0, "w": 4, "h": 4},
+      "datasource": "${DS_PROMETHEUS}",
+      "targets": [{"expr": "quantum_logging_sink_up"}],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}}
+    },
+    {
+      "type": "stat",
+      "title": "/metrics HTTP",
+      "gridPos": {"x": 12, "y": 0, "w": 4, "h": 4},
+      "datasource": "${DS_PROMETHEUS}",
+      "targets": [{"expr": "quantum_pipeline_metrics_http_ok"}],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}}
+    },
+
+    {
+      "type": "timeseries",
+      "title": "Logging Schema Validation Errors",
+      "gridPos": {"x": 0, "y": 4, "w": 8, "h": 7},
+      "datasource": "${DS_PROMETHEUS}",
+      "targets": [{"expr": "increase(quantum_logging_schema_validation_errors_total[5m])"}]
+    },
+    {
+      "type": "timeseries",
+      "title": "Logging Redactions",
+      "gridPos": {"x": 8, "y": 4, "w": 8, "h": 7},
+      "datasource": "${DS_PROMETHEUS}",
+      "targets": [{"expr": "increase(quantum_logging_redactions_total[5m])"}]
+    },
+
+    {
+      "type": "timeseries",
+      "title": "File Rotations",
+      "gridPos": {"x": 0, "y": 11, "w": 8, "h": 7},
+      "datasource": "${DS_PROMETHEUS}",
+      "targets": [{"expr": "increase(quantum_logging_file_rotations_total[5m])"}]
+    },
+
+    {
+      "type": "timeseries",
+      "title": "UI Action Latency p50/p95/p99 (ms)",
+      "gridPos": {"x": 8, "y": 11, "w": 16, "h": 8},
+      "datasource": "${DS_PROMETHEUS}",
+      "targets": [
+        {"expr": "histogram_quantile(0.50, sum by (le) (rate(quantum_ui_action_latency_ms_bucket[5m])))", "legendFormat": "p50"},
+        {"expr": "histogram_quantile(0.95, sum by (le) (rate(quantum_ui_action_latency_ms_bucket[5m])))", "legendFormat": "p95"},
+        {"expr": "histogram_quantile(0.99, sum by (le) (rate(quantum_ui_action_latency_ms_bucket[5m])))", "legendFormat": "p99"}
+      ]
+    },
+
+    {
+      "type": "timeseries",
+      "title": "UI Page Render p50/p95/p99 (ms)",
+      "gridPos": {"x": 0, "y": 18, "w": 16, "h": 8},
+      "datasource": "${DS_PROMETHEUS}",
+      "targets": [
+        {"expr": "histogram_quantile(0.50, sum by (le) (rate(quantum_ui_page_render_ms_bucket[5m])))", "legendFormat": "p50"},
+        {"expr": "histogram_quantile(0.95, sum by (le) (rate(quantum_ui_page_render_ms_bucket[5m])))", "legendFormat": "p95"},
+        {"expr": "histogram_quantile(0.99, sum by (le) (rate(quantum_ui_page_render_ms_bucket[5m])))", "legendFormat": "p99"}
+      ]
+    },
+
+    {
+      "type": "timeseries",
+      "title": "MT5 Health & Flow",
+      "gridPos": {"x": 0, "y": 26, "w": 24, "h": 9},
+      "datasource": "${DS_PROMETHEUS}",
+      "targets": [
+        {"expr": "mt5_terminal_up", "legendFormat": "terminal_up"},
+        {"expr": "rate(mt5_order_reject_total[5m])", "legendFormat": "order_rejects/s"},
+        {"expr": "rate(mt5_requotes_total[5m])", "legendFormat": "requotes/s"},
+        {"expr": "mt5_positions_open", "legendFormat": "positions_open"}
+      ]
+    }
+  ],
+  "templating": {"list": []},
+  "annotations": {"list": []}
+}
