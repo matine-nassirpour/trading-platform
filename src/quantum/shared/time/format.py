@@ -1,5 +1,9 @@
+import re
 import time
 from datetime import datetime, timezone
+
+# RFC3339 UTC with EXACT milliseconds and 'Z' suffix
+RFC3339_MS = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$")
 
 
 def now_rfc3339_ms() -> str:
@@ -31,19 +35,13 @@ def now_mono_ms() -> int:
     return time.monotonic_ns() // 1_000_000
 
 
-def elapsed_ms(start_mono_ms: int) -> int:
-    """
-    Returns elapsed milliseconds from a monotonic ms start.
-    """
-    return (time.monotonic_ns() // 1_000_000) - start_mono_ms
+def is_rfc3339_ms(value: str) -> bool:
+    return bool(RFC3339_MS.match(value))
 
 
-def to_rfc3339_ms(dt: datetime) -> str:
-    """
-    Convert any aware/naive datetime to UTC RFC3339 with ms.
-    """
-    if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
-    else:
-        dt = dt.astimezone(timezone.utc)
-    return dt.isoformat(timespec="milliseconds").replace("+00:00", "Z")
+def require_rfc3339_ms(value: str) -> str:
+    if not is_rfc3339_ms(value):
+        raise ValueError(
+            "timestamp must be RFC3339 with millisecond precision and 'Z' suffix"
+        )
+    return value

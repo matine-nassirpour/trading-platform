@@ -1070,6 +1070,27 @@ files = [
 ]
 
 [[package]]
+name = "metatrader5"
+version = "5.0.5328"
+description = "API Connector to MetaTrader 5 Terminal"
+optional = false
+python-versions = "<4,>3.5"
+groups = ["main"]
+files = [
+    {file = "MetaTrader5-5.0.5328-cp310-cp310-win_amd64.whl", hash = "sha256:f7e80a284b1c80428246d5c993bed2d21f05190810a01e50fe308bb793ff4558"},
+    {file = "MetaTrader5-5.0.5328-cp311-cp311-win_amd64.whl", hash = "sha256:4abaacf91b23b6628a15d4765010367c7f099293b1277976367a0a9533c573e5"},
+    {file = "MetaTrader5-5.0.5328-cp312-cp312-win_amd64.whl", hash = "sha256:89c29a31c9dd3ecbdb1a170958d705b88103734303fcbc9893c3e9644a84c461"},
+    {file = "MetaTrader5-5.0.5328-cp313-cp313-win_amd64.whl", hash = "sha256:37e9b5dd274faa743fea644a4eb2f299b87d143ef608fd67ef7477bc534a6fec"},
+    {file = "MetaTrader5-5.0.5328-cp36-cp36m-win_amd64.whl", hash = "sha256:429630df426eba7ae06e5611f2a32150427efc207907624a013e6eb88e03bded"},
+    {file = "MetaTrader5-5.0.5328-cp37-cp37m-win_amd64.whl", hash = "sha256:63910eb4d6de72fb4656e40f1862c028dc91681707025f3c7db6c411318b1f26"},
+    {file = "MetaTrader5-5.0.5328-cp38-cp38-win_amd64.whl", hash = "sha256:3bdad89b9ed329807986f4db2475e15995addd7d709016425c5b4e5448d1b837"},
+    {file = "MetaTrader5-5.0.5328-cp39-cp39-win_amd64.whl", hash = "sha256:9b78c03b0089c418928c9294749adf350e626e67dbbbaeac66c94add17b6f2ca"},
+]
+
+[package.dependencies]
+numpy = ">=1.7"
+
+[[package]]
 name = "msgpack"
 version = "1.1.1"
 description = "MessagePack serializer"
@@ -2832,4 +2853,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<3.12"
-content-hash = "44eda2e83dae020cbd0c62c4f3eb085df8804306b9c74de38145c6c096fab668"
+content-hash = "b3e732b3da708b2ea59bd427a86868e71af75586423f86109a9513abd5cc1936"

@@ -129,11 +129,14 @@ trading-platform/
 │       │   │   └── schema_registry.py
 │       │   ├── time/
 │       │   │   ├── __init__.py
-│       │   │   ├── naming.py
-│       │   │   └── rfc3339.py
+│       │   │   ├── clock.py
+│       │   │   ├── format.py
+│       │   │   └── naming.py
 │       │   ├── types/
 │       │   │   ├── __init__.py
+│       │   │   ├── decimal_validators.py
 │       │   │   ├── ids.py
+│       │   │   ├── symbol.py
 │       │   │   └── time.py
 │       │   └── __init__.py
 │       └── __init__.py
@@ -152,17 +155,26 @@ trading-platform/
 │   │   │   │   └── test_pipeline_contract.py
 │   │   │   └── __init__.py
 │   │   └── __init__.py
+│   ├── support/
+│   │   ├── __init__.py
+│   │   ├── factories.py
+│   │   ├── logging_utils.py
+│   │   ├── time_utils.py
+│   │   ├── types.py
+│   │   └── wait.py
 │   ├── unit/
 │   │   ├── infrastructure/
 │   │   │   ├── observability/
 │   │   │   │   ├── logging/
+│   │   │   │   │   ├── models/
+│   │   │   │   │   │   ├── __init__.py
+│   │   │   │   │   │   └── test_factory.py
 │   │   │   │   │   ├── __init__.py
 │   │   │   │   │   ├── test_audit_sink.py
 │   │   │   │   │   ├── test_constants.py
 │   │   │   │   │   ├── test_event_emitter.py
 │   │   │   │   │   ├── test_filters.py
 │   │   │   │   │   ├── test_formatter.py
-│   │   │   │   │   ├── test_models_factory.py
 │   │   │   │   │   └── test_partitioned_handlers.py
 │   │   │   │   ├── tracing/
 │   │   │   │   │   ├── __init__.py

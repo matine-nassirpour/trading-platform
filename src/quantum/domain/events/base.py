@@ -1,10 +1,9 @@
-import re
 from decimal import Decimal
 from typing import ClassVar
 
-from pydantic import BaseModel, ConfigDict, field_serializer, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator
 
-RFC3339_MS = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$")
+from quantum.shared.time.format import require_rfc3339_ms
 
 
 class BaseEvent(BaseModel):
@@ -20,6 +19,7 @@ class BaseEvent(BaseModel):
         frozen=True,
         use_enum_values=True,
         populate_by_name=True,
+        json_encoders={Decimal: str},
     )
 
     # Constants (defined in subclasses)
@@ -28,20 +28,13 @@ class BaseEvent(BaseModel):
 
     # Common fields
     timestamp: str  # RFC3339 with milliseconds and Z suffix
+
     run_id: str | None = None
     correlation_id: str | None = None
     trace_id: str | None = None
     span_id: str | None = None
 
-    @field_serializer(Decimal)
-    def _ser_decimal(self, v: Decimal) -> str:
-        return str(v)
-
     @field_validator("timestamp")
     @classmethod
     def _validate_ts(cls, v: str) -> str:
-        if not RFC3339_MS.match(v):
-            raise ValueError(
-                "timestamp must be RFC3339 with millisecond precision and Z suffix"
-            )
-        return v
+        return require_rfc3339_ms(v)

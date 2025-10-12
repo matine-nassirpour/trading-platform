@@ -149,6 +149,21 @@ def classify_error_code(error_code: int | str) -> str:
 
 
 # ──────────────────────────────────────────────────────────────────────────────
+# Execution Channel (Infra-level health)
+# ──────────────────────────────────────────────────────────────────────────────
+exec_channel_total = Counter(
+    f"{_METRIC_PREFIX}exec_channel_total",
+    "Total MT5 execution channel calls by result code",
+    ["call", "code", "channel"],
+)
+exec_channel_latency_ms = Histogram(
+    f"{_METRIC_PREFIX}exec_channel_latency_ms",
+    "Latency of MT5 API calls in milliseconds",
+    buckets=(1, 2, 5, 10, 25, 50, 100, 250, 500, 1000, 2000),
+)
+
+
+# ──────────────────────────────────────────────────────────────────────────────
 # Utility API
 # ──────────────────────────────────────────────────────────────────────────────
 def record_order_reject(error_code: int | str, *, symbol: str | None = None) -> None:

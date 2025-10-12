@@ -14,7 +14,7 @@ from quantum.infrastructure.observability.logging.models.log_payload_v1 import (
 )
 from quantum.shared.context.run_id import get_run_id
 from quantum.shared.correlation.correlation_id import get_correlation_id
-from quantum.shared.time.rfc3339 import from_unix_s_to_rfc3339_ms, now_mono_ms
+from quantum.shared.time.format import from_unix_s_to_rfc3339_ms, now_mono_ms
 
 INSTANCE_ID = (
     os.getenv("QUANTUM_SERVICE_INSTANCE_ID", "").strip() or socket.gethostname()

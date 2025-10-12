@@ -44,3 +44,20 @@ class LatencyPhase(StrEnum):
     ORDER_SEND = "order_send"
     ACK = "ack"
     FILL = "fill"
+
+
+class DealEntry(StrEnum):
+    IN = "in"
+    OUT = "out"
+    # (optional) IN_OUT for synthetic close-by, if needed
+
+
+class DealReason(StrEnum):
+    CLIENT = "client"  # user / algo
+    MOBILE = "mobile"
+    WEB = "web"
+    SL = "sl"  # stop loss triggered
+    TP = "tp"  # take profit triggered
+    SO = "so"  # stop out
+    ROLLOVER = "rollover"  # swap/rollover
+    REVERSE = "reverse"  # reverse position

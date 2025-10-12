@@ -4,6 +4,7 @@ import os
 import socket
 from typing import Literal, cast
 
+from opentelemetry import trace as _trace
 from opentelemetry.context import Context
 from opentelemetry.sdk.resources import (
     DEPLOYMENT_ENVIRONMENT,
@@ -307,3 +308,11 @@ def _log_exporter_status(*, active: bool, reason: str | None = None) -> None:
         attrs = dict(base)
         attrs["reason"] = reason or "unknown"
         logger.warning("OTLP exporter configured but INACTIVE", extra={"attrs": attrs})
+
+
+def get_tracer(component: str, version: str = "1.0.0"):
+    """
+    Canonical tracer (stable naming 'quantum.<component>').
+    Ex: get_tracer("infra.execution.mt5")
+    """
+    return _trace.get_tracer(f"quantum.{component}", version)
