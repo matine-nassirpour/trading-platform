@@ -1,6 +1,11 @@
-from typing import Any, Protocol
+from typing import Protocol
 
-from quantum.shared.types.execution import ExecutionCode
+from quantum.shared.types.execution_request import (
+    CheckRequest,
+    OrderRequest,
+    QueryRequest,
+)
+from quantum.shared.types.execution_result import ExecutionResult
 
 
 class ExecutionPort(Protocol):
@@ -12,18 +17,10 @@ class ExecutionPort(Protocol):
     independently of the underlying infrastructure.
     """
 
-    def send_order(
-        self, request: dict[str, Any]
-    ) -> tuple[ExecutionCode, str, Any | None]: ...
+    def send_order(self, request: OrderRequest) -> ExecutionResult: ...
 
-    def check_order(
-        self, request: dict[str, Any]
-    ) -> tuple[ExecutionCode, str, Any | None]: ...
+    def check_order(self, request: CheckRequest) -> ExecutionResult: ...
 
-    def get_positions(
-        self, symbol: str | None = None
-    ) -> tuple[ExecutionCode, str, Any | None]: ...
+    def get_positions(self, request: QueryRequest) -> ExecutionResult: ...
 
-    def get_orders(
-        self, symbol: str | None = None
-    ) -> tuple[ExecutionCode, str, Any | None]: ...
+    def get_orders(self, request: QueryRequest) -> ExecutionResult: ...

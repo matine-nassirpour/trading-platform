@@ -29,7 +29,6 @@ from quantum.shared.types.channels import ExecutionChannel
 logger = logging.getLogger(__name__)
 tracer = get_tracer("infra.runtime.mt5_bootstrap")
 
-_RETRY_DELAY_S: Final = 2.5
 _MAX_INIT_RETRIES: Final = 3
 
 
@@ -52,7 +51,7 @@ def _safe_init_channel(channel: ExecutionChannel) -> bool:
             )
             start = time.time()
 
-            ok = init_mt5_terminal(path=path)
+            ok = init_mt5_terminal(channel, path)
             dur_ms = int((time.time() - start) * 1000)
             span.set_attribute("mt5.init_latency_ms", dur_ms)
 
@@ -69,7 +68,8 @@ def _safe_init_channel(channel: ExecutionChannel) -> bool:
                 extra={"channel": channel.name, "terminal_path": path},
             )
             terminal_up.set(0.0)
-            time.sleep(_RETRY_DELAY_S)
+            backoff = min(5.0, 0.5 * (2 ** (attempt - 1)))
+            time.sleep(backoff)
 
         logger.error(
             f"[MT5] Terminal initialization failed after {_MAX_INIT_RETRIES} attempts for {channel.name}",

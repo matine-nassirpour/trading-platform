@@ -1,3 +1,5 @@
+import os
+
 import streamlit as st
 from opentelemetry import baggage
 from opentelemetry import context as otel_context
@@ -46,6 +48,7 @@ with PageTimer():
     st.caption(
         f"run_id: {_current_run_id_for_ui() or '—'}  •  corr_id: {get_correlation_id() or '—'}"
     )
+    st.write("MT5 creds snapshot:", {k: v for k, v in os.environ.items() if "MT5" in k})
 
     @ui_action("refresh_market")
     def on_refresh():

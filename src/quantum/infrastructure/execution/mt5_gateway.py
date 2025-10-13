@@ -1,6 +1,5 @@
 import logging
 import time
-from typing import Any
 
 from quantum.infrastructure.observability.metrics.mt5 import (
     exec_channel_latency_ms,
@@ -10,6 +9,7 @@ from quantum.infrastructure.observability.tracing.traces import get_tracer
 from quantum.shared.config.env_loader import get_mt5_credentials
 from quantum.shared.types.channels import ExecutionChannel
 from quantum.shared.types.execution import ExecutionCode
+from quantum.shared.types.execution_result import ExecutionResult
 
 logger = logging.getLogger(__name__)
 tracer = get_tracer("infra.execution.mt5")
@@ -118,7 +118,7 @@ def map_mt5_res_to_exec(code: int) -> ExecutionCode:
 
 def execute_mt5_call(
     call: str, func, channel: ExecutionChannel | None = None, *args, **kwargs
-) -> tuple[ExecutionCode, str, Any | None]:
+) -> ExecutionResult:
     """
     Executes a MetaTrader5 API call under a fully instrumented and fault-tolerant context.
 
@@ -151,10 +151,8 @@ def execute_mt5_call(
 
     Returns
     -------
-    tuple[ExecutionCode, str, Any | None]
-        - `code`: Normalized internal execution result code.
-        - `message`: Optional human-readable description or comment returned by MT5.
-        - `result`: Raw MT5 response object (may contain fields like `retcode`, `comment`, etc.).
+    ExecutionResult
+        Returns a standardized ExecutionResult dataclass.
 
     Notes
     -----
@@ -189,13 +187,15 @@ def execute_mt5_call(
             msg = getattr(result, "comment", "") if result is not None else ""
 
             code = map_mt5_res_to_exec(int(res_code or -1))
+
+            # Tracing attributes
             span.set_attribute("exec.channel", str(channel or "unknown"))
             span.set_attribute("exec.call", call)
-            span.set_attribute("exec.code", code)
+            span.set_attribute("exec.code", str(code))
             span.set_attribute("mt5.res_code", res_code)
             span.set_attribute("mt5.detail", msg)
 
-            # Status tracing
+            # Mark failed spans explicitly
             if code != ExecutionCode.OK:
                 from opentelemetry.trace import Status, StatusCode
 
@@ -226,7 +226,7 @@ def execute_mt5_call(
                 },
             )
 
-    return code, msg, result
+    return ExecutionResult(code=code, message=msg, payload=result)
 
 
 # ──────────────────────────────────────────────────────────────────────────────
