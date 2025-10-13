@@ -89,8 +89,8 @@ st.set_page_config(page_title=PAGE_TITLE, layout="wide")
 st.title("🔭 Observability")
 
 # Reusable loggers / tracers
-logger = logging.getLogger("quantum.ui.demo")
-tracer = trace.get_tracer("quantum.ui.demo")
+logger = logging.getLogger("quantum.ui.observability")
+tracer = trace.get_tracer("quantum.ui.observability")
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Prometheus access helpers
@@ -383,20 +383,36 @@ def render_ui_latency_histograms() -> None:
 
 
 def render_mt5_section() -> None:
+    st.subheader("MetaTrader5 Gateway Status")
+
     cols = st.columns(4)
     with cols[0]:
         hb = _gauge_value("quantum_mt5_terminal_up")
         st.metric("MT5 Terminal", "✅" if hb == 1 else ("❌" if hb == 0 else "—"))
     with cols[1]:
         st.metric(
-            "Positions open", int(_gauge_value("quantum_mt5_positions_open") or 0)
+            "Positions Open", int(_gauge_value("quantum_mt5_positions_open") or 0)
         )
     with cols[2]:
         st.metric(
-            "Order rejects", int(_counter_value("quantum_mt5_order_reject_total") or 0)
+            "Order Rejects", int(_counter_value("quantum_mt5_order_reject_total") or 0)
         )
     with cols[3]:
         st.metric("Requotes", int(_counter_value("quantum_mt5_requotes_total") or 0))
+
+    # New subsection: Execution Channels
+    st.markdown("#### Execution Channel Metrics")
+    exec_total = _counter_value("quantum_mt5_exec_channel_total") or 0
+    exec_lat_q = _histogram_quantiles("quantum_mt5_exec_channel_latency_ms")
+
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric("Total Exec Calls", int(exec_total))
+    with col2:
+        st.write(
+            {k: (round(v, 2) if v is not None else None) for k, v in exec_lat_q.items()}
+        )
+
     st.divider()
 
 

@@ -27,11 +27,15 @@ trading-platform/
 ├── src/
 │   └── quantum/
 │       ├── application/
+│       │   ├── adapters/
+│       │   │   ├── __init__.py
+│       │   │   └── mt5_execution_adapter.py
 │       │   ├── ports/
 │       │   │   ├── inbound/
 │       │   │   │   └── __init__.py
 │       │   │   ├── outbound/
-│       │   │   │   └── __init__.py
+│       │   │   │   ├── __init__.py
+│       │   │   │   └── execution_port.py
 │       │   │   └── __init__.py
 │       │   ├── use_cases/
 │       │   │   └── __init__.py
@@ -40,6 +44,11 @@ trading-platform/
 │       │   ├── entities/
 │       │   │   └── __init__.py
 │       │   ├── events/
+│       │   │   ├── system/
+│       │   │   │   ├── v1/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   └── execution_channel_event.py
+│       │   │   │   └── __init__.py
 │       │   │   ├── trading/
 │       │   │   │   ├── v1/
 │       │   │   │   │   ├── __init__.py
@@ -56,6 +65,8 @@ trading-platform/
 │       │   │   │   │   ├── position_update_event.py
 │       │   │   │   │   ├── reconciliation_event.py
 │       │   │   │   │   ├── sl_tp_update_event.py
+│       │   │   │   │   ├── stoploss_trigger_event.py
+│       │   │   │   │   ├── takeprofit_trigger_event.py
 │       │   │   │   │   └── trailing_trigger_event.py
 │       │   │   │   └── __init__.py
 │       │   │   ├── __init__.py
@@ -69,10 +80,15 @@ trading-platform/
 │       │   │   └── __init__.py
 │       │   └── __init__.py
 │       ├── infrastructure/
+│       │   ├── adapters/
+│       │   │   ├── __init__.py
+│       │   │   └── mt5_execution_adapter_impl.py
 │       │   ├── datafeeds/
 │       │   │   └── __init__.py
 │       │   ├── execution/
-│       │   │   └── __init__.py
+│       │   │   ├── __init__.py
+│       │   │   ├── gateway_registry.py
+│       │   │   └── mt5_gateway.py
 │       │   ├── messaging/
 │       │   │   └── __init__.py
 │       │   ├── observability/
@@ -100,6 +116,9 @@ trading-platform/
 │       │   │   │   └── traces.py
 │       │   │   ├── __init__.py
 │       │   │   └── init_observability.py
+│       │   ├── runtime/
+│       │   │   ├── __init__.py
+│       │   │   └── mt5_runtime_bootstrap.py
 │       │   ├── storage/
 │       │   │   └── __init__.py
 │       │   └── __init__.py
@@ -124,6 +143,9 @@ trading-platform/
 │       │   │   └── correlation_id.py
 │       │   ├── errors/
 │       │   │   └── __init__.py
+│       │   ├── execution/
+│       │   │   ├── __init__.py
+│       │   │   └── retry_policy.py
 │       │   ├── serialization/
 │       │   │   ├── __init__.py
 │       │   │   └── schema_registry.py
@@ -134,7 +156,9 @@ trading-platform/
 │       │   │   └── naming.py
 │       │   ├── types/
 │       │   │   ├── __init__.py
+│       │   │   ├── channels.py
 │       │   │   ├── decimal_validators.py
+│       │   │   ├── execution.py
 │       │   │   ├── ids.py
 │       │   │   ├── symbol.py
 │       │   │   └── time.py

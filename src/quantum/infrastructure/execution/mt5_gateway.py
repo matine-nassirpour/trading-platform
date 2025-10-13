@@ -7,6 +7,7 @@ from quantum.infrastructure.observability.metrics.mt5 import (
     exec_channel_total,
 )
 from quantum.infrastructure.observability.tracing.traces import get_tracer
+from quantum.shared.config.env_loader import get_mt5_credentials
 from quantum.shared.types.channels import ExecutionChannel
 from quantum.shared.types.execution import ExecutionCode
 
@@ -17,33 +18,57 @@ tracer = get_tracer("infra.execution.mt5")
 # ──────────────────────────────────────────────────────────────────────────────
 # Terminal init/shutdown (lazy import to avoid hard dep at import time)
 # ──────────────────────────────────────────────────────────────────────────────
-def init_mt5_terminal(path: str | None = None) -> bool:
+def init_mt5_terminal(channel: ExecutionChannel, path: str | None = None) -> bool:
     """
-    Initializes the MetaTrader5 terminal safely.
-    Returns True if successfully connected.
+    Initializes and logs into a MetaTrader5 terminal for the given execution channel.
+
+    This function loads credentials (login, password, server) from environment variables
+    and performs a secure MT5 connection.
+
+    Returns True if successfully connected, False otherwise.
     """
     try:
         import MetaTrader5 as mt5  # lazy import
 
-        ok = mt5.initialize(path=path)
+        creds = get_mt5_credentials(channel.name)
+        if not creds["login"] or not creds["server"] or not creds["password"]:
+            logger.error(
+                f"Missing MT5 credentials for channel {channel.name}",
+                extra={"attrs": {"channel": channel.name}},
+            )
+            return False
+
+        ok = mt5.initialize(
+            path=path,
+            login=int(creds["login"]),
+            password=creds["password"],
+            server=creds["server"],
+        )
+
         if not ok:
             try:
-                # mt5.last_error() returns (code, message)
                 code, msg = mt5.last_error()
                 logger.error(
-                    "MT5 initialize failed",
-                    extra={
-                        "attrs": {"path": path, "error_code": code, "error_msg": msg}
-                    },
+                    f"MT5 initialize failed for {channel.name}",
+                    extra={"attrs": {"error_code": code, "error_msg": msg}},
                 )
             except Exception:
                 logger.error(
-                    "MT5 initialize failed (no last_error)",
+                    f"MT5 initialize failed (no last_error) for {channel.name}",
                     extra={"attrs": {"path": path}},
                 )
+        else:
+            logger.info(
+                f"✅ MT5 terminal initialized for {channel.name}",
+                extra={"attrs": {"server": creds["server"], "login": creds["login"]}},
+            )
+
         return bool(ok)
     except Exception as e:
-        logger.exception("MT5 init error: %s", e, extra={"attrs": {"path": path}})
+        logger.exception(
+            f"MT5 init error for {channel.name}: {type(e).__name__} {e}",
+            extra={"attrs": {"path": path}},
+        )
         return False
 
 

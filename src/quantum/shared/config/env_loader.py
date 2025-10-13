@@ -158,3 +158,42 @@ def is_loaded() -> bool:
 def get_base_dir() -> Path | None:
     """Return the last base directory used by load_env(), or None if never loaded."""
     return _LAST_BASE_DIR
+
+
+def get_mt5_credentials(channel: str) -> dict[str, str]:
+    """
+    Returns MT5 login credentials for a given execution channel (e.g. FTMO, FUNDEDNEXT).
+
+    Each account is expected to have the following environment variables:
+        QUANTUM_MT5_<CHANNEL>_LOGIN
+        QUANTUM_MT5_<CHANNEL>_SERVER
+        QUANTUM_MT5_<CHANNEL>_PASSWORD
+
+    Example:
+        QUANTUM_MT5_FTMO_LOGIN=1234567
+        QUANTUM_MT5_FTMO_SERVER=FTMO-Demo
+        QUANTUM_MT5_FTMO_PASSWORD=your_password
+
+    Parameters
+    ----------
+    channel : str
+        Execution channel name (case-insensitive), e.g. "FTMO", "FUNDEDNEXT".
+
+    Returns
+    -------
+    dict[str, str]
+        Dictionary with keys: "login", "server", "password".
+        If one or more fields are missing, empty strings are returned instead.
+
+    Notes
+    -----
+    - Sensitive data is *not* logged or stored persistently.
+    - This accessor does not raise exceptions on missing keys,
+      to allow upper layers (infra/adapters) to handle fallback or errors.
+    """
+    prefix = f"QUANTUM_MT5_{channel.upper()}"
+    return {
+        "login": os.getenv(f"{prefix}_LOGIN", ""),
+        "server": os.getenv(f"{prefix}_SERVER", ""),
+        "password": os.getenv(f"{prefix}_PASSWORD", ""),
+    }
