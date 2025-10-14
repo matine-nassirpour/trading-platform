@@ -66,24 +66,11 @@ def _perform_streamlit_init() -> None:
     Encapsulates the actual initialization logic (observability + MT5 terminals).
     This function is invoked once under a thread-safe lock.
     """
-    os.environ.setdefault("QUANTUM_METRICS_PORT", "0")
-
-    # Tracing sample ratio
-    try:
-        sample_ratio = float(os.getenv("QUANTUM_TRACE_SAMPLE", "1.0"))
-    except (TypeError, ValueError):
-        sample_ratio = 1.0
 
     if not get_run_id():
         generate_run_id()
 
-    init_observability(
-        app_name="streamlit_ui",
-        environment=os.getenv("QUANTUM_ENV", "dev"),
-        namespace=os.getenv("QUANTUM_NS", "quantum"),
-        log_level=os.getenv("QUANTUM_LOG_LEVEL", "INFO"),
-        sample_ratio=sample_ratio,
-    )
+    init_observability(app_name="streamlit_ui")
 
     logger = logging.getLogger("apps.streamlit.bootstrap")
     logger.info("Initializing Quantum Streamlit UI with observability stack...")

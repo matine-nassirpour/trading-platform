@@ -31,13 +31,21 @@ from quantum.infrastructure.observability.tracing.traces import (
     init_tracing,
 )
 from quantum.shared.config.env_flags import get_bool
-from quantum.shared.config.env_loader import load_env
+from quantum.shared.config.settings import get_settings
 from quantum.shared.context.run_id import generate_run_id, get_run_id
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Internal state
+# ──────────────────────────────────────────────────────────────────────────────
 
 _initialized = False
 _init_lock = threading.Lock()
 _metrics_httpd_started = False
 _tracer_provider_ref: object | None = None
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Helpers
+# ──────────────────────────────────────────────────────────────────────────────
 
 
 def _iter_persistent_handlers() -> list[logging.Handler]:
@@ -119,12 +127,17 @@ def _shutdown_tracing_if_any() -> None:
     _tracer_provider_ref = None
 
 
+# ──────────────────────────────────────────────────────────────────────────────
+# Core API
+# ──────────────────────────────────────────────────────────────────────────────
+
+
 def init_observability(
-    app_name: str = "python_core",
-    environment: str = "dev",
-    namespace: str = "quantum",
-    log_level: str = "INFO",
-    sample_ratio: float = 1.0,
+    app_name: str | None = None,
+    environment: str | None = None,
+    namespace: str | None = None,
+    log_level: str | None = None,
+    sample_ratio: float | None = None,
     *,
     force: bool = False,
 ) -> None:
@@ -133,6 +146,15 @@ def init_observability(
 
     if _initialized and not force:
         return
+
+    if force:
+        # Clear cached Settings to reload environment vars
+        try:
+            get_settings.cache_clear()
+        except AttributeError:
+            pass
+
+    settings = get_settings()
 
     with _init_lock:
         if _initialized and not force:
@@ -148,29 +170,81 @@ def init_observability(
         pipeline_tracing_ok.set(0)
         pipeline_metrics_http_ok.set(0)
 
-        load_env()  # does not overwrite existing env by default
         with suppress(ValueError, RuntimeError, AttributeError, NameError):
             refresh_build_info_from_env()
 
         if not get_run_id():
             generate_run_id()
 
-        # Read config from environment (OS > .env)
-        app_name = os.getenv("QUANTUM_APP_NAME", app_name)
-        environment = os.getenv("QUANTUM_ENV", environment)
-        namespace = os.getenv("QUANTUM_NS", namespace)
-        log_level = os.getenv("QUANTUM_LOG_LEVEL", log_level)
-        app_version = os.getenv("QUANTUM_APP_VERSION", "0.0.0")
-        try:
-            sample_ratio = float(os.getenv("QUANTUM_TRACE_SAMPLE", sample_ratio))
-        except (TypeError, ValueError):
-            sample_ratio = 1.0
-        sample_ratio = max(0.0, min(1.0, sample_ratio))
+        app_name = app_name or settings.quantum_app_name
+        environment = environment or settings.quantum_env
+        namespace = namespace or settings.quantum_ns
+        log_level = log_level or settings.quantum_log_level
+        sample_ratio = (
+            settings.quantum_trace_sample if sample_ratio is None else sample_ratio
+        )
+        app_version = settings.quantum_app_version
 
         if force:
             close_and_remove_all_handlers(logging.getLogger())
 
-        # JSON logging (initialization)
+        # ────────────────────────────────
+        # 1. Tracing (OpenTelemetry)
+        #    Must be first
+        # ────────────────────────────────
+        exporter: Literal["otlp", "console", "none"] = settings.quantum_trace_exporter
+        tracing_ok = False
+        try:
+            _shutdown_tracing_if_any()
+            tp = init_tracing(
+                TracingConfig(
+                    service_name=app_name,
+                    environment=environment,
+                    namespace=namespace,
+                    exporter=exporter,
+                    sample_ratio=sample_ratio,
+                ),
+                replace_existing=force,
+            )
+            setup_propagation()
+            # Do not re-attach if already present.
+            install_process_baggage()
+            otel_tracing_up.set(1)
+            tracing_ok = bool(tp)
+            global _tracer_provider_ref
+            _tracer_provider_ref = tp
+        except Exception as e:
+            logging.getLogger(__name__).exception(f"Tracing initialization failed: {e}")
+            otel_tracing_up.set(0)
+            # Fallback (retry 1 time)
+            try:
+                tp = init_tracing(
+                    TracingConfig(
+                        service_name=app_name,
+                        environment=environment,
+                        namespace=namespace,
+                        exporter="none",
+                        sample_ratio=0.0,
+                    )
+                )
+                setup_propagation()
+                install_process_baggage()
+                otel_tracing_up.set(1)
+                tracing_ok = True
+                _tracer_provider_ref = tp
+                logging.getLogger(__name__).warning(
+                    "Tracing fallback activated: exporter=none, sample_ratio=0.0"
+                )
+            except Exception as e2:
+                logging.getLogger(__name__).exception(f"Tracing fallback failed: {e2}")
+                otel_tracing_up.set(0)
+
+        pipeline_tracing_ok.set(1 if tracing_ok else 0)
+
+        # ────────────────────────────────
+        # 2. Logging
+        #    Must come after tracing
+        # ────────────────────────────────
         logging_initialized = False
         try:
             init_logging(
@@ -197,62 +271,12 @@ def init_observability(
 
         logging_sink_up.set(1 if sinks_ok else 0)
 
-        # Tracing OTel
-        tracing_ok = False
-        exp_env = os.getenv("QUANTUM_TRACE_EXPORTER", "").strip().lower()
-        exporter: Literal["otlp", "console", "none"] = (
-            exp_env if exp_env in {"otlp", "console", "none"} else "console"
-        )
-        try:
-            _shutdown_tracing_if_any()
-            tp = init_tracing(
-                TracingConfig(
-                    service_name=app_name,
-                    environment=environment,
-                    namespace=namespace,
-                    exporter=exporter,
-                    sample_ratio=sample_ratio,
-                ),
-                replace_existing=force,
-            )
-            setup_propagation()
-            # Do not re-attach if already present.
-            install_process_baggage()
-            otel_tracing_up.set(1)
-            tracing_ok = bool(tp)
-            global _tracer_provider_ref
-            _tracer_provider_ref = tp
-        except Exception as e:
-            logging.getLogger(__name__).exception(f"Tracing initialization failed: {e}")
-            otel_tracing_up.set(0)
-            # Fallback (retry 1 time): export 'none' + sample 0.0
-            try:
-                tp = init_tracing(
-                    TracingConfig(
-                        service_name=app_name,
-                        environment=environment,
-                        namespace=namespace,
-                        exporter="none",
-                        sample_ratio=0.0,
-                    )
-                )
-                setup_propagation()
-                install_process_baggage()
-                otel_tracing_up.set(1)
-                tracing_ok = True
-                _tracer_provider_ref = tp
-                logging.getLogger(__name__).warning(
-                    "Tracing fallback activated: exporter=none, sample_ratio=0.0"
-                )
-            except Exception as e2:
-                logging.getLogger(__name__).exception(f"Tracing fallback failed: {e2}")
-                otel_tracing_up.set(0)
-
-        pipeline_tracing_ok.set(1 if tracing_ok else 0)
-
-        # Prometheus metrics endpoint (opt-in, start-once)
-        port = int(os.getenv("QUANTUM_METRICS_PORT", "0") or "0")
-        addr = os.getenv("QUANTUM_METRICS_ADDR", "127.0.0.1")
+        # ────────────────────────────────
+        # 3. Metrics
+        #    Prometheus HTTP endpoint
+        # ────────────────────────────────
+        port = settings.quantum_metrics_port
+        addr = settings.quantum_metrics_addr
         if port > 0 and not _metrics_httpd_started:
             try:
                 start_http_server(port, addr=addr)
@@ -322,11 +346,11 @@ def shutdown_observability(
 
 @contextmanager
 def observability_session(
-    app_name: str = "python_core",
-    environment: str = "dev",
-    namespace: str = "quantum",
-    log_level: str = "INFO",
-    sample_ratio: float = 1.0,
+    app_name: str | None = None,
+    environment: str | None = None,
+    namespace: str | None = None,
+    log_level: str | None = None,
+    sample_ratio: float | None = None,
     *,
     force: bool = False,
 ):

@@ -59,7 +59,7 @@ def init_mt5_terminal(channel: ExecutionChannel, path: str | None = None) -> boo
                 )
         else:
             logger.info(
-                f"✅ MT5 terminal initialized for {channel.name}",
+                f"MT5 terminal initialized for {channel.name}",
                 extra={"attrs": {"server": creds["server"], "login": creds["login"]}},
             )
 

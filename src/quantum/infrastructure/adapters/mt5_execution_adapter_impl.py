@@ -25,8 +25,15 @@ class Mt5ExecutionAdapterImpl:
     def __init__(self, channel: ExecutionChannel):
         gw = get_gateway(channel)
         self.channel = channel
-        self._exec_func = gw["func"]
-        self._terminal_path = gw["terminal_path"]
+
+        func = gw.get("func")
+        if not callable(func):
+            raise RuntimeError(
+                f"Gateway func not callable for {channel.name}: {func!r}"
+            )
+
+        self._exec_func = func
+        self._terminal_path = gw.get("terminal_path")
 
     # ────────────────────────────────
     # Properties
@@ -41,72 +48,48 @@ class Mt5ExecutionAdapterImpl:
     # Core Execution Operations
     # ────────────────────────────────
 
-    # Core Execution Operations
     def send_order(self, request: OrderRequest) -> ExecutionResult:
-        """
-        Sends an order to the MetaTrader5 terminal.
-
-        Parameters
-        ----------
-        request : OrderRequest
-            Structured request representing an MQL5 `MqlTradeRequest`.
-
-        Returns
-        -------
-        ExecutionResult
-            Encapsulates the execution code, human-readable message, and raw MT5 payload.
-        """
+        """Send an order to the MetaTrader5 terminal."""
         from MetaTrader5 import order_send  # lazy import
 
-        return self._exec_func("order_send", order_send, request, channel=self.channel)
+        result = self._exec_func(
+            "order_send", order_send, request, channel=self.channel
+        )
+        if not isinstance(result, ExecutionResult):
+            raise TypeError(f"Expected ExecutionResult, got {type(result)}")
+        return result
 
     def check_order(self, request: CheckRequest) -> ExecutionResult:
-        """
-        Performs a pre-trade order check via MT5 to validate the order
-        without sending it to the market.
-        """
+        """Validate an order via MT5 (pre-trade)."""
         from MetaTrader5 import order_check
 
-        return self._exec_func(
+        result = self._exec_func(
             "order_check", order_check, request, channel=self.channel
         )
+        if not isinstance(result, ExecutionResult):
+            raise TypeError(f"Expected ExecutionResult, got {type(result)}")
+        return result
 
     def get_positions(self, request: QueryRequest | None = None) -> ExecutionResult:
-        """
-        Fetches current open positions for the given symbol.
-
-        Parameters
-        ----------
-        request : QueryRequest | None
-            Optional symbol filter.
-
-        Returns
-        -------
-        ExecutionResult
-        """
+        """Fetch current open positions."""
         from MetaTrader5 import positions_get
 
         symbol = request.symbol if request else None
-        return self._exec_func(
+        result = self._exec_func(
             "positions_get", positions_get, symbol=symbol, channel=self.channel
         )
+        if not isinstance(result, ExecutionResult):
+            raise TypeError(f"Expected ExecutionResult, got {type(result)}")
+        return result
 
     def get_orders(self, request: QueryRequest | None = None) -> ExecutionResult:
-        """
-        Fetches current pending orders for the given symbol.
-
-        Parameters
-        ----------
-        request : QueryRequest | None
-            Optional symbol filter.
-
-        Returns
-        -------
-        ExecutionResult
-        """
+        """Fetch current pending orders."""
         from MetaTrader5 import orders_get
 
         symbol = request.symbol if request else None
-        return self._exec_func(
+        result = self._exec_func(
             "orders_get", orders_get, symbol=symbol, channel=self.channel
         )
+        if not isinstance(result, ExecutionResult):
+            raise TypeError(f"Expected ExecutionResult, got {type(result)}")
+        return result
