@@ -1,6 +1,18 @@
 import logging
+import signal
 import time
+from collections.abc import Callable
+from contextlib import contextmanager
+from typing import Any
 
+from quantum.infrastructure.execution.gateway_registry import (
+    is_gateway_healthy,
+    record_gateway_failure,
+    record_gateway_success,
+)
+from quantum.infrastructure.execution.mappings.mt5_retcode_map import (
+    map_mt5_res_to_exec,
+)
 from quantum.infrastructure.observability.metrics.mt5 import (
     exec_channel_latency_ms,
     exec_channel_total,
@@ -16,16 +28,14 @@ tracer = get_tracer("infra.execution.mt5")
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Terminal init/shutdown (lazy import to avoid hard dep at import time)
+# Terminal init / shutdown
 # ──────────────────────────────────────────────────────────────────────────────
 def init_mt5_terminal(channel: ExecutionChannel, path: str | None = None) -> bool:
     """
     Initializes and logs into a MetaTrader5 terminal for the given execution channel.
 
-    This function loads credentials (login, password, server) from environment variables
-    and performs a secure MT5 connection.
-
-    Returns True if successfully connected, False otherwise.
+    Loads credentials (login, password, server) from ConfigManager
+    and attempts a secure MT5 connection.
     """
     try:
         import MetaTrader5 as mt5  # lazy import
@@ -62,8 +72,8 @@ def init_mt5_terminal(channel: ExecutionChannel, path: str | None = None) -> boo
                 f"MT5 terminal initialized for {channel.name}",
                 extra={"attrs": {"server": creds["server"], "login": creds["login"]}},
             )
-
         return bool(ok)
+
     except Exception as e:
         logger.exception(
             f"MT5 init error for {channel.name}: {type(e).__name__} {e}",
@@ -79,168 +89,153 @@ def shutdown_mt5_terminal() -> None:
 
         mt5.shutdown()
     except Exception:
-        # keep silent on shutdown
         pass
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Canonical mapping
+# Dynamic timeout configuration
 # ──────────────────────────────────────────────────────────────────────────────
 
-MT5_RES_TO_EXEC: dict[int, ExecutionCode] = {
-    1: ExecutionCode.OK,  # RES_S_OK
-    -1: ExecutionCode.FAIL,  # RES_E_FAIL
-    -2: ExecutionCode.INVALID_PARAMS,
-    -3: ExecutionCode.NO_MEMORY,
-    -4: ExecutionCode.NOT_FOUND,
-    -5: ExecutionCode.INVALID_VERSION,
-    -6: ExecutionCode.AUTH_FAILED,
-    -7: ExecutionCode.UNSUPPORTED,
-    -8: ExecutionCode.AUTO_TRADING_DISABLED,
-    -10000: ExecutionCode.INTERNAL_FAIL,
-    -10001: ExecutionCode.INTERNAL_FAIL_SEND,
-    -10002: ExecutionCode.INTERNAL_FAIL_RECEIVE,
-    -10003: ExecutionCode.INTERNAL_FAIL_INIT,
-    -10004: ExecutionCode.INTERNAL_FAIL_CONNECT,
-    -10005: ExecutionCode.INTERNAL_FAIL_TIMEOUT,
-}
+
+def _get_exec_timeout() -> float:
+    """
+    Returns the execution timeout (seconds) from configuration.
+
+    Uses `quantum_exec_timeout` defined in `ConfigManager`,
+    with fallback to a safe default (5.0 seconds).
+    """
+    try:
+        settings = ConfigManager.load()
+        return settings.quantum_exec_timeout
+    except Exception as e:
+        logger.warning(f"Failed to read quantum_exec_timeout: {e}")
+        return 5.0
 
 
-def map_mt5_res_to_exec(code: int) -> ExecutionCode:
-    """Returns the canonical execution code."""
-    return MT5_RES_TO_EXEC.get(code, ExecutionCode.FAIL)
+@contextmanager
+def _timeout(seconds: float):
+    """Context manager enforcing a hard timeout (Unix only)."""
+
+    def _handler(signum, frame):
+        raise TimeoutError("MT5 execution timed out")
+
+    signal.signal(signal.SIGALRM, _handler)
+    signal.alarm(int(seconds))
+    try:
+        yield
+    finally:
+        signal.alarm(0)
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Instrumented execution
+# Core execution with health gate + circuit breaker
 # ──────────────────────────────────────────────────────────────────────────────
 
 
 def execute_mt5_call(
-    call: str, func, channel: ExecutionChannel | None = None, *args, **kwargs
+    call: str,
+    func: Callable[..., Any],
+    *args,
+    channel: ExecutionChannel | None = None,
+    **kwargs,
 ) -> ExecutionResult:
     """
     Executes a MetaTrader5 API call under a fully instrumented and fault-tolerant context.
 
-    This function acts as the canonical "execution harness" for all MT5 API calls.
-    It wraps the raw MetaTrader5 Python API to ensure consistent behavior, observability,
-    and resilience across the trading infrastructure.
-
-    Responsibilities:
-    -----------------
-    - Centralizes all interactions with the MT5 Python API (e.g. `mt5.order_send`, `mt5.positions_get`).
-    - Automatically instruments each call with OpenTelemetry tracing (`exec.<call>` span).
-    - Records Prometheus metrics for latency and result code distribution.
-    - Normalizes native MT5 result codes (`retcode`) into internal stable enum values (`ExecutionCode`).
-    - Captures and logs exceptions without letting MT5 or network errors propagate.
-    - Provides a unified return contract `(code, message, result)` for upper layers.
+    This function acts as the canonical execution harness for all MT5 API calls.
+    It provides:
+      - OpenTelemetry tracing
+      - Prometheus metrics (latency, total)
+      - Configurable timeout via ConfigManager
+      - Health gating & circuit breaker integration
+      - Consistent ExecutionResult contract
 
     Parameters
     ----------
     call : str
-        Logical name of the MT5 operation (e.g. "order_send", "order_check").
-        Used as both tracing span name and metrics label.
-    func : Callable
-        The MT5 API function to invoke (typically from the `MetaTrader5` module).
+        Logical name of the MT5 operation (e.g. "order_send", "positions_get").
+    func : Callable[..., Any]
+        The MetaTrader5 function to execute.
     channel : ExecutionChannel | None
-        Logical execution channel identifier (e.g., `ExecutionChannel.FTMO`, `ExecutionChannel.FUNDEDNEXT`).
-        Used for distributed tracing and metrics labeling.
-        If omitted, the call is recorded under a generic `"unknown"` channel label.
+        Execution channel (FTMO, FUNDEDNEXT, etc.)
     *args, **kwargs :
-        Positional and keyword arguments passed directly to the MT5 function.
+        Parameters passed directly to the MT5 API call.
 
     Returns
     -------
     ExecutionResult
-        Returns a standardized ExecutionResult dataclass.
-
-    Notes
-    -----
-    - This function must **never** import or depend on domain-level abstractions.
-      It belongs strictly to the infrastructure layer.
-    - All error handling, logging, and telemetry concerns are managed internally.
-    - The result normalization is designed to be stable across MetaTrader5 API changes.
-    - Upstream layers (Application / Domain) should not interact with `MetaTrader5` directly,
-      but only through this function.
-
-    Example
-    -------
-    >>> from quantum.infrastructure.execution.mt5_gateway import execute_mt5_call, ExecutionCode
-    >>> import MetaTrader5 as mt5
-    >>> request = {...}
-    >>> code, msg, result = execute_mt5_call("order_send", mt5.order_send, request)
-    >>> if code is ExecutionCode.OK:
-    ...     print("Order sent successfully")
-    ... else:
-    ...     print(f"Order failed: {code} ({msg})")
+        Standardized result object containing code, message, and payload.
     """
-    start = time.time() * 1000.0
+    start_ms = time.time() * 1000.0
+    timeout_s = _get_exec_timeout()
+
     with tracer.start_as_current_span(f"exec.{call}") as span:
         code = ExecutionCode.FAIL
         msg = ""
         result = None
 
+        # Health gate check
+        if channel and not is_gateway_healthy(channel):
+            msg = f"Execution channel {channel.name} unhealthy — call aborted."
+            logger.warning(msg)
+            return ExecutionResult(
+                code=ExecutionCode.INTERNAL_FAIL,
+                message=msg,
+                payload=None,
+            )
+
         try:
-            # Actual call (provided by MT5 binding)
-            result = func(*args, **kwargs)
-            res_code = getattr(result, "retcode", None) if result is not None else None
-            msg = getattr(result, "comment", "") if result is not None else ""
+            with _timeout(timeout_s):
+                result = func(*args, **kwargs)
+                res_code = getattr(result, "retcode", None)
+                msg = getattr(result, "comment", "") or ""
+                code = map_mt5_res_to_exec(int(res_code or -1))
+                record_gateway_success(channel)
 
-            code = map_mt5_res_to_exec(int(res_code or -1))
-
-            # Tracing attributes
-            span.set_attribute("exec.channel", str(channel or "unknown"))
-            span.set_attribute("exec.call", call)
-            span.set_attribute("exec.code", str(code))
-            span.set_attribute("mt5.res_code", res_code)
-            span.set_attribute("mt5.detail", msg)
-
-            # Mark failed spans explicitly
-            if code != ExecutionCode.OK:
-                from opentelemetry.trace import Status, StatusCode
-
-                span.set_status(Status(StatusCode.ERROR, description=str(code)))
+        except TimeoutError:
+            msg = f"MT5 call '{call}' timed out after {timeout_s:.1f}s"
+            code = ExecutionCode.INTERNAL_FAIL_TIMEOUT
+            record_gateway_failure(channel)
+            logger.error(msg)
 
         except Exception as e:
             msg = f"{type(e).__name__}: {e}"
             code = ExecutionCode.INTERNAL_FAIL
+            record_gateway_failure(channel)
+            logger.exception(f"MT5 call '{call}' crashed")
+
+        # ─── Observability metrics
+        dur_ms = int(time.time() * 1000.0 - start_ms)
+        try:
+            exec_channel_latency_ms.labels(call=call).observe(dur_ms)
+            exec_channel_total.labels(call=call, code=str(code)).inc()
+        except Exception:
+            pass
+
+        # ─── Tracing enrichment
+        span.set_attribute("exec.channel", str(channel or "unknown"))
+        span.set_attribute("exec.call", call)
+        span.set_attribute("exec.code", str(code))
+        span.set_attribute("exec.latency_ms", dur_ms)
+        span.set_attribute("exec.timeout_s", timeout_s)
+
+        if code != ExecutionCode.OK:
             from opentelemetry.trace import Status, StatusCode
 
-            span.record_exception(e)
-            span.set_status(Status(StatusCode.ERROR, description=type(e).__name__))
-            logger.exception(f"MT5 call {call} raised an exception")
+            span.set_status(Status(StatusCode.ERROR, description=str(code)))
 
-        finally:
-            dur_ms = int(time.time() * 1000.0 - start)
-            span.set_attribute("exec.latency_ms", dur_ms)
-            _record_metrics(call, code, dur_ms)
-            logger.info(
-                "MT5 exec",
-                extra={
-                    "attrs": {
-                        "call": call,
-                        "code": str(code),
-                        "latency_ms": dur_ms,
-                        "msg": msg[:256] if msg else None,
-                    }
-                },
-            )
+        # ─── Structured log
+        logger.info(
+            "MT5 exec",
+            extra={
+                "attrs": {
+                    "call": call,
+                    "channel": str(channel),
+                    "code": str(code),
+                    "latency_ms": dur_ms,
+                    "msg": msg[:256] if msg else None,
+                }
+            },
+        )
 
-    return ExecutionResult(code=code, message=msg, payload=result)
-
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Metrics
-# ──────────────────────────────────────────────────────────────────────────────
-
-
-def _record_metrics(call: str, code: ExecutionCode, latency_ms: int) -> None:
-    """
-    Records MT5 metrics if Prometheus is initialized.
-    (Silent if metrics are not available.)
-    """
-    try:
-        exec_channel_total.labels(call=call, code=str(code)).inc()
-        exec_channel_latency_ms.labels(call=call).observe(latency_ms)
-    except Exception:
-        pass
+        return ExecutionResult(code=code, message=msg, payload=result)

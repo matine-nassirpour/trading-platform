@@ -1,6 +1,9 @@
 import logging
 import os
 import threading
+import time
+from collections.abc import Callable
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Final
 
@@ -12,125 +15,132 @@ from quantum.shared.types.channels import ExecutionChannel
 
 logger = logging.getLogger(__name__)
 
+# ──────────────────────────────────────────────────────────────────────────────
+# Gateway & Health Model
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+@dataclass
+class GatewayHealth:
+    initialized: bool = False
+    healthy: bool = False
+    last_failure: float = 0.0
+    consecutive_failures: int = 0
+    cooldown_until: float = 0.0
+
+
+@dataclass
+class GatewayConfig:
+    channel: ExecutionChannel
+    func: Callable[..., object]
+    terminal_path: str
+    health: GatewayHealth = field(default_factory=GatewayHealth)
+
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Gateway registry
+# Registry
 # ──────────────────────────────────────────────────────────────────────────────
 
 _INIT_LOCK: Final = threading.Lock()
-_GATEWAYS: dict[ExecutionChannel, dict[str, object]] = {}
+_GATEWAYS: dict[ExecutionChannel, GatewayConfig] = {}
 
 _DEFAULT_PATHS: dict[ExecutionChannel, str] = {
     ExecutionChannel.FUNDEDNEXT: r"C:\Program Files\FundedNext MT5 Terminal\terminal64.exe",
     ExecutionChannel.FTMO: r"C:\Program Files\FTMO Global Markets MT5 Terminal\terminal64.exe",
 }
 
+# Circuit breaker parameters
+_MAX_FAILURES: Final = 3
+_COOLDOWN_SEC: Final = 30.0
+
 
 def _resolve_terminal_path(channel: ExecutionChannel) -> str:
-    """
-    Resolves the MT5 terminal path for the given channel from environment variables
-    or falls back to a known default path. Validates existence if possible.
-    """
     env_key = f"MT5_TERMINAL_PATH_{channel.name.upper()}"
     path = os.getenv(env_key, _DEFAULT_PATHS[channel])
     p = Path(path)
-
     if not p.exists():
         logger.warning(
             f"MT5 terminal path does not exist for {channel.name}",
             extra={"attrs": {"path": path, "env_key": env_key}},
         )
-    else:
-        logger.debug(
-            f"Resolved MT5 terminal path for {channel.name}",
-            extra={"attrs": {"path": path}},
-        )
     return str(p)
 
 
-def _register_default_gateways() -> None:
-    """Initializes the gateway registry with safe defaults."""
-    with _INIT_LOCK:
-        for channel in ExecutionChannel:
-            if channel not in _GATEWAYS:
-                _GATEWAYS[channel] = {
-                    "func": execute_mt5_call,
-                    "terminal_path": _resolve_terminal_path(channel),
-                    "initialized": False,
-                }
+# ──────────────────────────────────────────────────────────────────────────────
+# Gateway Registry Operations
+# ──────────────────────────────────────────────────────────────────────────────
 
 
-def get_gateway(channel: ExecutionChannel) -> dict[str, object]:
+def get_gateway(channel: ExecutionChannel) -> GatewayConfig:
     """
     Returns the gateway configuration for the given channel.
-    Automatically registers defaults if not present.
-
-    Returns a dict with keys:
-      - 'func': the callable for execution
-      - 'terminal_path': the MT5 executable path
-      - 'initialized': bool flag (set once MT5 is connected)
+    Lazily initializes if missing. Includes health gate check.
     """
     with _INIT_LOCK:
-        if channel not in _GATEWAYS:
+        gw = _GATEWAYS.get(channel)
+        if gw is None:
+            gw = GatewayConfig(
+                channel=channel,
+                func=execute_mt5_call,
+                terminal_path=_resolve_terminal_path(channel),
+            )
+            _GATEWAYS[channel] = gw
+
+        # Health gate logic
+        h = gw.health
+        now = time.time()
+        if h.cooldown_until > now:
+            raise RuntimeError(
+                f"Execution channel {channel.name} in cooldown "
+                f"until {time.strftime('%H:%M:%S', time.localtime(h.cooldown_until))}"
+            )
+        if not h.initialized:
             logger.warning(
-                f"Gateway not found for {channel.name}; registering fallback"
+                f"Gateway {channel.name} not initialized; attempting auto-init"
             )
-            _GATEWAYS[channel] = {
-                "func": execute_mt5_call,
-                "terminal_path": _resolve_terminal_path(channel),
-                "initialized": False,
-            }
-        return _GATEWAYS[channel]
+            ok = init_mt5_terminal(channel, gw.terminal_path)
+            h.initialized = bool(ok)
+            h.healthy = bool(ok)
+        return gw
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Lazy-safe initialization of MT5 terminals
+# Health Tracking Utilities
 # ──────────────────────────────────────────────────────────────────────────────
 
 
-def _initialize_gateways() -> None:
-    """
-    Initializes all configured MT5 terminals at import time.
-
-    Each gateway is initialized with its dedicated credentials
-    and executable path. Failures are logged but not raised,
-    to allow the rest of the app to start (degraded mode).
-    """
-    _register_default_gateways()
-
-    for channel, gw in _GATEWAYS.items():
-        term_path = gw.get("terminal_path")
-        try:
-            ok = init_mt5_terminal(channel, term_path)
-            gw["initialized"] = bool(ok)
-            if not ok:
-                logger.warning(
-                    f"Failed to initialize MT5 terminal for {channel.name}",
-                    extra={"attrs": {"terminal_path": term_path}},
-                )
-            else:
-                logger.info(
-                    f"MT5 terminal initialized for {channel.name}",
-                    extra={"attrs": {"terminal_path": term_path}},
-                )
-        except Exception as e:
-            logger.exception(
-                f"MT5 terminal initialization crashed for {channel.name}: {e}",
-                extra={"attrs": {"terminal_path": term_path}},
-            )
-
-
-def refresh_gateway_registry() -> None:
-    """
-    Rebuilds the gateway registry dynamically (useful if environment changes).
-    Safe to call at runtime.
-    """
-    logger.info("Refreshing MT5 gateway registry...")
+def record_gateway_failure(channel: ExecutionChannel) -> None:
+    """Registers a failure and trips the circuit breaker if threshold exceeded."""
     with _INIT_LOCK:
-        _GATEWAYS.clear()
-        _register_default_gateways()
-    _initialize_gateways()
+        gw = _GATEWAYS.get(channel)
+        if not gw:
+            return
+        h = gw.health
+        h.consecutive_failures += 1
+        h.last_failure = time.time()
+        if h.consecutive_failures >= _MAX_FAILURES:
+            h.healthy = False
+            h.cooldown_until = h.last_failure + _COOLDOWN_SEC
+            logger.error(
+                f"Gateway {channel.name} marked unhealthy after {h.consecutive_failures} failures. "
+                f"Cooldown {_COOLDOWN_SEC}s activated."
+            )
 
 
-# Run initialization on module import (lazy + safe)
-_initialize_gateways()
+def record_gateway_success(channel: ExecutionChannel) -> None:
+    """Resets the breaker on successful call."""
+    with _INIT_LOCK:
+        gw = _GATEWAYS.get(channel)
+        if not gw:
+            return
+        h = gw.health
+        h.consecutive_failures = 0
+        h.healthy = True
+        h.cooldown_until = 0.0
+
+
+def is_gateway_healthy(channel: ExecutionChannel) -> bool:
+    gw = _GATEWAYS.get(channel)
+    if not gw:
+        return False
+    return gw.health.healthy and gw.health.initialized

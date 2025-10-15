@@ -1,6 +1,6 @@
 """
 MT5 Runtime Bootstrap
-───────────────────────────────────────────────────────────────────────────────
+──────────────────────────────────────────────────────────────────────────────
 Responsible for initializing, monitoring, and gracefully shutting down all
 MetaTrader5 terminals defined in the execution gateway registry.
 

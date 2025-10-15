@@ -9,6 +9,7 @@ from __future__ import annotations
 import logging
 import os
 import threading
+from collections.abc import Mapping
 from functools import lru_cache
 from pathlib import Path
 from typing import Final, Literal
@@ -28,15 +29,20 @@ except ImportError:
 _LOGGER: Final = logging.getLogger("quantum.config")
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Environment loader (internal)
+# Internal State
 # ──────────────────────────────────────────────────────────────────────────────
 
 _INIT_LOCK: Final = threading.Lock()
 _LOADED: bool = False
 _BASE_DIR: Path | None = None
 
+# ──────────────────────────────────────────────────────────────────────────────
+# Helpers
+# ──────────────────────────────────────────────────────────────────────────────
 
-def _merge_envs(*layers: dict[str, str | None]) -> dict[str, str]:
+
+def _merge_envs(*layers: Mapping[str, str | None]) -> dict[str, str]:
+    """Merge environment layers, ignoring None values."""
     merged: dict[str, str] = {}
     for layer in layers:
         for k, v in layer.items():
@@ -65,24 +71,35 @@ def _resolve_env_path(
     return Path.cwd(), None
 
 
+# ─── Core Loader
 def _load_env_files(
     root: str | Path | None = None,
     env_file: str | Path | None = None,
     *,
     override: bool = False,
-) -> Path | None:
-    """Loads .env files into os.environ with layering and diagnostics."""
+    apply: bool = True,
+) -> dict[str, str]:
+    """
+    Loads environment variables from .env files.
+
+    Returns:
+        dict[str, str]: The merged environment values.
+
+    Args:
+        apply: If True, apply merged envs to os.environ.
+        override: If True, overwrite existing os.environ values.
+    """
     global _LOADED, _BASE_DIR
     if _LOADED:
-        return _BASE_DIR
+        return dict(os.environ)
 
     if dotenv_values is None:
         _LOGGER.warning("python-dotenv not installed; skipping .env loading")
-        return None
+        return dict(os.environ)
 
     with _INIT_LOCK:
         if _LOADED:
-            return _BASE_DIR
+            return dict(os.environ)
 
         base_dir, explicit_file = _resolve_env_path(root, env_file)
         if base_dir is None:
@@ -103,10 +120,11 @@ def _load_env_files(
 
         merged = _merge_envs(env_base or {}, env_specific or {}, env_local or {})
 
-        for k, v in merged.items():
-            if k in os.environ and not override:
-                continue
-            os.environ[k] = v
+        if apply:
+            for k, v in merged.items():
+                if k in os.environ and not override:
+                    continue
+                os.environ[k] = v
 
         _LOADED = True
         _BASE_DIR = base_dir
@@ -115,7 +133,8 @@ def _load_env_files(
             "Environment loaded",
             extra={"attrs": {"base_dir": str(base_dir), "env": current_env}},
         )
-        return base_dir
+
+        return merged
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -197,7 +216,6 @@ class Settings(BaseSettings):
 class ConfigManager:
     """Thread-safe facade for configuration management."""
 
-    # ─── Core runtime
     @staticmethod
     @lru_cache
     def load(
@@ -205,10 +223,13 @@ class ConfigManager:
         *,
         env_file: str | Path | None = None,
         override: bool = False,
+        env: Mapping[str, str] | None = None,
     ) -> Settings:
         """Loads environment and returns validated Settings instance."""
-        _load_env_files(root, env_file, override=override)
-        settings = Settings()
+        merged = _load_env_files(root, env_file, override=override, apply=(env is None))
+        effective_env = {**merged, **(env or {})}
+
+        settings = Settings(**effective_env)
         _LOGGER.info(
             "Settings initialized",
             extra={
@@ -219,15 +240,17 @@ class ConfigManager:
 
     @staticmethod
     @lru_cache
-    def load_observability() -> ObservabilitySettings:
+    def load_observability(
+        env: Mapping[str, str] | None = None,
+    ) -> ObservabilitySettings:
         """Loads and returns observability configuration."""
-        return ObservabilitySettings(**os.environ)
+        return ObservabilitySettings(**(env or os.environ))
 
     @staticmethod
     @lru_cache
-    def load_telemetry() -> TelemetrySettings:
-        """Loads and returns telemetry transport configuration."""
-        return TelemetrySettings(**os.environ)
+    def load_telemetry(env: Mapping[str, str] | None = None) -> TelemetrySettings:
+        """Loads and returns telemetry configuration."""
+        return TelemetrySettings(**(env or os.environ))
 
     @staticmethod
     def clear_caches() -> None:
@@ -255,9 +278,11 @@ class ConfigManager:
 
     # ─── Credentials helper
     @staticmethod
-    def get_mt5_credentials(channel: str) -> dict[str, str]:
+    def get_mt5_credentials(
+        channel: str, env: Mapping[str, str] | None = None
+    ) -> dict[str, str]:
         """Accesses MT5 credentials for a given execution channel."""
-        settings = ConfigManager.load()
+        settings = ConfigManager.load(env=env)
         prefix = channel.lower()
         return {
             "login": str(getattr(settings, f"quantum_mt5_{prefix}_login", "") or ""),
