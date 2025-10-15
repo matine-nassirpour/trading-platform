@@ -5,19 +5,20 @@ from pydantic import field_validator
 
 from quantum.domain.events.base import BaseEvent
 from quantum.shared.serialization.schema_registry import register_event
+from quantum.shared.types.decimal_validators import PositiveDecimal
 from quantum.shared.types.enums import App, PositionSide
-from quantum.shared.types.time import EpochMs
+from quantum.shared.types.value_objects import EpochMs, IntentId, PositionId, Symbol
 
 
 @register_event
 class PositionUpdateEvent(BaseEvent):
     event_name: ClassVar[str] = "trading.position_update"
     app: App = App.EA_MQL5
-    symbol: str
-    position_id: int
-    intent_id: str | None = None
+    symbol: Symbol
+    position_id: PositionId
+    intent_id: IntentId | None = None
     side: PositionSide
-    volume: Decimal
+    volume: PositiveDecimal
     price_open: Decimal
     price_current: Decimal
     sl: Decimal | None = None

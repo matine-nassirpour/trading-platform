@@ -10,7 +10,7 @@ from quantum.infrastructure.execution.mt5_gateway import (
 )
 from quantum.infrastructure.observability.init_observability import init_observability
 from quantum.infrastructure.observability.tracing.traces import get_tracer
-from quantum.shared.config.env_loader import get_mt5_credentials
+from quantum.shared.config.config_manager import ConfigManager
 from quantum.shared.context.run_id import generate_run_id, get_run_id
 from quantum.shared.types.channels import ExecutionChannel
 
@@ -118,7 +118,7 @@ def _validate_mt5_credentials(logger: logging.Logger) -> None:
     Raises a RuntimeError immediately if a configuration is missing.
     """
     for channel in (ExecutionChannel.FTMO, ExecutionChannel.FUNDEDNEXT):
-        creds = get_mt5_credentials(channel.name)
+        creds = ConfigManager.get_mt5_credentials(channel.name)
         if not all(creds.values()):
             raise RuntimeError(
                 f"Missing credentials for {channel.name} in .env — "

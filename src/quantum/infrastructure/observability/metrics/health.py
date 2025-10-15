@@ -19,7 +19,6 @@ def refresh_build_info_from_env() -> None:
     )
 
 
-# will be refreshed after load_env()
 refresh_build_info_from_env()
 
 # ──────────────────────────────────────────────────────────────────────────────

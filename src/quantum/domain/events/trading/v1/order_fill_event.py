@@ -6,7 +6,13 @@ from pydantic import Field, field_validator
 from quantum.domain.events.base import BaseEvent
 from quantum.shared.types.decimal_validators import NonNegativeDecimal, PositiveDecimal
 from quantum.shared.types.enums import App, DealEntry, DealReason
-from quantum.shared.types.time import EpochMs
+from quantum.shared.types.value_objects import (
+    DealId,
+    EpochMs,
+    IntentId,
+    OrderId,
+    Symbol,
+)
 
 
 class OrderFillEvent(BaseEvent):
@@ -14,10 +20,10 @@ class OrderFillEvent(BaseEvent):
     app: App = App.EA_MQL5
 
     # IDs
-    intent_id: str
-    order_id: int
-    deal_id: int
-    symbol: str
+    intent_id: IntentId
+    order_id: OrderId
+    deal_id: DealId
+    symbol: Symbol
 
     # Current Fill
     price: PositiveDecimal = Field(..., description="Deal price (> 0)")

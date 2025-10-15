@@ -7,11 +7,11 @@ from opentelemetry import context as otel_context
 from apps.streamlit.bootstrap import init_streamlit
 from apps.streamlit.lib.obs import PageTimer, ui_action
 from quantum.interface.streamlit.entrypoints import get_positions
-from quantum.shared.config.env_loader import load_env
+from quantum.shared.config.config_manager import ConfigManager
 from quantum.shared.context.run_id import get_run_id
 from quantum.shared.correlation.correlation_id import get_correlation_id
 
-load_env()  # does not overwrite existing env by default
+ConfigManager.load()
 
 st.set_page_config(page_title="Quantum Desk", layout="wide")
 

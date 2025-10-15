@@ -2,8 +2,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from quantum.shared.types.decimal_validators import PositiveDecimal
 from quantum.shared.types.enums import OrderType, Side, TimeInForce
-from quantum.shared.types.ids import Symbol
-from quantum.shared.types.symbol import normalize_symbol
+from quantum.shared.types.value_objects import Symbol
 
 
 class OrderRequest(BaseModel):
@@ -26,12 +25,6 @@ class OrderRequest(BaseModel):
     tp: PositiveDecimal | None = Field(None, description="Take profit level")
     time_in_force: TimeInForce = TimeInForce.GTC
     comment: str | None = None
-
-    @field_validator("symbol")
-    @classmethod
-    def _normalize_symbol(cls, v: Symbol) -> Symbol:
-        """Normalize and sanitize the trading symbol."""
-        return Symbol(normalize_symbol(v))
 
     @field_validator("price", "stop_price", "limit_price")
     @classmethod

@@ -30,8 +30,8 @@ from quantum.infrastructure.observability.tracing.traces import (
     TracingConfig,
     init_tracing,
 )
+from quantum.shared.config.config_manager import ConfigManager
 from quantum.shared.config.env_flags import get_bool
-from quantum.shared.config.settings import get_settings
 from quantum.shared.context.run_id import generate_run_id, get_run_id
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -42,6 +42,8 @@ _initialized = False
 _init_lock = threading.Lock()
 _metrics_httpd_started = False
 _tracer_provider_ref: object | None = None
+
+logger = logging.getLogger(__name__)
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Helpers
@@ -75,14 +77,14 @@ def _probe_path_writable(base_dir: str | os.PathLike[str]) -> bool:
 
         if get_bool("QUANTUM_LOG_DEEP_PROBE", default=False):
             base = Path(base_dir)
-            test_dir = base / "__probe__/yyyy/mm/dd/hh"
-            test_dir.mkdir(parents=True, exist_ok=True)
-            test_file = test_dir / "probe.jsonl"
-            with open(test_file, "a", encoding="utf-8") as f:
-                f.write("{}\n")
-            test_file.unlink(missing_ok=True)
+            probe = base / "__probe__/yyyy/mm/dd/hh"
+            probe.mkdir(parents=True, exist_ok=True)
+            f = probe / "probe.jsonl"
+            with open(f, "a", encoding="utf-8") as fp:
+                fp.write("{}\n")
+            f.unlink(missing_ok=True)
             with suppress(OSError):
-                test_dir.rmdir()
+                probe.rmdir()
         return True
     except OSError:
         return False
@@ -121,10 +123,102 @@ def _shutdown_tracing_if_any() -> None:
     if callable(shutdown):
         try:
             shutdown()
-        except (RuntimeError, OSError, TimeoutError) as e:
-            logging.getLogger(__name__).debug(f"Tracer shutdown failed: {e}")
-
+        except Exception as e:
+            logger.debug(f"Tracer shutdown failed: {e}")
     _tracer_provider_ref = None
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Init Subsystems
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+def _init_tracing(
+    app_name: str,
+    env: str,
+    ns: str,
+    exporter: Literal["otlp", "console", "none"],
+    force: bool,
+    sample_ratio: float | None,
+) -> bool:
+    try:
+        _shutdown_tracing_if_any()
+        tp = init_tracing(
+            TracingConfig(
+                service_name=app_name,
+                environment=env,
+                namespace=ns,
+                exporter=exporter,
+                sample_ratio=sample_ratio,
+            ),
+            replace_existing=force,
+        )
+        setup_propagation()
+        install_process_baggage()
+        otel_tracing_up.set(1)
+        global _tracer_provider_ref
+        _tracer_provider_ref = tp
+        return True
+    except Exception as e:
+        logger.exception(f"Tracing initialization failed: {e}")
+        otel_tracing_up.set(0)
+        # Fallback (retry 1 time)
+        try:
+            tp = init_tracing(
+                TracingConfig(
+                    service_name=app_name,
+                    environment=env,
+                    namespace=ns,
+                    exporter="none",
+                    sample_ratio=0.0,
+                )
+            )
+            setup_propagation()
+            install_process_baggage()
+            otel_tracing_up.set(1)
+            _tracer_provider_ref = tp
+            logger.warning(
+                "Tracing fallback activated: exporter=none, sample_ratio=0.0"
+            )
+            return True
+        except Exception as e2:
+            logger.exception(f"Tracing fallback failed: {e2}")
+            otel_tracing_up.set(0)
+            return False
+
+
+def _init_logging(
+    app_name: str, env: str, ns: str, log_lvl: str, app_version: str
+) -> bool:
+    try:
+        init_logging(
+            LoggingConfig(
+                app_name=app_name,
+                environment=env,
+                namespace=ns,
+                log_level=log_lvl,
+                app_version=app_version,
+            )
+        )
+        return True
+    except Exception as e:
+        logger.exception(f"Logging initialization failed: {e}")
+        return False
+
+
+def _init_metrics(port: int, addr: str) -> bool:
+    if port > 0:
+        try:
+            start_http_server(port, addr=addr)
+            pipeline_metrics_http_ok.set(1)
+            return True
+        except OSError as e:
+            logger.warning(f"Metrics HTTP server failed to start on {addr}:{port}: {e}")
+            pipeline_metrics_http_ok.set(0)
+            return False
+    else:
+        pipeline_metrics_http_ok.set(0)
+        return False
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -142,35 +236,30 @@ def init_observability(
     force: bool = False,
 ) -> None:
     """Idempotent + thread-safe observability bootstrap."""
-    global _initialized, _metrics_httpd_started
-
-    if _initialized and not force:
-        return
+    global _initialized
 
     if force:
-        # Clear cached Settings to reload environment vars
         try:
-            get_settings.cache_clear()
+            ConfigManager.clear_caches()
         except AttributeError:
             pass
 
-    settings = get_settings()
+    settings = ConfigManager.load()
+    obs_settings = ConfigManager.load_observability()
 
     with _init_lock:
         if _initialized and not force:
             return
 
-        # Reset health
+        # Reset health gauges
         pipeline_up.set(0)
         otel_tracing_up.set(0)
         logging_sink_up.set(0)
-
-        # Reset pillars
         pipeline_logging_ok.set(0)
         pipeline_tracing_ok.set(0)
         pipeline_metrics_http_ok.set(0)
 
-        with suppress(ValueError, RuntimeError, AttributeError, NameError):
+        with suppress(Exception):
             refresh_build_info_from_env()
 
         if not get_run_id():
@@ -179,7 +268,7 @@ def init_observability(
         app_name = app_name or settings.quantum_app_name
         environment = environment or settings.quantum_env
         namespace = namespace or settings.quantum_ns
-        log_level = log_level or settings.quantum_log_level
+        log_level = log_level or obs_settings.quantum_log_level
         sample_ratio = (
             settings.quantum_trace_sample if sample_ratio is None else sample_ratio
         )
@@ -188,112 +277,36 @@ def init_observability(
         if force:
             close_and_remove_all_handlers(logging.getLogger())
 
-        # ────────────────────────────────
-        # 1. Tracing (OpenTelemetry)
-        #    Must be first
-        # ────────────────────────────────
+        # ─── Tracing - must be first
         exporter: Literal["otlp", "console", "none"] = settings.quantum_trace_exporter
-        tracing_ok = False
-        try:
-            _shutdown_tracing_if_any()
-            tp = init_tracing(
-                TracingConfig(
-                    service_name=app_name,
-                    environment=environment,
-                    namespace=namespace,
-                    exporter=exporter,
-                    sample_ratio=sample_ratio,
-                ),
-                replace_existing=force,
-            )
-            setup_propagation()
-            # Do not re-attach if already present.
-            install_process_baggage()
-            otel_tracing_up.set(1)
-            tracing_ok = bool(tp)
-            global _tracer_provider_ref
-            _tracer_provider_ref = tp
-        except Exception as e:
-            logging.getLogger(__name__).exception(f"Tracing initialization failed: {e}")
-            otel_tracing_up.set(0)
-            # Fallback (retry 1 time)
-            try:
-                tp = init_tracing(
-                    TracingConfig(
-                        service_name=app_name,
-                        environment=environment,
-                        namespace=namespace,
-                        exporter="none",
-                        sample_ratio=0.0,
-                    )
-                )
-                setup_propagation()
-                install_process_baggage()
-                otel_tracing_up.set(1)
-                tracing_ok = True
-                _tracer_provider_ref = tp
-                logging.getLogger(__name__).warning(
-                    "Tracing fallback activated: exporter=none, sample_ratio=0.0"
-                )
-            except Exception as e2:
-                logging.getLogger(__name__).exception(f"Tracing fallback failed: {e2}")
-                otel_tracing_up.set(0)
-
+        tracing_ok = _init_tracing(
+            app_name, environment, namespace, exporter, force, sample_ratio
+        )
         pipeline_tracing_ok.set(1 if tracing_ok else 0)
 
-        # ────────────────────────────────
-        # 2. Logging
-        #    Must come after tracing
-        # ────────────────────────────────
-        logging_initialized = False
-        try:
-            init_logging(
-                LoggingConfig(
-                    app_name=app_name,
-                    environment=environment,
-                    namespace=namespace,
-                    log_level=log_level,
-                    app_version=app_version,
-                )
-            )
-            logging_initialized = True
-        except Exception as e:
-            logging.getLogger(__name__).exception(f"Logging initialization failed: {e}")
-
-        pipeline_logging_ok.set(1 if logging_initialized else 0)
+        # ─── Logging - must come after tracing
+        logging_ok = _init_logging(
+            app_name, environment, namespace, log_level, app_version
+        )
+        pipeline_logging_ok.set(1 if logging_ok else 0)
 
         # Persistent sinks up? (partition and/or audit)
         try:
             sinks_ok = _probe_logging_sinks()
         except Exception as e:
-            logging.getLogger(__name__).warning(f"Logging sinks probe failed: {e}")
+            logger.warning(f"Logging sinks probe failed: {e}")
             sinks_ok = False
 
         logging_sink_up.set(1 if sinks_ok else 0)
 
-        # ────────────────────────────────
-        # 3. Metrics
-        #    Prometheus HTTP endpoint
-        # ────────────────────────────────
+        # ─── Metrics - prometheus HTTP endpoint
         port = settings.quantum_metrics_port
         addr = settings.quantum_metrics_addr
-        if port > 0 and not _metrics_httpd_started:
-            try:
-                start_http_server(port, addr=addr)
-                _metrics_httpd_started = True
-                pipeline_metrics_http_ok.set(1)
-            except OSError as e:
-                logging.getLogger(__name__).warning(
-                    f"Metrics HTTP server failed to start on {addr}:{port}: {e}"
-                )
-                pipeline_metrics_http_ok.set(0)
-        else:
-            # No HTTP exposure requested → stay at 0 (this is intentional and non-blocking)
-            pipeline_metrics_http_ok.set(1 if _metrics_httpd_started else 0)
+        _init_metrics(port, addr)
 
-        ok = logging_initialized and tracing_ok
+        ok = logging_ok and tracing_ok
         pipeline_up.set(1 if ok else 0)
-        _initialized = bool(ok)
+        _initialized = ok
 
 
 def shutdown_observability(
@@ -311,37 +324,31 @@ def shutdown_observability(
     - Optional: Resets the gauges to 0 (useful for testing). In normal run, leave this as False.
     - Optional: Resets internal flags to allow a clean reset afterward.
     """
-    global _initialized, _tracer_provider_ref
+    global _initialized
 
-    # Tracing
     if shutdown_tracing:
         try:
             detach_process_baggage_if_any()
         finally:
             _shutdown_tracing_if_any()
             if set_gauges_down:
-                # Gauge may fail if client/registry isn't initialized
-                with suppress(ValueError, RuntimeError):
+                with suppress(Exception):
                     otel_tracing_up.set(0)
 
-    # Logging
     if close_logging:
         try:
             close_and_remove_all_handlers(logging.getLogger())
         finally:
             if set_gauges_down:
-                with suppress(NameError, AttributeError, ValueError, RuntimeError):
+                with suppress(Exception):
                     logging_sink_up.set(0)
 
-    # Global pipeline (optional)
     if set_gauges_down:
-        with suppress(NameError, AttributeError, ValueError, RuntimeError):
+        with suppress(Exception):
             pipeline_up.set(0)
 
     if reset_state:
         _initialized = False
-        # Do not set _metrics_httpd_started to False: we do not "unmount" the prometheus_client HTTPD
-        # (start_http_server does not provide a stop; it is a process server).
 
 
 @contextmanager
@@ -354,10 +361,7 @@ def observability_session(
     *,
     force: bool = False,
 ):
-    """
-    Practical context for tests/e2e:
-    init_observability(...) then shutdown_observability() on exit.
-    """
+    """Context manager to automatically init and teardown observability."""
     init_observability(
         app_name=app_name,
         environment=environment,

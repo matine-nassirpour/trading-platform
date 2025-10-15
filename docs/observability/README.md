@@ -293,9 +293,9 @@ import streamlit as st
 
 from apps.streamlit.bootstrap import init_streamlit
 from apps.streamlit.lib.obs import PageTimer, ui_action
-from quantum.shared.config.env_loader import load_env
+from quantum.shared.config.config_manager import ConfigManager
 
-load_env()
+ConfigManager.load()
 st.set_page_config()
 init_streamlit()
 

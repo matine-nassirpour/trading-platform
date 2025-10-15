@@ -6,7 +6,7 @@ from quantum.infrastructure.observability.metrics.mt5 import (
     exec_channel_total,
 )
 from quantum.infrastructure.observability.tracing.traces import get_tracer
-from quantum.shared.config.env_loader import get_mt5_credentials
+from quantum.shared.config.config_manager import ConfigManager
 from quantum.shared.types.channels import ExecutionChannel
 from quantum.shared.types.execution import ExecutionCode
 from quantum.shared.types.execution_result import ExecutionResult
@@ -30,7 +30,7 @@ def init_mt5_terminal(channel: ExecutionChannel, path: str | None = None) -> boo
     try:
         import MetaTrader5 as mt5  # lazy import
 
-        creds = get_mt5_credentials(channel.name)
+        creds = ConfigManager.get_mt5_credentials(channel.name)
         if not creds["login"] or not creds["server"] or not creds["password"]:
             logger.error(
                 f"Missing MT5 credentials for channel {channel.name}",
