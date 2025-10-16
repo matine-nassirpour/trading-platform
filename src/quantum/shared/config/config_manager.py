@@ -187,13 +187,16 @@ class Settings(BaseSettings):
     quantum_exec_backoff: float = Field(0.5)
     quantum_exec_backoff_max: float = Field(5.0)
 
-    # ─── MT5 credentials
+    # ─── MT5 credentials & Terminal path
     quantum_mt5_ftmo_login: int | None = None
     quantum_mt5_ftmo_server: str | None = None
     quantum_mt5_ftmo_password: str | None = None
     quantum_mt5_fundednext_login: int | None = None
     quantum_mt5_fundednext_server: str | None = None
     quantum_mt5_fundednext_password: str | None = None
+
+    mt5_ftmo_terminal_path: str | None = None
+    mt5_fundednext_terminal_path: str | None = None
 
     # ─── Validation
     @field_validator("quantum_env", mode="before")

@@ -3,11 +3,11 @@ from __future__ import annotations
 import asyncio
 import functools
 import logging
-import os
 import time
 from collections.abc import Awaitable, Callable
 from typing import ParamSpec, TypeVar, overload
 
+from quantum.shared.config.config_manager import ConfigManager
 from quantum.shared.execution.retry_policy import should_retry
 from quantum.shared.types.execution import ExecutionCode
 from quantum.shared.types.execution_result import ExecutionResult
@@ -17,11 +17,11 @@ logger = logging.getLogger(__name__)
 P = ParamSpec("P")
 R = TypeVar("R", bound=ExecutionResult)
 
-# Defaults configurable via environment (.env or runtime)
-_DEFAULT_MAX_RETRIES = int(os.getenv("QUANTUM_EXEC_RETRIES", "3"))
-_DEFAULT_TIMEOUT = float(os.getenv("QUANTUM_EXEC_TIMEOUT", "5.0"))
-_DEFAULT_BACKOFF = float(os.getenv("QUANTUM_EXEC_BACKOFF", "0.5"))
-_DEFAULT_BACKOFF_MAX = float(os.getenv("QUANTUM_EXEC_BACKOFF_MAX", "5.0"))
+settings = ConfigManager.load()
+_DEFAULT_MAX_RETRIES = settings.quantum_exec_retries
+_DEFAULT_TIMEOUT = settings.quantum_exec_timeout
+_DEFAULT_BACKOFF = settings.quantum_exec_backoff
+_DEFAULT_BACKOFF_MAX = settings.quantum_exec_backoff_max
 
 
 def _compute_backoff(attempt: int, base: float, max_backoff: float) -> float:

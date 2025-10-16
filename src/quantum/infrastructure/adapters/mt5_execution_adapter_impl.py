@@ -72,14 +72,14 @@ class Mt5ExecutionAdapterImpl:
         gw = get_gateway(channel)
         self.channel = channel
 
-        func = gw.get("func")
+        func = gw.func
         if not callable(func):
             raise RuntimeError(
                 f"Gateway func not callable for {channel.name}: {func!r}"
             )
 
         self._exec_func = func
-        self._terminal_path = gw.get("terminal_path")
+        self._terminal_path = gw.terminal_path
 
     # ─── Properties
     @property

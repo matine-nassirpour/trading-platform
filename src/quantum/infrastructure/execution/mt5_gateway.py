@@ -1,10 +1,15 @@
+from __future__ import annotations
+
 import logging
 import signal
+import sys
+import threading
 import time
 from collections.abc import Callable
 from contextlib import contextmanager
 from typing import Any
 
+from quantum.infrastructure.execution.contracts import ExecutionFunctionProtocol
 from quantum.infrastructure.execution.gateway_registry import (
     is_gateway_healthy,
     record_gateway_failure,
@@ -93,149 +98,141 @@ def shutdown_mt5_terminal() -> None:
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Dynamic timeout configuration
+# Cross-platform timeout context manager
 # ──────────────────────────────────────────────────────────────────────────────
-
-
-def _get_exec_timeout() -> float:
-    """
-    Returns the execution timeout (seconds) from configuration.
-
-    Uses `quantum_exec_timeout` defined in `ConfigManager`,
-    with fallback to a safe default (5.0 seconds).
-    """
-    try:
-        settings = ConfigManager.load()
-        return settings.quantum_exec_timeout
-    except Exception as e:
-        logger.warning(f"Failed to read quantum_exec_timeout: {e}")
-        return 5.0
 
 
 @contextmanager
-def _timeout(seconds: float):
-    """Context manager enforcing a hard timeout (Unix only)."""
-
-    def _handler(signum, frame):
-        raise TimeoutError("MT5 execution timed out")
-
-    signal.signal(signal.SIGALRM, _handler)
-    signal.alarm(int(seconds))
-    try:
-        yield
-    finally:
-        signal.alarm(0)
-
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Core execution with health gate + circuit breaker
-# ──────────────────────────────────────────────────────────────────────────────
-
-
-def execute_mt5_call(
-    call: str,
-    func: Callable[..., Any],
-    *args,
-    channel: ExecutionChannel | None = None,
-    **kwargs,
-) -> ExecutionResult:
+def _timeout(seconds: float, call_name: str):
     """
-    Executes a MetaTrader5 API call under a fully instrumented and fault-tolerant context.
-
-    This function acts as the canonical execution harness for all MT5 API calls.
-    It provides:
-      - OpenTelemetry tracing
-      - Prometheus metrics (latency, total)
-      - Configurable timeout via ConfigManager
-      - Health gating & circuit breaker integration
-      - Consistent ExecutionResult contract
-
-    Parameters
-    ----------
-    call : str
-        Logical name of the MT5 operation (e.g. "order_send", "positions_get").
-    func : Callable[..., Any]
-        The MetaTrader5 function to execute.
-    channel : ExecutionChannel | None
-        Execution channel (FTMO, FUNDEDNEXT, etc.)
-    *args, **kwargs :
-        Parameters passed directly to the MT5 API call.
-
-    Returns
-    -------
-    ExecutionResult
-        Standardized result object containing code, message, and payload.
+    Cross-platform timeout guard.
+    Uses signal.alarm() on Unix, and threading.Timer fallback on Windows.
     """
-    start_ms = time.time() * 1000.0
-    timeout_s = _get_exec_timeout()
 
-    with tracer.start_as_current_span(f"exec.{call}") as span:
-        code = ExecutionCode.FAIL
-        msg = ""
-        result = None
-
-        # Health gate check
-        if channel and not is_gateway_healthy(channel):
-            msg = f"Execution channel {channel.name} unhealthy — call aborted."
-            logger.warning(msg)
-            return ExecutionResult(
-                code=ExecutionCode.INTERNAL_FAIL,
-                message=msg,
-                payload=None,
-            )
-
-        try:
-            with _timeout(timeout_s):
-                result = func(*args, **kwargs)
-                res_code = getattr(result, "retcode", None)
-                msg = getattr(result, "comment", "") or ""
-                code = map_mt5_res_to_exec(int(res_code or -1))
-                record_gateway_success(channel)
-
-        except TimeoutError:
-            msg = f"MT5 call '{call}' timed out after {timeout_s:.1f}s"
-            code = ExecutionCode.INTERNAL_FAIL_TIMEOUT
-            record_gateway_failure(channel)
-            logger.error(msg)
-
-        except Exception as e:
-            msg = f"{type(e).__name__}: {e}"
-            code = ExecutionCode.INTERNAL_FAIL
-            record_gateway_failure(channel)
-            logger.exception(f"MT5 call '{call}' crashed")
-
-        # ─── Observability metrics
-        dur_ms = int(time.time() * 1000.0 - start_ms)
-        try:
-            exec_channel_latency_ms.labels(call=call).observe(dur_ms)
-            exec_channel_total.labels(call=call, code=str(code)).inc()
-        except Exception:
-            pass
-
-        # ─── Tracing enrichment
-        span.set_attribute("exec.channel", str(channel or "unknown"))
-        span.set_attribute("exec.call", call)
-        span.set_attribute("exec.code", str(code))
-        span.set_attribute("exec.latency_ms", dur_ms)
-        span.set_attribute("exec.timeout_s", timeout_s)
-
-        if code != ExecutionCode.OK:
-            from opentelemetry.trace import Status, StatusCode
-
-            span.set_status(Status(StatusCode.ERROR, description=str(code)))
-
-        # ─── Structured log
-        logger.info(
-            "MT5 exec",
-            extra={
-                "attrs": {
-                    "call": call,
-                    "channel": str(channel),
-                    "code": str(code),
-                    "latency_ms": dur_ms,
-                    "msg": msg[:256] if msg else None,
-                }
-            },
+    def _raise_timeout():
+        raise TimeoutError(
+            f"Execution call '{call_name}' timed out after {seconds:.1f}s"
         )
 
-        return ExecutionResult(code=code, message=msg, payload=result)
+    if sys.platform != "win32":
+
+        def _handler(signum, frame):
+            raise TimeoutError(
+                f"Execution call '{call_name}' timed out after {seconds:.1f}s"
+            )
+
+        signal.signal(signal.SIGALRM, _handler)
+        signal.alarm(int(seconds))
+        try:
+            yield
+        finally:
+            signal.alarm(0)
+    else:
+        timer = threading.Timer(seconds, _raise_timeout)
+        timer.start()
+        try:
+            yield
+        finally:
+            timer.cancel()
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Main MT5 execution harness (Protocol implementation)
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+class Mt5ExecutionFunction(ExecutionFunctionProtocol):
+    """
+    Canonical implementation of the ExecutionFunctionProtocol for MetaTrader5.
+
+    Provides
+    --------
+    - Safe, instrumented, and fault-tolerant API call execution
+    - Prometheus latency and total metrics
+    - OpenTelemetry traces with detailed attributes
+    - Circuit breaker & health gate protection
+    - Cross-platform timeout guard
+    - Structured, contextual logging
+    """
+
+    def __call__(
+        self,
+        call: str,
+        func: Callable[..., Any],
+        *args: Any,
+        channel: ExecutionChannel | None = None,
+        **kwargs: Any,
+    ) -> ExecutionResult:
+        start_ms = time.time() * 1000.0
+        timeout_s = ConfigManager.load().quantum_exec_timeout
+        result: Any | None = None
+        msg = ""
+        code: ExecutionCode = ExecutionCode.FAIL
+
+        with tracer.start_as_current_span(f"exec.{call}") as span:
+            # ─── Health gate
+            if channel and not is_gateway_healthy(channel):
+                msg = f"Execution channel {channel.name} unhealthy — call aborted."
+                logger.warning(msg)
+                span.set_status("ERROR")
+                return ExecutionResult(
+                    code=ExecutionCode.INTERNAL_FAIL, message=msg, payload=None
+                )
+
+            try:
+                with _timeout(timeout_s, call):
+                    result = func(*args, **kwargs)
+                    res_code = getattr(result, "retcode", None)
+                    msg = getattr(result, "comment", "") or ""
+                    code = map_mt5_res_to_exec(int(res_code or -1))
+                    record_gateway_success(channel)
+
+            except TimeoutError as e:
+                msg = str(e)
+                code = ExecutionCode.INTERNAL_FAIL_TIMEOUT
+                record_gateway_failure(channel)
+                logger.error(msg)
+
+            except Exception as e:
+                msg = f"{type(e).__name__}: {e}"
+                code = ExecutionCode.INTERNAL_FAIL
+                record_gateway_failure(channel)
+                logger.exception(
+                    f"MT5 call '{call}' crashed with exception", exc_info=e
+                )
+
+            # ─── Metrics & Observability
+            dur_ms = int(time.time() * 1000.0 - start_ms)
+            try:
+                exec_channel_latency_ms.labels(call=call).observe(dur_ms)
+                exec_channel_total.labels(call=call, code=str(code)).inc()
+            except Exception:
+                pass  # metrics should never break execution
+
+            # ─── Tracing enrichment
+            span.set_attribute("exec.channel", str(channel or "unknown"))
+            span.set_attribute("exec.call", call)
+            span.set_attribute("exec.code", str(code))
+            span.set_attribute("exec.latency_ms", dur_ms)
+            span.set_attribute("exec.timeout_s", timeout_s)
+
+            if code != ExecutionCode.OK:
+                from opentelemetry.trace import Status, StatusCode
+
+                span.set_status(Status(StatusCode.ERROR, description=str(code)))
+
+            # ─── Structured Log
+            logger.info(
+                "MT5 exec",
+                extra={
+                    "attrs": {
+                        "call": call,
+                        "channel": str(channel or "N/A"),
+                        "code": str(code),
+                        "latency_ms": dur_ms,
+                        "msg": msg[:256] if msg else None,
+                    }
+                },
+            )
+
+            return ExecutionResult(code=code, message=msg, payload=result)
