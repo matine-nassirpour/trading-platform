@@ -52,10 +52,8 @@ logger = logging.getLogger(__name__)
 
 def _iter_persistent_handlers() -> list[logging.Handler]:
     """
-    Returns the list of handlers considered "persistent" (write to disk), i.e., handlers that expose a `base_dir` attribute, by aggregating:
-
-    - root.handlers (partitioned JSONL if enabled)
-    - logger 'quantum.trading' (audit handler if enabled)
+    Return all logging handlers that expose a 'base_dir' attribute,
+    i.e. persistent sinks (partitioned JSONL or audit sinks).
     """
     handlers: list[logging.Handler] = []
     root = logging.getLogger()
@@ -92,8 +90,8 @@ def _probe_path_writable(base_dir: str | os.PathLike[str]) -> bool:
 
 def _probe_logging_sinks() -> bool:
     """
-    Semantics A: Returns True if **at least one** persistent sink (partition or audit)
-    is present **and** writable. If no persistent sink is attached, returns False.
+    Return True if at least one persistent sink is writable.
+    Return False if no persistent sink is configured or writable.
     """
     persistent_handlers = _iter_persistent_handlers()
     if not persistent_handlers:
@@ -110,15 +108,11 @@ def _probe_logging_sinks() -> bool:
 
 
 def _shutdown_tracing_if_any() -> None:
-    """
-    Best effort shutdown of previous tracer provider (if any)
-    to allow a clean re-init when force=True or after partial failures.
-    """
+    """Best effort shutdown of previous tracer provider (if any)."""
     global _tracer_provider_ref
     tp = _tracer_provider_ref
     if tp is None:
         return
-
     shutdown = getattr(tp, "shutdown", None)
     if callable(shutdown):
         try:
@@ -162,7 +156,7 @@ def _init_tracing(
     except Exception as e:
         logger.exception(f"Tracing initialization failed: {e}")
         otel_tracing_up.set(0)
-        # Fallback (retry 1 time)
+        # Fallback (retry once)
         try:
             tp = init_tracing(
                 TracingConfig(
@@ -239,10 +233,8 @@ def init_observability(
     global _initialized
 
     if force:
-        try:
+        with suppress(AttributeError):
             ConfigManager.clear_caches()
-        except AttributeError:
-            pass
 
     settings = ConfigManager.load()
     obs_settings = ConfigManager.load_observability()
@@ -299,7 +291,7 @@ def init_observability(
 
         logging_sink_up.set(1 if sinks_ok else 0)
 
-        # ─── Metrics - prometheus HTTP endpoint
+        # ─── Metrics HTTP endpoint
         port = settings.quantum_metrics_port
         addr = settings.quantum_metrics_addr
         _init_metrics(port, addr)
@@ -318,11 +310,6 @@ def shutdown_observability(
 ) -> None:
     """
     Clean and idempotent shutdown of observability components.
-
-    - Closes/flushes logging handlers and removes the root logger.
-    - Stops the OTel provider tracer if present.
-    - Optional: Resets the gauges to 0 (useful for testing). In normal run, leave this as False.
-    - Optional: Resets internal flags to allow a clean reset afterward.
     """
     global _initialized
 

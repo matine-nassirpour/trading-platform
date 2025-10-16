@@ -13,47 +13,47 @@ Design goals:
 - Serve as canonical labels for observability and analytics
 """
 
-from enum import StrEnum, auto
+from enum import StrEnum
 
 
 class ExecutionCode(StrEnum):
     # ─── Success
-    OK = auto()  # Generic success
+    OK = "ok"  # Generic success
 
     # ─── Generic Failures
-    FAIL = auto()  # Generic error
-    INVALID_PARAMS = auto()  # Invalid parameters passed
-    NO_MEMORY = auto()  # Memory allocation failed
-    NOT_FOUND = auto()  # Requested resource not found
-    INVALID_VERSION = auto()  # API version mismatch
-    AUTH_FAILED = auto()  # Login or credential failure
-    UNSUPPORTED = auto()  # Feature not supported
-    AUTO_TRADING_DISABLED = auto()  # Auto trading disabled in terminal
+    FAIL = "fail"  # Generic error
+    INVALID_PARAMS = "invalid_params"  # Invalid parameters passed
+    NO_MEMORY = "no_memory"  # Memory allocation failed
+    NOT_FOUND = "not_found"  # Requested resource not found
+    INVALID_VERSION = "invalid_version"  # API version mismatch
+    AUTH_FAILED = "auth_failed"  # Login or credential failure
+    UNSUPPORTED = "unsupported"  # Feature not supported
+    AUTO_TRADING_DISABLED = "auto_trading_disabled"  # Auto trading disabled in terminal
 
     # ─── Internal Infrastructure Failures
-    INTERNAL_FAIL = auto()  # Unspecified internal error
-    INTERNAL_FAIL_SEND = auto()  # Internal send error
-    INTERNAL_FAIL_RECEIVE = auto()  # Internal receive error
-    INTERNAL_FAIL_INIT = auto()  # Initialization error
-    INTERNAL_FAIL_CONNECT = auto()  # Connection error
-    INTERNAL_FAIL_TIMEOUT = auto()  # Timeout (network or process)
+    INTERNAL_FAIL = "internal_fail"  # Unspecified internal error
+    INTERNAL_FAIL_SEND = "internal_fail_send"  # Internal send error
+    INTERNAL_FAIL_RECEIVE = "internal_fail_receive"  # Internal receive error
+    INTERNAL_FAIL_INIT = "internal_fail_init"  # Initialization error
+    INTERNAL_FAIL_CONNECT = "internal_fail_connect"  # Connection error
+    INTERNAL_FAIL_TIMEOUT = "internal_fail_timeout"  # Timeout (network or process)
 
     # ─── Trade Retcodes (subset of MT5 TRADE_RETCODE_*)
-    TRADE_TIMEOUT = auto()  # Timeout waiting for response
-    INVALID_PRICE = auto()  # Invalid price in request
-    MARKET_CLOSED = auto()  # Market closed, trading not allowed
-    NO_CONNECTION = auto()  # No network or broker connection
-    NOT_ENOUGH_MONEY = auto()  # Insufficient margin or balance
-    TRADE_DISABLED = auto()  # Trading disabled by broker or symbol
-    INVALID_VOLUME = auto()  # Invalid lot size or volume
-    INVALID_STOPS = auto()  # Invalid SL/TP configuration
-    INVALID_TRADE_PARAMETERS = auto()  # Invalid order parameters
-    SERVER_BUSY = auto()  # Broker server overloaded
-    BROKER_REJECT = auto()  # Rejected by broker or dealing desk
-    POSITION_CLOSED = auto()  # Position no longer active
+    TRADE_TIMEOUT = "trade_timeout"  # Timeout waiting for response
+    INVALID_PRICE = "invalid_price"  # Invalid price in request
+    MARKET_CLOSED = "market_closed"  # Market closed, trading not allowed
+    NO_CONNECTION = "no_connection"  # No network or broker connection
+    NOT_ENOUGH_MONEY = "not_enough_money"  # Insufficient margin or balance
+    TRADE_DISABLED = "trade_disabled"  # Trading disabled by broker or symbol
+    INVALID_VOLUME = "invalid_volume"  # Invalid lot size or volume
+    INVALID_STOPS = "invalid_stops"  # Invalid SL/TP configuration
+    INVALID_TRADE_PARAMETERS = "invalid_trade_parameters"  # Invalid order parameters
+    SERVER_BUSY = "server_busy"  # Broker server overloaded
+    BROKER_REJECT = "broker_reject"  # Rejected by broker or dealing desk
+    POSITION_CLOSED = "position_closed"  # Position no longer active
 
     # ─── Generic catch-all
-    UNKNOWN = auto()  # Unknown or unmapped execution result
+    UNKNOWN = "unknown"  # Unknown or unmapped execution result
 
 
 # ──────────────────────────────────────────────────────────────────────────────

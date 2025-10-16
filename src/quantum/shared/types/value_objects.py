@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 import uuid
 from datetime import datetime, timezone
+from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -12,10 +13,29 @@ from pydantic import BaseModel, Field, field_validator
 
 
 class ValueObject(BaseModel):
-    """Immutable and comparable base for lightweight domain primitives."""
+    """
+    Immutable and comparable base for lightweight domain primitives.
+
+    Design goals:
+    - Immutability and equality by *value* (DDD semantics)
+    - Human-readable __str__ / __repr__
+    - Isolation from Pydantic internal equality behavior
+    """
 
     model_config = dict(frozen=True, extra="forbid")
 
+    # ─── Equality & Hash semantics
+    def __eq__(self, other: Any) -> bool:
+        """Equality by underlying value and exact class type."""
+        if isinstance(other, self.__class__):
+            return self.value == other.value
+        return False
+
+    def __hash__(self) -> int:
+        """Hash based on class name and underlying value."""
+        return hash((self.__class__.__name__, self.value))
+
+    # ─── String representations
     def __str__(self) -> str:  # human-readable
         return str(self.value)
 
@@ -125,8 +145,7 @@ class Symbol(ValueObject):
     @classmethod
     def _normalize(cls, v: str) -> str:
         s = str(v).strip().upper()
-        # remove broker suffixes like ".r" or ".pro"
-        s = re.sub(r"\.[A-Z0-9]+$", "", s)
+        s = re.sub(r"\.[A-Z0-9]+$", "", s)  # remove broker suffixes like ".r"
         if not _SYMBOL_PATTERN.match(s):
             raise ValueError(f"Invalid symbol format: {v!r}")
         return s
@@ -136,4 +155,4 @@ class Symbol(ValueObject):
 # Version metadata (for registry stability)
 # ──────────────────────────────────────────────────────────────────────────────
 
-VALUE_OBJECTS_VERSION = 1
+VALUE_OBJECTS_VERSION = 2

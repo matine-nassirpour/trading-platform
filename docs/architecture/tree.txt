@@ -87,6 +87,9 @@ trading-platform/
 │       │   ├── datafeeds/
 │       │   │   └── __init__.py
 │       │   ├── execution/
+│       │   │   ├── mappings/
+│       │   │   │   ├── __init__.py
+│       │   │   │   └── mt5_retcode_map.py
 │       │   │   ├── __init__.py
 │       │   │   ├── gateway_registry.py
 │       │   │   └── mt5_gateway.py

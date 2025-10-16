@@ -2,6 +2,7 @@
 Quantum Configuration Manager
 ──────────────────────────────────────────────────────────────────────────────
 Unified environment and settings loader for all Quantum components.
+Process-safe, thread-safe, and idempotent.
 """
 
 from __future__ import annotations
@@ -12,7 +13,7 @@ import threading
 from collections.abc import Mapping
 from functools import lru_cache
 from pathlib import Path
-from typing import Final, Literal
+from typing import Final, Literal, TypedDict
 
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -33,8 +34,19 @@ _LOGGER: Final = logging.getLogger("quantum.config")
 # ──────────────────────────────────────────────────────────────────────────────
 
 _INIT_LOCK: Final = threading.Lock()
-_LOADED: bool = False
-_BASE_DIR: Path | None = None
+
+
+class _ConfigState(TypedDict):
+    base_dir: Path | None
+    loaded_pid: int | None
+    env_cache: dict[str, str] | None
+
+
+_STATE: Final[_ConfigState] = {
+    "base_dir": None,
+    "loaded_pid": None,
+    "env_cache": None,
+}
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Helpers
@@ -68,10 +80,15 @@ def _resolve_env_path(
         if found:
             fp = Path(found)
             return fp.parent, fp
+
     return Path.cwd(), None
 
 
-# ─── Core Loader
+# ──────────────────────────────────────────────────────────────────────────────
+# Core Loader
+# ──────────────────────────────────────────────────────────────────────────────
+
+
 def _load_env_files(
     root: str | Path | None = None,
     env_file: str | Path | None = None,
@@ -80,25 +97,20 @@ def _load_env_files(
     apply: bool = True,
 ) -> dict[str, str]:
     """
-    Loads environment variables from .env files.
+    Loads environment variables from .env files in a process-safe way.
 
     Returns:
         dict[str, str]: The merged environment values.
-
-    Args:
-        apply: If True, apply merged envs to os.environ.
-        override: If True, overwrite existing os.environ values.
     """
-    global _LOADED, _BASE_DIR
-    if _LOADED:
-        return dict(os.environ)
-
-    if dotenv_values is None:
-        _LOGGER.warning("python-dotenv not installed; skipping .env loading")
-        return dict(os.environ)
+    pid = os.getpid()
 
     with _INIT_LOCK:
-        if _LOADED:
+        # Cache validation
+        if _STATE["loaded_pid"] == pid and _STATE["env_cache"] is not None:
+            return dict(_STATE["env_cache"])
+
+        if dotenv_values is None:
+            _LOGGER.warning("python-dotenv not installed; skipping .env loading")
             return dict(os.environ)
 
         base_dir, explicit_file = _resolve_env_path(root, env_file)
@@ -122,15 +134,24 @@ def _load_env_files(
 
         if apply:
             for k, v in merged.items():
+                # Respect explicit removals from os.environ (tests or runtime)
                 if k in os.environ and not override:
                     continue
-                os.environ[k] = v
+                # Do not reapply if it was explicitly removed earlier
+                if k not in os.environ and v is not None:
+                    os.environ.setdefault(k, v)
 
-        _LOADED = True
-        _BASE_DIR = base_dir
+        # Update process-safe state
+        _STATE.update(
+            {
+                "base_dir": base_dir,
+                "loaded_pid": pid,
+                "env_cache": dict(merged),
+            }
+        )
 
         _LOGGER.info(
-            "Environment loaded",
+            f"Environment loaded (pid={pid})",
             extra={"attrs": {"base_dir": str(base_dir), "env": current_env}},
         )
 
@@ -189,7 +210,6 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_credentials(self):
-        """Ensure complete MT5 credential triplets."""
         if self.quantum_mt5_ftmo_login and not all(
             [self.quantum_mt5_ftmo_server, self.quantum_mt5_ftmo_password]
         ):
@@ -216,6 +236,7 @@ class Settings(BaseSettings):
 class ConfigManager:
     """Thread-safe facade for configuration management."""
 
+    # ─── Core runtime
     @staticmethod
     @lru_cache
     def load(
@@ -225,11 +246,10 @@ class ConfigManager:
         override: bool = False,
         env: Mapping[str, str] | None = None,
     ) -> Settings:
-        """Loads environment and returns validated Settings instance."""
-        merged = _load_env_files(root, env_file, override=override, apply=(env is None))
-        effective_env = {**merged, **(env or {})}
-
+        merged = _load_env_files(root, env_file, override=override, apply=False)
+        effective_env = {**merged, **os.environ, **(env or {})}
         settings = Settings(**effective_env)
+
         _LOGGER.info(
             "Settings initialized",
             extra={
@@ -243,18 +263,16 @@ class ConfigManager:
     def load_observability(
         env: Mapping[str, str] | None = None,
     ) -> ObservabilitySettings:
-        """Loads and returns observability configuration."""
         return ObservabilitySettings(**(env or os.environ))
 
     @staticmethod
     @lru_cache
     def load_telemetry(env: Mapping[str, str] | None = None) -> TelemetrySettings:
-        """Loads and returns telemetry configuration."""
         return TelemetrySettings(**(env or os.environ))
 
+    # ─── Cache management
     @staticmethod
     def clear_caches() -> None:
-        """Clears all cached configuration."""
         for fn in (
             ConfigManager.load,
             ConfigManager.load_observability,
@@ -263,10 +281,12 @@ class ConfigManager:
             cache_clear = getattr(fn, "cache_clear", None)
             if callable(cache_clear):
                 cache_clear()
+        _STATE.update({"loaded_pid": None, "env_cache": None, "base_dir": None})
+        _LOGGER.info("ConfigManager caches cleared and state reset")
 
+    # ─── Snapshot helper
     @staticmethod
     def snapshot(settings: Settings | None = None) -> dict[str, str]:
-        """Returns a non-sensitive runtime configuration snapshot."""
         s = settings or ConfigManager.load()
         return {
             "app": s.quantum_app_name,
@@ -281,7 +301,6 @@ class ConfigManager:
     def get_mt5_credentials(
         channel: str, env: Mapping[str, str] | None = None
     ) -> dict[str, str]:
-        """Accesses MT5 credentials for a given execution channel."""
         settings = ConfigManager.load(env=env)
         prefix = channel.lower()
         return {
