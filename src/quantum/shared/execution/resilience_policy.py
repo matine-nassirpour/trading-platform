@@ -9,7 +9,10 @@ from typing import ParamSpec, TypeVar, overload
 
 from quantum.shared.config.config_manager import ConfigManager
 from quantum.shared.execution.retry_policy import should_retry
-from quantum.shared.types.execution import ExecutionCode
+from quantum.shared.execution.timeout_utils import (
+    run_with_timeout_async,
+    run_with_timeout_sync,
+)
 from quantum.shared.types.execution_result import ExecutionResult
 
 logger = logging.getLogger(__name__)
@@ -25,7 +28,6 @@ _DEFAULT_BACKOFF_MAX = settings.quantum_exec_backoff_max
 
 
 def _compute_backoff(attempt: int, base: float, max_backoff: float) -> float:
-    """Exponential backoff with cap."""
     return min(base * (2 ** (attempt - 1)), max_backoff)
 
 
@@ -58,16 +60,8 @@ def resilient_call(
     max_backoff: float = _DEFAULT_BACKOFF_MAX,
 ):
     """
-    Decorator providing retry, timeout and exponential backoff around
-    sync or async functions returning an ExecutionResult.
-
-    Usage:
-    ------
-        @resilient_call("send_order")
-        def send_order(...): ...
-
-        @resilient_call("fetch_data")
-        async def fetch_data(...): ...
+    Decorator providing retry, timeout enforcement, and exponential backoff.
+    Works for both sync and async functions returning ExecutionResult.
     """
 
     def decorator(func: Callable[..., R | Awaitable[R]]):
@@ -82,44 +76,38 @@ def resilient_call(
 
                 while attempt < max_retries:
                     attempt += 1
-                    start = time.time()
-
                     try:
-                        result = func(*args, **kwargs)
+                        result: R = run_with_timeout_sync(
+                            func,
+                            *args,
+                            timeout_sec=timeout_sec,
+                            call_name=op_name,
+                            **kwargs,
+                        )
                         last_result = result
 
                         if not should_retry(result.code):
                             return result
 
                         logger.warning(
-                            f"[{op_name}] Retryable error ({result.code}), "
-                            f"attempt {attempt}/{max_retries}",
-                            extra={"attrs": {"message": result.message}},
+                            f"[{op_name}] Retryable code {result.code} (attempt {attempt}/{max_retries})"
                         )
 
+                    except TimeoutError as e:
+                        logger.error(f"[{op_name}] Timeout: {e}")
+                        last_result = ExecutionResult.retryable(str(e))
                     except Exception as e:
                         msg = f"{type(e).__name__}: {e}"
                         logger.exception(
                             f"[{op_name}] Exception on attempt {attempt}: {msg}"
                         )
-                        last_result = ExecutionResult(
-                            code=ExecutionCode.INTERNAL_FAIL,
-                            message=msg,
-                        )
-
-                    elapsed = time.time() - start
-                    if elapsed > timeout_sec:
-                        logger.error(
-                            f"[{op_name}] Timeout exceeded ({elapsed:.2f}s > {timeout_sec}s)",
-                            extra={"attrs": {"attempt": attempt}},
-                        )
-                        last_result = ExecutionResult.fatal("Operation timeout")
+                        last_result = ExecutionResult.fatal(msg)
 
                     if attempt < max_retries:
                         time.sleep(_compute_backoff(attempt, base_backoff, max_backoff))
 
                 return last_result or ExecutionResult.fatal(
-                    "No response after all retry attempts"
+                    "No result after all retries"
                 )
 
             return sync_wrapper
@@ -133,12 +121,13 @@ def resilient_call(
 
                 while attempt < max_retries:
                     attempt += 1
-
                     try:
-                        # enforce timeout using asyncio.wait_for
-                        result = await asyncio.wait_for(
-                            func(*args, **kwargs),
-                            timeout=timeout_sec,
+                        result: R = await run_with_timeout_async(
+                            func,
+                            *args,
+                            timeout_sec=timeout_sec,
+                            call_name=op_name,
+                            **kwargs,
                         )
                         last_result = result
 
@@ -146,27 +135,18 @@ def resilient_call(
                             return result
 
                         logger.warning(
-                            f"[{op_name}] Retryable error ({result.code}), "
-                            f"attempt {attempt}/{max_retries}",
-                            extra={"attrs": {"message": result.message}},
+                            f"[{op_name}] Retryable code {result.code} (attempt {attempt}/{max_retries})"
                         )
 
-                    except TimeoutError:
-                        logger.error(
-                            f"[{op_name}] Timeout exceeded after {timeout_sec}s",
-                            extra={"attrs": {"attempt": attempt}},
-                        )
-                        last_result = ExecutionResult.fatal("Operation timeout")
-
+                    except TimeoutError as e:
+                        logger.error(f"[{op_name}] Timeout: {e}")
+                        last_result = ExecutionResult.retryable(str(e))
                     except Exception as e:
                         msg = f"{type(e).__name__}: {e}"
                         logger.exception(
                             f"[{op_name}] Exception on attempt {attempt}: {msg}"
                         )
-                        last_result = ExecutionResult(
-                            code=ExecutionCode.INTERNAL_FAIL,
-                            message=msg,
-                        )
+                        last_result = ExecutionResult.fatal(msg)
 
                     if attempt < max_retries:
                         await asyncio.sleep(
@@ -174,7 +154,7 @@ def resilient_call(
                         )
 
                 return last_result or ExecutionResult.fatal(
-                    "No response after all retry attempts"
+                    "No result after all retries"
                 )
 
             return async_wrapper

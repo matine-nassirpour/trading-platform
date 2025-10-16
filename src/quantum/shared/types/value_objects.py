@@ -128,27 +128,70 @@ class EpochMs(ValueObject):
 # Symbol
 # ──────────────────────────────────────────────────────────────────────────────
 
-_SYMBOL_PATTERN = re.compile(r"^[A-Z]{3,6}$")  # e.g. EURUSD, XAUUSD
+_SYMBOL_PATTERN = re.compile(r"^[A-Z0-9._\-]{3,20}$")
 
 
 class Symbol(ValueObject):
     """
     Canonical trading symbol.
 
-    Enforces uppercase, strips spaces and broker-specific suffixes.
-    Compatible with MT5, FIX, and internal canonical representation.
+    Designed to support Forex, Indices, Commodities,
+    Equities, and Crypto, while enforcing naming consistency and validation.
     """
 
-    value: str = Field(..., description="Normalized trading symbol (e.g. EURUSD)")
+    value: str
 
-    @field_validator("value", mode="before")
-    @classmethod
-    def _normalize(cls, v: str) -> str:
-        s = str(v).strip().upper()
-        s = re.sub(r"\.[A-Z0-9]+$", "", s)  # remove broker suffixes like ".r"
-        if not _SYMBOL_PATTERN.match(s):
-            raise ValueError(f"Invalid symbol format: {v!r}")
-        return s
+    def __post_init__(self) -> None:
+        val = self.value.strip().upper()
+
+        if not _SYMBOL_PATTERN.match(val):
+            raise ValueError(
+                f"Invalid trading symbol '{self.value}'. "
+                "Allowed pattern: uppercase letters, digits, '.', '_', '-'; length 3–20."
+            )
+
+        # Set normalized uppercase value
+        object.__setattr__(self, "value", val)
+
+    # ─── Equality & hashing
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, Symbol):
+            return self.value == other.value
+        if isinstance(other, str):
+            return self.value == other.strip().upper()
+        return False
+
+    def __hash__(self) -> int:
+        return hash(self.value)
+
+    # ─── Representation
+    def __str__(self) -> str:
+        return self.value
+
+    def __repr__(self) -> str:
+        return f"Symbol('{self.value}')"
+
+    # ─── Utilities
+    def is_forex(self) -> bool:
+        """Heuristic: symbol has 6 letters and ends with USD, EUR, JPY, etc."""
+        return len(self.value) == 6 and self.value[-3:] in {
+            "USD",
+            "EUR",
+            "JPY",
+            "GBP",
+            "CHF",
+            "CAD",
+            "AUD",
+            "NZD",
+        }
+
+    def is_index(self) -> bool:
+        """Heuristic for indices (starts with US, DE, JP, HK, etc.)."""
+        return bool(re.match(r"^(US|DE|JP|FR|HK|UK|SP)\d+", self.value))
+
+    def is_crypto(self) -> bool:
+        """Heuristic for crypto pairs."""
+        return self.value.startswith(("BTC", "ETH", "XRP", "SOL", "ADA", "DOGE"))
 
 
 # ──────────────────────────────────────────────────────────────────────────────

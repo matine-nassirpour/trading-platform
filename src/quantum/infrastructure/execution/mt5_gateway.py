@@ -1,14 +1,11 @@
 from __future__ import annotations
 
 import logging
-import signal
-import sys
-import threading
 import time
 from collections.abc import Callable
-from contextlib import contextmanager
 from typing import Any
 
+from quantum.infrastructure.execution._timeout_utils import timeout_guard
 from quantum.infrastructure.execution.contracts import ExecutionFunctionProtocol
 from quantum.infrastructure.execution.gateway_registry import (
     is_gateway_healthy,
@@ -98,45 +95,6 @@ def shutdown_mt5_terminal() -> None:
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Cross-platform timeout context manager
-# ──────────────────────────────────────────────────────────────────────────────
-
-
-@contextmanager
-def _timeout(seconds: float, call_name: str):
-    """
-    Cross-platform timeout guard.
-    Uses signal.alarm() on Unix, and threading.Timer fallback on Windows.
-    """
-
-    def _raise_timeout():
-        raise TimeoutError(
-            f"Execution call '{call_name}' timed out after {seconds:.1f}s"
-        )
-
-    if sys.platform != "win32":
-
-        def _handler(signum, frame):
-            raise TimeoutError(
-                f"Execution call '{call_name}' timed out after {seconds:.1f}s"
-            )
-
-        signal.signal(signal.SIGALRM, _handler)
-        signal.alarm(int(seconds))
-        try:
-            yield
-        finally:
-            signal.alarm(0)
-    else:
-        timer = threading.Timer(seconds, _raise_timeout)
-        timer.start()
-        try:
-            yield
-        finally:
-            timer.cancel()
-
-
-# ──────────────────────────────────────────────────────────────────────────────
 # Main MT5 execution harness (Protocol implementation)
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -180,7 +138,7 @@ class Mt5ExecutionFunction(ExecutionFunctionProtocol):
                 )
 
             try:
-                with _timeout(timeout_s, call):
+                with timeout_guard(timeout_s, call):
                     result = func(*args, **kwargs)
                     res_code = getattr(result, "retcode", None)
                     msg = getattr(result, "comment", "") or ""

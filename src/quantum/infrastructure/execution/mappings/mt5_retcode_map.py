@@ -1,20 +1,22 @@
 """
 MetaTrader5 Retcode → Internal ExecutionCode Mapping
 ──────────────────────────────────────────────────────────────────────────────
-This module provides a stable and maintainable mapping between
+Provides a clean, thread-safe and observable mapping between
 MetaTrader5's `retcode` values and the internal `ExecutionCode` enum.
 
-Responsibilities:
-  - Decouple MT5-specific codes from the internal domain language
-  - Provide forward compatibility (safe fallback for unknown codes)
-  - Support detailed observability and diagnostics
-  - Facilitate multi-broker extensibility (MT5, FIX, REST)
-
-This mapping layer is intentionally isolated so that infrastructure code
-(mt5_gateway.py, adapters, etc.) remains clean and domain-agnostic.
+Design goals
+------------
+- Decouple MT5-specific codes from the internal domain model
+- Guarantee forward-compatibility (graceful fallback for unknown codes)
+- Avoid log noise: warn once per unknown retcode
+- Preserve observability for metrics, tracing, and diagnostics
 """
 
+from __future__ import annotations
+
 import logging
+import threading
+from typing import Final
 
 from quantum.shared.types.execution import ExecutionCode
 
@@ -24,7 +26,7 @@ logger = logging.getLogger(__name__)
 # Canonical mapping
 # ──────────────────────────────────────────────────────────────────────────────
 
-MT5_RES_TO_EXEC: dict[int, ExecutionCode] = {
+MT5_RES_TO_EXEC: Final[dict[int, ExecutionCode]] = {
     # ─── Generic Success
     1: ExecutionCode.OK,
     # ─── Generic Failures
@@ -60,30 +62,57 @@ MT5_RES_TO_EXEC: dict[int, ExecutionCode] = {
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Mapping function with graceful degradation
+# Unknown code tracking (warn-once cache)
+# ──────────────────────────────────────────────────────────────────────────────
+
+_UNKNOWN_CODES: set[int] = set()
+_UNKNOWN_LOCK = threading.Lock()
+
+
+def _warn_once_for_unknown(code: int) -> None:
+    """
+    Emits a warning only the first time a given unknown retcode is seen.
+    Thread-safe and idempotent.
+    """
+    if code in _UNKNOWN_CODES:
+        return
+    with _UNKNOWN_LOCK:
+        if code not in _UNKNOWN_CODES:
+            _UNKNOWN_CODES.add(code)
+            logger.warning(
+                f"Unknown MT5 retcode encountered: {code}",
+                extra={"attrs": {"retcode": code}},
+            )
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Public mapping function
 # ──────────────────────────────────────────────────────────────────────────────
 
 
-def map_mt5_res_to_exec(code: int) -> ExecutionCode:
+def map_mt5_res_to_exec(code: int | None) -> ExecutionCode:
     """
     Maps an MT5 retcode to the internal ExecutionCode enum.
 
     Returns:
-        - The corresponding ExecutionCode if known
-        - ExecutionCode.UNKNOWN for unmapped codes (graceful degradation)
+        - Known ExecutionCode (exact mapping)
+        - ExecutionCode.UNKNOWN if unmapped or None
+        - ExecutionCode.INTERNAL_FAIL on unexpected error
 
-    Side effects:
-        Logs a warning once per unknown code, aiding in observability
-        and future schema enrichment.
+    Logging:
+        - Warns once per unknown code (never spams logs)
+        - Logs exceptions only on mapping failure
     """
-    try:
-        if code in MT5_RES_TO_EXEC:
-            return MT5_RES_TO_EXEC[code]
+    if code is None:
+        _warn_once_for_unknown(-9999)
+        return ExecutionCode.UNKNOWN
 
-        logger.warning(
-            "Unknown MT5 retcode encountered",
-            extra={"attrs": {"retcode": code}},
-        )
+    try:
+        exec_code = MT5_RES_TO_EXEC.get(code)
+        if exec_code is not None:
+            return exec_code
+
+        _warn_once_for_unknown(code)
         return ExecutionCode.UNKNOWN
 
     except Exception as e:

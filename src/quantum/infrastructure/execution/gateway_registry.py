@@ -95,42 +95,81 @@ def _resolve_terminal_path(channel: ExecutionChannel) -> str:
     Resolves the MetaTrader5 terminal path for the given execution channel.
 
     Priority:
-      1. ConfigManager (env or settings file): mt5_terminal_path_<CHANNEL>
-      2. Default path from _DEFAULT_PATHS fallback
+      1. Explicit config via ConfigManager (supports both naming conventions)
+      2. Default path from _DEFAULT_PATHS
+      3. Returns an empty Path if unresolved (never crashes)
 
-    Returns:
-        str: absolute path to the MT5 terminal (may not exist physically)
+    Ensures:
+      - Compatibility with mt5_<channel>_terminal_path and mt5_terminal_path_<channel>
+      - Observability of resolution process
+      - Graceful degradation with warning logs
     """
+    settings = None
+    primary_attr: str | None = None
+    secondary_attr: str | None = None
+    path_candidate: Path | None = None
+
     try:
         settings = ConfigManager.load()
-        attr_name = f"mt5_terminal_path_{channel.name.lower()}"
-        configured_path = getattr(settings, attr_name, None)
-
-        if configured_path:
-            path = Path(configured_path)
-            if not path.exists():
-                logger.warning(
-                    f"Configured MT5 terminal path not found for {channel.name}",
-                    extra={"attrs": {"path": str(path), "source": "ConfigManager"}},
-                )
-            return str(path.resolve())
-
     except Exception as e:
         logger.warning(
-            f"Failed to read terminal path from ConfigManager for {channel.name}: {e}"
+            f"Failed to load ConfigManager while resolving MT5 path: {e}",
+            exc_info=False,
         )
 
-    # ─── Fallback to default path ──────────────────────────────────────────────
-    default_path = _DEFAULT_PATHS.get(channel)
-    p = Path(default_path) if default_path else Path()
+    if settings:
+        # Primary convention: mt5_<channel>_terminal_path
+        primary_attr = f"mt5_{channel.name.lower()}_terminal_path"
+        # Secondary convention (legacy): mt5_terminal_path_<channel>
+        secondary_attr = f"mt5_terminal_path_{channel.name.lower()}"
 
-    if not p.exists():
-        logger.warning(
-            f"Default MT5 terminal path does not exist for {channel.name}",
-            extra={"attrs": {"path": str(p), "source": "default"}},
-        )
+        for attr_name in (primary_attr, secondary_attr):
+            configured_path = getattr(settings, attr_name, None)
+            if configured_path:
+                path_candidate = Path(configured_path)
+                source = f"ConfigManager:{attr_name}"
 
-    return str(p.resolve())
+                if not path_candidate.exists():
+                    logger.warning(
+                        f"Configured MT5 terminal path not found for {channel.name}",
+                        extra={
+                            "attrs": {"path": str(path_candidate), "source": source}
+                        },
+                    )
+                else:
+                    logger.debug(
+                        f"MT5 terminal path resolved via {source}",
+                        extra={"attrs": {"path": str(path_candidate)}},
+                    )
+                break  # First match wins
+
+    # ─── Fallback to default paths
+    if not path_candidate:
+        default_path = _DEFAULT_PATHS.get(channel)
+        if default_path:
+            path_candidate = Path(default_path)
+            source = "default"
+            if not path_candidate.exists():
+                logger.warning(
+                    f"Default MT5 terminal path does not exist for {channel.name}",
+                    extra={"attrs": {"path": str(path_candidate), "source": source}},
+                )
+            else:
+                logger.info(
+                    f"MT5 terminal path resolved from default for {channel.name}",
+                    extra={"attrs": {"path": str(path_candidate)}},
+                )
+        else:
+            # No default path defined → graceful degradation
+            logger.error(
+                f"No terminal path configured for channel {channel.name} "
+                f"(checked {primary_attr}, {secondary_attr})",
+                extra={"attrs": {"channel": channel.name}},
+            )
+            path_candidate = Path()
+
+    # Normalize absolute path (safe even if nonexistent)
+    return str(path_candidate.resolve())
 
 
 # ──────────────────────────────────────────────────────────────────────────────

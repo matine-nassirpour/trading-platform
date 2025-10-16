@@ -2,7 +2,13 @@ import logging
 import threading
 from types import ModuleType
 
+from quantum.infrastructure.execution.contracts import ExecutionFunctionProtocol
 from quantum.infrastructure.execution.gateway_registry import get_gateway
+from quantum.infrastructure.execution.mappings.mt5_request_mapper import (
+    to_mt5_check_request,
+    to_mt5_query_filter,
+    to_mt5_trade_request,
+)
 from quantum.infrastructure.observability.tracing.traces import get_tracer
 from quantum.shared.types.channels import ExecutionChannel
 from quantum.shared.types.execution_request import (
@@ -78,7 +84,7 @@ class Mt5ExecutionAdapterImpl:
                 f"Gateway func not callable for {channel.name}: {func!r}"
             )
 
-        self._exec_func = func
+        self._exec_func: ExecutionFunctionProtocol = func
         self._terminal_path = gw.terminal_path
 
     # ─── Properties
@@ -91,8 +97,9 @@ class Mt5ExecutionAdapterImpl:
     def send_order(self, request: OrderRequest) -> ExecutionResult:
         """Send an order to the MetaTrader5 terminal."""
         mt5 = _get_mt5_module()
+        trade_req = to_mt5_trade_request(request)
         result = self._exec_func(
-            "order_send", mt5.order_send, request, channel=self.channel
+            "order_send", mt5.order_send, trade_req, channel=self.channel
         )
         if not isinstance(result, ExecutionResult):
             raise TypeError(f"Expected ExecutionResult, got {type(result)}")
@@ -101,8 +108,9 @@ class Mt5ExecutionAdapterImpl:
     def check_order(self, request: CheckRequest) -> ExecutionResult:
         """Validate an order via MT5 (pre-trade)."""
         mt5 = _get_mt5_module()
+        trade_req = to_mt5_check_request(request)
         result = self._exec_func(
-            "order_check", mt5.order_check, request, channel=self.channel
+            "order_check", mt5.order_check, trade_req, channel=self.channel
         )
         if not isinstance(result, ExecutionResult):
             raise TypeError(f"Expected ExecutionResult, got {type(result)}")
@@ -111,9 +119,9 @@ class Mt5ExecutionAdapterImpl:
     def get_positions(self, request: QueryRequest | None = None) -> ExecutionResult:
         """Fetch current open positions."""
         mt5 = _get_mt5_module()
-        symbol = request.symbol if request else None
+        filters = to_mt5_query_filter(request)
         result = self._exec_func(
-            "positions_get", mt5.positions_get, symbol=symbol, channel=self.channel
+            "positions_get", mt5.positions_get, **filters, channel=self.channel
         )
         if not isinstance(result, ExecutionResult):
             raise TypeError(f"Expected ExecutionResult, got {type(result)}")
@@ -122,9 +130,9 @@ class Mt5ExecutionAdapterImpl:
     def get_orders(self, request: QueryRequest | None = None) -> ExecutionResult:
         """Fetch current pending orders."""
         mt5 = _get_mt5_module()
-        symbol = request.symbol if request else None
+        filters = to_mt5_query_filter(request)
         result = self._exec_func(
-            "orders_get", mt5.orders_get, symbol=symbol, channel=self.channel
+            "orders_get", mt5.orders_get, **filters, channel=self.channel
         )
         if not isinstance(result, ExecutionResult):
             raise TypeError(f"Expected ExecutionResult, got {type(result)}")
