@@ -52,8 +52,8 @@ class ResilienceConfig:
 class ResilienceLogger:
     """Adapter for consistent structured logging across sync/async flows."""
 
-    def __init__(self, logger: logging.Logger):
-        self._logger = logger
+    def __init__(self, logger: logging.Logger | None = None):
+        self._logger = logger or logging.getLogger(__name__)
 
     def log_success(self, operation: str, attempt: int, latency_ms: int) -> None:
         self._logger.debug(
@@ -138,7 +138,6 @@ class BackoffStrategy:
         self._rand = randomizer
 
     def compute_delay(self, attempt: int) -> float:
-        """Compute the next backoff delay (seconds)."""
         delay = self._base * (2 ** (attempt - 1))
         if self._jitter:
             delay *= self._rand(0.8, 1.3)
@@ -155,97 +154,93 @@ class ResilienceExecutor(Generic[P, R]):
 
     def __init__(
         self,
-        *,
         operation: str,
+        *,
         policy: RetryPolicy | None = None,
         cfg: ResilienceConfig | None = None,
-        backoff: BackoffStrategy | None = None,
         logger: ResilienceLogger | None = None,
-        time_provider: Callable[[], float] = time.time,
-        sleep_fn: Callable[[float], None] = time.sleep,
-        async_sleep_fn: Callable[[float], Awaitable[None]] = asyncio.sleep,
     ) -> None:
         self.operation = operation
         self.policy = policy or DefaultRetryPolicy()
         self.cfg = cfg or ResilienceConfig()
-        self.backoff = backoff or BackoffStrategy(
+        self.logger = logger or ResilienceLogger()
+        self.backoff = BackoffStrategy(
             base=self.cfg.base_backoff,
             cap=self.cfg.backoff_cap,
             jitter=self.cfg.enable_jitter,
         )
-        self.logger = logger or ResilienceLogger(logging.getLogger(__name__))
-        self.now = time_provider
-        self.sleep_fn = sleep_fn
-        self.async_sleep_fn = async_sleep_fn
 
-    # ─── Shared Retry Logic
+    def _after_attempt(
+        self,
+        attempt: int,
+        start_global: float,
+        result: Any,
+        exc: Exception | None,
+    ) -> float:
+        """
+        Common post-attempt handler (sync + async).
+        Handles abort decision, logging, and backoff computation.
+        """
+        elapsed = time.time() - start_global
+        if self._should_abort(attempt, elapsed, result, exc):
+            self.logger.log_abort(self.operation, attempt, elapsed, exc)
+            raise exc
+
+        delay = self.backoff.compute_delay(attempt)
+        self.logger.log_retry(self.operation, attempt, delay)
+        return delay
+
     def _should_abort(
-        self, attempt: int, elapsed_total: float, result: Any, exc: Exception | None
+        self, attempt: int, elapsed: float, result: Any, exc: Exception | None
     ) -> bool:
         """Determine if retries should stop based on policy or limits."""
         return (
             attempt >= self.cfg.max_retries
             or not self.policy.should_retry(result, exc)
-            or (self.cfg.max_total_time and elapsed_total > self.cfg.max_total_time)
+            or (self.cfg.max_total_time and elapsed > self.cfg.max_total_time)
         )
-
-    def _handle_post_attempt(
-        self, attempt: int, start_global: float, result: Any, exc: Exception | None
-    ) -> float | None:
-        """Return the next delay or None if aborted."""
-        elapsed_total = self.now() - start_global
-        if self._should_abort(attempt, elapsed_total, result, exc):
-            self.logger.log_abort(self.operation, attempt, elapsed_total, exc)
-            if exc:
-                raise exc
-            return None
-        delay = self.backoff.compute_delay(attempt)
-        self.logger.log_retry(self.operation, attempt, delay)
-        return delay
 
     # ─── Synchronous Execution
     def execute_sync(
         self, func: Callable[P, R], *args: P.args, **kwargs: P.kwargs
     ) -> R:
         attempt = 0
-        start_global = self.now()
+        start_global = time.time()
         result: Any | None = None
 
         while True:
             attempt += 1
-            start = self.now()
+            start = time.time()
             try:
                 result = run_with_timeout_sync(
                     func,
                     *args,
-                    seconds=self.cfg.timeout_sec,
+                    timeout_sec=self.cfg.timeout_sec,
                     call_name=self.operation,
                     **kwargs,
                 )
-                latency = int((self.now() - start) * 1000)
-                self.logger.log_success(self.operation, attempt, latency)
+                latency_ms = int((time.time() - start) * 1000)
+                self.logger.log_success(self.operation, attempt, latency_ms)
                 return result
             except Exception as e:
                 exc = e
-                latency = int((self.now() - start) * 1000)
-                self.logger.log_failure(self.operation, attempt, e, latency)
+                latency_ms = int((time.time() - start) * 1000)
+                self.logger.log_failure(self.operation, attempt, e, latency_ms)
 
-            delay = self._handle_post_attempt(attempt, start_global, result, exc)
-            if delay is None:
-                return result
-            self.sleep_fn(delay)
+            delay = self._after_attempt(attempt, start_global, result, exc)
+            time.sleep(delay)
 
     # ─── Asynchronous Execution
     async def execute_async(
         self, func: Callable[P, Awaitable[R]], *args: P.args, **kwargs: P.kwargs
     ) -> R:
         attempt = 0
-        start_global = self.now()
+        start_global = time.time()
         result: Any | None = None
 
         while True:
             attempt += 1
-            start = self.now()
+            start = time.time()
             try:
                 result = await run_with_timeout_async(
                     func,
@@ -254,23 +249,21 @@ class ResilienceExecutor(Generic[P, R]):
                     call_name=self.operation,
                     **kwargs,
                 )
-                latency = int((self.now() - start) * 1000)
-                self.logger.log_success(self.operation, attempt, latency)
+                latency_ms = int((time.time() - start) * 1000)
+                self.logger.log_success(self.operation, attempt, latency_ms)
                 return result
             except asyncio.CancelledError:
                 self.logger.log_abort(
-                    self.operation, attempt, self.now() - start_global, exc=None
+                    self.operation, attempt, time.time() - start_global, None
                 )
                 raise
             except Exception as e:
                 exc = e
-                latency = int((self.now() - start) * 1000)
-                self.logger.log_failure(self.operation, attempt, e, latency)
+                latency_ms = int((time.time() - start) * 1000)
+                self.logger.log_failure(self.operation, attempt, e, latency_ms)
 
-            delay = self._handle_post_attempt(attempt, start_global, result, exc)
-            if delay is None:
-                return result
-            await self.async_sleep_fn(delay)
+            delay = self._after_attempt(attempt, start_global, result, exc)
+            await asyncio.sleep(delay)
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -279,38 +272,54 @@ class ResilienceExecutor(Generic[P, R]):
 
 
 def resilient_call(
-    operation: str,
+    func: Callable[P, R] | None = None,
     *,
     policy: RetryPolicy | None = None,
     cfg: ResilienceConfig | None = None,
 ) -> Callable[[Callable[P, R]], Callable[P, R]]:
-    """Decorator for resilient synchronous operations."""
+    """
+    Decorator for resilient synchronous operations.
+    Automatically derives the call name (no string literal required).
+    """
 
-    def decorator(func: Callable[P, R]) -> Callable[P, R]:
-        @wraps(func)
+    def decorator(inner_func: Callable[P, R]) -> Callable[P, R]:
+        op_name = inner_func.__qualname__
+
+        @wraps(inner_func)
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-            executor = ResilienceExecutor(operation=operation, policy=policy, cfg=cfg)
-            return executor.execute_sync(func, *args, **kwargs)
+            executor = ResilienceExecutor(operation=op_name, policy=policy, cfg=cfg)
+            return executor.execute_sync(inner_func, *args, **kwargs)
 
+        wrapper._resilience_call_name = op_name
         return wrapper
 
+    if func is not None:
+        return decorator(func)
     return decorator
 
 
 def resilient_async_call(
-    operation: str,
+    func: Callable[P, Awaitable[R]] | None = None,
     *,
     policy: RetryPolicy | None = None,
     cfg: ResilienceConfig | None = None,
 ) -> Callable[[Callable[P, Awaitable[R]]], Callable[P, Awaitable[R]]]:
-    """Decorator for resilient asynchronous operations."""
+    """
+    Decorator for resilient asynchronous operations.
+    Automatically derives the call name (no string literal required).
+    """
 
-    def decorator(func: Callable[P, Awaitable[R]]) -> Callable[P, Awaitable[R]]:
-        @wraps(func)
+    def decorator(inner_func: Callable[P, Awaitable[R]]) -> Callable[P, Awaitable[R]]:
+        op_name = inner_func.__qualname__
+
+        @wraps(inner_func)
         async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-            executor = ResilienceExecutor(operation=operation, policy=policy, cfg=cfg)
-            return await executor.execute_async(func, *args, **kwargs)
+            executor = ResilienceExecutor(operation=op_name, policy=policy, cfg=cfg)
+            return await executor.execute_async(inner_func, *args, **kwargs)
 
+        wrapper._resilience_call_name = op_name
         return wrapper
 
+    if func is not None:
+        return decorator(func)  # type: ignore[arg-type]
     return decorator

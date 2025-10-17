@@ -23,18 +23,18 @@ class Mt5ExecutionAdapter:
         self.channel = channel
         self.port = port
 
-    @resilient_call("send_order")
+    @resilient_call
     def send_order(self, request: OrderRequest) -> ExecutionResult:
         return self.port.send_order(request)
 
-    @resilient_call("check_order")
+    @resilient_call
     def check_order(self, request: CheckRequest) -> ExecutionResult:
         return self.port.check_order(request)
 
-    @resilient_call("get_positions")
+    @resilient_call
     def get_positions(self, request: QueryRequest | None = None) -> ExecutionResult:
         return self.port.get_positions(request)
 
-    @resilient_call("get_orders")
+    @resilient_call
     def get_orders(self, request: QueryRequest | None = None) -> ExecutionResult:
         return self.port.get_orders(request)

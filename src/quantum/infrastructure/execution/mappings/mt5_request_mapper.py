@@ -18,7 +18,12 @@ import logging
 from decimal import Decimal
 from typing import Any
 
-from quantum.shared.types.enums import OrderType, TimeInForce
+from quantum.shared.types.enums import (
+    OrderFillingType,
+    OrderType,
+    TimeInForce,
+    TradeAction,
+)
 from quantum.shared.types.execution_request import (
     CheckRequest,
     OrderRequest,
@@ -29,30 +34,27 @@ logger = logging.getLogger(__name__)
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Constants (MT5 TradeRequest fields)
-# ──────────────────────────────────────────────────────────────────────────────
-
-_MT5_FIELD_NAMES = {
-    "symbol": "symbol",
-    "volume": "volume",
-    "type": "type",
-    "price": "price",
-    "sl": "sl",
-    "tp": "tp",
-    "deviation": "deviation",
-    "comment": "comment",
-    "type_time": "type_time",
-    "type_filling": "type_filling",
-}
-
-
-# ──────────────────────────────────────────────────────────────────────────────
 # Enum & type conversions
 # ──────────────────────────────────────────────────────────────────────────────
 
 
-def _map_order_type(order_type: OrderType) -> int:
+def _map_trade_action(action: TradeAction) -> int:
     import MetaTrader5 as mt5  # lazy import for environment portability
+
+    mapping = {
+        TradeAction.DEAL: mt5.TRADE_ACTION_DEAL,
+        TradeAction.PENDING: mt5.TRADE_ACTION_PENDING,
+        TradeAction.SLTP: mt5.TRADE_ACTION_SLTP,
+        TradeAction.MODIFY: mt5.TRADE_ACTION_MODIFY,
+        TradeAction.REMOVE: mt5.TRADE_ACTION_REMOVE,
+        TradeAction.CLOSE_BY: mt5.TRADE_ACTION_CLOSE_BY,
+    }
+
+    return mapping.get(action, mt5.TRADE_ACTION_DEAL)
+
+
+def _map_order_type(order_type: OrderType) -> int:
+    import MetaTrader5 as mt5
 
     mapping = {
         OrderType.BUY: mt5.ORDER_TYPE_BUY,
@@ -80,6 +82,17 @@ def _map_time_in_force(tif: TimeInForce) -> int:
     return mapping.get(tif, mt5.ORDER_TIME_GTC)
 
 
+def _map_type_filling(filling: OrderFillingType) -> int:
+    import MetaTrader5 as mt5
+
+    mapping = {
+        OrderFillingType.FOK: mt5.ORDER_FILLING_FOK,
+        OrderFillingType.IOC: mt5.ORDER_FILLING_IOC,
+        OrderFillingType.RETURN: mt5.ORDER_FILLING_RETURN,
+    }
+    return mapping.get(filling, mt5.ORDER_FILLING_FOK)
+
+
 def _decimal_to_float(value: Decimal | None) -> float | None:
     return float(value) if value is not None else None
 
@@ -94,17 +107,17 @@ def to_mt5_trade_request(req: OrderRequest) -> dict[str, Any]:
     Converts an internal OrderRequest → MT5 TradeRequest dict.
     """
     mt5_dict: dict[str, Any] = {
-        "action": 1,  # TRADE_ACTION_DEAL (default)
+        "action": _map_trade_action(req.action),
         "symbol": req.symbol.value,
         "volume": float(req.volume),
-        "type": _map_order_type(req.order_type),
+        "type": _map_order_type(req.type),
         "price": _decimal_to_float(req.price),
         "sl": _decimal_to_float(req.stop_loss),
         "tp": _decimal_to_float(req.take_profit),
         "deviation": int(req.deviation or 10),
-        "comment": f"{req.side.value}-{req.position_side.value}",
         "type_time": _map_time_in_force(req.time_in_force),
-        "type_filling": 0,  # Default: ORDER_FILLING_FOK, can be overridden
+        "type_filling": _map_type_filling(req.filling),
+        "comment": f"{req.side.value}-{req.position_side.value}",
     }
 
     logger.debug(
