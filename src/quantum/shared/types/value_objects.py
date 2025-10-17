@@ -1,11 +1,21 @@
+"""
+Value Objects — DDD Canonical Implementation (Pydantic v2)
+──────────────────────────────────────────────────────────────────────────────
+Guarantees:
+- Full immutability (hashable, equality by value)
+- Validation and normalization performed at model validation time
+- Strict encapsulation: cannot be mutated or subclassed improperly
+- Clean representation and diagnostics
+"""
+
 from __future__ import annotations
 
 import re
 import uuid
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, ClassVar
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Base class
@@ -14,33 +24,40 @@ from pydantic import BaseModel, Field, field_validator
 
 class ValueObject(BaseModel):
     """
-    Immutable and comparable base for lightweight domain primitives.
+    Canonical base for all Value Objects in the system.
 
-    Design goals:
-    - Immutability and equality by *value* (DDD semantics)
-    - Human-readable __str__ / __repr__
-    - Isolation from Pydantic internal equality behavior
+    - Immutable and hashable
+    - Equality by value
+    - No runtime mutation allowed
+    - Strict schema: extra fields forbidden
     """
 
-    model_config = dict(frozen=True, extra="forbid")
+    model_config = ConfigDict(
+        frozen=True,
+        extra="forbid",
+        validate_assignment=False,
+        arbitrary_types_allowed=False,
+        str_min_length=1,
+    )
 
     # ─── Equality & Hash semantics
     def __eq__(self, other: Any) -> bool:
-        """Equality by underlying value and exact class type."""
-        if isinstance(other, self.__class__):
-            return self.value == other.value
-        return False
+        if self.__class__ is not other.__class__:
+            return False
+        return self.model_dump() == other.model_dump()
 
     def __hash__(self) -> int:
-        """Hash based on class name and underlying value."""
-        return hash((self.__class__.__name__, self.value))
+        # Hash by sorted tuple of fields to ensure deterministic hashing
+        return hash(tuple(sorted(self.model_dump().items())))
 
     # ─── String representations
     def __str__(self) -> str:  # human-readable
         return str(self.value)
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.value!r})"
+        cls = self.__class__.__name__
+        payload = ", ".join(f"{k}={v!r}" for k, v in self.model_dump().items())
+        return f"{cls}({payload})"
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -128,70 +145,32 @@ class EpochMs(ValueObject):
 # Symbol
 # ──────────────────────────────────────────────────────────────────────────────
 
-_SYMBOL_PATTERN = re.compile(r"^[A-Z0-9._\-]{3,20}$")
-
 
 class Symbol(ValueObject):
     """
-    Canonical trading symbol.
+    Trading symbol (currency pair, instrument identifier, etc.).
 
-    Designed to support Forex, Indices, Commodities,
-    Equities, and Crypto, while enforcing naming consistency and validation.
+    Invariants:
+    - Uppercased (e.g., EURUSD, XAUUSD)
+    - Matches the canonical pattern: uppercase alphanumerics only
+    - Immutable and validated at construction
     """
 
     value: str
 
-    def __post_init__(self) -> None:
-        val = self.value.strip().upper()
+    _PATTERN: ClassVar[re.Pattern[str]] = re.compile(r"^[A-Z0-9._\-]{3,20}$")
 
-        if not _SYMBOL_PATTERN.match(val):
+    @field_validator("value")
+    @classmethod
+    def _normalize_and_validate(cls, v: str) -> str:
+        if not v or not isinstance(v, str):
+            raise ValueError("Symbol value must be a non-empty string.")
+        val = v.strip().upper()
+        if not cls._PATTERN.match(val):
             raise ValueError(
-                f"Invalid trading symbol '{self.value}'. "
-                "Allowed pattern: uppercase letters, digits, '.', '_', '-'; length 3–20."
+                f"Invalid symbol format '{v}': must match pattern {cls._PATTERN.pattern}"
             )
-
-        # Set normalized uppercase value
-        object.__setattr__(self, "value", val)
-
-    # ─── Equality & hashing
-    def __eq__(self, other: object) -> bool:
-        if isinstance(other, Symbol):
-            return self.value == other.value
-        if isinstance(other, str):
-            return self.value == other.strip().upper()
-        return False
-
-    def __hash__(self) -> int:
-        return hash(self.value)
-
-    # ─── Representation
-    def __str__(self) -> str:
-        return self.value
-
-    def __repr__(self) -> str:
-        return f"Symbol('{self.value}')"
-
-    # ─── Utilities
-    def is_forex(self) -> bool:
-        """Heuristic: symbol has 6 letters and ends with USD, EUR, JPY, etc."""
-        return len(self.value) == 6 and self.value[-3:] in {
-            "USD",
-            "EUR",
-            "JPY",
-            "GBP",
-            "CHF",
-            "CAD",
-            "AUD",
-            "NZD",
-        }
-
-    def is_index(self) -> bool:
-        """Heuristic for indices (starts with US, DE, JP, HK, etc.)."""
-        return bool(re.match(r"^(US|DE|JP|FR|HK|UK|SP)\d+", self.value))
-
-    def is_crypto(self) -> bool:
-        """Heuristic for crypto pairs."""
-        return self.value.startswith(("BTC", "ETH", "XRP", "SOL", "ADA", "DOGE"))
+        return val
 
 
 # ──────────────────────────────────────────────────────────────────────────────

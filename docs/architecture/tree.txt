@@ -89,8 +89,10 @@ trading-platform/
 │       │   ├── execution/
 │       │   │   ├── mappings/
 │       │   │   │   ├── __init__.py
+│       │   │   │   ├── mt5_request_mapper.py
 │       │   │   │   └── mt5_retcode_map.py
 │       │   │   ├── __init__.py
+│       │   │   ├── _timeout_utils.py
 │       │   │   ├── contracts.py
 │       │   │   ├── gateway_registry.py
 │       │   │   └── mt5_gateway.py
@@ -153,7 +155,8 @@ trading-platform/
 │       │   ├── execution/
 │       │   │   ├── __init__.py
 │       │   │   ├── resilience_policy.py
-│       │   │   └── retry_policy.py
+│       │   │   ├── retry_policy.py
+│       │   │   └── timeout_utils.py
 │       │   ├── serialization/
 │       │   │   ├── __init__.py
 │       │   │   └── schema_registry.py

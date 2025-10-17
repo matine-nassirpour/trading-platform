@@ -1,7 +1,7 @@
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field
 
 from quantum.shared.types.decimal_validators import PositiveDecimal
-from quantum.shared.types.enums import OrderType, Side, TimeInForce
+from quantum.shared.types.enums import OrderType, TimeInForce
 from quantum.shared.types.value_objects import Symbol
 
 
@@ -11,7 +11,6 @@ class OrderRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     symbol: Symbol = Field(..., description="Trading symbol, normalized (e.g., EURUSD)")
-    side: Side
     type: OrderType
     volume: PositiveDecimal = Field(..., description="Lot size")
     price: PositiveDecimal | None = Field(None, description="Price for LIMIT orders")
@@ -25,32 +24,6 @@ class OrderRequest(BaseModel):
     tp: PositiveDecimal | None = Field(None, description="Take profit level")
     time_in_force: TimeInForce = TimeInForce.GTC
     comment: str | None = None
-
-    @field_validator("price", "stop_price", "limit_price")
-    @classmethod
-    def _price_matrix(cls, v, info):
-        """Ensure coherence between price fields based on order type."""
-        typ: OrderType | None = info.data.get("type")
-
-        if typ == OrderType.MARKET:
-            if any(
-                info.data.get(k) is not None
-                for k in ("price", "stop_price", "limit_price")
-            ):
-                raise ValueError("MARKET must not define price/stop_price/limit_price")
-        elif typ == OrderType.LIMIT:
-            if info.data.get("price") is None:
-                raise ValueError("LIMIT requires price")
-        elif typ == OrderType.STOP:
-            if info.data.get("stop_price") is None:
-                raise ValueError("STOP requires stop_price")
-        elif typ == OrderType.STOP_LIMIT:
-            if (
-                info.data.get("stop_price") is None
-                or info.data.get("limit_price") is None
-            ):
-                raise ValueError("STOP_LIMIT requires stop_price and limit_price")
-        return v
 
 
 class CheckRequest(BaseModel):
