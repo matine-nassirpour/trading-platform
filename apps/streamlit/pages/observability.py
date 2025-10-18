@@ -13,7 +13,6 @@ from opentelemetry import trace
 from prometheus_client import REGISTRY
 
 from quantum.infrastructure.observability.logging.event_emitter import emit_event
-from quantum.shared.config.env_flags import get_bool
 from quantum.shared.correlation.correlation_id import (
     correlation_context,
     new_correlation_id,
@@ -71,7 +70,7 @@ class PageConfig:
         return PageConfig(
             log_dir=log_dir,
             log_renderer=log_renderer,
-            log_expanded=get_bool("STREAMLIT_LOG_EXPANDED", default=False, env=env),
+            log_expanded=env.get("STREAMLIT_LOG_EXPANDED", False),
             log_chunk_bytes=_int("STREAMLIT_LOG_CHUNK_BYTES", 256_000),
             log_tail_max_lines=_int("STREAMLIT_LOG_TAIL_MAX_LINES", 100),
             log_glob=env.get("STREAMLIT_LOG_GLOB", "events-*.jsonl"),

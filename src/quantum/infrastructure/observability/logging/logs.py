@@ -88,12 +88,7 @@ def init_logging(settings: Settings, observability: ObservabilitySettings) -> No
 
     # ─── Partitioned JSONL handler
     if observability.quantum_log_dir:
-        partition_handler = PartitionedJSONLFileHandler(
-            base_dir=observability.quantum_log_dir,
-            app=settings.quantum_app_name,
-            environment=settings.quantum_env,
-            namespace=settings.quantum_ns,
-        )
+        partition_handler = PartitionedJSONLFileHandler(settings, observability)
         partition_handler.setLevel(level)
         partition_handler.setFormatter(JsonFormatter())
         _add_base_filters(partition_handler)

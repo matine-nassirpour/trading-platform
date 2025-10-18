@@ -21,6 +21,8 @@ from pathlib import Path
 
 import pytest
 
+from quantum.shared.config.config_manager import Settings
+from quantum.shared.config.observability_settings import ObservabilitySettings
 from tests.support.types import Workspace
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -189,6 +191,35 @@ def tmp_workspace(iso_env, clean_registry) -> Generator[Workspace]:
         # Cleaning the workspace
         with suppress(Exception):
             shutil.rmtree(tmpdir, ignore_errors=True)
+
+
+@pytest.fixture
+def base_settings(tmp_path: Path) -> Settings:
+    """Return minimal Settings pointing logs under tmp_path."""
+    return Settings(
+        quantum_app_name="test_app",
+        quantum_app_version="0.0.0+test",
+        quantum_env="test",
+        quantum_ns="quantum",
+        quantum_metrics_port=0,
+    )
+
+
+@pytest.fixture(scope="function")
+def make_observability(tmp_workspace):
+    """Factory fixture to build ObservabilitySettings with test-safe defaults."""
+
+    def _factory(**overrides) -> ObservabilitySettings:
+        defaults = dict(
+            quantum_log_dir=str(tmp_workspace["logs"]),
+            quantum_audit_dir=str(tmp_workspace["audit"]),
+            quantum_log_fsync=False,
+            quantum_log_max_bytes=0,
+            quantum_log_warn_bytes=0,
+        )
+        return ObservabilitySettings(**{**defaults, **overrides})
+
+    return _factory
 
 
 @pytest.fixture(scope="function")
