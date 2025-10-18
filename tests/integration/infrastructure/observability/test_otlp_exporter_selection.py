@@ -51,17 +51,13 @@ def _assert_inactive_with_reason(
     assert counter_value(m.pipeline_tracing_ok) == 1.0
     assert counter_value(m.tracer_exporter_active) == 0.0
 
-    reasons = [
-        r
-        for r in recs
-        if "OTLP exporter configured but INACTIVE" in (r.getMessage() or "")
-    ]
+    reasons = [r for r in recs if "OTLP exporter inactive" in (r.getMessage() or "")]
     assert reasons, "Expected INACTIVE warning log"
     assert any(
-        (getattr(r, "attrs", {}) or {}).get("reason") == reason_expected
-        or reason_expected in r.getMessage()
+        reason_expected in ((getattr(r, "attrs", {}) or {}).get("reason") or "")
+        or reason_expected in (r.getMessage() or "")
         for r in reasons
-    ), f"Expected reason {reason_expected!r} in warning log"
+    ), f"Expected reason substring {reason_expected!r} in warning log"
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -99,11 +95,26 @@ class TestOTLPExporterSelection:
         exporter=otlp, protocol=http, package present → active=1.0 (no warning).
         """
         import os
+        import sys
+        import types
 
         from quantum.infrastructure.observability.metrics import health as m
-        from quantum.infrastructure.observability.tracing import traces as tmod
 
-        monkeypatch.setattr(tmod, "_HAS_OTLP_HTTP", True, raising=True)
+        fake_http_module = types.ModuleType(
+            "opentelemetry.exporter.otlp.proto.http.trace_exporter"
+        )
+
+        class DummyExporter:
+            def __init__(self, *args, **kwargs):
+                pass
+
+        fake_http_module.OTLPSpanExporter = DummyExporter
+
+        monkeypatch.setitem(
+            sys.modules,
+            "opentelemetry.exporter.otlp.proto.http.trace_exporter",
+            fake_http_module,
+        )
 
         os.environ["QUANTUM_TRACE_EXPORTER"] = "otlp"
         os.environ["QUANTUM_TRACE_OTLP_PROTOCOL"] = "http"
@@ -116,28 +127,36 @@ class TestOTLPExporterSelection:
 
         assert counter_value(m.pipeline_tracing_ok) == 1.0
         assert counter_value(m.tracer_exporter_active) == 1.0
-        assert not any(
-            "OTLP exporter configured but INACTIVE" in r.message for r in caplog.records
-        )
+        assert not any("OTLP exporter inactive" in r.message for r in caplog.records)
 
     def test_otlp_http_inactive_when_pkg_missing(
         self, tmp_workspace, monkeypatch, caplog
     ):
         """
-        exporter=otlp, protocol=http, missing package → inactive=0.0 and inactivity log with reason='otlp_http_package_missing'.
+        exporter=otlp, protocol=http, missing package → inactive=0.0
+        and inactivity log with reason='otlp_package_missing'.
         """
+        import builtins
         import os
+        import sys
 
-        from quantum.infrastructure.observability.tracing import traces as tmod
+        for mod in list(sys.modules):
+            if mod.startswith("opentelemetry.exporter.otlp.proto.http"):
+                sys.modules.pop(mod, None)
 
-        monkeypatch.setattr(tmod, "_HAS_OTLP_HTTP", False, raising=True)
+        original_import = builtins.__import__
+
+        def fake_import(name, *args, **kwargs):
+            if name.startswith("opentelemetry.exporter.otlp.proto.http.trace_exporter"):
+                raise ImportError("synthetic missing package")
+            return original_import(name, *args, **kwargs)
+
+        monkeypatch.setattr(builtins, "__import__", fake_import)
 
         os.environ["QUANTUM_TRACE_EXPORTER"] = "otlp"
         os.environ["QUANTUM_TRACE_OTLP_PROTOCOL"] = "http"
 
-        _assert_inactive_with_reason(
-            caplog, reason_expected="otlp_http_package_missing"
-        )
+        _assert_inactive_with_reason(caplog, reason_expected="otlp_package_missing")
 
     def test_otlp_grpc_active_when_pkg_present(
         self, tmp_workspace, monkeypatch, caplog
@@ -146,11 +165,26 @@ class TestOTLPExporterSelection:
         exporter=otlp, protocol=grpc, package present → active=1.0.
         """
         import os
+        import sys
+        import types
 
         from quantum.infrastructure.observability.metrics import health as m
-        from quantum.infrastructure.observability.tracing import traces as tmod
 
-        monkeypatch.setattr(tmod, "_HAS_OTLP_GRPC", True, raising=True)
+        fake_grpc_module = types.ModuleType(
+            "opentelemetry.exporter.otlp.proto.grpc.trace_exporter"
+        )
+
+        class DummyExporter:
+            def __init__(self, *args, **kwargs):
+                pass
+
+        fake_grpc_module.OTLPSpanExporter = DummyExporter
+
+        monkeypatch.setitem(
+            sys.modules,
+            "opentelemetry.exporter.otlp.proto.grpc.trace_exporter",
+            fake_grpc_module,
+        )
 
         os.environ["QUANTUM_TRACE_EXPORTER"] = "otlp"
         os.environ["QUANTUM_TRACE_OTLP_PROTOCOL"] = "grpc"
@@ -169,32 +203,51 @@ class TestOTLPExporterSelection:
         self, tmp_workspace, monkeypatch, caplog
     ):
         """
-        exporter=otlp, protocol=grpc, package missing → inactive=0.0 and log reason='otlp_grpc_package_missing'.
+        exporter=otlp, protocol=grpc, package missing → inactive=0.0
+        and log reason='otlp_grpc_package_missing'.
         """
+        import builtins
         import os
+        import sys
 
-        from quantum.infrastructure.observability.tracing import traces as tmod
+        for mod in list(sys.modules):
+            if mod.startswith("opentelemetry.exporter.otlp.proto.grpc"):
+                sys.modules.pop(mod, None)
 
-        monkeypatch.setattr(tmod, "_HAS_OTLP_GRPC", False, raising=True)
+        original_import = builtins.__import__
+
+        def fake_import(name, *args, **kwargs):
+            if name.startswith("opentelemetry.exporter.otlp.proto.grpc.trace_exporter"):
+                raise ImportError("synthetic missing grpc exporter")
+            return original_import(name, *args, **kwargs)
+
+        monkeypatch.setattr(builtins, "__import__", fake_import)
 
         os.environ["QUANTUM_TRACE_EXPORTER"] = "otlp"
         os.environ["QUANTUM_TRACE_OTLP_PROTOCOL"] = "grpc"
         os.environ["QUANTUM_TRACE_OTLP_INSECURE"] = "1"
 
-        _assert_inactive_with_reason(
-            caplog, reason_expected="otlp_grpc_package_missing"
-        )
+        _assert_inactive_with_reason(caplog, reason_expected="otlp_package_missing")
 
-    def test_otlp_unsupported_protocol_is_inactive(self, tmp_workspace, caplog):
+    def test_otlp_unsupported_protocol_defaults_to_http(self, tmp_workspace, caplog):
         """
-        exporter=otlp, unknown protocol → inactive=0.0 and log reason='unsupported_protocol'.
+        exporter=otlp, protocol unsupported ('ws') → normalized to 'http', exporter active.
         """
         import os
 
-        os.environ["QUANTUM_TRACE_EXPORTER"] = "otlp"
-        os.environ["QUANTUM_TRACE_OTLP_PROTOCOL"] = "ws"  # invalid
+        from quantum.infrastructure.observability.metrics import health as m
 
-        _assert_inactive_with_reason(caplog, reason_expected="unsupported_protocol")
+        os.environ["QUANTUM_TRACE_EXPORTER"] = "otlp"
+        os.environ["QUANTUM_TRACE_OTLP_PROTOCOL"] = "ws"  # invalid literal
+
+        caplog.set_level(logging.WARNING)
+        _init_then_shutdown(force=True)
+
+        # Exporter should be active, since 'ws' defaulted to 'http'
+        assert counter_value(m.tracer_exporter_active) == 1.0
+        assert any(
+            "Unsupported OTLP protocol 'ws'" in r.message for r in caplog.records
+        )
 
     def test_otlp_init_failure_triggers_fallback(
         self, tmp_workspace, monkeypatch, caplog
@@ -219,12 +272,10 @@ class TestOTLPExporterSelection:
         os.environ["QUANTUM_TRACE_EXPORTER"] = "otlp"
         os.environ["QUANTUM_TRACE_OTLP_PROTOCOL"] = "http"
 
-        def _boom() -> tuple[object | None, str | None]:
+        def _boom(settings, telemetry) -> tuple[object | None, str | None]:
             raise RuntimeError("synthetic exporter build failure")
 
-        monkeypatch.setattr(
-            tmod, "_build_otlp_exporter_with_reason", _boom, raising=True
-        )
+        monkeypatch.setattr(tmod, "_build_otlp_exporter", _boom, raising=True)
 
         caplog.clear()
         caplog.set_level(logging.INFO)

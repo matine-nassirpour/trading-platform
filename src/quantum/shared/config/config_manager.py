@@ -171,6 +171,7 @@ class Settings(BaseSettings):
     quantum_app_version: str = Field("0.0.0+dev")
     quantum_env: str = Field("dev")
     quantum_ns: str = Field("quantum")
+    quantum_instance_id: str | None = Field(None)
 
     # ─── Tracing
     quantum_trace_exporter: Literal["otlp", "console", "none"] = "console"

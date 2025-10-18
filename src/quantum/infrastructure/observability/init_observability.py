@@ -24,12 +24,10 @@ from quantum.infrastructure.observability.tracing.propagation import (
     install_process_baggage,
     setup_propagation,
 )
-from quantum.infrastructure.observability.tracing.traces import (
-    TracingConfig,
-    init_tracing,
-)
+from quantum.infrastructure.observability.tracing.traces import init_tracing
 from quantum.shared.config.config_manager import ConfigManager, Settings
 from quantum.shared.config.observability_settings import ObservabilitySettings
+from quantum.shared.config.telemetry_settings import TelemetrySettings
 from quantum.shared.context.run_id import generate_run_id, get_run_id
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -103,8 +101,8 @@ def _shutdown_tracing_if_any() -> None:
     if callable(shutdown):
         try:
             shutdown()
-        except Exception as e:
-            logger.debug(f"Tracer shutdown failed: {e}")
+        except Exception as exc:
+            logger.debug(f"Tracer shutdown failed: {exc}")
     _tracer_provider_ref = None
 
 
@@ -115,53 +113,55 @@ def _shutdown_tracing_if_any() -> None:
 
 def _init_tracing(
     settings: Settings,
+    telemetry: TelemetrySettings,
     force: bool,
 ) -> bool:
     """Initialize OpenTelemetry tracing subsystem."""
     try:
         _shutdown_tracing_if_any()
-        tp = init_tracing(
-            TracingConfig(
-                service_name=settings.quantum_app_name,
-                environment=settings.quantum_env,
-                namespace=settings.quantum_ns,
-                exporter=settings.quantum_trace_exporter,
-                sample_ratio=settings.quantum_trace_sample,
-            ),
-            replace_existing=force,
-        )
+        tracer_provider = init_tracing(settings, telemetry, force)
         setup_propagation()
         install_process_baggage()
         otel_tracing_up.set(1)
+
         global _tracer_provider_ref
-        _tracer_provider_ref = tp
+        _tracer_provider_ref = tracer_provider
         return True
-    except Exception as e:
-        logger.exception(f"Tracing initialization failed: {e}")
+
+    except (ValueError, RuntimeError) as exc:
+        logger.exception(f"Tracing initialization failed: {exc}")
         otel_tracing_up.set(0)
-        # Fallback (retry once)
+
+        # ─── Fallback (retry once)
         try:
-            tp = init_tracing(
-                TracingConfig(
-                    service_name=settings.quantum_app_name,
-                    environment=settings.quantum_env,
-                    namespace=settings.quantum_ns,
-                    exporter="none",
-                    sample_ratio=0.0,
-                )
+            tracer_provider = init_tracing(
+                settings=settings.model_copy(
+                    update={
+                        "quantum_trace_exporter": "none",
+                        "quantum_trace_sample": 0.0,
+                    }
+                ),
+                telemetry=telemetry,
+                replace_existing=True,
             )
             setup_propagation()
             install_process_baggage()
             otel_tracing_up.set(1)
-            _tracer_provider_ref = tp
+            _tracer_provider_ref = tracer_provider
             logger.warning(
                 "Tracing fallback activated: exporter=none, sample_ratio=0.0"
             )
             return True
-        except Exception as e2:
-            logger.exception(f"Tracing fallback failed: {e2}")
+
+        except Exception as fallback_exc:
+            logger.exception(f"Tracing fallback failed: {fallback_exc}")
             otel_tracing_up.set(0)
             return False
+
+    except Exception as unexpected:
+        logger.exception(f"Unexpected error during tracing init: {unexpected}")
+        otel_tracing_up.set(0)
+        return False
 
 
 def _init_logging_safe(
@@ -214,6 +214,7 @@ def init_observability(
     with _init_lock:
         settings = ConfigManager.load()
         obs_settings = ConfigManager.load_observability()
+        telemetry_settings = ConfigManager.load_telemetry()
 
         if _initialized and not force:
             return
@@ -237,7 +238,7 @@ def init_observability(
             generate_run_id()
 
         # ─── Initialize tracing
-        tracing_ok = _init_tracing(settings, force)
+        tracing_ok = _init_tracing(settings, telemetry_settings, force)
         pipeline_tracing_ok.set(1 if tracing_ok else 0)
 
         # ─── Initialize logging

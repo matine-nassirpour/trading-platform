@@ -1,11 +1,11 @@
 import atexit
 import logging
-import os
 import socket
-from typing import Literal, cast
+from typing import Any, cast
 
 from opentelemetry import trace as _trace
 from opentelemetry.context import Context
+from opentelemetry.exporter.otlp.proto.http import Compression
 from opentelemetry.sdk.resources import (
     DEPLOYMENT_ENVIRONMENT,
     SERVICE_INSTANCE_ID,
@@ -14,9 +14,7 @@ from opentelemetry.sdk.resources import (
     SERVICE_VERSION,
     Resource,
 )
-from opentelemetry.sdk.trace import SpanLimits
-from opentelemetry.sdk.trace import SpanProcessor as _SpanProcessor
-from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace import SpanLimits, SpanProcessor, TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
 from opentelemetry.sdk.trace.id_generator import RandomIdGenerator
 from opentelemetry.sdk.trace.sampling import ParentBased, TraceIdRatioBased
@@ -24,124 +22,174 @@ from opentelemetry.trace import Span
 from opentelemetry.trace import TracerProvider as TracerProviderInterface
 from opentelemetry.trace import get_tracer_provider, set_tracer_provider
 
-from quantum.shared.config.env_flags import get_bool
+from quantum.shared.config.config_manager import Settings
+from quantum.shared.config.telemetry_settings import TelemetrySettings
 from quantum.shared.context.run_id import get_run_id
 from quantum.shared.correlation.correlation_id import get_correlation_id
-
-try:
-    from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
-        OTLPSpanExporter as OTLPHTTPExporter,  # type: ignore
-    )
-
-    _HAS_OTLP_HTTP = True
-except ImportError:
-    _HAS_OTLP_HTTP = False
-
-try:
-    from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
-        OTLPSpanExporter as OTLPGRPCExporter,  # type: ignore
-    )
-
-    _HAS_OTLP_GRPC = True
-except ImportError:
-    _HAS_OTLP_GRPC = False
-
 
 logger = logging.getLogger(__name__)
 _ATEXIT_REGISTERED: bool = False
 
 
-def _atexit_shutdown_current_provider() -> None:
-    """
-    Closes the current OTel provider (if it is indeed a TracerProvider SDK).
-    Tolerant of multiple calls and providers that have already been stopped.
-    """
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Lifecycle Management                                                        │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
+
+
+def _shutdown_provider_safely() -> None:
+    """Gracefully shutdown the current tracer provider (safe for multiple calls)."""
     try:
-        tp = get_tracer_provider()
-        shutdown = getattr(tp, "shutdown", None)
+        provider = get_tracer_provider()
+        shutdown = getattr(provider, "shutdown", None)
         if callable(shutdown):
             shutdown()
-    except Exception as e:
-        logger.debug(f"Tracer provider shutdown at exit failed: {e}")
+    except Exception as exc:
+        logger.debug(f"Tracer provider shutdown at exit failed: {exc}")
 
 
 def _ensure_atexit_registered() -> None:
+    """Ensure provider shutdown is registered exactly once."""
     global _ATEXIT_REGISTERED
     if _ATEXIT_REGISTERED:
         return
     try:
-        atexit.register(_atexit_shutdown_current_provider)
+        atexit.register(_shutdown_provider_safely)
         _ATEXIT_REGISTERED = True
-    except Exception as e:
-        logger.debug(f"Failed to register atexit tracer shutdown: {e}")
+    except Exception as exc:
+        logger.debug(f"Failed to register atexit tracer shutdown: {exc}")
 
 
-class TracingConfig:
-    def __init__(
-        self,
-        service_name: str,
-        environment: str,
-        namespace: str,
-        exporter: Literal["otlp", "console", "none"] = "console",
-        sample_ratio: float = 1.0,
-    ) -> None:
-        self.service_name = service_name
-        self.environment = environment
-        self.namespace = namespace
-        self.exporter = exporter
-        self.sample_ratio = sample_ratio
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Context Processor                                                           │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 
 
-def _resolve_instance_id() -> str:
-    """
-    Stable instance ID for OTel Resource:
+class _ContextEnricherProcessor(SpanProcessor):
+    """Injects run_id and correlation_id into every span at start time."""
 
-    - QUANTUM_SERVICE_INSTANCE_ID if defined (source of truth)
-    - hostname as a reasonable fallback
-    """
-    iid = os.getenv("QUANTUM_SERVICE_INSTANCE_ID", "").strip()
-    return iid or socket.gethostname()
-
-
-class _ContextEnricherProcessor(_SpanProcessor):
     def on_start(self, span: Span, parent_context: Context | None = None) -> None:
-        rid = get_run_id()
-        cid = get_correlation_id()
-        if rid:
-            span.set_attribute("quantum.run_id", rid)
-        if cid:
-            span.set_attribute("quantum.correlation_id", cid)
+        try:
+            rid = get_run_id()
+            cid = get_correlation_id()
+            if rid:
+                span.set_attribute("quantum.run_id", rid)
+            if cid:
+                span.set_attribute("quantum.correlation_id", cid)
+        except Exception as exc:
+            logger.debug(f"Context enrichment failed: {exc}")
 
     def on_end(self, span: Span) -> None:
         pass
 
+    def shutdown(self) -> None:
+        """No cleanup needed."""
+        return
+
+    def force_flush(self, timeout_millis: int | None = None) -> bool:
+        """No buffered state; always succeeds."""
+        return True
+
+
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ OTLP Exporter Builder                                                       │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
+
+
+def _build_otlp_exporter(
+    settings: Settings, telemetry: TelemetrySettings
+) -> tuple[Any | None, str | None]:
+    """
+    Build an OTLP exporter based on TelemetrySettings.
+    Returns (exporter, reason) where reason is present if inactive.
+    """
+    protocol = telemetry.quantum_trace_otlp_protocol
+    endpoint = settings.quantum_trace_otlp_endpoint
+    timeout = telemetry.quantum_trace_otlp_timeout_ms / 1000.0
+    insecure = telemetry.quantum_trace_otlp_insecure
+    headers_csv = telemetry.quantum_trace_otlp_headers
+    headers: dict[str, str] = {}
+    compression = (
+        None if telemetry.quantum_trace_otlp_compression == "none" else Compression.Gzip
+    )
+
+    if headers_csv:
+        for kv in headers_csv.split(","):
+            if "=" in kv:
+                k, v = kv.split("=", 1)
+                headers[k.strip()] = v.strip()
+
+    try:
+        if protocol == "http":
+            from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
+                OTLPSpanExporter as OTLPHTTPExporter,
+            )
+
+            if not endpoint.endswith("/v1/traces"):
+                endpoint = endpoint.rstrip("/") + "/v1/traces"
+
+            exporter = OTLPHTTPExporter(
+                endpoint=endpoint,
+                headers=headers or None,
+                timeout=timeout,
+                compression=compression,
+            )
+            return exporter, None
+
+        if protocol == "grpc":
+            from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
+                OTLPSpanExporter as OTLPGRPCExporter,
+            )
+
+            exporter = OTLPGRPCExporter(
+                endpoint=endpoint,
+                headers=headers or None,
+                timeout=timeout,
+                insecure=insecure,
+                compression=compression,
+            )
+            return exporter, None
+
+        return None, f"unsupported_protocol:{protocol}"
+
+    except ImportError as exc:
+        return None, f"otlp_package_missing:{exc.__class__.__name__}"
+    except Exception as exc:
+        return None, f"otlp_exporter_error:{exc}"
+
+
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Main Initialization Logic                                                   │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
+
 
 def init_tracing(
-    cfg: TracingConfig, *, replace_existing: bool = False
+    settings: Settings,
+    telemetry: TelemetrySettings,
+    replace_existing: bool = False,
 ) -> TracerProviderInterface:
-    # Idempotence: If a provider SDK is already in place, do not reset.
+    """Initialize the OpenTelemetry TracerProvider."""
     existing = get_tracer_provider()
     if isinstance(existing, TracerProvider) and not replace_existing:
         _ensure_atexit_registered()
         return cast(TracerProviderInterface, existing)
 
-    # Borne le sample ratio dans [0..1]
-    sr = max(0.0, min(1.0, float(cfg.sample_ratio)))
+    sample_ratio = max(0.0, min(1.0, float(settings.quantum_trace_sample)))
 
+    # ─── Build OTel resource
     resource = Resource.create(
         {
-            SERVICE_NAME: cfg.service_name,
-            SERVICE_NAMESPACE: cfg.namespace,
-            DEPLOYMENT_ENVIRONMENT: cfg.environment,
-            SERVICE_INSTANCE_ID: _resolve_instance_id(),
-            SERVICE_VERSION: os.getenv("QUANTUM_APP_VERSION", "0.0.0"),
+            SERVICE_NAME: settings.quantum_app_name,
+            SERVICE_VERSION: settings.quantum_app_version,
+            SERVICE_NAMESPACE: settings.quantum_ns,
+            DEPLOYMENT_ENVIRONMENT: settings.quantum_env,
+            SERVICE_INSTANCE_ID: settings.quantum_instance_id or socket.gethostname(),
         }
     )
 
     tracer_provider = TracerProvider(
         resource=resource,
         id_generator=RandomIdGenerator(),
-        sampler=ParentBased(TraceIdRatioBased(sr)),
+        sampler=ParentBased(TraceIdRatioBased(sample_ratio)),
         span_limits=SpanLimits(
             max_attributes=128,
             max_events=128,
@@ -151,8 +199,12 @@ def init_tracing(
 
     tracer_provider.add_span_processor(_ContextEnricherProcessor())
 
-    # Console exporter
-    if cfg.exporter == "console":
+    # ─── Configure exporter
+    exporter_name = settings.quantum_trace_exporter
+    active_exporter = None
+    inactive_reason = None
+
+    if exporter_name == "console":
         tracer_provider.add_span_processor(
             BatchSpanProcessor(
                 ConsoleSpanExporter(),
@@ -162,156 +214,105 @@ def init_tracing(
             )
         )
 
-    # OTLP exporter
-    active_exporter = None
-    if cfg.exporter == "otlp":
-        exporter, inactive_reason = _build_otlp_exporter_with_reason()
-        if exporter is not None:
+    elif exporter_name == "otlp":
+        exporter, reason = _build_otlp_exporter(settings, telemetry)
+        if exporter:
             tracer_provider.add_span_processor(
                 BatchSpanProcessor(
-                    exporter,  # type: ignore[arg-type]
+                    exporter,
                     max_export_batch_size=256,
                     schedule_delay_millis=500,
                     max_queue_size=4096,
                 )
             )
             active_exporter = exporter
-            _log_exporter_status(active=True)
         else:
-            _log_exporter_status(active=False, reason=inactive_reason)
+            inactive_reason = reason
 
+    elif exporter_name == "none":
+        inactive_reason = "exporter=none"
+
+    else:
+        inactive_reason = f"unsupported_exporter:{exporter_name}"
+
+    # ─── Install provider globally
     set_tracer_provider(tracer_provider)
-    # Expose an internal flag for init_observability (read without cross-import)
-    setattr(tracer_provider, "_active_exporter", active_exporter is not None)
 
-    # expose health metric if available (no hard dep)
+    # ─── Emit status log
+    _log_exporter_status(active_exporter, telemetry, inactive_reason)
+
+    # ─── Health metric propagation (soft optional)
     try:
         from quantum.infrastructure.observability.metrics.health import (
             tracer_exporter_active,
         )
     except ModuleNotFoundError:
-        pass
+        logger.debug(
+            "Health metrics module not found; skipping exporter activity metric."
+        )
     else:
         try:
-            tracer_exporter_active.set(1.0 if active_exporter is not None else 0.0)
-        except (ValueError, RuntimeError):
-            pass
+            tracer_exporter_active.set(1.0 if active_exporter else 0.0)
+        except (ValueError, RuntimeError, AttributeError) as exc:
+            logger.debug(f"Unable to update tracer exporter metric: {exc}")
 
-    _ensure_atexit_registered()
-
-    # Expose a reference for controlled shutdown in init_observability
+    # ─── Link provider reference for coordinated shutdown
     try:
         import quantum.infrastructure.observability.init_observability as _init_mod
+
+        _init_mod._tracer_provider_ref = cast(object, tracer_provider)
     except ModuleNotFoundError:
         pass
-    else:
-        _init_mod._tracer_provider_ref = cast(object, tracer_provider)
 
+    _ensure_atexit_registered()
     return tracer_provider
 
 
-def _build_otlp_exporter_with_reason() -> tuple[object | None, str | None]:
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Logging Helpers                                                             │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
+
+
+def _log_exporter_status(
+    active_exporter: Any | None,
+    telemetry: TelemetrySettings,
+    inactive_reason: str | None,
+) -> None:
     """
-    Constructs an OTLP HTTP or gRPC exporter.
-    Returns (exporter, reason) where reason is a short string if inactive.
-
-    Possible reasons (indicative, not exhaustive):
-    - "otlp_http_package_missing"
-    - "otlp_grpc_package_missing"
-    - "unsupported_protocol"
+    Report the status of the OTLP/Console exporter.
+    No sensitive data is logged — only structural metadata.
     """
-    protocol = os.getenv("QUANTUM_TRACE_OTLP_PROTOCOL", "http").strip().lower()
-    endpoint = os.getenv("QUANTUM_TRACE_OTLP_ENDPOINT", "").strip() or (
-        "http://127.0.0.1:4318" if protocol == "http" else "127.0.0.1:4317"
-    )
-
-    headers_csv = os.getenv("QUANTUM_TRACE_OTLP_HEADERS", "").strip()
-    headers = {}
-    if headers_csv:
-        for kv in headers_csv.split(","):
-            if "=" in kv:
-                k, v = kv.split("=", 1)
-                headers[k.strip()] = v.strip()
-
-    timeout_ms = os.getenv("QUANTUM_TRACE_OTLP_TIMEOUT_MS", "").strip()
-    try:
-        timeout = int(timeout_ms) / 1000.0 if timeout_ms else None
-    except ValueError:
-        timeout = None
-
-    comp = os.getenv("QUANTUM_TRACE_OTLP_COMPRESSION", "").strip().lower()
-    compression = "gzip" if comp in {"gzip", "gz"} else None
-
-    if protocol == "grpc":
-        if not _HAS_OTLP_GRPC:
-            return None, "otlp_grpc_package_missing"
-        insecure = get_bool("QUANTUM_TRACE_OTLP_INSECURE", default=True)
-        exp = OTLPGRPCExporter(
-            endpoint=endpoint,
-            headers=headers or None,
-            timeout=timeout,
-            insecure=insecure,
-            compression=compression,
-        )
-        return exp, None
-
-    if protocol == "http":
-        if not _HAS_OTLP_HTTP:
-            return None, "otlp_http_package_missing"
-        exp = OTLPHTTPExporter(
-            endpoint=(
-                endpoint + "/v1/traces"
-                if not endpoint.endswith("/v1/traces")
-                else endpoint
-            ),
-            headers=headers or None,
-            timeout=timeout,
-            compression=compression,
-        )
-        return exp, None
-
-    return None, "unsupported_protocol"
-
-
-def _log_exporter_status(*, active: bool, reason: str | None = None) -> None:
-    """
-    Reporter the status of the OTLP export in a clear and non-verbal way (once at init).
-    No secrets leak (we only log the protocol, the endpoint and the list of header keys).
-    """
-    protocol = os.getenv("QUANTUM_TRACE_OTLP_PROTOCOL", "http").strip().lower()
-    endpoint = os.getenv("QUANTUM_TRACE_OTLP_ENDPOINT", "").strip() or (
-        "http://127.0.0.1:4318" if protocol == "http" else "127.0.0.1:4317"
-    )
-    comp = os.getenv("QUANTUM_TRACE_OTLP_COMPRESSION", "").strip().lower() or "none"
-    headers_csv = os.getenv("QUANTUM_TRACE_OTLP_HEADERS", "").strip()
-    header_keys = []
-    if headers_csv:
-        for kv in headers_csv.split(","):
-            if "=" in kv:
-                k, _ = kv.split("=", 1)
-                header_keys.append(k.strip())
-    insecure = get_bool("QUANTUM_TRACE_OTLP_INSECURE", default=True)
-
-    base = {
-        "exporter": "otlp",
-        "protocol": protocol,
-        "endpoint": endpoint,
-        "compression": comp,
-        "insecure": insecure if protocol == "grpc" else None,
-        "header_keys": header_keys or None,
+    base: dict[str, Any] = {
+        "protocol": telemetry.quantum_trace_otlp_protocol,
+        "compression": telemetry.quantum_trace_otlp_compression,
+        "insecure": telemetry.quantum_trace_otlp_insecure,
     }
 
-    if active:
+    headers_preview: list[str] = []
+    if telemetry.quantum_trace_otlp_headers:
+        for kv in telemetry.quantum_trace_otlp_headers.split(","):
+            if "=" in kv:
+                k, _ = kv.split("=", 1)
+                headers_preview.append(k.strip())
+    if headers_preview:
+        base["header_keys"] = headers_preview
+
+    if active_exporter:
         logger.info("OTLP exporter active", extra={"attrs": base})
     else:
         attrs = dict(base)
-        attrs["reason"] = reason or "unknown"
-        logger.warning("OTLP exporter configured but INACTIVE", extra={"attrs": attrs})
+        attrs["reason"] = inactive_reason or "unknown"
+        logger.warning("OTLP exporter inactive", extra={"attrs": attrs})
+
+
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Public API                                                                  │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 
 
 def get_tracer(component: str, version: str = "1.0.0"):
     """
-    Canonical tracer (stable naming 'quantum.<component>').
-    Ex: get_tracer("infra.execution.mt5")
+    Return a canonical tracer for the given component.
+    Example: get_tracer("infra.execution.mt5")
     """
     return _trace.get_tracer(f"quantum.{component}", version)

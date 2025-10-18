@@ -31,6 +31,22 @@ class TelemetrySettings(BaseModel):
         True, description="Allow insecure (non-TLS) OTLP connections."
     )
 
+    @field_validator("quantum_trace_otlp_protocol", mode="before")
+    @classmethod
+    def normalize_protocol(cls, v):
+        if not v:
+            return "http"
+        v = str(v).strip().lower()
+        if v not in ("http", "grpc"):
+            # Instead of failing hard, fallback gracefully
+            import logging
+
+            logging.getLogger(__name__).warning(
+                f"Unsupported OTLP protocol '{v}', defaulting to 'http'."
+            )
+            return "http"
+        return v
+
     @field_validator("quantum_trace_otlp_protocol")
     @classmethod
     def validate_protocol(cls, v: str) -> str:
