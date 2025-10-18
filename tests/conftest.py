@@ -228,11 +228,6 @@ def obs_session(tmp_workspace):
     )
 
     with observability_session(
-        app_name=os.environ.get("QUANTUM_APP_NAME", "test_app"),
-        environment=os.environ.get("QUANTUM_ENV", "test"),
-        namespace=os.environ.get("QUANTUM_NS", "quantum"),
-        log_level=os.environ.get("QUANTUM_LOG_LEVEL", "INFO"),
-        sample_ratio=float(os.environ.get("QUANTUM_TRACE_SAMPLE", "1.0")),
         force=True,
     ):
         yield

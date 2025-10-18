@@ -48,7 +48,6 @@ except ImportError:
 
 
 logger = logging.getLogger(__name__)
-
 _ATEXIT_REGISTERED: bool = False
 
 

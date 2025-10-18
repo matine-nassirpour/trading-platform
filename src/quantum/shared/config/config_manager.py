@@ -239,6 +239,11 @@ class Settings(BaseSettings):
 class ConfigManager:
     """Thread-safe facade for configuration management."""
 
+    @staticmethod
+    def _normalize_env(env: Mapping[str, str] | None = None) -> dict[str, str]:
+        """Normalize environment keys to lowercase for Pydantic BaseModel compatibility."""
+        return {k.lower(): v for k, v in (env or os.environ).items()}
+
     # ─── Core runtime
     @staticmethod
     @lru_cache
@@ -266,12 +271,12 @@ class ConfigManager:
     def load_observability(
         env: Mapping[str, str] | None = None,
     ) -> ObservabilitySettings:
-        return ObservabilitySettings(**(env or os.environ))
+        return ObservabilitySettings(**ConfigManager._normalize_env(env))
 
     @staticmethod
     @lru_cache
     def load_telemetry(env: Mapping[str, str] | None = None) -> TelemetrySettings:
-        return TelemetrySettings(**(env or os.environ))
+        return TelemetrySettings(**ConfigManager._normalize_env(env))
 
     # ─── Cache management
     @staticmethod

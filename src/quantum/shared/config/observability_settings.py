@@ -9,8 +9,6 @@ clean architectural separation and allow flexible evolution of telemetry pipelin
 
 from __future__ import annotations
 
-from pathlib import Path
-
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
@@ -52,12 +50,12 @@ class ObservabilitySettings(BaseModel):
     quantum_log_deep_probe: bool = Field(
         False, description="Enable deep internal logging for diagnostic inspection."
     )
-    quantum_log_dir: Path | None = Field(
+    quantum_log_dir: str | None = Field(
         None, description="Base directory for partitioned JSONL logs."
     )
 
     # ─── Audit
-    quantum_audit_dir: Path | None = Field(
+    quantum_audit_dir: str | None = Field(
         None, description="Directory for audit event JSONL files."
     )
     quantum_audit_events: str | None = Field(

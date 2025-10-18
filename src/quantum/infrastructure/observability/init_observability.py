@@ -3,12 +3,10 @@ import os
 import threading
 from contextlib import contextmanager, suppress
 from pathlib import Path
-from typing import Literal
 
 from prometheus_client import start_http_server
 
 from quantum.infrastructure.observability.logging.logs import (
-    LoggingConfig,
     close_and_remove_all_handlers,
     init_logging,
 )
@@ -30,8 +28,8 @@ from quantum.infrastructure.observability.tracing.traces import (
     TracingConfig,
     init_tracing,
 )
-from quantum.shared.config.config_manager import ConfigManager
-from quantum.shared.config.env_flags import get_bool
+from quantum.shared.config.config_manager import ConfigManager, Settings
+from quantum.shared.config.observability_settings import ObservabilitySettings
 from quantum.shared.context.run_id import generate_run_id, get_run_id
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -40,7 +38,6 @@ from quantum.shared.context.run_id import generate_run_id, get_run_id
 
 _initialized = False
 _init_lock = threading.Lock()
-_metrics_httpd_started = False
 _tracer_provider_ref: object | None = None
 
 logger = logging.getLogger(__name__)
@@ -51,10 +48,7 @@ logger = logging.getLogger(__name__)
 
 
 def _iter_persistent_handlers() -> list[logging.Handler]:
-    """
-    Return all logging handlers that expose a 'base_dir' attribute,
-    i.e. persistent sinks (partitioned JSONL or audit sinks).
-    """
+    """Return all logging handlers with a 'base_dir' (persistent sinks)."""
     handlers: list[logging.Handler] = []
     root = logging.getLogger()
     handlers.extend([h for h in root.handlers if getattr(h, "base_dir", None)])
@@ -63,17 +57,16 @@ def _iter_persistent_handlers() -> list[logging.Handler]:
     return handlers
 
 
-def _probe_path_writable(base_dir: str | os.PathLike[str]) -> bool:
-    """
-    Checks that a directory is writable. If QUANTUM_LOG_DEEP_PROBE=1,
-    attempts a minimal write/read and cleanup.
-    """
+def _probe_path_writable(
+    base_dir: str | os.PathLike[str], deep_probe: bool = False
+) -> bool:
+    """Check directory writability; optionally perform deep write probe."""
     try:
         os.makedirs(base_dir, exist_ok=True)
         if not os.access(base_dir, os.W_OK):
             return False
 
-        if get_bool("QUANTUM_LOG_DEEP_PROBE", default=False):
+        if deep_probe:
             base = Path(base_dir)
             probe = base / "__probe__/yyyy/mm/dd/hh"
             probe.mkdir(parents=True, exist_ok=True)
@@ -88,27 +81,20 @@ def _probe_path_writable(base_dir: str | os.PathLike[str]) -> bool:
         return False
 
 
-def _probe_logging_sinks() -> bool:
-    """
-    Return True if at least one persistent sink is writable.
-    Return False if no persistent sink is configured or writable.
-    """
+def _probe_logging_sinks(deep_probe: bool = False) -> bool:
+    """Return True if at least one persistent sink is writable."""
     persistent_handlers = _iter_persistent_handlers()
     if not persistent_handlers:
         return False
-
-    any_writable = False
-    for h in persistent_handlers:
-        base_dir = getattr(h, "base_dir", None)
-        if not base_dir:
-            continue
-        if _probe_path_writable(base_dir):
-            any_writable = True
-    return any_writable
+    return any(
+        _probe_path_writable(getattr(h, "base_dir", ""), deep_probe=deep_probe)
+        for h in persistent_handlers
+        if getattr(h, "base_dir", None)
+    )
 
 
 def _shutdown_tracing_if_any() -> None:
-    """Best effort shutdown of previous tracer provider (if any)."""
+    """Best-effort shutdown of previous tracer provider."""
     global _tracer_provider_ref
     tp = _tracer_provider_ref
     if tp is None:
@@ -128,22 +114,19 @@ def _shutdown_tracing_if_any() -> None:
 
 
 def _init_tracing(
-    app_name: str,
-    env: str,
-    ns: str,
-    exporter: Literal["otlp", "console", "none"],
+    settings: Settings,
     force: bool,
-    sample_ratio: float | None,
 ) -> bool:
+    """Initialize OpenTelemetry tracing subsystem."""
     try:
         _shutdown_tracing_if_any()
         tp = init_tracing(
             TracingConfig(
-                service_name=app_name,
-                environment=env,
-                namespace=ns,
-                exporter=exporter,
-                sample_ratio=sample_ratio,
+                service_name=settings.quantum_app_name,
+                environment=settings.quantum_env,
+                namespace=settings.quantum_ns,
+                exporter=settings.quantum_trace_exporter,
+                sample_ratio=settings.quantum_trace_sample,
             ),
             replace_existing=force,
         )
@@ -160,9 +143,9 @@ def _init_tracing(
         try:
             tp = init_tracing(
                 TracingConfig(
-                    service_name=app_name,
-                    environment=env,
-                    namespace=ns,
+                    service_name=settings.quantum_app_name,
+                    environment=settings.quantum_env,
+                    namespace=settings.quantum_ns,
                     exporter="none",
                     sample_ratio=0.0,
                 )
@@ -181,26 +164,21 @@ def _init_tracing(
             return False
 
 
-def _init_logging(
-    app_name: str, env: str, ns: str, log_lvl: str, app_version: str
+def _init_logging_safe(
+    settings: Settings, observability: ObservabilitySettings
 ) -> bool:
+    """Wrapper for logging initialization (safe)."""
     try:
-        init_logging(
-            LoggingConfig(
-                app_name=app_name,
-                environment=env,
-                namespace=ns,
-                log_level=log_lvl,
-                app_version=app_version,
-            )
-        )
+        init_logging(settings, observability)
         return True
     except Exception as e:
         logger.exception(f"Logging initialization failed: {e}")
         return False
 
 
-def _init_metrics(port: int, addr: str) -> bool:
+def _init_metrics(settings: Settings) -> bool:
+    port = settings.quantum_metrics_port
+    addr = settings.quantum_metrics_addr
     if port > 0:
         try:
             start_http_server(port, addr=addr)
@@ -221,35 +199,36 @@ def _init_metrics(port: int, addr: str) -> bool:
 
 
 def init_observability(
-    app_name: str | None = None,
-    environment: str | None = None,
-    namespace: str | None = None,
-    log_level: str | None = None,
-    sample_ratio: float | None = None,
-    *,
     force: bool = False,
 ) -> None:
-    """Idempotent + thread-safe observability bootstrap."""
+    """
+    Idempotent and thread-safe bootstrap for observability.
+    Initializes tracing, logging, and metrics with validated config.
+    """
     global _initialized
 
     if force:
         with suppress(AttributeError):
             ConfigManager.clear_caches()
 
-    settings = ConfigManager.load()
-    obs_settings = ConfigManager.load_observability()
-
     with _init_lock:
+        settings = ConfigManager.load()
+        obs_settings = ConfigManager.load_observability()
+
         if _initialized and not force:
             return
 
         # Reset health gauges
-        pipeline_up.set(0)
-        otel_tracing_up.set(0)
-        logging_sink_up.set(0)
-        pipeline_logging_ok.set(0)
-        pipeline_tracing_ok.set(0)
-        pipeline_metrics_http_ok.set(0)
+        for g in (
+            pipeline_up,
+            otel_tracing_up,
+            logging_sink_up,
+            pipeline_logging_ok,
+            pipeline_tracing_ok,
+            pipeline_metrics_http_ok,
+        ):
+            with suppress(Exception):
+                g.set(0)
 
         with suppress(Exception):
             refresh_build_info_from_env()
@@ -257,44 +236,28 @@ def init_observability(
         if not get_run_id():
             generate_run_id()
 
-        app_name = app_name or settings.quantum_app_name
-        environment = environment or settings.quantum_env
-        namespace = namespace or settings.quantum_ns
-        log_level = log_level or obs_settings.quantum_log_level
-        sample_ratio = (
-            settings.quantum_trace_sample if sample_ratio is None else sample_ratio
-        )
-        app_version = settings.quantum_app_version
-
-        if force:
-            close_and_remove_all_handlers(logging.getLogger())
-
-        # ─── Tracing - must be first
-        exporter: Literal["otlp", "console", "none"] = settings.quantum_trace_exporter
-        tracing_ok = _init_tracing(
-            app_name, environment, namespace, exporter, force, sample_ratio
-        )
+        # ─── Initialize tracing
+        tracing_ok = _init_tracing(settings, force)
         pipeline_tracing_ok.set(1 if tracing_ok else 0)
 
-        # ─── Logging - must come after tracing
-        logging_ok = _init_logging(
-            app_name, environment, namespace, log_level, app_version
-        )
+        # ─── Initialize logging
+        if force:
+            close_and_remove_all_handlers(logging.getLogger())
+        logging_ok = _init_logging_safe(settings, obs_settings)
         pipeline_logging_ok.set(1 if logging_ok else 0)
 
-        # Persistent sinks up? (partition and/or audit)
+        # ─── Probe sinks
         try:
-            sinks_ok = _probe_logging_sinks()
+            sinks_ok = _probe_logging_sinks(
+                deep_probe=obs_settings.quantum_log_deep_probe
+            )
         except Exception as e:
             logger.warning(f"Logging sinks probe failed: {e}")
             sinks_ok = False
-
         logging_sink_up.set(1 if sinks_ok else 0)
 
-        # ─── Metrics HTTP endpoint
-        port = settings.quantum_metrics_port
-        addr = settings.quantum_metrics_addr
-        _init_metrics(port, addr)
+        # ─── Initialize metrics
+        _init_metrics(settings)
 
         ok = logging_ok and tracing_ok
         pipeline_up.set(1 if ok else 0)
@@ -308,9 +271,7 @@ def shutdown_observability(
     reset_state: bool = True,
     set_gauges_down: bool = False,
 ) -> None:
-    """
-    Clean and idempotent shutdown of observability components.
-    """
+    """Clean and idempotent shutdown of observability components."""
     global _initialized
 
     if shutdown_tracing:
@@ -339,24 +300,9 @@ def shutdown_observability(
 
 
 @contextmanager
-def observability_session(
-    app_name: str | None = None,
-    environment: str | None = None,
-    namespace: str | None = None,
-    log_level: str | None = None,
-    sample_ratio: float | None = None,
-    *,
-    force: bool = False,
-):
-    """Context manager to automatically init and teardown observability."""
-    init_observability(
-        app_name=app_name,
-        environment=environment,
-        namespace=namespace,
-        log_level=log_level,
-        sample_ratio=sample_ratio,
-        force=force,
-    )
+def observability_session(*, force: bool = False):
+    """Context manager for automatic observability setup/teardown."""
+    init_observability(force=force)
     try:
         yield
     finally:
