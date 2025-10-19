@@ -23,9 +23,9 @@ from quantum.shared.correlation.correlation_id import (
 _PROCESS_BAGGAGE_TOKEN: Token[OTelContext] | None = None
 T = TypeVar("T")
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Propagators (process-wide)
-# ──────────────────────────────────────────────────────────────────────────────
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Propagators (process-wide)                                                  │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 
 
 def setup_propagation() -> None:
@@ -109,10 +109,10 @@ def baggage_context_from_ids():
         otel_context.detach(token)
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Explicit multi-thread context propagation
-# (No implicit inheritance across threads — contract made explicit)
-# ──────────────────────────────────────────────────────────────────────────────
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Explicit multi-thread context propagation                                   │
+# │ (No implicit inheritance across threads — contract made explicit)           │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 
 
 @dataclass(frozen=True)

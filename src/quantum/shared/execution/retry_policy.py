@@ -1,15 +1,47 @@
+"""
+Retry Policy — Pure Decision Logic
+──────────────────────────────────────────────────────────────────────────────
+Encapsulates the logic for deciding if an operation should be retried.
+"""
+
+from __future__ import annotations
+
+import asyncio
+from typing import Any, Protocol
+
 from quantum.shared.types.execution import ExecutionCode
+from quantum.shared.types.execution_result import ExecutionResult
 
 
-def should_retry(code: ExecutionCode) -> bool:
+class RetryPolicy(Protocol):
+    """Interface defining a retry decision engine."""
+
+    def should_retry(self, result: Any | None, exc: Exception | None) -> bool: ...
+
+
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Default Implementation                                                      │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
+
+
+class DefaultRetryPolicy:
     """
-    Determines whether an operation should be retried based on its execution code.
-
-    This function is shared between application and infrastructure layers.
-    It encapsulates retry semantics (idempotent, transient-safe operations).
+    Default retry strategy for execution and network layers.
+    - Retries only on transient or recoverable errors.
+    - Ignores deterministic business errors.
     """
-    return code in {
-        ExecutionCode.INTERNAL_FAIL,
+
+    RETRIABLE_EXCEPTIONS = (TimeoutError, ConnectionError, asyncio.TimeoutError)
+    RETRIABLE_CODES = {
         ExecutionCode.INTERNAL_FAIL_TIMEOUT,
-        ExecutionCode.INTERNAL_FAIL_CONNECT,
+        ExecutionCode.SERVER_BUSY,
+        ExecutionCode.TRADE_TIMEOUT,
+        ExecutionCode.NO_CONNECTION,
     }
+
+    def should_retry(self, result: Any | None, exc: Exception | None) -> bool:
+        if exc:
+            return isinstance(exc, self.RETRIABLE_EXCEPTIONS)
+        if isinstance(result, ExecutionResult):
+            return result.code in self.RETRIABLE_CODES
+        return False

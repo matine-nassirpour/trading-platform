@@ -1,186 +1,126 @@
-from collections.abc import Iterable
-from dataclasses import dataclass
+from __future__ import annotations
 
-from pydantic import BaseModel
+import logging
+import threading
+from typing import Any, TypeVar, final
 
-from quantum.domain.events.base import BaseEvent
+logger = logging.getLogger(__name__)
 
-# Key → Pydantic class (event)
-REGISTRY: dict[str, type[BaseModel]] = {}
+T = TypeVar("T")
 
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Explicit exceptions
-# ──────────────────────────────────────────────────────────────────────────────
-
-
-class UnknownSchemaKeyError(KeyError):
-    """The schema key is not known to the registry."""
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Thread-safe registry for event schemas                                      │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 
 
-class SchemaDecodeError(ValueError):
-    """Decoding payload to model failed."""
-
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Register
-# ──────────────────────────────────────────────────────────────────────────────
-
-
-def schema_key(cls: type[BaseModel]) -> str:
+@final
+class EventSchemaRegistry:
     """
-    Builds the canonical key from the class metadata.
-    Example: event_name="trading.order_fill", schema_version=2
-    -> "trading.order_fill.v2"
+    Thread-safe, immutable-on-read registry for event classes.
+
+    This ensures safe concurrent access when multiple modules
+    register events during runtime initialization.
+
+    Implements:
+      - Write access protected by RLock
+      - Snapshot immutability for readers
+      - Introspectable schema map
     """
-    try:
-        name = cls.event_name  # type: ignore[attr-defined]
-        ver = cls.schema_version  # type: ignore[attr-defined]
-    except Exception as e:  # pragma: no cover
-        raise ValueError(
-            f"Class {cls} must define 'event_name' and 'schema_version'"
-        ) from e
-    return f"{name}.v{ver}"
+
+    def __init__(self) -> None:
+        self._lock = threading.RLock()
+        self._registry: dict[str, type[Any]] = {}
+
+    # ─── Registration
+    def register(self, event_cls: type[Any]) -> type[Any]:
+        """Registers a new event class in a thread-safe manner."""
+        name = getattr(event_cls, "event_name", None)
+        version = getattr(event_cls, "schema_version", None)
+
+        if not name:
+            raise ValueError(f"Event class {event_cls.__name__} missing 'event_name'")
+        if not isinstance(version, int):
+            raise ValueError(
+                f"Event class {event_cls.__name__} missing valid schema_version"
+            )
+
+        key = f"{name}.v{version}"
+
+        with self._lock:
+            if key in self._registry:
+                existing = self._registry[key]
+                if existing is not event_cls:
+                    logger.warning(
+                        f"Schema registry conflict for key '{key}': "
+                        f"{existing.__name__} already registered, ignoring duplicate {event_cls.__name__}"
+                    )
+                    return existing
+            self._registry[key] = event_cls
+            logger.debug(f"Registered event schema: {key}")
+            return event_cls
+
+    # ─── Lookup
+    def get(self, key: str) -> type[Any] | None:
+        """Thread-safe lookup of an event schema by key."""
+        with self._lock:
+            return self._registry.get(key)
+
+    def get_all(self) -> dict[str, type[Any]]:
+        """Returns a snapshot copy of all registered event schemas."""
+        with self._lock:
+            return dict(self._registry)
+
+    # ─── Introspection
+    def __contains__(self, key: str) -> bool:
+        with self._lock:
+            return key in self._registry
+
+    def __len__(self) -> int:
+        with self._lock:
+            return len(self._registry)
+
+    def __repr__(self) -> str:
+        with self._lock:
+            keys = ", ".join(sorted(self._registry.keys()))
+            return f"<EventSchemaRegistry keys=[{keys}]>"
 
 
-def register(model: type[BaseModel]) -> None:
-    """Explicitly registers an event class in the registry."""
-    REGISTRY[schema_key(model)] = model
+# ─── Global instance (safe singleton)
+REGISTRY = EventSchemaRegistry()
 
 
-def register_event(model: type[BaseEvent]) -> type[BaseEvent]:
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Decorator API                                                               │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
+
+
+def register_event(cls: type[T]) -> type[T]:
     """
-    Self-registration decorator.
+    Decorator used to register an event class.
 
     Example:
+    --------
         @register_event
-        class MyEvent(BaseEvent): ...
+        class OrderSubmitEvent(BaseEvent):
+            event_name = "trading.order_submit"
+            schema_version = 1
+            ...
     """
-    register(model)
-    return model
+    REGISTRY.register(cls)
+    return cls
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Key Helpers
-# ──────────────────────────────────────────────────────────────────────────────
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Helper functions for lookup                                                 │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 
 
-@dataclass(frozen=True)
-class ParsedKey:
-    namespace: str
-    event: str
-    version: int
-
-    @property
-    def base(self) -> str:
-        return f"{self.namespace}.{self.event}"
+def resolve_event_schema(event_name: str, version: int = 1) -> type[Any] | None:
+    """Resolves an event schema by name and version."""
+    key = f"{event_name}.v{version}"
+    return REGISTRY.get(key)
 
 
-def _parse_key(key: str) -> ParsedKey:
-    """
-    Parse "ns.event.vN" → (namespace='ns', event='event', version=N).
-    The 'event' can contain periods (e.g., 'order_fill'); the version is
-    searched for at the end in the form '.v<digits>'.
-    """
-    if ".v" not in key:
-        raise UnknownSchemaKeyError(f"Invalid schema key (missing .v<version>): {key}")
-    base, v = key.rsplit(".v", 1)
-    if "." not in base:
-        raise UnknownSchemaKeyError(f"Invalid schema key (missing namespace): {key}")
-    if not v.isdigit():
-        raise UnknownSchemaKeyError(f"Invalid schema version in key: {key}")
-    namespace, event = base.split(".", 1)
-    return ParsedKey(namespace=namespace, event=event, version=int(v))
-
-
-def _iter_versions_for_base(base: str) -> Iterable[tuple[int, str]]:
-    """
-    Returns the (version, key) values available in the registry for a given 'base',
-    sorted by descending version.
-    """
-    prefix = f"{base}.v"
-    candidates = []
-    for k in REGISTRY.keys():
-        if k.startswith(prefix):
-            try:
-                pk = _parse_key(k)
-                candidates.append((pk.version, k))
-            except Exception:
-                # ignore invalid keys
-                continue
-    return sorted(candidates, key=lambda x: x[0], reverse=True)
-
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Encoding / Decoding
-# ──────────────────────────────────────────────────────────────────────────────
-
-
-def event_key(event: BaseEvent) -> str:
-    """Schema key for an event instance."""
-    return schema_key(event.__class__)
-
-
-def encode_event(event: BaseEvent) -> dict:
-    """
-    Legacy encoding path: Returns only the JSON payload.
-    Kept for backward compatibility.
-    """
-    return event.model_dump(by_alias=True)
-
-
-def decode_event(key: str, payload: dict, *, allow_downgrade: bool = True) -> BaseEvent:
-    """
-    Decoding path with explicit key.
-      - Attempts the exact version.
-      - If allow_downgrade=True and key unknown, attempts the closest lower version
-    for the *same event* (same namespace+event), otherwise raises UnknownSchemaKeyError.
-    """
-    try:
-        model = REGISTRY[key]
-        return model(**payload)  # type: ignore[call-arg]
-    except KeyError:
-        # Attempt version fallback if allowed
-        if not allow_downgrade:
-            raise UnknownSchemaKeyError(f"Unknown schema key: {key}") from None
-        try:
-            pk = _parse_key(key)
-        except UnknownSchemaKeyError:
-            raise
-        # Browses available versions of the same event (desc)
-        for ver, alt_key in _iter_versions_for_base(pk.base):
-            if ver < pk.version:
-                try:
-                    model = REGISTRY[alt_key]
-                    return model(**payload)  # type: ignore[call-arg]
-                except Exception as e:
-                    raise SchemaDecodeError(
-                        f"decode failed for fallback {alt_key}: {e}"
-                    ) from e
-        raise UnknownSchemaKeyError(
-            f"No compatible schema found for base '{pk.base}' < v{pk.version}"
-        ) from None
-    except Exception as e:
-        raise SchemaDecodeError(f"decode failed for {key}: {e}") from e
-
-
-def encode_enveloped(event: BaseEvent) -> dict:
-    """
-    Recommended encoding path: Returns a {key, payload} envelope.
-    """
-    return {
-        "key": event_key(event),
-        "payload": event.model_dump(by_alias=True),
-    }
-
-
-def decode_enveloped(envelope: dict, *, allow_downgrade: bool = True) -> BaseEvent:
-    """
-    Decoding an envelope {key, payload}.
-    """
-    try:
-        key = envelope["key"]
-        payload = envelope["payload"]
-    except Exception as e:
-        raise SchemaDecodeError(f"invalid envelope (missing key/payload): {e}") from e
-    return decode_event(key, payload, allow_downgrade=allow_downgrade)
+def list_registered_events() -> list[str]:
+    """Returns the list of registered event keys."""
+    return sorted(REGISTRY.get_all().keys())

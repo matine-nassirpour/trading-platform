@@ -7,28 +7,38 @@ class App(StrEnum):
     STREAMLIT_UI = "streamlit_ui"
 
 
-class Side(StrEnum):
-    BUY = "buy"
-    SELL = "sell"
-
-
-class PositionSide(StrEnum):
-    LONG = "long"
-    SHORT = "short"
-    FLAT = "flat"
+class TradeAction(StrEnum):
+    DEAL = "deal"
+    PENDING = "pending"
+    SLTP = "sltp"
+    MODIFY = "modify"
+    REMOVE = "remove"
+    CLOSE_BY = "close_by"  # Close a position by an opposite one
 
 
 class OrderType(StrEnum):
-    MARKET = "market"
-    LIMIT = "limit"
-    STOP = "stop"
-    STOP_LIMIT = "stop_limit"
+    BUY = "buy"
+    SELL = "sell"
+    BUY_LIMIT = "buy_limit"
+    SELL_LIMIT = "sell_limit"
+    BUY_STOP = "buy_stop"
+    SELL_STOP = "sell_stop"
+    BUY_STOP_LIMIT = "buy_stop_limit"
+    SELL_STOP_LIMIT = "sell_stop_limit"
+    CLOSE_BY = "close_by"  # Order for closing a position by an opposite one
+
+
+class OrderFillingType(StrEnum):
+    FOK = "fok"
+    IOC = "ioc"
+    RETURN = "return"
 
 
 class TimeInForce(StrEnum):
-    IOC = "ioc"
-    FOK = "fok"
     GTC = "gtc"
+    DAY = "day"
+    SPECIFIED = "specified"
+    SPECIFIED_DAY = "specified_day"
 
 
 class KillSwitchReason(StrEnum):

@@ -3,15 +3,17 @@ from typing import ClassVar
 from pydantic import computed_field, field_validator
 
 from quantum.domain.events.base import BaseEvent
-from quantum.domain.types.enums import App, LatencyPhase
-from quantum.shared.types.time import EpochMs
+from quantum.shared.serialization.schema_registry import register_event
+from quantum.shared.types.enums import App, LatencyPhase
+from quantum.shared.types.value_objects import EpochMs, Symbol
 
 
+@register_event
 class LatencyProbeEvent(BaseEvent):
     event_name: ClassVar[str] = "trading.latency_probe"
     app: App
     phase: LatencyPhase
-    symbol: str
+    symbol: Symbol
     start_epoch_ms: EpochMs
     end_epoch_ms: EpochMs
 

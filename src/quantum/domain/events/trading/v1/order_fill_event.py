@@ -4,9 +4,15 @@ from typing import ClassVar
 from pydantic import Field, field_validator
 
 from quantum.domain.events.base import BaseEvent
-from quantum.domain.types.enums import App, DealEntry, DealReason
 from quantum.shared.types.decimal_validators import NonNegativeDecimal, PositiveDecimal
-from quantum.shared.types.time import EpochMs
+from quantum.shared.types.enums import App, DealEntry, DealReason
+from quantum.shared.types.value_objects import (
+    DealId,
+    EpochMs,
+    IntentId,
+    OrderId,
+    Symbol,
+)
 
 
 class OrderFillEvent(BaseEvent):
@@ -14,10 +20,10 @@ class OrderFillEvent(BaseEvent):
     app: App = App.EA_MQL5
 
     # IDs
-    intent_id: str
-    order_id: int
-    deal_id: int
-    symbol: str
+    intent_id: IntentId
+    order_id: OrderId
+    deal_id: DealId
+    symbol: Symbol
 
     # Current Fill
     price: PositiveDecimal = Field(..., description="Deal price (> 0)")
@@ -48,19 +54,6 @@ class OrderFillEvent(BaseEvent):
         vol: Decimal | None = info.data.get("volume")
         if vol is not None and v < vol:
             raise ValueError("cum_volume must be >= volume of this fill")
-        return v
-
-    @field_validator("avg_price")
-    @classmethod
-    def _avg_price_if_cum_positive(cls, v: Decimal | None, info):
-        """
-        avg_price must be present and > 0 iff cum_volume > 0.
-        (In practice, cum_volume is always > 0 for a valid fill.)
-        """
-        cum_v: Decimal | None = info.data.get("cum_volume")
-        if cum_v is not None and cum_v > 0:
-            if v is None or v <= 0:
-                raise ValueError("avg_price must be > 0 when cum_volume > 0")
         return v
 
     @field_validator("leaves_volume")

@@ -15,9 +15,6 @@ from tests.support.factories import make_record
 from tests.support.time_utils import to_timestamp
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Tests
-# ──────────────────────────────────────────────────────────────────────────────
 @pytest.mark.usefixtures("iso_env", "clean_registry")
 class TestAuditEventFileHandler:
     def test_writes_single_json_event_atomically(self, tmp_path: Path):

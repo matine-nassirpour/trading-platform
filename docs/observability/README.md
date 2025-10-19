@@ -260,13 +260,7 @@ Idempotent & thread-safe (`_init_lock`). `force=True` cleans existing root handl
 from quantum.infrastructure.observability.init_observability import init_observability
 
 def init_cli() -> None:
-    init_observability(
-        app_name="python_core",
-        environment="dev",
-        namespace="quantum",
-        log_level="INFO",
-        sample_ratio=1.0,
-    )
+    init_observability()
 ```
 
 `apps/cli/main.py` (simplified):
@@ -274,13 +268,7 @@ def init_cli() -> None:
 from quantum.infrastructure.observability.init_observability import init_observability
 
 def init_cli() -> None:
-    init_observability(
-        app_name="python_core",
-        environment="dev",
-        namespace="quantum",
-        log_level="INFO",
-        sample_ratio=1.0,
-    )
+    init_observability()
 ```
 
 Run:
@@ -296,14 +284,7 @@ import os
 from quantum.infrastructure.observability.init_observability import init_observability
 
 def init_streamlit() -> None:
-    os.environ.setdefault("QUANTUM_METRICS_PORT", "0")  # UI disables HTTP /metrics by default
-
-    init_observability(
-        app_name="streamlit_ui",
-        environment=os.getenv("QUANTUM_ENV", "dev"),
-        namespace=os.getenv("QUANTUM_NS", "quantum"),
-        log_level=os.getenv("QUANTUM_LOG_LEVEL", "INFO"),
-    )
+    init_observability()
 ```
 
 `apps/streamlit/app.py:`
@@ -312,9 +293,9 @@ import streamlit as st
 
 from apps.streamlit.bootstrap import init_streamlit
 from apps.streamlit.lib.obs import PageTimer, ui_action
-from quantum.shared.config.env_loader import load_env
+from quantum.shared.config.config_manager import ConfigManager
 
-load_env()
+ConfigManager.load()
 st.set_page_config()
 init_streamlit()
 

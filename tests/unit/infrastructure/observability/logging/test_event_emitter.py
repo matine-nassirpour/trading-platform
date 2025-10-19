@@ -11,9 +11,9 @@ from quantum.shared.correlation.correlation_id import correlation_context
 from tests.support.logging_utils import capture_logger
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Helpers
-# ──────────────────────────────────────────────────────────────────────────────
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Helpers                                                                     │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 def _is_uuid(s: str | None) -> bool:
     """Return True iff `s` is a valid UUID string."""
     if not s:
@@ -25,9 +25,9 @@ def _is_uuid(s: str | None) -> bool:
         return False
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Tests
-# ──────────────────────────────────────────────────────────────────────────────
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Tests                                                                       │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 def test_emit_event_injects_ids_and_uses_default_level_info(monkeypatch):
     """
     Given run_id and correlation_id are set in ContextVars

@@ -10,7 +10,8 @@ from quantum.infrastructure.observability.logging._io_utils import (
     fsync_dir,
     inc_disk_error_counter,
 )
-from quantum.shared.config.env_flags import get_bool
+from quantum.shared.config.config_manager import Settings
+from quantum.shared.config.observability_settings import ObservabilitySettings
 from quantum.shared.time.naming import partition_path_components
 
 try:
@@ -23,48 +24,58 @@ except (ModuleNotFoundError, ImportError):
 
 class PartitionedJSONLFileHandler(logging.Handler):
     """
-    Writes JSON logs to partitioned JSONL files:
-    <base>/<env>/<namespace>/<app>/<YYYY>/<MM>/<DD>/<HH>/events-YYYYMMDD-HH[.partN].jsonl
-    Quarantines malformed lines: .../bad-logs-YYYYMMDD-HH[.partN].jsonl
-    Optional fsync per write with QUANTUM_LOG_FSYNC=1
-    Optional rollover by size with QUANTUM_LOG_MAX_BYTES
-    Thread-safe via Handler lock.
+    Writes JSON logs to partitioned JSONL files.
+
+    Path pattern:
+        <base>/<env>/<namespace>/<app>/<YYYY>/<MM>/<DD>/<HH>/events-YYYYMMDD-HH[.partN].jsonl
+
+    Malformed entries are quarantined to:
+        bad-logs-YYYYMMDD-HH[.partN].jsonl
+
+    Features:
+        - Optional fsync per write.
+        - Optional size-based rollover with warning threshold.
+        - Thread-safe (Handler lock).
+        - Fully decoupled from environment variables.
     """
 
     def __init__(
         self,
-        base_dir: str,
-        app: str,
-        environment: str,
-        namespace: str,
+        settings: Settings,
+        observability: ObservabilitySettings,
+        *,
         encoding: str = "utf-8",
     ) -> None:
         super().__init__()
-        self.base_dir = Path(base_dir)
-        self.app = app
-        self.environment = environment
-        self.namespace = namespace
-        self.encoding = encoding
+        self._settings = settings
+        self._cfg = observability
+        self._encoding = encoding
+
+        base_dir = observability.quantum_log_dir or "./logs"
+        self._base_dir = Path(base_dir)
 
         self._current_path: Path | None = None
         self._bad_path: Path | None = None
         self._fh: io.TextIOWrapper | None = None
         self._bad_fh: io.TextIOWrapper | None = None
-        self._fsync = get_bool("QUANTUM_LOG_FSYNC", default=False)
 
-        # Rollover config
-        try:
-            self._max_bytes = int(os.getenv("QUANTUM_LOG_MAX_BYTES", "0") or "0")
-        except (TypeError, ValueError):
-            self._max_bytes = 0
-        try:
-            self._warn_bytes = int(os.getenv("QUANTUM_LOG_WARN_BYTES", "0") or "0")
-        except (TypeError, ValueError):
-            self._warn_bytes = 0
+        self._fsync = observability.quantum_log_fsync
+        self._max_bytes = observability.quantum_log_max_bytes
+        self._warn_bytes = observability.quantum_log_warn_bytes or 0
 
-        self._part_index: int = 0  # Part index within the same hour
-        self._warned_this_part: bool = False
+        self._part_index = 0
+        self._warned_this_part = False
 
+    @property
+    def base_dir(self) -> Path:
+        """
+        Return the base directory of this handler for health/probe inspection.
+        Exposed explicitly to allow external components (like observability probes)
+        to assess writability and persistence status in a decoupled manner.
+        """
+        return self._base_dir
+
+    # ─── Core API
     def emit(self, record: logging.LogRecord) -> None:
         self.acquire()
         try:
@@ -73,16 +84,16 @@ class PartitionedJSONLFileHandler(logging.Handler):
                 dt = datetime.fromtimestamp(record.created, tz=timezone.utc)
                 yyyy, mm, dd, hh = partition_path_components(dt)
                 dir_path = (
-                    self.base_dir
-                    / self.environment
-                    / self.namespace
-                    / self.app
+                    self._base_dir
+                    / self._settings.quantum_env
+                    / self._settings.quantum_ns
+                    / self._settings.quantum_app_name
                     / yyyy
                     / mm
                     / dd
                     / hh
                 )
-                # build target paths for current part index
+
                 file_path = dir_path / self._events_filename(
                     yyyy, mm, dd, hh, self._part_index
                 )
@@ -90,7 +101,7 @@ class PartitionedJSONLFileHandler(logging.Handler):
                     yyyy, mm, dd, hh, self._part_index
                 )
 
-                # hour changed? reset part index to 0
+                # detect partition (hourly) change
                 if self._current_path is None or self._current_path.parent != dir_path:
                     self._part_index = 0
                     file_path = dir_path / self._events_filename(
@@ -102,119 +113,113 @@ class PartitionedJSONLFileHandler(logging.Handler):
 
                 if file_path != self._current_path:
                     self._reopen(file_path, bad_path)
-            except (OSError, ValueError):
+
+            except Exception:
                 inc_disk_error_counter()
                 self.handleError(record)
                 return
 
-            # 2) Write
+            # 2) Write formatted JSON line
             try:
                 msg = self.format(record)
                 assert self._fh is not None
                 self._fh.write(msg + "\n")
-                if self._fsync:
-                    self._fh.flush()
-                    os.fsync(self._fh.fileno())
-                else:
-                    self._fh.flush()
-            except (OSError, ValueError, TypeError) as e:
-                # quarantine
-                try:
-                    assert self._bad_fh is not None
-                    safe = {
-                        "error": "formatting_failed",
-                        "reason": str(e),
-                        "logger": getattr(record, "name", "?"),
-                        "level": getattr(record, "levelname", "?"),
-                        "created": getattr(record, "created", 0),
-                        "raw_message": None,
-                    }
-                    try:
-                        safe["raw_message"] = record.getMessage()
-                    except (TypeError, ValueError):
-                        safe["raw_message"] = None
+                self._flush(self._fh)
+            except Exception as e:
+                self._write_quarantine(record, e)
 
-                    self._bad_fh.write(
-                        json.dumps(safe, ensure_ascii=False, separators=(",", ":"))
-                        + "\n"
-                    )
-                    if self._fsync:
-                        self._bad_fh.flush()
-                        os.fsync(self._bad_fh.fileno())
-                    else:
-                        self._bad_fh.flush()
-                except (OSError, ValueError, TypeError):
-                    inc_disk_error_counter()
-                    self.handleError(record)
-                    return
-
-            # 3) Rollover by size (best effort, post-write)
+            # 3) Rollover by file size (if configured)
             if self._max_bytes > 0 and self._fh is not None:
-                try:
-                    size = os.fstat(self._fh.fileno()).st_size
-                    if self._warn_bytes and size >= self._warn_bytes:
-                        # Avoid recursion: emit a single stderr warning per part file.
-                        if not getattr(self, "_warned_this_part", False):
-                            try:
-                                sys.stderr.write(
-                                    f"[quantum.logs] nearing size threshold: "
-                                    f"path={self._current_path} size={size} "
-                                    f"warn_bytes={self._warn_bytes}\n"
-                                )
-                                sys.stderr.flush()
-                            except (OSError, ValueError):
-                                pass
-                            self._warned_this_part = True
+                self._check_rollover(record)
 
-                    if size >= self._max_bytes:
-                        self._part_index += 1
-                        yyyy, mm, dd, hh = partition_path_components(
-                            datetime.fromtimestamp(record.created, tz=timezone.utc)
-                        )
-                        dir_path = self._current_path.parent  # same hour directory
-                        next_file = dir_path / self._events_filename(
-                            yyyy, mm, dd, hh, self._part_index
-                        )
-                        next_bad = dir_path / self._bad_filename(
-                            yyyy, mm, dd, hh, self._part_index
-                        )
-                        self._reopen(next_file, next_bad)
-                        # reset one-shot warning for the new part
-                        self._warned_this_part = False
-                        if logging_file_rotations_total:
-                            try:
-                                logging_file_rotations_total.inc()
-                            except (ValueError, RuntimeError):
-                                pass
-                except (OSError, ValueError):
-                    # Rollover errors should not interrupt the pipeline
-                    inc_disk_error_counter()
-                    # we leave the current file active
         finally:
             self.release()
 
-    @staticmethod
-    def _events_filename(yyyy: str, mm: str, dd: str, hh: str, part: int) -> str:
-        suffix = f".part{part}" if part > 0 else ""
-        return f"events-{yyyy}{mm}{dd}-{hh}{suffix}.jsonl"
+    # ─── Internal helpers
+    def _write_quarantine(self, record: logging.LogRecord, error: Exception) -> None:
+        """Safely writes malformed log records to the quarantine file."""
+        try:
+            assert self._bad_fh is not None
+            safe_entry = {
+                "error": "formatting_failed",
+                "reason": str(error),
+                "logger": getattr(record, "name", "?"),
+                "level": getattr(record, "levelname", "?"),
+                "created": getattr(record, "created", 0),
+                "raw_message": None,
+            }
+            try:
+                safe_entry["raw_message"] = record.getMessage()
+            except Exception:
+                pass
+            self._bad_fh.write(
+                json.dumps(safe_entry, ensure_ascii=False, separators=(",", ":")) + "\n"
+            )
+            self._flush(self._bad_fh)
+        except Exception:
+            inc_disk_error_counter()
+            self.handleError(record)
 
-    @staticmethod
-    def _bad_filename(yyyy: str, mm: str, dd: str, hh: str, part: int) -> str:
-        suffix = f".part{part}" if part > 0 else ""
-        return f"bad-logs-{yyyy}{mm}{dd}-{hh}{suffix}.jsonl"
+    def _check_rollover(self, record: logging.LogRecord) -> None:
+        """Rollover logic with warning thresholds."""
+        try:
+            size = self._fh.tell() if self._fh else 0
+            if (
+                self._warn_bytes
+                and size >= self._warn_bytes
+                and not self._warned_this_part
+            ):
+                sys.stderr.write(
+                    f"[quantum.logs] nearing size threshold: "
+                    f"path={self._current_path} size={size} warn_bytes={self._warn_bytes}\n"
+                )
+                sys.stderr.flush()
+                self._warned_this_part = True
+
+            if size >= self._max_bytes:
+                self._part_index += 1
+                dt = datetime.fromtimestamp(record.created, tz=timezone.utc)
+                yyyy, mm, dd, hh = partition_path_components(dt)
+                dir_path = (
+                    self._current_path.parent if self._current_path else self._base_dir
+                )
+                next_file = dir_path / self._events_filename(
+                    yyyy, mm, dd, hh, self._part_index
+                )
+                next_bad = dir_path / self._bad_filename(
+                    yyyy, mm, dd, hh, self._part_index
+                )
+                self._reopen(next_file, next_bad)
+                self._warned_this_part = False
+                if logging_file_rotations_total:
+                    try:
+                        logging_file_rotations_total.inc()
+                    except Exception:
+                        pass
+        except Exception:
+            inc_disk_error_counter()
+
+    def _flush(self, fh: io.TextIOWrapper) -> None:
+        fh.flush()
+        if self._fsync:
+            try:
+                os.fsync(fh.fileno())
+            except OSError:
+                inc_disk_error_counter()
 
     def _reopen(self, path: Path, bad_path: Path) -> None:
-        # close previous
+        """Reopen partition files safely."""
         for fh in (self._fh, self._bad_fh):
-            if fh:
-                try:
+            try:
+                if fh:
                     fh.flush()
                     fh.close()
-                except (OSError, ValueError):
-                    pass
+            except (OSError, ValueError):
+                pass
+
         path.parent.mkdir(parents=True, exist_ok=True)
-        self._fh = open(path, "a", encoding=self.encoding, newline="\n")
-        self._bad_fh = open(bad_path, "a", encoding=self.encoding, newline="\n")
+        self._fh = open(path, "a", encoding=self._encoding, newline="\n")
+        self._bad_fh = open(bad_path, "a", encoding=self._encoding, newline="\n")
         self._current_path = path
         self._bad_path = bad_path
         fsync_dir(path.parent)
@@ -228,7 +233,7 @@ class PartitionedJSONLFileHandler(logging.Handler):
                     if fh:
                         fh.flush()
                         fh.close()
-                except (OSError, ValueError):
+                except Exception:
                     pass
             self._fh = None
             self._bad_fh = None
@@ -237,3 +242,14 @@ class PartitionedJSONLFileHandler(logging.Handler):
         finally:
             self.release()
         super().close()
+
+    # ─── Naming
+    @staticmethod
+    def _events_filename(yyyy: str, mm: str, dd: str, hh: str, part: int) -> str:
+        suffix = f".part{part}" if part > 0 else ""
+        return f"events-{yyyy}{mm}{dd}-{hh}{suffix}.jsonl"
+
+    @staticmethod
+    def _bad_filename(yyyy: str, mm: str, dd: str, hh: str, part: int) -> str:
+        suffix = f".part{part}" if part > 0 else ""
+        return f"bad-logs-{yyyy}{mm}{dd}-{hh}{suffix}.jsonl"

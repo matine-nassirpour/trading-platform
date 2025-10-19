@@ -2,9 +2,9 @@ import os
 
 from prometheus_client import Counter, Gauge, Info
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Service / Build metadata (static, exported once)
-# ──────────────────────────────────────────────────────────────────────────────
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Service / Build metadata (static, exported once)                            │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 build_info = Info("quantum_build", "Build/Service info")
 
 
@@ -19,12 +19,11 @@ def refresh_build_info_from_env() -> None:
     )
 
 
-# will be refreshed after load_env()
 refresh_build_info_from_env()
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Pipeline health (overall & per pillar)
-# ──────────────────────────────────────────────────────────────────────────────
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Pipeline health (overall & per pillar)                                      │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 pipeline_up = Gauge("quantum_pipeline_up", "0/1 end-to-end health")
 pipeline_logging_ok = Gauge(
     "quantum_pipeline_logging_ok", "0/1 logging initialized & writable"
@@ -36,17 +35,17 @@ pipeline_metrics_http_ok = Gauge(
     "quantum_pipeline_metrics_http_ok", "0/1 metrics HTTP server running"
 )
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Tracing subsystem
-# ──────────────────────────────────────────────────────────────────────────────
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Tracing subsystem                                                           │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 otel_tracing_up = Gauge("quantum_tracing_up", "0/1 tracer init & export ok")
 tracer_exporter_active = Gauge(
     "quantum_tracer_exporter_active", "0/1 exporter configured & active"
 )
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Logging subsystem
-# ──────────────────────────────────────────────────────────────────────────────
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Logging subsystem                                                           │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 logging_sink_up = Gauge("quantum_logging_sink_up", "0/1 partitioned/audit writable")
 logging_file_rotations_total = Counter(
     "quantum_logging_file_rotations_total", "Partitioned JSONL handler rollovers"

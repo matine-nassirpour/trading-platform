@@ -21,20 +21,22 @@ from pathlib import Path
 
 import pytest
 
+from quantum.shared.config.config_manager import Settings
+from quantum.shared.config.observability_settings import ObservabilitySettings
 from tests.support.types import Workspace
 
-# ──────────────────────────────────────────────────────────────────────────────
-# sys.path: add "src/" to the test runner's PYTHONPATH (local code has priority)
-# ──────────────────────────────────────────────────────────────────────────────
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ sys.path: add "src/" to the test runner's PYTHONPATH                        │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 _SRC = _PROJECT_ROOT / "src"
 if str(_SRC) not in sys.path:
     sys.path.insert(0, str(_SRC))  # prefer local sources during tests
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# General tools
-# ──────────────────────────────────────────────────────────────────────────────
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ General tools                                                               │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 @contextmanager
 def _preserve_environ():
     """Save/restore a snapshot of os.environ (key/value)."""
@@ -84,9 +86,9 @@ def _read_tail_complete_lines(
         return []
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Fixtures
-# ──────────────────────────────────────────────────────────────────────────────
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Fixtures                                                                    │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 @pytest.fixture(scope="function")
 def iso_env():
     """
@@ -191,6 +193,35 @@ def tmp_workspace(iso_env, clean_registry) -> Generator[Workspace]:
             shutil.rmtree(tmpdir, ignore_errors=True)
 
 
+@pytest.fixture
+def base_settings(tmp_path: Path) -> Settings:
+    """Return minimal Settings pointing logs under tmp_path."""
+    return Settings(
+        quantum_app_name="test_app",
+        quantum_app_version="0.0.0+test",
+        quantum_env="test",
+        quantum_ns="quantum",
+        quantum_metrics_port=0,
+    )
+
+
+@pytest.fixture(scope="function")
+def make_observability(tmp_workspace):
+    """Factory fixture to build ObservabilitySettings with test-safe defaults."""
+
+    def _factory(**overrides) -> ObservabilitySettings:
+        defaults = dict(
+            quantum_log_dir=str(tmp_workspace["logs"]),
+            quantum_audit_dir=str(tmp_workspace["audit"]),
+            quantum_log_fsync=False,
+            quantum_log_max_bytes=0,
+            quantum_log_warn_bytes=0,
+        )
+        return ObservabilitySettings(**{**defaults, **overrides})
+
+    return _factory
+
+
 @pytest.fixture(scope="function")
 def no_rate_limit_no_sampling():
     """
@@ -228,11 +259,6 @@ def obs_session(tmp_workspace):
     )
 
     with observability_session(
-        app_name=os.environ.get("QUANTUM_APP_NAME", "test_app"),
-        environment=os.environ.get("QUANTUM_ENV", "test"),
-        namespace=os.environ.get("QUANTUM_NS", "quantum"),
-        log_level=os.environ.get("QUANTUM_LOG_LEVEL", "INFO"),
-        sample_ratio=float(os.environ.get("QUANTUM_TRACE_SAMPLE", "1.0")),
         force=True,
     ):
         yield
@@ -259,9 +285,9 @@ def monotonic_stepper(monkeypatch):
     yield
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# JSONL Reading Helpers for Assertions
-# ──────────────────────────────────────────────────────────────────────────────
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ JSONL Reading Helpers for Assertions                                        │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 @pytest.fixture(scope="function")
 def read_jsonl():
     """
@@ -337,9 +363,9 @@ def _safe_bool(fn: Callable[[dict], bool], obj: dict) -> bool:
     return False
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Defensive global teardown: closing handlers between tests
-# ──────────────────────────────────────────────────────────────────────────────
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Defensive global teardown: closing handlers between tests                   │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 def _iter_all_loggers() -> list[logging.Logger]:
     """
     Return all known loggers including root and children registered in the manager.
@@ -384,9 +410,9 @@ def _auto_cleanup_handlers():
     _close_all_handlers()
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Pytest configuration hooks
-# ──────────────────────────────────────────────────────────────────────────────
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Pytest configuration hooks                                                  │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 def pytest_configure(config: pytest.Config) -> None:
     """
     Register commonly used custom markers to avoid warnings and improve test filtering.

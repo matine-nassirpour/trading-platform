@@ -1,3 +1,5 @@
+import os
+
 import streamlit as st
 from opentelemetry import baggage
 from opentelemetry import context as otel_context
@@ -5,11 +7,11 @@ from opentelemetry import context as otel_context
 from apps.streamlit.bootstrap import init_streamlit
 from apps.streamlit.lib.obs import PageTimer, ui_action
 from quantum.interface.streamlit.entrypoints import get_positions
-from quantum.shared.config.env_loader import load_env
+from quantum.shared.config.config_manager import ConfigManager
 from quantum.shared.context.run_id import get_run_id
 from quantum.shared.correlation.correlation_id import get_correlation_id
 
-load_env()  # does not overwrite existing env by default
+ConfigManager.load()
 
 st.set_page_config(page_title="Quantum Desk", layout="wide")
 
@@ -46,6 +48,7 @@ with PageTimer():
     st.caption(
         f"run_id: {_current_run_id_for_ui() or '—'}  •  corr_id: {get_correlation_id() or '—'}"
     )
+    st.write("MT5 creds snapshot:", {k: v for k, v in os.environ.items() if "MT5" in k})
 
     @ui_action("refresh_market")
     def on_refresh():
