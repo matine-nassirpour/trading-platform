@@ -12,9 +12,9 @@ from quantum.infrastructure.observability.logging.partitioned_handlers import (
 from tests.support.factories import make_record
 from tests.support.time_utils import to_timestamp
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Helpers
-# ──────────────────────────────────────────────────────────────────────────────
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Helpers                                                                     │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 
 
 class _EchoFormatter(logging.Formatter):
@@ -51,9 +51,9 @@ def _badlogs_glob(dt: datetime) -> str:
     return dt.strftime("bad-logs-%Y%m%d-%H*.jsonl")
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Tests
-# ──────────────────────────────────────────────────────────────────────────────
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Tests                                                                       │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 
 
 @pytest.mark.usefixtures("iso_env", "_auto_cleanup_handlers", "clean_registry")

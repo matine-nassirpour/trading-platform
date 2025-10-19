@@ -141,7 +141,6 @@ trading-platform/
 │       │   ├── config/
 │       │   │   ├── __init__.py
 │       │   │   ├── config_manager.py
-│       │   │   ├── env_flags.py
 │       │   │   ├── observability_settings.py
 │       │   │   └── telemetry_settings.py
 │       │   ├── context/
@@ -219,8 +218,7 @@ trading-platform/
 │   │   │   └── __init__.py
 │   │   ├── shared/
 │   │   │   ├── config/
-│   │   │   │   ├── __init__.py
-│   │   │   │   └── test_env_flags.py
+│   │   │   │   └── __init__.py
 │   │   │   ├── time/
 │   │   │   │   └── __init__.py
 │   │   │   └── __init__.py

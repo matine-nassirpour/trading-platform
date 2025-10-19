@@ -25,18 +25,18 @@ from quantum.shared.config.config_manager import Settings
 from quantum.shared.config.observability_settings import ObservabilitySettings
 from tests.support.types import Workspace
 
-# ──────────────────────────────────────────────────────────────────────────────
-# sys.path: add "src/" to the test runner's PYTHONPATH (local code has priority)
-# ──────────────────────────────────────────────────────────────────────────────
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ sys.path: add "src/" to the test runner's PYTHONPATH                        │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 _SRC = _PROJECT_ROOT / "src"
 if str(_SRC) not in sys.path:
     sys.path.insert(0, str(_SRC))  # prefer local sources during tests
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# General tools
-# ──────────────────────────────────────────────────────────────────────────────
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ General tools                                                               │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 @contextmanager
 def _preserve_environ():
     """Save/restore a snapshot of os.environ (key/value)."""
@@ -86,9 +86,9 @@ def _read_tail_complete_lines(
         return []
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Fixtures
-# ──────────────────────────────────────────────────────────────────────────────
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Fixtures                                                                    │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 @pytest.fixture(scope="function")
 def iso_env():
     """
@@ -285,9 +285,9 @@ def monotonic_stepper(monkeypatch):
     yield
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# JSONL Reading Helpers for Assertions
-# ──────────────────────────────────────────────────────────────────────────────
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ JSONL Reading Helpers for Assertions                                        │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 @pytest.fixture(scope="function")
 def read_jsonl():
     """
@@ -363,9 +363,9 @@ def _safe_bool(fn: Callable[[dict], bool], obj: dict) -> bool:
     return False
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Defensive global teardown: closing handlers between tests
-# ──────────────────────────────────────────────────────────────────────────────
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Defensive global teardown: closing handlers between tests                   │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 def _iter_all_loggers() -> list[logging.Logger]:
     """
     Return all known loggers including root and children registered in the manager.
@@ -410,9 +410,9 @@ def _auto_cleanup_handlers():
     _close_all_handlers()
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Pytest configuration hooks
-# ──────────────────────────────────────────────────────────────────────────────
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Pytest configuration hooks                                                  │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 def pytest_configure(config: pytest.Config) -> None:
     """
     Register commonly used custom markers to avoid warnings and improve test filtering.

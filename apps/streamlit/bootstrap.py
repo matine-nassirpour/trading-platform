@@ -14,17 +14,17 @@ from quantum.shared.config.config_manager import ConfigManager
 from quantum.shared.context.run_id import generate_run_id, get_run_id
 from quantum.shared.types.channels import ExecutionChannel
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Global guards
-# ──────────────────────────────────────────────────────────────────────────────
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Global guards                                                               │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 
 _BOOTSTRAP_LOCK = threading.Lock()
 _BOOTSTRAP_DONE = False
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Public API
-# ──────────────────────────────────────────────────────────────────────────────
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Public API                                                                  │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 
 
 def init_streamlit() -> None:
@@ -56,9 +56,9 @@ def init_streamlit() -> None:
             raise
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Internal logic
-# ──────────────────────────────────────────────────────────────────────────────
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Internal logic                                                              │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 
 
 def _perform_streamlit_init() -> None:
@@ -70,7 +70,7 @@ def _perform_streamlit_init() -> None:
     if not get_run_id():
         generate_run_id()
 
-    init_observability(app_name="streamlit_ui")
+    init_observability()
 
     logger = logging.getLogger("apps.streamlit.bootstrap")
     logger.info("Initializing Quantum Streamlit UI with observability stack...")

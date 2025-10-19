@@ -21,9 +21,9 @@ from quantum.shared.types.execution_result import ExecutionResult
 logger = logging.getLogger(__name__)
 tracer = get_tracer("infra.adapters.mt5_exec")
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Lazy import cache for MetaTrader5
-# ──────────────────────────────────────────────────────────────────────────────
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Lazy import cache for MetaTrader5                                           │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 
 _MT5_MODULE: ModuleType | None = None
 _MT5_LOCK = threading.Lock()
@@ -54,9 +54,9 @@ def _get_mt5_module() -> ModuleType:
     return _MT5_MODULE
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Adapter Implementation
-# ──────────────────────────────────────────────────────────────────────────────
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Adapter Implementation                                                      │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 
 
 class Mt5ExecutionAdapterImpl:

@@ -29,9 +29,9 @@ logger = logging.getLogger(__name__)
 tracer = get_tracer("infra.execution.mt5")
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Terminal init / shutdown
-# ──────────────────────────────────────────────────────────────────────────────
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Terminal init / shutdown                                                    │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 def init_mt5_terminal(channel: ExecutionChannel, path: str | None = None) -> bool:
     """
     Initializes and logs into a MetaTrader5 terminal for the given execution channel.
@@ -94,9 +94,9 @@ def shutdown_mt5_terminal() -> None:
         pass
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Main MT5 execution harness (Protocol implementation)
-# ──────────────────────────────────────────────────────────────────────────────
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Main MT5 execution harness (Protocol implementation)                        │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 
 
 class Mt5ExecutionFunction(ExecutionFunctionProtocol):

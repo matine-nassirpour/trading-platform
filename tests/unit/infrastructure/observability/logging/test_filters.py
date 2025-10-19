@@ -18,9 +18,9 @@ from quantum.infrastructure.observability.logging.filters import (
 from tests.support.factories import make_record
 from tests.support.logging_utils import counter_value
 
-# ──────────────────────────────────────────────────────────────────────────────
-# IgnoreLibrariesFilter / LoggingContextFilter / MonotonicTimestampFilter
-# ──────────────────────────────────────────────────────────────────────────────
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ IgnoreLibrariesFilter / LoggingContextFilter / MonotonicTimestampFilter     │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 
 
 def test_ignore_libraries_filter_blocks_known_prefixes():
@@ -78,9 +78,9 @@ def test_monotonic_timestamp_filter_injects_once():
     assert getattr(rec2, "ts_monotonic_ms") == 123
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# AuditEventFilter
-# ──────────────────────────────────────────────────────────────────────────────
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ AuditEventFilter                                                            │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 
 
 def test_audit_event_filter_allowlist_and_suffix(monkeypatch):
@@ -122,9 +122,9 @@ def test_audit_event_filter_allowlist_and_suffix(monkeypatch):
     assert f.filter(rec5) is True
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# RedactFilter
-# ──────────────────────────────────────────────────────────────────────────────
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ RedactFilter                                                                │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 
 
 @pytest.mark.usefixtures("no_rate_limit_no_sampling")
@@ -186,9 +186,9 @@ def test_redact_filter_attrs_and_msg_and_counter(monkeypatch):
     assert len(rec2.msg) == RedactFilter.MAX_VALUE_LEN + 1
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# RateLimitFilter
-# ──────────────────────────────────────────────────────────────────────────────
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ RateLimitFilter                                                             │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 
 
 def test_rate_limit_filter_bucket_and_refill(monkeypatch):
@@ -234,9 +234,9 @@ def test_rate_limit_filter_bucket_and_refill(monkeypatch):
     assert r6 is True and r7 is True and r8 is False
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# InfoSamplerFilter
-# ──────────────────────────────────────────────────────────────────────────────
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ InfoSamplerFilter                                                           │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 
 
 def test_info_sampler_filter_every_3():
@@ -256,9 +256,9 @@ def test_info_sampler_filter_every_3():
     assert results == [False, False, True, False, False, True]
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# StaticFieldsFilter
-# ──────────────────────────────────────────────────────────────────────────────
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ StaticFieldsFilter                                                          │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 
 
 def test_static_fields_filter_sets_and_does_not_overwrite():
