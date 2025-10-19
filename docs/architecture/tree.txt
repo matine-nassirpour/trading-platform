@@ -1,57 +1,229 @@
 trading-platform/
 ├── apps/
 │   ├── cli/
+│   │   ├── __init__.py
+│   │   ├── bootstrap.py
+│   │   └── main.py
 │   ├── streamlit/
+│   │   ├── lib/
+│   │   │   ├── __init__.py
+│   │   │   └── obs.py
+│   │   ├── pages/
+│   │   │   ├── __init__.py
+│   │   │   └── observability.py
+│   │   ├── __init__.py
+│   │   ├── app.py
+│   │   └── bootstrap.py
 │   └── __init__.py
 ├── docs/
+│   ├── architecture/
+│   │   └── tree.txt
+│   └── observability/
+│       ├── grafana_dashboard.json
+│       └── README.md
 ├── scripts/
+│   ├── obs_smoke.py
+│   └── print_tree.py
 ├── src/
 │   └── quantum/
 │       ├── application/
 │       │   ├── adapters/
+│       │   │   ├── __init__.py
+│       │   │   └── mt5_execution_adapter.py
 │       │   ├── dto/
+│       │   │   └── __init__.py
 │       │   ├── ports/
+│       │   │   ├── inbound/
+│       │   │   │   └── __init__.py
+│       │   │   ├── outbound/
+│       │   │   │   ├── __init__.py
+│       │   │   │   └── execution_port.py
+│       │   │   └── __init__.py
 │       │   ├── use_cases/
+│       │   │   └── __init__.py
 │       │   └── __init__.py
 │       ├── domain/
+│       │   ├── entities/
+│       │   │   └── __init__.py
 │       │   ├── events/
+│       │   │   ├── system/
+│       │   │   │   ├── v1/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   └── execution_channel_event.py
+│       │   │   │   └── __init__.py
+│       │   │   ├── trading/
+│       │   │   │   ├── v1/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── breakeven_trigger_event.py
+│       │   │   │   │   ├── killswitch_trigger_event.py
+│       │   │   │   │   ├── latency_probe_event.py
+│       │   │   │   │   ├── mt5_health_event.py
+│       │   │   │   │   ├── order_ack_event.py
+│       │   │   │   │   ├── order_check_event.py
+│       │   │   │   │   ├── order_fill_event.py
+│       │   │   │   │   ├── order_intent_event.py
+│       │   │   │   │   ├── order_reject_event.py
+│       │   │   │   │   ├── order_submit_event.py
+│       │   │   │   │   ├── position_update_event.py
+│       │   │   │   │   ├── reconciliation_event.py
+│       │   │   │   │   ├── sl_tp_update_event.py
+│       │   │   │   │   ├── stoploss_trigger_event.py
+│       │   │   │   │   ├── takeprofit_trigger_event.py
+│       │   │   │   │   └── trailing_trigger_event.py
+│       │   │   │   └── __init__.py
+│       │   │   ├── __init__.py
+│       │   │   └── base.py
 │       │   ├── services/
+│       │   │   └── __init__.py
 │       │   ├── types/
+│       │   │   └── __init__.py
 │       │   ├── value_objects/
+│       │   │   └── __init__.py
 │       │   └── __init__.py
 │       ├── infrastructure/
 │       │   ├── adapters/
+│       │   │   ├── __init__.py
+│       │   │   └── mt5_execution_adapter_impl.py
 │       │   ├── datafeeds/
+│       │   │   └── __init__.py
 │       │   ├── execution/
+│       │   │   ├── mappings/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── mt5_request_mapper.py
+│       │   │   │   └── mt5_retcode_map.py
+│       │   │   ├── __init__.py
+│       │   │   ├── _timeout_utils.py
+│       │   │   ├── contracts.py
+│       │   │   ├── gateway_registry.py
+│       │   │   └── mt5_gateway.py
 │       │   ├── messaging/
+│       │   │   └── __init__.py
 │       │   ├── observability/
+│       │   │   ├── logging/
+│       │   │   │   ├── models/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── factory.py
+│       │   │   │   │   └── log_payload_v1.py
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── _io_utils.py
+│       │   │   │   ├── audit_sink.py
+│       │   │   │   ├── constants.py
+│       │   │   │   ├── event_emitter.py
+│       │   │   │   ├── filters.py
+│       │   │   │   ├── formatter.py
+│       │   │   │   ├── logs.py
+│       │   │   │   └── partitioned_handlers.py
+│       │   │   ├── metrics/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── health.py
+│       │   │   │   └── mt5.py
+│       │   │   ├── tracing/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── propagation.py
+│       │   │   │   └── traces.py
+│       │   │   ├── __init__.py
+│       │   │   └── init_observability.py
 │       │   ├── runtime/
+│       │   │   ├── __init__.py
+│       │   │   └── mt5_runtime_bootstrap.py
 │       │   ├── storage/
+│       │   │   └── __init__.py
 │       │   └── __init__.py
 │       ├── interface/
 │       │   ├── cli/
+│       │   │   ├── __init__.py
+│       │   │   └── entrypoints.py
 │       │   ├── streamlit/
+│       │   │   ├── __init__.py
+│       │   │   └── entrypoints.py
 │       │   └── __init__.py
 │       ├── shared/
 │       │   ├── config/
 │       │   │   ├── __init__.py
 │       │   │   ├── config_manager.py
-│       │   │   ├── observability_settings.py
-│       │   │   └── telemetry_settings.py
+│       │   │   ├── logging_settings.py
+│       │   │   ├── mt5_settings.py
+│       │   │   └── tracing_settings.py
 │       │   ├── context/
+│       │   │   ├── __init__.py
+│       │   │   └── run_id.py
 │       │   ├── correlation/
+│       │   │   ├── __init__.py
+│       │   │   └── correlation_id.py
 │       │   ├── errors/
+│       │   │   └── __init__.py
 │       │   ├── execution/
+│       │   │   ├── __init__.py
+│       │   │   ├── resilience_policy.py
+│       │   │   ├── retry_policy.py
+│       │   │   └── timeout_utils.py
 │       │   ├── serialization/
+│       │   │   ├── __init__.py
+│       │   │   └── schema_registry.py
 │       │   ├── time/
+│       │   │   ├── __init__.py
+│       │   │   ├── clock.py
+│       │   │   ├── format.py
+│       │   │   └── naming.py
 │       │   ├── types/
+│       │   │   ├── __init__.py
+│       │   │   ├── channels.py
+│       │   │   ├── decimal_validators.py
+│       │   │   ├── enums.py
+│       │   │   ├── execution.py
+│       │   │   ├── execution_request.py
+│       │   │   ├── execution_result.py
+│       │   │   └── value_objects.py
 │       │   └── __init__.py
 │       └── __init__.py
 ├── tests/
 │   ├── e2e/
+│   │   └── __init__.py
 │   ├── integration/
+│   │   ├── infrastructure/
+│   │   │   ├── observability/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── test_bootstrap_shutdown.py
+│   │   │   │   ├── test_context_propagation.py
+│   │   │   │   ├── test_metrics_http_endpoint.py
+│   │   │   │   ├── test_otlp_exporter_selection.py
+│   │   │   │   ├── test_persistence_probe.py
+│   │   │   │   └── test_pipeline_contract.py
+│   │   │   └── __init__.py
+│   │   └── __init__.py
 │   ├── support/
+│   │   ├── __init__.py
+│   │   ├── factories.py
+│   │   ├── logging_utils.py
+│   │   ├── time_utils.py
+│   │   ├── types.py
+│   │   └── wait.py
 │   ├── unit/
+│   │   ├── infrastructure/
+│   │   │   ├── observability/
+│   │   │   │   ├── logging/
+│   │   │   │   │   ├── models/
+│   │   │   │   │   │   ├── __init__.py
+│   │   │   │   │   │   └── test_factory.py
+│   │   │   │   │   ├── __init__.py
+│   │   │   │   │   ├── test_audit_sink.py
+│   │   │   │   │   ├── test_constants.py
+│   │   │   │   │   ├── test_event_emitter.py
+│   │   │   │   │   ├── test_filters.py
+│   │   │   │   │   ├── test_formatter.py
+│   │   │   │   │   └── test_partitioned_handlers.py
+│   │   │   │   ├── tracing/
+│   │   │   │   │   ├── __init__.py
+│   │   │   │   │   └── test_propagation.py
+│   │   │   │   └── __init__.py
+│   │   │   └── __init__.py
+│   │   ├── shared/
+│   │   │   ├── config/
+│   │   │   │   └── __init__.py
+│   │   │   ├── time/
+│   │   │   │   └── __init__.py
+│   │   │   └── __init__.py
+│   │   └── __init__.py
 │   ├── __init__.py
 │   └── conftest.py
 ├── .coveragerc

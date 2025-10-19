@@ -163,7 +163,7 @@ def _load_env_files(
     env_file: str | Path | None = None,
     *,
     override: bool = False,
-    apply: bool = True,
+    apply: bool = False,
 ) -> dict[str, str]:
     """
     Loads environment variables from .env files in a process-safe way.
@@ -327,13 +327,18 @@ class ConfigManager:
 
     # ─── Snapshot helper
     @staticmethod
-    def snapshot(settings: Settings | None = None) -> dict[str, str]:
+    def snapshot(
+        settings: Settings | None = None,
+        tracing: TracingSettings | None = None,
+    ) -> dict[str, str]:
         s = settings or ConfigManager.load()
+        t = tracing or ConfigManager.load_tracing()
+
         return {
             "app": s.quantum_app_name,
             "version": s.quantum_app_version,
             "env": s.quantum_env,
-            "trace_exporter": s.quantum_trace_exporter,
+            "trace_exporter": t.quantum_trace_exporter,
             "metrics_port": str(s.quantum_metrics_port),
         }
 
