@@ -272,7 +272,7 @@ class TestOTLPExporterSelection:
         os.environ["QUANTUM_TRACE_EXPORTER"] = "otlp"
         os.environ["QUANTUM_TRACE_OTLP_PROTOCOL"] = "http"
 
-        def _boom(settings, telemetry) -> tuple[object | None, str | None]:
+        def _boom(tracing_settings) -> tuple[object | None, str | None]:
             raise RuntimeError("synthetic exporter build failure")
 
         monkeypatch.setattr(tmod, "_build_otlp_exporter", _boom, raising=True)

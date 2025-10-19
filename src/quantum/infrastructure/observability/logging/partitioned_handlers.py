@@ -11,7 +11,7 @@ from quantum.infrastructure.observability.logging._io_utils import (
     inc_disk_error_counter,
 )
 from quantum.shared.config.config_manager import Settings
-from quantum.shared.config.observability_settings import ObservabilitySettings
+from quantum.shared.config.logging_settings import LoggingSettings
 from quantum.shared.time.naming import partition_path_components
 
 try:
@@ -42,7 +42,7 @@ class PartitionedJSONLFileHandler(logging.Handler):
     def __init__(
         self,
         settings: Settings,
-        observability: ObservabilitySettings,
+        observability: LoggingSettings,
         *,
         encoding: str = "utf-8",
     ) -> None:

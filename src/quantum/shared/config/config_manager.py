@@ -10,16 +10,17 @@ from __future__ import annotations
 import logging
 import os
 import threading
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from functools import lru_cache
 from pathlib import Path
-from typing import Final, Literal, TypedDict
+from typing import ClassVar, Final, TypeVar
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from quantum.shared.config.observability_settings import ObservabilitySettings
-from quantum.shared.config.telemetry_settings import TelemetrySettings
+from quantum.shared.config.logging_settings import LoggingSettings
+from quantum.shared.config.mt5_settings import MT5Settings
+from quantum.shared.config.tracing_settings import TracingSettings
 
 try:
     from dotenv import dotenv_values, find_dotenv
@@ -28,25 +29,93 @@ except ImportError:
     find_dotenv = None
 
 _LOGGER: Final = logging.getLogger("quantum.config")
+T = TypeVar("T")
 
 # ╭─────────────────────────────────────────────────────────────────────────────╮
 # │ Internal State                                                              │
 # ╰─────────────────────────────────────────────────────────────────────────────╯
 
-_INIT_LOCK: Final = threading.Lock()
 
+class ConfigState:
+    """
+    Thread-safe singleton encapsulating configuration state.
 
-class _ConfigState(TypedDict):
-    base_dir: Path | None
-    loaded_pid: int | None
-    env_cache: dict[str, str] | None
+    Responsibilities
+    ----------------
+    - Maintain process-local cache of configuration environment data.
+    - Provide atomic access and update operations.
+    - Guarantee consistency across concurrent threads within a single process.
 
+    Design principles
+    -----------------
+    - Single Responsibility: isolates configuration state logic.
+    - Thread Safety: internal lock protects state mutations.
+    - Transparency: explicit getters/setters, no implicit globals.
+    - Immutability contract: only copies are exposed to callers.
+    """
 
-_STATE: Final[_ConfigState] = {
-    "base_dir": None,
-    "loaded_pid": None,
-    "env_cache": None,
-}
+    _instance: ClassVar[ConfigState | None] = None
+    _lock: ClassVar[threading.RLock] = threading.RLock()
+
+    def __init__(self) -> None:
+        self._base_dir: Path | None = None
+        self._loaded_pid: int | None = None
+        self._env_cache: dict[str, str] | None = None
+
+    # ─── Singleton Accessor
+    @classmethod
+    def instance(cls) -> ConfigState:
+        with cls._lock:
+            if cls._instance is None:
+                cls._instance = cls()
+            return cls._instance
+
+    # ─── Safe execution context
+    def access(self, func: Callable[[], T]) -> T:
+        """
+        Execute a callable within a thread-safe lock context.
+
+        This provides controlled access to the internal lock
+        without exposing it publicly.
+        """
+        with self._lock:
+            return func()
+
+    # ─── Getters (return copies for immutability)
+    def snapshot(self) -> dict[str, str | int | dict[str, str] | None]:
+        with self._lock:
+            return {
+                "base_dir": str(self._base_dir) if self._base_dir else None,
+                "loaded_pid": self._loaded_pid,
+                "env_cache": dict(self._env_cache or {}),
+            }
+
+    def get_env_cache(self) -> dict[str, str]:
+        with self._lock:
+            return dict(self._env_cache or {})
+
+    # ─── Mutators (atomic updates)
+    def update(
+        self,
+        *,
+        base_dir: Path | None = None,
+        loaded_pid: int | None = None,
+        env_cache: dict[str, str] | None = None,
+    ) -> None:
+        with self._lock:
+            if base_dir is not None:
+                self._base_dir = base_dir
+            if loaded_pid is not None:
+                self._loaded_pid = loaded_pid
+            if env_cache is not None:
+                self._env_cache = dict(env_cache)
+
+    def reset(self) -> None:
+        with self._lock:
+            self._base_dir = None
+            self._loaded_pid = None
+            self._env_cache = None
+
 
 # ╭─────────────────────────────────────────────────────────────────────────────╮
 # │ Helpers                                                                     │
@@ -103,11 +172,13 @@ def _load_env_files(
         dict[str, str]: The merged environment values.
     """
     pid = os.getpid()
+    state = ConfigState.instance()
 
-    with _INIT_LOCK:
-        # Cache validation
-        if _STATE["loaded_pid"] == pid and _STATE["env_cache"] is not None:
-            return dict(_STATE["env_cache"])
+    def _load_logic() -> dict[str, str]:
+        snapshot = state.snapshot()
+        env_cache = snapshot.get("env_cache")
+        if snapshot["loaded_pid"] == pid and isinstance(env_cache, dict) and env_cache:
+            return dict(env_cache)
 
         if dotenv_values is None:
             _LOGGER.warning("python-dotenv not installed; skipping .env loading")
@@ -134,28 +205,21 @@ def _load_env_files(
 
         if apply:
             for k, v in merged.items():
-                # Respect explicit removals from os.environ (tests or runtime)
                 if k in os.environ and not override:
                     continue
-                # Do not reapply if it was explicitly removed earlier
                 if k not in os.environ and v is not None:
                     os.environ.setdefault(k, v)
 
-        # Update process-safe state
-        _STATE.update(
-            {
-                "base_dir": base_dir,
-                "loaded_pid": pid,
-                "env_cache": dict(merged),
-            }
-        )
+        state.update(base_dir=base_dir, loaded_pid=pid, env_cache=merged)
 
         _LOGGER.info(
             f"Environment loaded (pid={pid})",
             extra={"attrs": {"base_dir": str(base_dir), "env": current_env}},
         )
-
         return merged
+
+    # Execute atomically under internal lock
+    return state.access(_load_logic)
 
 
 # ╭─────────────────────────────────────────────────────────────────────────────╮
@@ -173,14 +237,9 @@ class Settings(BaseSettings):
     quantum_ns: str = Field("quantum")
     quantum_instance_id: str | None = Field(None)
 
-    # ─── Tracing
-    quantum_trace_exporter: Literal["otlp", "console", "none"] = "console"
-    quantum_trace_otlp_endpoint: str = Field("http://127.0.0.1:4318")
-    quantum_trace_sample: float = 1.0
-
     # ─── Metrics
-    quantum_metrics_addr: str = "0.0.0.0"
-    quantum_metrics_port: int = 0
+    quantum_metrics_addr: str = Field("0.0.0.0")
+    quantum_metrics_port: int = Field(0)
 
     # ─── Execution policy
     quantum_exec_timeout: float = Field(5.0)
@@ -188,41 +247,11 @@ class Settings(BaseSettings):
     quantum_exec_backoff: float = Field(0.5)
     quantum_exec_backoff_max: float = Field(5.0)
 
-    # ─── MT5 credentials & Terminal path
-    quantum_mt5_ftmo_login: int | None = None
-    quantum_mt5_ftmo_server: str | None = None
-    quantum_mt5_ftmo_password: str | None = None
-    quantum_mt5_fundednext_login: int | None = None
-    quantum_mt5_fundednext_server: str | None = None
-    quantum_mt5_fundednext_password: str | None = None
-
-    mt5_ftmo_terminal_path: str | None = None
-    mt5_fundednext_terminal_path: str | None = None
-
     # ─── Validation
     @field_validator("quantum_env", mode="before")
     @classmethod
     def normalize_env(cls, v):
         return str(v or "dev").strip().lower()
-
-    @field_validator("quantum_trace_sample")
-    @classmethod
-    def validate_sample(cls, v):
-        if not (0.0 <= v <= 1.0):
-            raise ValueError("quantum_trace_sample must be in [0, 1]")
-        return v
-
-    @model_validator(mode="after")
-    def validate_credentials(self):
-        if self.quantum_mt5_ftmo_login and not all(
-            [self.quantum_mt5_ftmo_server, self.quantum_mt5_ftmo_password]
-        ):
-            raise ValueError("Incomplete FTMO credentials.")
-        if self.quantum_mt5_fundednext_login and not all(
-            [self.quantum_mt5_fundednext_server, self.quantum_mt5_fundednext_password]
-        ):
-            raise ValueError("Incomplete FUNDEDNEXT credentials.")
-        return self
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -269,28 +298,31 @@ class ConfigManager:
 
     @staticmethod
     @lru_cache
-    def load_observability(
-        env: Mapping[str, str] | None = None,
-    ) -> ObservabilitySettings:
-        return ObservabilitySettings(**ConfigManager._normalize_env(env))
+    def load_logging(env: Mapping[str, str] | None = None) -> LoggingSettings:
+        return LoggingSettings(**ConfigManager._normalize_env(env))
 
     @staticmethod
     @lru_cache
-    def load_telemetry(env: Mapping[str, str] | None = None) -> TelemetrySettings:
-        return TelemetrySettings(**ConfigManager._normalize_env(env))
+    def load_tracing(env: Mapping[str, str] | None = None) -> TracingSettings:
+        return TracingSettings(**ConfigManager._normalize_env(env))
+
+    @staticmethod
+    @lru_cache
+    def load_mt5(env: Mapping[str, str] | None = None) -> MT5Settings:
+        return MT5Settings(**ConfigManager._normalize_env(env))
 
     # ─── Cache management
     @staticmethod
     def clear_caches() -> None:
         for fn in (
             ConfigManager.load,
-            ConfigManager.load_observability,
-            ConfigManager.load_telemetry,
+            ConfigManager.load_logging,
+            ConfigManager.load_tracing,
         ):
             cache_clear = getattr(fn, "cache_clear", None)
             if callable(cache_clear):
                 cache_clear()
-        _STATE.update({"loaded_pid": None, "env_cache": None, "base_dir": None})
+        ConfigState.instance().reset()
         _LOGGER.info("ConfigManager caches cleared and state reset")
 
     # ─── Snapshot helper

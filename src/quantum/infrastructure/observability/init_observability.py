@@ -26,8 +26,8 @@ from quantum.infrastructure.observability.tracing.propagation import (
 )
 from quantum.infrastructure.observability.tracing.traces import init_tracing
 from quantum.shared.config.config_manager import ConfigManager, Settings
-from quantum.shared.config.observability_settings import ObservabilitySettings
-from quantum.shared.config.telemetry_settings import TelemetrySettings
+from quantum.shared.config.logging_settings import LoggingSettings
+from quantum.shared.config.tracing_settings import TracingSettings
 from quantum.shared.context.run_id import generate_run_id, get_run_id
 
 # ╭─────────────────────────────────────────────────────────────────────────────╮
@@ -113,13 +113,13 @@ def _shutdown_tracing_if_any() -> None:
 
 def _init_tracing(
     settings: Settings,
-    telemetry: TelemetrySettings,
+    tracing_settings: TracingSettings,
     force: bool,
 ) -> bool:
     """Initialize OpenTelemetry tracing subsystem."""
     try:
         _shutdown_tracing_if_any()
-        tracer_provider = init_tracing(settings, telemetry, force)
+        tracer_provider = init_tracing(settings, tracing_settings, force)
         setup_propagation()
         install_process_baggage()
         otel_tracing_up.set(1)
@@ -134,16 +134,13 @@ def _init_tracing(
 
         # ─── Fallback (retry once)
         try:
-            tracer_provider = init_tracing(
-                settings=settings.model_copy(
-                    update={
-                        "quantum_trace_exporter": "none",
-                        "quantum_trace_sample": 0.0,
-                    }
-                ),
-                telemetry=telemetry,
-                replace_existing=True,
+            tracing_fallback = tracing_settings.model_copy(
+                update={
+                    "quantum_trace_exporter": "none",
+                    "quantum_trace_sample": 0.0,
+                }
             )
+            tracer_provider = init_tracing(settings, tracing_fallback, True)
             setup_propagation()
             install_process_baggage()
             otel_tracing_up.set(1)
@@ -164,12 +161,10 @@ def _init_tracing(
         return False
 
 
-def _init_logging_safe(
-    settings: Settings, observability: ObservabilitySettings
-) -> bool:
+def _init_logging_safe(settings: Settings, logging_settings: LoggingSettings) -> bool:
     """Wrapper for logging initialization (safe)."""
     try:
-        init_logging(settings, observability)
+        init_logging(settings, logging_settings)
         return True
     except Exception as e:
         logger.exception(f"Logging initialization failed: {e}")
@@ -213,8 +208,8 @@ def init_observability(
 
     with _init_lock:
         settings = ConfigManager.load()
-        obs_settings = ConfigManager.load_observability()
-        telemetry_settings = ConfigManager.load_telemetry()
+        logging_settings = ConfigManager.load_logging()
+        tracing_settings = ConfigManager.load_tracing()
 
         if _initialized and not force:
             return
@@ -238,19 +233,19 @@ def init_observability(
             generate_run_id()
 
         # ─── Initialize tracing
-        tracing_ok = _init_tracing(settings, telemetry_settings, force)
+        tracing_ok = _init_tracing(settings, tracing_settings, force)
         pipeline_tracing_ok.set(1 if tracing_ok else 0)
 
         # ─── Initialize logging
         if force:
             close_and_remove_all_handlers(logging.getLogger())
-        logging_ok = _init_logging_safe(settings, obs_settings)
+        logging_ok = _init_logging_safe(settings, logging_settings)
         pipeline_logging_ok.set(1 if logging_ok else 0)
 
         # ─── Probe sinks
         try:
             sinks_ok = _probe_logging_sinks(
-                deep_probe=obs_settings.quantum_log_deep_probe
+                deep_probe=logging_settings.quantum_log_deep_probe
             )
         except Exception as e:
             logger.warning(f"Logging sinks probe failed: {e}")

@@ -1,10 +1,3 @@
-"""
-Quantum Telemetry Settings
-──────────────────────────────────────────────────────────────────────────────
-Configuration model for trace exporter transport (OTLP, Datadog, etc.).
-Separated from observability_settings to isolate low-level transport details.
-"""
-
 from __future__ import annotations
 
 from typing import Literal
@@ -12,24 +5,22 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
-class TelemetrySettings(BaseModel):
-    """Configuration for trace exporter transport layer."""
+class TracingSettings(BaseModel):
+    quantum_trace_exporter: Literal["otlp", "console", "none"] = "console"
+    quantum_trace_otlp_endpoint: str = Field("http://127.0.0.1:4318")
+    quantum_trace_sample: float = 1.0
+    quantum_trace_otlp_protocol: Literal["http", "grpc"] = Field("http")
+    quantum_trace_otlp_headers: str | None = Field(None)
+    quantum_trace_otlp_timeout_ms: int = Field(1000)
+    quantum_trace_otlp_compression: Literal["gzip", "none"] = Field("none")
+    quantum_trace_otlp_insecure: bool = Field(True)
 
-    quantum_trace_otlp_protocol: Literal["http", "grpc"] = Field(
-        "http", description="OTLP transport protocol ('http' or 'grpc')."
-    )
-    quantum_trace_otlp_headers: str | None = Field(
-        None, description="Custom OTLP headers (e.g. 'Authorization=Bearer x')."
-    )
-    quantum_trace_otlp_timeout_ms: int = Field(
-        1000, description="OTLP export timeout in milliseconds."
-    )
-    quantum_trace_otlp_compression: Literal["gzip", "none"] = Field(
-        "none", description="Compression type for OTLP payloads."
-    )
-    quantum_trace_otlp_insecure: bool = Field(
-        True, description="Allow insecure (non-TLS) OTLP connections."
-    )
+    @field_validator("quantum_trace_sample")
+    @classmethod
+    def validate_sample(cls, v):
+        if not (0.0 <= v <= 1.0):
+            raise ValueError("quantum_trace_sample must be in [0, 1]")
+        return v
 
     @field_validator("quantum_trace_otlp_protocol", mode="before")
     @classmethod

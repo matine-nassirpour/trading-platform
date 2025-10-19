@@ -23,7 +23,7 @@ from opentelemetry.trace import TracerProvider as TracerProviderInterface
 from opentelemetry.trace import get_tracer_provider, set_tracer_provider
 
 from quantum.shared.config.config_manager import Settings
-from quantum.shared.config.telemetry_settings import TelemetrySettings
+from quantum.shared.config.tracing_settings import TracingSettings
 from quantum.shared.context.run_id import get_run_id
 from quantum.shared.correlation.correlation_id import get_correlation_id
 
@@ -96,20 +96,22 @@ class _ContextEnricherProcessor(SpanProcessor):
 
 
 def _build_otlp_exporter(
-    settings: Settings, telemetry: TelemetrySettings
+    tracing_settings: TracingSettings,
 ) -> tuple[Any | None, str | None]:
     """
     Build an OTLP exporter based on TelemetrySettings.
     Returns (exporter, reason) where reason is present if inactive.
     """
-    protocol = telemetry.quantum_trace_otlp_protocol
-    endpoint = settings.quantum_trace_otlp_endpoint
-    timeout = telemetry.quantum_trace_otlp_timeout_ms / 1000.0
-    insecure = telemetry.quantum_trace_otlp_insecure
-    headers_csv = telemetry.quantum_trace_otlp_headers
+    protocol = tracing_settings.quantum_trace_otlp_protocol
+    endpoint = tracing_settings.quantum_trace_otlp_endpoint
+    timeout = tracing_settings.quantum_trace_otlp_timeout_ms / 1000.0
+    insecure = tracing_settings.quantum_trace_otlp_insecure
+    headers_csv = tracing_settings.quantum_trace_otlp_headers
     headers: dict[str, str] = {}
     compression = (
-        None if telemetry.quantum_trace_otlp_compression == "none" else Compression.Gzip
+        None
+        if tracing_settings.quantum_trace_otlp_compression == "none"
+        else Compression.Gzip
     )
 
     if headers_csv:
@@ -164,7 +166,7 @@ def _build_otlp_exporter(
 
 def init_tracing(
     settings: Settings,
-    telemetry: TelemetrySettings,
+    tracing_settings: TracingSettings,
     replace_existing: bool = False,
 ) -> TracerProviderInterface:
     """Initialize the OpenTelemetry TracerProvider."""
@@ -173,7 +175,7 @@ def init_tracing(
         _ensure_atexit_registered()
         return cast(TracerProviderInterface, existing)
 
-    sample_ratio = max(0.0, min(1.0, float(settings.quantum_trace_sample)))
+    sample_ratio = max(0.0, min(1.0, float(tracing_settings.quantum_trace_sample)))
 
     # ─── Build OTel resource
     resource = Resource.create(
@@ -200,7 +202,7 @@ def init_tracing(
     tracer_provider.add_span_processor(_ContextEnricherProcessor())
 
     # ─── Configure exporter
-    exporter_name = settings.quantum_trace_exporter
+    exporter_name = tracing_settings.quantum_trace_exporter
     active_exporter = None
     inactive_reason = None
 
@@ -215,7 +217,7 @@ def init_tracing(
         )
 
     elif exporter_name == "otlp":
-        exporter, reason = _build_otlp_exporter(settings, telemetry)
+        exporter, reason = _build_otlp_exporter(tracing_settings)
         if exporter:
             tracer_provider.add_span_processor(
                 BatchSpanProcessor(
@@ -239,7 +241,7 @@ def init_tracing(
     set_tracer_provider(tracer_provider)
 
     # ─── Emit status log
-    _log_exporter_status(active_exporter, telemetry, inactive_reason)
+    _log_exporter_status(active_exporter, tracing_settings, inactive_reason)
 
     # ─── Health metric propagation (soft optional)
     try:
@@ -275,7 +277,7 @@ def init_tracing(
 
 def _log_exporter_status(
     active_exporter: Any | None,
-    telemetry: TelemetrySettings,
+    tracing_settings: TracingSettings,
     inactive_reason: str | None,
 ) -> None:
     """
@@ -283,14 +285,14 @@ def _log_exporter_status(
     No sensitive data is logged — only structural metadata.
     """
     base: dict[str, Any] = {
-        "protocol": telemetry.quantum_trace_otlp_protocol,
-        "compression": telemetry.quantum_trace_otlp_compression,
-        "insecure": telemetry.quantum_trace_otlp_insecure,
+        "protocol": tracing_settings.quantum_trace_otlp_protocol,
+        "compression": tracing_settings.quantum_trace_otlp_compression,
+        "insecure": tracing_settings.quantum_trace_otlp_insecure,
     }
 
     headers_preview: list[str] = []
-    if telemetry.quantum_trace_otlp_headers:
-        for kv in telemetry.quantum_trace_otlp_headers.split(","):
+    if tracing_settings.quantum_trace_otlp_headers:
+        for kv in tracing_settings.quantum_trace_otlp_headers.split(","):
             if "=" in kv:
                 k, _ = kv.split("=", 1)
                 headers_preview.append(k.strip())

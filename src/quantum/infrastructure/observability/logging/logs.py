@@ -20,7 +20,7 @@ from quantum.infrastructure.observability.logging.partitioned_handlers import (
     PartitionedJSONLFileHandler,
 )
 from quantum.shared.config.config_manager import Settings
-from quantum.shared.config.observability_settings import ObservabilitySettings
+from quantum.shared.config.logging_settings import LoggingSettings
 
 
 def close_and_remove_all_handlers(logger: logging.Logger) -> None:
@@ -39,7 +39,7 @@ def close_and_remove_all_handlers(logger: logging.Logger) -> None:
             logger.removeHandler(h)
 
 
-def init_logging(settings: Settings, observability: ObservabilitySettings) -> None:
+def init_logging(settings: Settings, observability: LoggingSettings) -> None:
     """
     Initializes structured JSON logging, audit file sinks, and optional rate limiting.
     """

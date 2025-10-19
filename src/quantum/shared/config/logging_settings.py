@@ -1,30 +1,12 @@
-"""
-Quantum Observability Settings
-──────────────────────────────────────────────────────────────────────────────
-Encapsulates all logging, audit, and telemetry-related configuration.
-
-This module isolates observability concerns from core configuration to preserve
-clean architectural separation and allow flexible evolution of telemetry pipelines.
-"""
-
 from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
-class ObservabilitySettings(BaseModel):
-    """
-    Fine-grained configuration for logging, audit, and metrics observability.
-
-    This model is designed to be loaded either from environment variables
-    or injected by ConfigManager. It is runtime-safe and forward-compatible.
-    """
+class LoggingSettings(BaseModel):
 
     # ─── Logging
-    quantum_log_level: str = Field(
-        "INFO",
-        description="Global log level threshold. One of: DEBUG, INFO, WARNING, ERROR, CRITICAL.",
-    )
+    quantum_log_level: str = Field("INFO")
     quantum_log_sample_info: int = Field(
         10,
         description="Log sampling frequency for INFO-level messages "

@@ -22,7 +22,7 @@ from pathlib import Path
 import pytest
 
 from quantum.shared.config.config_manager import Settings
-from quantum.shared.config.observability_settings import ObservabilitySettings
+from quantum.shared.config.logging_settings import LoggingSettings
 from tests.support.types import Workspace
 
 # ╭─────────────────────────────────────────────────────────────────────────────╮
@@ -209,7 +209,7 @@ def base_settings(tmp_path: Path) -> Settings:
 def make_observability(tmp_workspace):
     """Factory fixture to build ObservabilitySettings with test-safe defaults."""
 
-    def _factory(**overrides) -> ObservabilitySettings:
+    def _factory(**overrides) -> LoggingSettings:
         defaults = dict(
             quantum_log_dir=str(tmp_workspace["logs"]),
             quantum_audit_dir=str(tmp_workspace["audit"]),
@@ -217,7 +217,7 @@ def make_observability(tmp_workspace):
             quantum_log_max_bytes=0,
             quantum_log_warn_bytes=0,
         )
-        return ObservabilitySettings(**{**defaults, **overrides})
+        return LoggingSettings(**{**defaults, **overrides})
 
     return _factory
 
