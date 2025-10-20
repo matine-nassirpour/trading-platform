@@ -25,6 +25,8 @@ from __future__ import annotations
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from quantum.core.config.validators import validate_field
+
 
 class CoreSettings(BaseSettings):
     """
@@ -83,8 +85,14 @@ class CoreSettings(BaseSettings):
     # -------------------------------------------------------------------------
     @field_validator("quantum_env", mode="before")
     @classmethod
-    def normalize_env(cls, v):
-        return str(v or "dev").strip().lower()
+    def validate_environment(cls, v):
+        # Rule: core.runtime.environment
+        return validate_field(
+            "core.runtime.environment",
+            v,
+            field="quantum_env",
+            model="CoreSettings",
+        )
 
     # -------------------------------------------------------------------------
     # Settings metadata

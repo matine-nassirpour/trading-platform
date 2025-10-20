@@ -26,6 +26,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from quantum.core.config.validators import validate_field
+
 
 class TracingSettings(BaseModel):
     """
@@ -79,43 +81,33 @@ class TracingSettings(BaseModel):
     # -------------------------------------------------------------------------
     # Validators
     # -------------------------------------------------------------------------
+    @field_validator("quantum_trace_otlp_protocol", mode="before")
+    @classmethod
+    def validate_protocol(cls, v):
+        # Rule: core.tracing.otlp_protocol
+        return validate_field(
+            "core.tracing.otlp_protocol",
+            v,
+            field="quantum_trace_otlp_protocol",
+            model="TracingSettings",
+        )
+
+    @field_validator("quantum_trace_otlp_compression", mode="before")
+    @classmethod
+    def validate_compression(cls, v):
+        # Rule: core.tracing.compression
+        return validate_field(
+            "core.tracing.compression",
+            v,
+            field="quantum_trace_otlp_compression",
+            model="TracingSettings",
+        )
+
     @field_validator("quantum_trace_sample")
     @classmethod
     def validate_sample(cls, v):
         if not (0.0 <= v <= 1.0):
             raise ValueError("quantum_trace_sample must be in [0, 1]")
-        return v
-
-    @field_validator("quantum_trace_otlp_protocol", mode="before")
-    @classmethod
-    def normalize_protocol(cls, v):
-        if not v:
-            return "http"
-        v = str(v).strip().lower()
-        if v not in ("http", "grpc"):
-            # Instead of failing hard, fallback gracefully
-            import logging
-
-            logging.getLogger(__name__).warning(
-                f"Unsupported OTLP protocol '{v}', defaulting to 'http'."
-            )
-            return "http"
-        return v
-
-    @field_validator("quantum_trace_otlp_protocol")
-    @classmethod
-    def validate_protocol(cls, v: str) -> str:
-        v = v.strip().lower()
-        if v not in ("http", "grpc"):
-            raise ValueError("quantum_trace_otlp_protocol must be 'http' or 'grpc'")
-        return v
-
-    @field_validator("quantum_trace_otlp_compression")
-    @classmethod
-    def validate_compression(cls, v: str) -> str:
-        v = v.strip().lower()
-        if v not in ("gzip", "none"):
-            raise ValueError("quantum_trace_otlp_compression must be 'gzip' or 'none'")
         return v
 
     # -------------------------------------------------------------------------

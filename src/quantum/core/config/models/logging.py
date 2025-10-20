@@ -24,6 +24,8 @@ from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from quantum.core.config.validators import validate_field
+
 
 class LoggingSettings(BaseModel):
     """
@@ -113,42 +115,39 @@ class LoggingSettings(BaseModel):
     # -------------------------------------------------------------------------
     @field_validator("quantum_log_level", mode="before")
     @classmethod
-    def normalize_log_level(cls, v):
-        if not v:
-            return "INFO"
-        return str(v).strip().upper()
-
-    @field_validator("quantum_log_level")
-    @classmethod
     def validate_log_level(cls, v):
-        allowed = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}
-        if v not in allowed:
-            raise ValueError(
-                f"Invalid quantum_log_level={v!r}, must be one of {allowed}"
-            )
+        return validate_field(
+            "core.logging.log_level",
+            v,
+            field="quantum_log_level",
+            model="LoggingSettings",
+        )
+
+    @field_validator("streamlit_log_tz", mode="before")
+    @classmethod
+    def validate_tz(cls, v):
+        return validate_field(
+            "core.logging.timezone",
+            v,
+            field="streamlit_log_tz",
+            model="LoggingSettings",
+        )
+
+    @field_validator("streamlit_log_renderer", mode="before")
+    @classmethod
+    def validate_renderer(cls, v):
+        if not v:
+            return "json"
+        v = str(v).strip().lower()
+        if v not in ("json", "code"):
+            raise ValueError("streamlit_log_renderer must be 'json' or 'code'")
         return v
 
     @field_validator("quantum_log_sample_info", mode="before")
     @classmethod
-    def empty_str_to_zero(cls, v):
+    def normalize_sample_info(cls, v):
         if v in ("", None):
             return 0
-        return v
-
-    @field_validator("streamlit_log_tz")
-    @classmethod
-    def validate_tz(cls, v: str) -> str:
-        v = v.strip().lower()
-        if v not in ("utc", "local"):
-            raise ValueError("streamlit_log_tz must be 'utc' or 'local'")
-        return v
-
-    @field_validator("streamlit_log_renderer")
-    @classmethod
-    def validate_renderer(cls, v: str) -> str:
-        v = v.strip().lower()
-        if v not in ("json", "code"):
-            raise ValueError("streamlit_log_renderer must be 'json' or 'code'")
         return v
 
     # -------------------------------------------------------------------------
