@@ -21,8 +21,8 @@ from pathlib import Path
 
 import pytest
 
-from quantum.shared.config.config_manager import Settings
-from quantum.shared.config.logging_settings import LoggingSettings
+from quantum.core.config.models.core import CoreSettings
+from quantum.core.config.models.logging import LoggingSettings
 from tests.support.types import Workspace
 
 # ╭─────────────────────────────────────────────────────────────────────────────╮
@@ -194,9 +194,9 @@ def tmp_workspace(iso_env, clean_registry) -> Generator[Workspace]:
 
 
 @pytest.fixture
-def base_settings(tmp_path: Path) -> Settings:
+def base_settings(tmp_path: Path) -> CoreSettings:
     """Return minimal Settings pointing logs under tmp_path."""
-    return Settings(
+    return CoreSettings(
         quantum_app_name="test_app",
         quantum_app_version="0.0.0+test",
         quantum_env="test",

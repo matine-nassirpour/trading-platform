@@ -1,3 +1,49 @@
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║                              GOVERNANCE HEADER                               ║
+# ║                     Quantum Platform — Architecture Policy                   ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
+#
+#  Purpose : Formal architectural governance contract for the quantum platform.
+#  Scope   : Applies to all Python packages within the 'quantum' namespace.
+#  Version : 1.0.0
+#  Updated : 2025-10-20
+#
+# ────────────────────────────────────────────────────────────────────────────────
+# 1. Mission
+#    This file defines **non-negotiable structural invariants** that govern the
+#    dependency topology of the codebase. It enforces Clean Architecture and
+#    Dependency Inversion principles to guarantee modularity, stability and
+#    testability over 10+ years of evolution.
+#
+# ────────────────────────────────────────────────────────────────────────────────
+# 2. Governance Model
+#    • Any modification of these contracts requires:
+#         - a formal Architecture Decision Record (ADR)
+#         - validation by the Architecture Review Board
+#         - an update of this header’s version number and date
+#    • Violations discovered in CI/CD must block merges to protected branches.
+#    • Exception requests (temporary rule relaxation) must:
+#         - be documented in an ADR (type: deviation)
+#         - specify expiry date and mitigation plan
+#
+# ────────────────────────────────────────────────────────────────────────────────
+# 3. Review & Audit
+#    • This contract is subject to quarterly architecture reviews.
+#    • Results are recorded in the Architecture Conformance Report (ACR).
+#    • Violations older than one release cycle must be remediated or justified.
+#
+# ────────────────────────────────────────────────────────────────────────────────
+# 4. Compliance Classification
+#    • Level 1 – Advised   : Informational rules (warnings only)
+#    • Level 2 – Required  : CI/CD blocking (must-fix)
+#    • Level 3 – Critical  : Immutable architectural invariant
+#
+#    All contracts defined below are Level 3 (Critical).
+#
+# ════════════════════════════════════════════════════════════════════════════════
+#                             End of Governance Header
+# ════════════════════════════════════════════════════════════════════════════════
+
 [importlinter]
 # Root packages to analyze (multiple)
 root_packages =
@@ -7,12 +53,13 @@ include_external_packages = False
 
 
 # ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Contract 1 — Clean Architecture                                             │
-# │ Prevent any upward dependency (domain <- application <- infra <- interface) │
+# │ Contract 1 — Clean Architecture layering                                    │
+# │ Domain ← Application ← Infrastructure ← Interface                           │
+# │ Core layer (quantum.core) stands below all and remains dependency-free      │
 # ╰─────────────────────────────────────────────────────────────────────────────╯
 
 [importlinter:contract:layers]
-name = Clean architecture layers (no upward imports)
+name = Clean architecture layering (application flow)
 type = layers
 layers =
     quantum.domain
@@ -20,8 +67,26 @@ layers =
     quantum.infrastructure
     quantum.interface
 
+
 # ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Contract 2 — Interface NEVER imports the infrastructure                     │
+# │ Contract 2 — Core must remain isolated                                      │
+# │ Core configuration cannot import from outer layers                          │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
+
+[importlinter:contract:forbidden_core_upwards]
+name = Core layer must not depend on any outer layer
+type = forbidden
+source_modules =
+    quantum.core
+forbidden_modules =
+    quantum.domain
+    quantum.application
+    quantum.infrastructure
+    quantum.interface
+
+
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Contract 3 — Interface must not import infrastructure directly              │
 # ╰─────────────────────────────────────────────────────────────────────────────╯
 
 [importlinter:contract:forbidden_ui_infra]
@@ -32,9 +97,10 @@ source_modules =
 forbidden_modules =
     quantum.infrastructure
 
+
 # ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Contract 3 — Interface does not import the domain                           │
-# │ Only goes through Application                                               │
+# │ Contract 4 — Interface must not import domain directly                      │
+# │ It should always go through the Application layer                           │
 # ╰─────────────────────────────────────────────────────────────────────────────╯
 
 [importlinter:contract:forbidden_ui_domain]
@@ -45,8 +111,9 @@ source_modules =
 forbidden_modules =
     quantum.domain
 
+
 # ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Contract 4 — The application does not import the infrastructure             │
+# │ Contract 5 — Application must not import infrastructure                     │
 # ╰─────────────────────────────────────────────────────────────────────────────╯
 
 [importlinter:contract:forbidden_app_infra]
@@ -57,13 +124,14 @@ source_modules =
 forbidden_modules =
     quantum.infrastructure
 
+
 # ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Contract 5 — The domain is independent                                      │
-# │ Does not depend on any app, application, or infrastructure                  │
+# │ Contract 6 — Domain must remain pure                                        │
+# │ No dependency on application, infra, or interface                           │
 # ╰─────────────────────────────────────────────────────────────────────────────╯
 
 [importlinter:contract:forbidden_domain_upwards]
-name = Domain must not depend on outer layers
+name = Domain must remain pure and dependency-free
 type = forbidden
 source_modules =
     quantum.domain
@@ -71,3 +139,15 @@ forbidden_modules =
     quantum.application
     quantum.infrastructure
     quantum.interface
+
+
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Contract 7 — Core layer is cross-cutting and may be imported anywhere       │
+# │ It remains dependency-free but is explicitly allowed globally               │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
+
+[importlinter:contract:core_independence]
+name = Core layer must remain globally independent
+type = independence
+modules =
+    quantum.core
