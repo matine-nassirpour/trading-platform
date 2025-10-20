@@ -10,7 +10,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
-from quantum.core.config.validators import common
+from quantum.core.config.validators import rules
 from quantum.core.config.validators.base import (
     ValidationContext,
     ValidationResult,
@@ -41,11 +41,11 @@ class ValidatorRegistry:
     @classmethod
     def register_defaults(cls) -> None:
         """Register all default Quantum validators."""
-        cls.register(common.EnvironmentValidator())
-        cls.register(common.LogLevelValidator())
-        cls.register(common.TimezoneValidator())
-        cls.register(common.OtlpProtocolValidator())
-        cls.register(common.CompressionValidator())
+        cls.register(rules.EnvironmentValidator())
+        cls.register(rules.LogLevelValidator())
+        cls.register(rules.TimezoneValidator())
+        cls.register(rules.OtlpProtocolValidator())
+        cls.register(rules.CompressionValidator())
 
     # -------------------------------------------------------------------------
     # Lookup
