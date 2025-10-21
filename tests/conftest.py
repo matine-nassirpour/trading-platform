@@ -14,6 +14,7 @@ import os
 import shutil
 import sys
 import tempfile
+import threading
 import time
 from collections.abc import Callable, Generator
 from contextlib import contextmanager, suppress
@@ -24,6 +25,8 @@ import pytest
 from quantum.core.config.models.core import CoreSettings
 from quantum.core.config.models.logging import LoggingSettings
 from tests.support.types import Workspace
+
+_LOG_CLEANUP_LOCK = threading.Lock()
 
 # ╭─────────────────────────────────────────────────────────────────────────────╮
 # │ sys.path: add "src/" to the test runner's PYTHONPATH                        │
@@ -89,6 +92,25 @@ def _read_tail_complete_lines(
 # ╭─────────────────────────────────────────────────────────────────────────────╮
 # │ Fixtures                                                                    │
 # ╰─────────────────────────────────────────────────────────────────────────────╯
+@pytest.fixture
+def fake_env_file(tmp_path: Path) -> Path:
+    """
+    Create a temporary fake .env file for deterministic environment loading tests.
+    """
+    env_content = "\n".join(
+        [
+            "QUANTUM_APP_NAME=test_app",
+            "QUANTUM_ENV=dev",
+            "QUANTUM_LOG_LEVEL=INFO",
+            "QUANTUM_TRACE_EXPORTER=console",
+            "QUANTUM_METRICS_PORT=0",
+        ]
+    )
+    env_file = tmp_path / ".env"
+    env_file.write_text(env_content, encoding="utf-8")
+    return env_file
+
+
 @pytest.fixture(scope="function")
 def iso_env():
     """
@@ -191,6 +213,23 @@ def tmp_workspace(iso_env, clean_registry) -> Generator[Workspace]:
         # Cleaning the workspace
         with suppress(Exception):
             shutil.rmtree(tmpdir, ignore_errors=True)
+
+
+@pytest.fixture
+def cap_config_logs(caplog):
+    """
+    Capture all logs emitted by the Quantum configuration subsystem.
+    """
+    caplog.set_level(logging.DEBUG, logger="quantum.config")
+    yield caplog
+
+
+@pytest.fixture
+def valid_core_settings(tmp_workspace) -> CoreSettings:
+    """Return a valid CoreSettings instance using the temporary workspace."""
+    from quantum.core.config.runtime.manager import ConfigManager
+
+    return ConfigManager.load(apply=False)
 
 
 @pytest.fixture
@@ -386,15 +425,21 @@ def _iter_all_loggers() -> list[logging.Logger]:
 
 
 def _close_all_handlers():
-    """Cleanly flush/close and detach all handlers of all known loggers."""
-    for logger in _iter_all_loggers():
-        for h in list(logger.handlers):
-            with suppress(Exception):
-                h.flush()
-            with suppress(Exception):
-                h.close()
-            with suppress(Exception):
-                logger.removeHandler(h)
+    """
+    Cleanly flush/close and detach all handlers of all known loggers.
+
+    Thread-safe: ensures that only one cleanup operation runs at a time,
+    preventing race conditions under pytest-xdist or multithreaded tests.
+    """
+    with _LOG_CLEANUP_LOCK:
+        for logger in _iter_all_loggers():
+            for h in list(logger.handlers):
+                with suppress(Exception):
+                    h.flush()
+                with suppress(Exception):
+                    h.close()
+                with suppress(Exception):
+                    logger.removeHandler(h)
 
 
 @pytest.fixture(autouse=True)
@@ -408,6 +453,24 @@ def _auto_cleanup_handlers():
     """
     yield
     _close_all_handlers()
+
+
+@pytest.fixture(autouse=True)
+def reset_config_state():
+    """
+    Automatically reset ConfigManager caches and ConfigState between tests.
+
+    Ensures no residual environment or LRU cache contamination between tests,
+    preserving hermeticity for configuration-dependent modules.
+    """
+    from quantum.core.config.runtime.manager import ConfigManager
+    from quantum.core.config.runtime.state import ConfigState
+
+    ConfigManager.clear_caches()
+    ConfigState.instance().reset()
+    yield
+    ConfigManager.clear_caches()
+    ConfigState.instance().reset()
 
 
 # ╭─────────────────────────────────────────────────────────────────────────────╮

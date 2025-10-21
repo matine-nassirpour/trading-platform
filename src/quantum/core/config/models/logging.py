@@ -58,10 +58,12 @@ class LoggingSettings(BaseModel):
     quantum_log_max_bytes: int = Field(
         default=10 * 1024 * 1024,
         description="Maximum size (in bytes) per log file before rotation.",
+        ge=0,
     )
     quantum_log_warn_bytes: int = Field(
         default=0,
         description="Optional warning threshold for log file size (0 = disabled).",
+        ge=0,
     )
     quantum_log_deep_probe: bool = Field(
         default=False,

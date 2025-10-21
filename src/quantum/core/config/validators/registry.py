@@ -30,6 +30,18 @@ class ValidatorRegistry:
     _registry: dict[str, ValidationRule] = {}
 
     # -------------------------------------------------------------------------
+    # Lifecycle Management
+    # -------------------------------------------------------------------------
+    @classmethod
+    def clear_registry(cls) -> None:
+        """
+        Completely clear the validator registry.
+
+        Used for test isolation or controlled lifecycle resets.
+        """
+        cls._registry.clear()
+
+    # -------------------------------------------------------------------------
     # Registration
     # -------------------------------------------------------------------------
     @classmethod
@@ -41,24 +53,32 @@ class ValidatorRegistry:
     @classmethod
     def register_defaults(cls) -> None:
         """Register all default Quantum validators."""
-        cls.register(rules.EnvironmentValidator())
-        cls.register(rules.LogLevelValidator())
-        cls.register(rules.TimezoneValidator())
-        cls.register(rules.OtlpProtocolValidator())
-        cls.register(rules.CompressionValidator())
+        defaults = {
+            "core.runtime.environment": rules.EnvironmentValidator,
+            "core.logging.log_level": rules.LogLevelValidator,
+            "core.logging.timezone": rules.TimezoneValidator,
+            "core.tracing.otlp_protocol": rules.OtlpProtocolValidator,
+            "core.tracing.compression": rules.CompressionValidator,
+        }
+
+        for rid, factory in defaults.items():
+            if rid not in cls._registry:
+                cls.register(factory())
 
     # -------------------------------------------------------------------------
     # Lookup
     # -------------------------------------------------------------------------
     @classmethod
     def get(cls, rule_id: str) -> ValidationRule:
+        """Retrieve a registered validation rule by id."""
         try:
             return cls._registry[rule_id]
-        except KeyError:
-            raise KeyError(f"Validator not found: {rule_id}")
+        except KeyError as e:
+            raise KeyError(f"Validator not found: {rule_id}") from e
 
     @classmethod
     def all(cls) -> Mapping[str, ValidationRule]:
+        """Return a shallow copy of the registry for inspection."""
         return dict(cls._registry)
 
     # -------------------------------------------------------------------------
