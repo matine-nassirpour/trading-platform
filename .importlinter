@@ -151,3 +151,18 @@ name = Core layer must remain globally independent
 type = independence
 modules =
     quantum.core
+
+
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Contract 8 — Shared and Core must not depend on Infrastructure or Interface │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
+
+[importlinter:contract:forbidden_crosscutting_upwards]
+name = Shared and Core must remain infrastructure-agnostic
+type = forbidden
+source_modules =
+    quantum.shared
+    quantum.core
+forbidden_modules =
+    quantum.infrastructure
+    quantum.interface
