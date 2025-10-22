@@ -22,8 +22,8 @@ from opentelemetry.trace import Span
 from opentelemetry.trace import TracerProvider as TracerProviderInterface
 from opentelemetry.trace import get_tracer_provider, set_tracer_provider
 
-from quantum.shared.config.config_manager import Settings
-from quantum.shared.config.tracing_settings import TracingSettings
+from quantum.core.config.models.core import CoreSettings
+from quantum.core.config.models.tracing import TracingSettings
 from quantum.shared.context.run_id import get_run_id
 from quantum.shared.correlation.correlation_id import get_correlation_id
 
@@ -165,7 +165,7 @@ def _build_otlp_exporter(
 
 
 def init_tracing(
-    settings: Settings,
+    core_settings: CoreSettings,
     tracing_settings: TracingSettings,
     replace_existing: bool = False,
 ) -> TracerProviderInterface:
@@ -180,11 +180,12 @@ def init_tracing(
     # ─── Build OTel resource
     resource = Resource.create(
         {
-            SERVICE_NAME: settings.quantum_app_name,
-            SERVICE_VERSION: settings.quantum_app_version,
-            SERVICE_NAMESPACE: settings.quantum_ns,
-            DEPLOYMENT_ENVIRONMENT: settings.quantum_env,
-            SERVICE_INSTANCE_ID: settings.quantum_instance_id or socket.gethostname(),
+            SERVICE_NAME: core_settings.quantum_app_name,
+            SERVICE_VERSION: core_settings.quantum_app_version,
+            SERVICE_NAMESPACE: core_settings.quantum_ns,
+            DEPLOYMENT_ENVIRONMENT: core_settings.quantum_env,
+            SERVICE_INSTANCE_ID: core_settings.quantum_instance_id
+            or socket.gethostname(),
         }
     )
 

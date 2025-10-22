@@ -6,6 +6,10 @@ from pathlib import Path
 
 from prometheus_client import start_http_server
 
+from quantum.core.config.models.core import CoreSettings
+from quantum.core.config.models.logging import LoggingSettings
+from quantum.core.config.models.tracing import TracingSettings
+from quantum.core.config.runtime.manager import ConfigManager
 from quantum.infrastructure.observability.logging.logs import (
     close_and_remove_all_handlers,
     init_logging,
@@ -25,9 +29,6 @@ from quantum.infrastructure.observability.tracing.propagation import (
     setup_propagation,
 )
 from quantum.infrastructure.observability.tracing.traces import init_tracing
-from quantum.shared.config.config_manager import ConfigManager, Settings
-from quantum.shared.config.logging_settings import LoggingSettings
-from quantum.shared.config.tracing_settings import TracingSettings
 from quantum.shared.context.run_id import generate_run_id, get_run_id
 
 # ╭─────────────────────────────────────────────────────────────────────────────╮
@@ -112,14 +113,14 @@ def _shutdown_tracing_if_any() -> None:
 
 
 def _init_tracing(
-    settings: Settings,
+    core_settings: CoreSettings,
     tracing_settings: TracingSettings,
     force: bool,
 ) -> bool:
     """Initialize OpenTelemetry tracing subsystem."""
     try:
         _shutdown_tracing_if_any()
-        tracer_provider = init_tracing(settings, tracing_settings, force)
+        tracer_provider = init_tracing(core_settings, tracing_settings, force)
         setup_propagation()
         install_process_baggage()
         otel_tracing_up.set(1)
@@ -140,7 +141,7 @@ def _init_tracing(
                     "quantum_trace_sample": 0.0,
                 }
             )
-            tracer_provider = init_tracing(settings, tracing_fallback, True)
+            tracer_provider = init_tracing(core_settings, tracing_fallback, True)
             setup_propagation()
             install_process_baggage()
             otel_tracing_up.set(1)
@@ -161,19 +162,21 @@ def _init_tracing(
         return False
 
 
-def _init_logging_safe(settings: Settings, logging_settings: LoggingSettings) -> bool:
+def _init_logging_safe(
+    core_settings: CoreSettings, logging_settings: LoggingSettings
+) -> bool:
     """Wrapper for logging initialization (safe)."""
     try:
-        init_logging(settings, logging_settings)
+        init_logging(core_settings, logging_settings)
         return True
     except Exception as e:
         logger.exception(f"Logging initialization failed: {e}")
         return False
 
 
-def _init_metrics(settings: Settings) -> bool:
-    port = settings.quantum_metrics_port
-    addr = settings.quantum_metrics_addr
+def _init_metrics(core_settings: CoreSettings) -> bool:
+    port = core_settings.quantum_metrics_port
+    addr = core_settings.quantum_metrics_addr
     if port > 0:
         try:
             start_http_server(port, addr=addr)
@@ -207,7 +210,7 @@ def init_observability(
             ConfigManager.clear_caches()
 
     with _init_lock:
-        settings = ConfigManager.load()
+        core_settings = ConfigManager.load()
         logging_settings = ConfigManager.load_logging()
         tracing_settings = ConfigManager.load_tracing()
 
@@ -233,13 +236,13 @@ def init_observability(
             generate_run_id()
 
         # ─── Initialize tracing
-        tracing_ok = _init_tracing(settings, tracing_settings, force)
+        tracing_ok = _init_tracing(core_settings, tracing_settings, force)
         pipeline_tracing_ok.set(1 if tracing_ok else 0)
 
         # ─── Initialize logging
         if force:
             close_and_remove_all_handlers(logging.getLogger())
-        logging_ok = _init_logging_safe(settings, logging_settings)
+        logging_ok = _init_logging_safe(core_settings, logging_settings)
         pipeline_logging_ok.set(1 if logging_ok else 0)
 
         # ─── Probe sinks
@@ -253,7 +256,7 @@ def init_observability(
         logging_sink_up.set(1 if sinks_ok else 0)
 
         # ─── Initialize metrics
-        _init_metrics(settings)
+        _init_metrics(core_settings)
 
         ok = logging_ok and tracing_ok
         pipeline_up.set(1 if ok else 0)

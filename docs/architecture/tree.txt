@@ -18,6 +18,8 @@ trading-platform/
 ├── docs/
 │   ├── architecture/
 │   │   └── tree.txt
+│   ├── config/
+│   │   └── README.md
 │   └── observability/
 │       ├── grafana_dashboard.json
 │       └── README.md
@@ -40,6 +42,32 @@ trading-platform/
 │       │   │   │   └── execution_port.py
 │       │   │   └── __init__.py
 │       │   ├── use_cases/
+│       │   │   └── __init__.py
+│       │   └── __init__.py
+│       ├── core/
+│       │   ├── config/
+│       │   │   ├── contracts/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── base_contracts.py
+│       │   │   │   └── settings_contracts.py
+│       │   │   ├── models/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── core.py
+│       │   │   │   ├── logging.py
+│       │   │   │   ├── mt5.py
+│       │   │   │   └── tracing.py
+│       │   │   ├── providers/
+│       │   │   │   ├── __init__.py
+│       │   │   │   └── env_loader.py
+│       │   │   ├── runtime/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── manager.py
+│       │   │   │   └── state.py
+│       │   │   ├── validators/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── base.py
+│       │   │   │   ├── registry.py
+│       │   │   │   └── rules.py
 │       │   │   └── __init__.py
 │       │   └── __init__.py
 │       ├── domain/
@@ -138,12 +166,6 @@ trading-platform/
 │       │   │   └── entrypoints.py
 │       │   └── __init__.py
 │       ├── shared/
-│       │   ├── config/
-│       │   │   ├── __init__.py
-│       │   │   ├── config_manager.py
-│       │   │   ├── logging_settings.py
-│       │   │   ├── mt5_settings.py
-│       │   │   └── tracing_settings.py
 │       │   ├── context/
 │       │   │   ├── __init__.py
 │       │   │   └── run_id.py
@@ -180,6 +202,17 @@ trading-platform/
 │   ├── e2e/
 │   │   └── __init__.py
 │   ├── integration/
+│   │   ├── core/
+│   │   │   ├── config/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── test_env_loader.py
+│   │   │   │   ├── test_failure_resilience.py
+│   │   │   │   ├── test_manager_lifecycle.py
+│   │   │   │   ├── test_model_integration.py
+│   │   │   │   ├── test_snapshot_consistency.py
+│   │   │   │   ├── test_state_runtime.py
+│   │   │   │   └── test_validator_registry.py
+│   │   │   └── __init__.py
 │   │   ├── infrastructure/
 │   │   │   ├── observability/
 │   │   │   │   ├── __init__.py
@@ -199,6 +232,28 @@ trading-platform/
 │   │   ├── types.py
 │   │   └── wait.py
 │   ├── unit/
+│   │   ├── core/
+│   │   │   ├── config/
+│   │   │   │   ├── models/
+│   │   │   │   │   ├── __init__.py
+│   │   │   │   │   ├── test_core.py
+│   │   │   │   │   ├── test_logging.py
+│   │   │   │   │   ├── test_mt5.py
+│   │   │   │   │   └── test_tracing.py
+│   │   │   │   ├── providers/
+│   │   │   │   │   ├── __init__.py
+│   │   │   │   │   └── test_env_loader.py
+│   │   │   │   ├── runtime/
+│   │   │   │   │   ├── __init__.py
+│   │   │   │   │   ├── test_manager.py
+│   │   │   │   │   └── test_state.py
+│   │   │   │   ├── validators/
+│   │   │   │   │   ├── __init__.py
+│   │   │   │   │   ├── test_base.py
+│   │   │   │   │   ├── test_registry.py
+│   │   │   │   │   └── test_rules.py
+│   │   │   │   └── __init__.py
+│   │   │   └── __init__.py
 │   │   ├── infrastructure/
 │   │   │   ├── observability/
 │   │   │   │   ├── logging/
@@ -217,16 +272,9 @@ trading-platform/
 │   │   │   │   │   └── test_propagation.py
 │   │   │   │   └── __init__.py
 │   │   │   └── __init__.py
-│   │   ├── shared/
-│   │   │   ├── config/
-│   │   │   │   └── __init__.py
-│   │   │   ├── time/
-│   │   │   │   └── __init__.py
-│   │   │   └── __init__.py
 │   │   └── __init__.py
 │   ├── __init__.py
 │   └── conftest.py
-├── .coveragerc
 ├── .env.example
 ├── .gitignore
 ├── .importlinter

@@ -6,12 +6,12 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+from quantum.core.config.models.core import CoreSettings
+from quantum.core.config.models.logging import LoggingSettings
 from quantum.infrastructure.observability.logging._io_utils import (
     fsync_dir,
     inc_disk_error_counter,
 )
-from quantum.shared.config.config_manager import Settings
-from quantum.shared.config.logging_settings import LoggingSettings
 from quantum.shared.time.naming import partition_path_components
 
 try:
@@ -41,7 +41,7 @@ class PartitionedJSONLFileHandler(logging.Handler):
 
     def __init__(
         self,
-        settings: Settings,
+        settings: CoreSettings,
         observability: LoggingSettings,
         *,
         encoding: str = "utf-8",

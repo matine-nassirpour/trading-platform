@@ -2,6 +2,8 @@ import logging
 import sys
 from contextlib import suppress
 
+from quantum.core.config.models.core import CoreSettings
+from quantum.core.config.models.logging import LoggingSettings
 from quantum.infrastructure.observability.logging.audit_sink import (
     AuditEventFileHandler,
 )
@@ -19,8 +21,6 @@ from quantum.infrastructure.observability.logging.formatter import JsonFormatter
 from quantum.infrastructure.observability.logging.partitioned_handlers import (
     PartitionedJSONLFileHandler,
 )
-from quantum.shared.config.config_manager import Settings
-from quantum.shared.config.logging_settings import LoggingSettings
 
 
 def close_and_remove_all_handlers(logger: logging.Logger) -> None:
@@ -39,11 +39,13 @@ def close_and_remove_all_handlers(logger: logging.Logger) -> None:
             logger.removeHandler(h)
 
 
-def init_logging(settings: Settings, observability: LoggingSettings) -> None:
+def init_logging(
+    core_settings: CoreSettings, logging_settings: LoggingSettings
+) -> None:
     """
     Initializes structured JSON logging, audit file sinks, and optional rate limiting.
     """
-    level = getattr(logging, observability.quantum_log_level.upper(), logging.INFO)
+    level = getattr(logging, logging_settings.quantum_log_level.upper(), logging.INFO)
 
     # ─── Reset any existing handlers (idempotent re-init)
     root_logger = logging.getLogger()
@@ -52,15 +54,15 @@ def init_logging(settings: Settings, observability: LoggingSettings) -> None:
 
     # ─── Common filters for all handlers
     def _add_base_filters(handler: logging.Handler) -> None:
-        handler.addFilter(LoggingContextFilter(env=settings.quantum_env))
+        handler.addFilter(LoggingContextFilter(env=core_settings.quantum_env))
         handler.addFilter(IgnoreLibrariesFilter())
         handler.addFilter(MonotonicTimestampFilter())
         handler.addFilter(RedactFilter())
         handler.addFilter(
             StaticFieldsFilter(
-                service_name=settings.quantum_app_name,
-                service_namespace=settings.quantum_ns,
-                service_version=settings.quantum_app_version,
+                service_name=core_settings.quantum_app_name,
+                service_namespace=core_settings.quantum_ns,
+                service_version=core_settings.quantum_app_version,
             )
         )
 
@@ -68,13 +70,13 @@ def init_logging(settings: Settings, observability: LoggingSettings) -> None:
     def _maybe_add_ratelimit_and_sampling(
         handler: logging.Handler, *, allow_sampling: bool
     ) -> None:
-        if observability.quantum_log_ratelimit:
+        if logging_settings.quantum_log_ratelimit:
             handler.addFilter(
-                RateLimitFilter(max_per_sec=observability.quantum_log_rps)
+                RateLimitFilter(max_per_sec=logging_settings.quantum_log_rps)
             )
-        if allow_sampling and observability.quantum_log_sample_info > 1:
+        if allow_sampling and logging_settings.quantum_log_sample_info > 1:
             handler.addFilter(
-                InfoSamplerFilter(sample_every=observability.quantum_log_sample_info)
+                InfoSamplerFilter(sample_every=logging_settings.quantum_log_sample_info)
             )
 
     # ─── Console handler (stderr)
@@ -87,8 +89,8 @@ def init_logging(settings: Settings, observability: LoggingSettings) -> None:
     handlers: list[logging.Handler] = [stderr_handler]
 
     # ─── Partitioned JSONL handler
-    if observability.quantum_log_dir:
-        partition_handler = PartitionedJSONLFileHandler(settings, observability)
+    if logging_settings.quantum_log_dir:
+        partition_handler = PartitionedJSONLFileHandler(core_settings, logging_settings)
         partition_handler.setLevel(level)
         partition_handler.setFormatter(JsonFormatter())
         _add_base_filters(partition_handler)
@@ -102,7 +104,7 @@ def init_logging(settings: Settings, observability: LoggingSettings) -> None:
     root_logger.propagate = False
 
     # ─── Audit sink
-    if observability.quantum_audit_dir:
+    if logging_settings.quantum_audit_dir:
         audit_logger = logging.getLogger("quantum.trading")
 
         for h in list(audit_logger.handlers):
@@ -115,10 +117,10 @@ def init_logging(settings: Settings, observability: LoggingSettings) -> None:
                     audit_logger.removeHandler(h)
 
         audit_handler = AuditEventFileHandler(
-            base_dir=observability.quantum_audit_dir,
-            app=settings.quantum_app_name,
-            environment=settings.quantum_env,
-            namespace=settings.quantum_ns,
+            base_dir=logging_settings.quantum_audit_dir,
+            app=core_settings.quantum_app_name,
+            environment=core_settings.quantum_env,
+            namespace=core_settings.quantum_ns,
         )
         audit_handler.setLevel(logging.NOTSET)
         _add_base_filters(audit_handler)
