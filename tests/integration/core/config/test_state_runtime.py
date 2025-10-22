@@ -1,3 +1,10 @@
+"""
+Quantum Core — Integration Tests: Runtime State
+────────────────────────────────────────────────
+Validate thread safety, cache consistency, and lifecycle invariants
+of the ConfigState singleton used as the runtime configuration anchor.
+"""
+
 import os
 import threading
 import time
@@ -9,10 +16,13 @@ from quantum.core.config.providers.env_loader import load_env
 from quantum.core.config.runtime.state import ConfigState
 
 
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Singleton identity and lifecycle invariants                                 │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 @pytest.mark.integration
 def test_singleton_identity_across_imports():
     """
-    The ConfigState must always return the same instance across imports.
+    ConfigState must always return the same instance across imports
     """
     state1 = ConfigState.instance()
     state2 = ConfigState.instance()
@@ -23,7 +33,7 @@ def test_singleton_identity_across_imports():
 @pytest.mark.integration
 def test_snapshot_and_reset_cycle(tmp_path: Path, iso_env):
     """
-    snapshot() reflects env cache after load_env(), and reset() clears pid/cache.
+    snapshot() reflects env cache after load_env(), and reset() clears pid/cache
     """
     (tmp_path / ".env").write_text("FOO=bar\n", encoding="utf-8")
 
@@ -44,10 +54,13 @@ def test_snapshot_and_reset_cycle(tmp_path: Path, iso_env):
     assert state.snapshot()["env_cache"] == {"X": "1"}
 
 
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Concurrency and thread safety                                               │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 @pytest.mark.integration
 def test_thread_safety_during_concurrent_access(tmp_path: Path, iso_env):
     """
-    Concurrent readers/writers must not corrupt the cache; last write wins.
+    Concurrent readers/writers must not corrupt the cache; last write wins
     """
     (tmp_path / ".env").write_text("FOO=base\n", encoding="utf-8")
     load_env(root=tmp_path, apply=True)
@@ -77,10 +90,13 @@ def test_thread_safety_during_concurrent_access(tmp_path: Path, iso_env):
     assert all((v is None) or isinstance(v, str) for v in reads)
 
 
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ PID validation and cache invalidation                                       │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 @pytest.mark.integration
 def test_pid_invalidation(tmp_path: Path, iso_env):
     """
-    Cache validity must depend on current PID; mismatch invalidates cache.
+    Cache validity must depend on current PID; mismatch invalidates cache
     """
     (tmp_path / ".env").write_text("A=1\n", encoding="utf-8")
     load_env(root=tmp_path)
@@ -97,10 +113,13 @@ def test_pid_invalidation(tmp_path: Path, iso_env):
     assert state.has_valid_cache()
 
 
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Reset idempotence and safe reentrancy                                       │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 @pytest.mark.integration
 def test_multiple_resets_are_idempotent():
     """
-    reset() is safe to call repeatedly; state remains consistent.
+    reset() is safe to call repeatedly; state remains consistent
     """
     state = ConfigState.instance()
     state.update(env_cache={"X": "1"}, loaded_pid=os.getpid())
@@ -116,10 +135,13 @@ def test_multiple_resets_are_idempotent():
     assert not state.has_valid_cache()
 
 
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Atomicity and coherence of updates                                          │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 @pytest.mark.integration
 def test_env_cache_consistency_during_updates(tmp_path: Path, iso_env):
     """
-    Updates to env cache are atomic; final snapshot reflects the last write.
+    Updates to env cache are atomic; final snapshot reflects the last write
     """
     (tmp_path / ".env").write_text("FOO=bar\n", encoding="utf-8")
     load_env(root=tmp_path, apply=True)

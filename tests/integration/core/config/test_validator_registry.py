@@ -1,3 +1,10 @@
+"""
+Quantum Core — Integration Tests: Validator Registry and Rule Execution
+────────────────────────────────────────────────────────────────────────
+Validate the behavior of the central ValidatorRegistry, its rule lifecycle,
+default registration, context propagation, and ValidationResult semantics.
+"""
+
 from __future__ import annotations
 
 from typing import Any
@@ -13,7 +20,7 @@ from quantum.core.config.validators.registry import ValidatorRegistry
 
 
 # ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Utility dummy rule for controlled testing                                   │
+# │ Utility: Dummy validation rule for controlled testing                       │
 # ╰─────────────────────────────────────────────────────────────────────────────╯
 class DummyRule(ValidationRule):
     """Simple rule that succeeds or fails depending on value type."""
@@ -34,13 +41,12 @@ class DummyRule(ValidationRule):
 
 
 # ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ 1. Registry lifecycle and isolation                                         │
+# │ Registry lifecycle and isolation                                            │
 # ╰─────────────────────────────────────────────────────────────────────────────╯
 @pytest.mark.integration
 def test_clear_and_register_isolated(iso_env):
     """
-    Clearing the registry must remove all prior rules.
-    Re-registration must work cleanly without leakage.
+    Clearing the registry must remove all prior rules and allow clean re-registration
     """
     ValidatorRegistry.clear_registry()
     assert ValidatorRegistry.all() == {}
@@ -54,12 +60,12 @@ def test_clear_and_register_isolated(iso_env):
 
 
 # ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ 2. Duplicate registration handling                                          │
+# │ Duplicate registration handling                                             │
 # ╰─────────────────────────────────────────────────────────────────────────────╯
 @pytest.mark.integration
 def test_register_duplicate_rule_raises_valueerror(iso_env):
     """
-    Registering a rule with an existing ID must raise ValueError.
+    Registering a rule with an existing ID must raise ValueError
     """
     ValidatorRegistry.clear_registry()
     ValidatorRegistry.register(DummyRule())
@@ -69,12 +75,12 @@ def test_register_duplicate_rule_raises_valueerror(iso_env):
 
 
 # ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ 3. Lookup and retrieval consistency                                         │
+# │ Lookup and retrieval consistency                                            │
 # ╰─────────────────────────────────────────────────────────────────────────────╯
 @pytest.mark.integration
 def test_get_and_all_reflect_current_registry(iso_env):
     """
-    The registry must expose the same objects via get() and all().
+    The registry must expose the same rule objects via get() and all()
     """
     ValidatorRegistry.clear_registry()
     rule = DummyRule()
@@ -90,7 +96,7 @@ def test_get_and_all_reflect_current_registry(iso_env):
 @pytest.mark.integration
 def test_get_unknown_rule_raises_keyerror(iso_env):
     """
-    Retrieving a non-existent validator must raise KeyError.
+    Retrieving a non-existent validator must raise KeyError
     """
     ValidatorRegistry.clear_registry()
     with pytest.raises(KeyError):
@@ -98,12 +104,12 @@ def test_get_unknown_rule_raises_keyerror(iso_env):
 
 
 # ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ 4. Execution and ValidationResult contract                                  │
+# │ ValidationResult contract and rule execution                                │
 # ╰─────────────────────────────────────────────────────────────────────────────╯
 @pytest.mark.integration
 def test_validationresult_success_and_failure_semantics(iso_env):
     """
-    ValidationResult must encapsulate correctness, message and raise_if_failed().
+    ValidationResult must encapsulate correctness, message, and raise_if_failed()
     """
     ok = ValidationResult(ok=True, message=None, value="x", rule="demo")
     assert ok.raise_if_failed() == "x"
@@ -116,7 +122,7 @@ def test_validationresult_success_and_failure_semantics(iso_env):
 @pytest.mark.integration
 def test_rule_execution_success_and_failure(iso_env):
     """
-    The registry must execute rules and produce consistent ValidationResult objects.
+    The registry must execute registered rules and return consistent ValidationResult objects
     """
     ValidatorRegistry.clear_registry()
     ok_rule = DummyRule(True)
@@ -137,15 +143,13 @@ def test_rule_execution_success_and_failure(iso_env):
 
 
 # ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ 5. Context propagation                                                      │
+# │ Context propagation and introspection                                       │
 # ╰─────────────────────────────────────────────────────────────────────────────╯
 @pytest.mark.integration
 def test_validationcontext_description_and_usage(iso_env):
     """
-    ValidationContext must render a readable descriptor
-    and be correctly propagated to rule execution.
+    ValidationContext must render a readable descriptor and propagate correctly
     """
-
     captured_ctx: list[ValidationContext] = []
 
     class CaptureRule(ValidationRule):
@@ -170,18 +174,17 @@ def test_validationcontext_description_and_usage(iso_env):
 
 
 # ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ 6. Default rules bootstrapping                                              │
+# │ Default rules bootstrapping                                                 │
 # ╰─────────────────────────────────────────────────────────────────────────────╯
 @pytest.mark.integration
 def test_register_defaults_bootstraps_ruleset(iso_env):
     """
-    The registry must initialize with all built-in validators declared in registry.register_defaults().
+    The registry must initialize with all built-in validators declared in register_defaults()
     """
     ValidatorRegistry.clear_registry()
     ValidatorRegistry.register_defaults()
 
     defaults = ValidatorRegistry.all()
-    # Expect core rule groups to be present
     expected_prefixes = (
         "core.runtime.environment",
         "core.logging.log_level",
@@ -189,5 +192,6 @@ def test_register_defaults_bootstraps_ruleset(iso_env):
         "core.tracing.otlp_protocol",
         "core.tracing.compression",
     )
+
     for prefix in expected_prefixes:
         assert prefix in defaults, f"Missing default validator: {prefix}"

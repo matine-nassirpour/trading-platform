@@ -1,3 +1,11 @@
+"""
+Quantum Core — Integration Tests: Configuration Manager Lifecycle
+─────────────────────────────────────────────────────────────────
+Validate the complete lifecycle of the ConfigManager orchestration layer,
+including environment loading, cache management, model consistency,
+and thread-safe access to cached configuration instances.
+"""
+
 import os
 import threading
 from pathlib import Path
@@ -13,10 +21,13 @@ from quantum.core.config.runtime.manager import ConfigManager
 from quantum.core.config.runtime.state import ConfigState
 
 
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Core model loading and validation                                           │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 @pytest.mark.integration
 def test_core_load_creates_valid_model(tmp_path: Path, iso_env):
     """
-    Load a minimal .env file and ensure ConfigManager.load() returns a valid CoreSettings.
+    Load a minimal .env file and ensure ConfigManager.load() returns a valid CoreSettings
     """
     (tmp_path / ".env").write_text(
         "\n".join(
@@ -41,8 +52,14 @@ def test_core_load_creates_valid_model(tmp_path: Path, iso_env):
     assert "QUANTUM_APP_NAME" in snap["env_cache"]
 
 
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Secondary model loaders and immutability                                    │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 @pytest.mark.integration
 def test_secondary_loaders_return_valid_models(tmp_workspace):
+    """
+    Ensure that all secondary loaders return valid, frozen model instances
+    """
     core = ConfigManager.load(apply=False)
     log = ConfigManager.load_logging()
     trace = ConfigManager.load_tracing()
@@ -63,10 +80,13 @@ def test_secondary_loaders_return_valid_models(tmp_workspace):
     assert core.quantum_app_name == "mutable_test"
 
 
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Cache clearing and lifecycle reset                                          │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 @pytest.mark.integration
 def test_clear_caches_resets_all_state(tmp_workspace):
     """
-    Ensure ConfigManager.clear_caches() resets all LRU caches and ConfigState.
+    Ensure ConfigManager.clear_caches() resets all LRU caches and ConfigState
     """
     ConfigManager.load(apply=False)
     ConfigManager.load_logging()
@@ -84,10 +104,13 @@ def test_clear_caches_resets_all_state(tmp_workspace):
     assert state.has_valid_cache()
 
 
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Snapshot generation and coherence                                           │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 @pytest.mark.integration
 def test_snapshot_returns_minimal_consistent_view(tmp_workspace):
     """
-    ConfigManager.snapshot() should produce a minimal coherent dict view.
+    ConfigManager.snapshot() should produce a minimal coherent dict view
     """
     s = ConfigManager.load(apply=False)
     t = ConfigManager.load_tracing()
@@ -101,10 +124,13 @@ def test_snapshot_returns_minimal_consistent_view(tmp_workspace):
     assert snap["trace_exporter"] == t.quantum_trace_exporter
 
 
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Environment isolation and cache behavior                                    │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 @pytest.mark.integration
 def test_environment_isolation_between_loads(tmp_workspace, iso_env):
     """
-    Changing os.environ after the first load should not mutate cached models.
+    Changing os.environ after the first load should not mutate cached models
     """
     s1 = ConfigManager.load(apply=False)
     assert s1.quantum_env == "test"
@@ -120,21 +146,27 @@ def test_environment_isolation_between_loads(tmp_workspace, iso_env):
     assert s3.quantum_env in ("test", "prod")
 
 
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Broker credentials resilience                                               │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 @pytest.mark.integration
 def test_get_mt5_credentials_handles_partial_values(tmp_workspace):
     """
-    get_mt5_credentials() must return safe string values even if env vars are missing.
+    get_mt5_credentials() must return safe string values even if env vars are missing
     """
     creds = ConfigManager.get_mt5_credentials("ftmo")
     assert set(creds.keys()) == {"login", "server", "password"}
     assert all(isinstance(v, str) for v in creds.values())
 
 
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Thread-safety and shared cache consistency                                  │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 @pytest.mark.integration
 def test_thread_safe_access_to_loaders(tmp_workspace):
     """
     Multiple threads calling ConfigManager.load_logging() concurrently
-    must receive the same cached instance, without race conditions.
+    must receive the same cached instance without race conditions
     """
     results: list[LoggingSettings] = []
 

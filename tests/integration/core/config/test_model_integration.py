@@ -1,3 +1,10 @@
+"""
+Quantum Core — Integration Tests: Model Integration and Consistency
+────────────────────────────────────────────────────────────────────
+Validate the cross-model coherence of configuration schemas
+(Core, Logging, Tracing, MT5) and their interaction with ConfigManager.
+"""
+
 from textwrap import dedent
 
 import pytest
@@ -11,11 +18,14 @@ from quantum.core.config.providers.env_loader import load_env
 from quantum.core.config.runtime.manager import ConfigManager
 
 
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Cross-model initialization and environment loading                          │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 @pytest.mark.integration
 def test_models_initialize_consistently_from_env(tmp_workspace, iso_env):
     """
     Ensure all configuration models can be instantiated consistently
-    from the same environment snapshot.
+    from the same environment snapshot
     """
     env_path = tmp_workspace["root"] / ".env"
     env_path.write_text(
@@ -52,10 +62,13 @@ def test_models_initialize_consistently_from_env(tmp_workspace, iso_env):
     assert mt5.quantum_mt5_ftmo_password == "secret"  # pragma: allowlist secret
 
 
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Validation resilience and type coercion                                     │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 @pytest.mark.integration
 def test_invalid_env_values_trigger_validation_error(tmp_workspace, iso_env):
     """
-    Invalid types should not crash model instantiation but must produce string fallback.
+    Invalid types should not crash model instantiation but must produce string fallback
     """
     env_path = tmp_workspace["root"] / ".env"
     env_path.write_text("QUANTUM_METRICS_PORT=not_a_number\n", encoding="utf-8")
@@ -65,10 +78,13 @@ def test_invalid_env_values_trigger_validation_error(tmp_workspace, iso_env):
     assert isinstance(s.quantum_metrics_port, (str, int))
 
 
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Deterministic defaults and stable initialization                            │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 @pytest.mark.integration
 def test_defaults_are_deterministic_and_stable(iso_env):
     """
-    Instantiating models without .env should always produce deterministic defaults.
+    Instantiating models without .env should always produce deterministic defaults
     """
     core1 = CoreSettings()  # type: ignore[arg-type]
     core2 = CoreSettings()  # type: ignore[arg-type]
@@ -87,10 +103,13 @@ def test_defaults_are_deterministic_and_stable(iso_env):
     assert log.quantum_audit_dir is None
 
 
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Serialization and schema validation                                         │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 @pytest.mark.integration
 def test_models_serialization_and_schema_coherence(tmp_workspace, iso_env):
     """
-    Ensure each model can be serialized to JSON and schema definitions are valid.
+    Ensure each model can be serialized to JSON and schema definitions are valid
     """
     load_env(root=tmp_workspace["root"], apply=True)
     models = [CoreSettings(), LoggingSettings(), TracingSettings(), MT5Settings()]  # type: ignore[arg-type]
@@ -110,10 +129,13 @@ def test_models_serialization_and_schema_coherence(tmp_workspace, iso_env):
         assert "properties" in schema
 
 
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ ConfigManager coherence with manual models                                  │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 @pytest.mark.integration
 def test_configmanager_and_models_remain_coherent(tmp_workspace, iso_env):
     """
-    Verify ConfigManager.load() and manual model instantiation remain consistent.
+    Verify ConfigManager.load() and manual model instantiation remain consistent
     """
     env_path = tmp_workspace["root"] / ".env"
     env_path.write_text(
@@ -130,10 +152,16 @@ def test_configmanager_and_models_remain_coherent(tmp_workspace, iso_env):
     assert m1.quantum_metrics_port == m2.quantum_metrics_port
 
 
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ MT5 strict validation and credential enforcement                            │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 @pytest.mark.integration
 def test_partial_mt5_config_is_strict_with_incomplete_credentials(
     tmp_workspace, iso_env
 ):
+    """
+    MT5Settings must raise ValidationError when required credentials are incomplete
+    """
     env_path = tmp_workspace["root"] / ".env"
     env_path.write_text("QUANTUM_MT5_FUNDEDNEXT_SERVER=server_only\n", encoding="utf-8")
 
@@ -155,8 +183,14 @@ def test_partial_mt5_config_is_strict_with_incomplete_credentials(
         valid_mt5.quantum_mt5_ftmo_server = "changed"
 
 
+# ╭─────────────────────────────────────────────────────────────────────────────╮
+# │ Field aliasing and case-insensitive environment mapping                     │
+# ╰─────────────────────────────────────────────────────────────────────────────╯
 @pytest.mark.integration
 def test_model_field_aliases_and_case_insensitivity(tmp_workspace, iso_env):
+    """
+    Model fields should accept environment variable names case-insensitively
+    """
     env_path = tmp_workspace["root"] / ".env"
     env_path.write_text("quantum_app_name=lowercase\n", encoding="utf-8")
 

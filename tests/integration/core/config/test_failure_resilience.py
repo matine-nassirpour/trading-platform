@@ -1,3 +1,10 @@
+"""
+Quantum Core — Integration Tests: Failure Resilience and Error Handling
+────────────────────────────────────────────────────────────────────────
+Validate the robustness of the configuration system against corrupted
+files, invalid environment values, internal state corruption, and concurrency.
+"""
+
 from __future__ import annotations
 
 import os
@@ -12,12 +19,12 @@ from quantum.core.config.runtime.state import ConfigState
 
 
 # ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ 1. Handling of missing or unreadable .env files                             │
+# │ Handling of missing or unreadable .env files                                │
 # ╰─────────────────────────────────────────────────────────────────────────────╯
 @pytest.mark.integration
 def test_load_env_missing_file_does_not_crash(tmp_workspace, iso_env):
     """
-    load_env() must safely handle a missing or empty .env file.
+    load_env() must safely handle a missing or empty .env file
     """
     missing = tmp_workspace["root"] / "no_file.env"
     result = load_env(root=missing.parent, apply=True)
@@ -29,7 +36,7 @@ def test_load_env_missing_file_does_not_crash(tmp_workspace, iso_env):
 def test_load_env_with_corrupted_bytes(tmp_workspace, iso_env):
     """
     Corrupted .env (non-UTF8 bytes) should raise a predictable decoding error,
-    not a crash or inconsistent state.
+    not a crash or inconsistent state
     """
     env_path = tmp_workspace["root"] / ".env"
     env_path.write_bytes(b"\xff\xfeINVALID_ENV=\x80")
@@ -39,12 +46,12 @@ def test_load_env_with_corrupted_bytes(tmp_workspace, iso_env):
 
 
 # ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ 2. Resilience to invalid environment values                                 │
+# │ Resilience to invalid environment values                                    │
 # ╰─────────────────────────────────────────────────────────────────────────────╯
 @pytest.mark.integration
 def test_invalid_env_values_are_tolerated_with_default(tmp_workspace, iso_env):
     """
-    Invalid environment values should fall back to default without crashing.
+    Invalid environment values should fall back to default without crashing
     """
     env_path = tmp_workspace["root"] / ".env"
     env_path.write_text("QUANTUM_METRICS_PORT=not_a_number\n", encoding="utf-8")
@@ -55,12 +62,12 @@ def test_invalid_env_values_are_tolerated_with_default(tmp_workspace, iso_env):
 
 
 # ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ 3. Snapshot resilience under internal corruption                            │
+# │ Snapshot resilience under internal corruption                               │
 # ╰─────────────────────────────────────────────────────────────────────────────╯
 @pytest.mark.integration
 def test_snapshot_survives_internal_corruption(tmp_workspace, iso_env):
     """
-    Even if internal state is corrupted, snapshot() must remain callable.
+    Even if internal state is corrupted, snapshot() must remain callable
     """
     state = ConfigState.instance()
     state.reset()
@@ -80,12 +87,12 @@ def test_snapshot_survives_internal_corruption(tmp_workspace, iso_env):
 
 
 # ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ 4. Thread safety during raised exceptions                                   │
+# │ Thread safety during raised exceptions                                      │
 # ╰─────────────────────────────────────────────────────────────────────────────╯
 @pytest.mark.integration
 def test_concurrent_access_exception_does_not_deadlock(tmp_workspace, iso_env):
     """
-    Exceptions inside access() must not corrupt or block internal lock.
+    Exceptions inside access() must not corrupt or block internal lock
     """
     state = ConfigState.instance()
     state.reset()
@@ -113,12 +120,12 @@ def test_concurrent_access_exception_does_not_deadlock(tmp_workspace, iso_env):
 
 
 # ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ 5. Cache invalidation and reset behavior                                    │
+# │ Cache invalidation and reset behavior                                       │
 # ╰─────────────────────────────────────────────────────────────────────────────╯
 @pytest.mark.integration
 def test_clear_caches_restores_clean_state(tmp_workspace, iso_env):
     """
-    ConfigManager.clear_caches() must clear lru_cache and reset ConfigState.
+    ConfigManager.clear_caches() must clear lru_cache and reset ConfigState
     """
     # Pre-load configuration
     env_path = tmp_workspace["root"] / ".env"
@@ -135,12 +142,12 @@ def test_clear_caches_restores_clean_state(tmp_workspace, iso_env):
 
 
 # ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ 6. Resilience of ConfigManager.snapshot()                                   │
+# │ Resilience of ConfigManager.snapshot()                                      │
 # ╰─────────────────────────────────────────────────────────────────────────────╯
 @pytest.mark.integration
 def test_manager_snapshot_remains_stable_even_with_partial_env(tmp_workspace, iso_env):
     """
-    ConfigManager.snapshot() must not raise even if environment is incomplete.
+    ConfigManager.snapshot() must not raise even if environment is incomplete
     """
     env_path = tmp_workspace["root"] / ".env"
     env_path.write_text("QUANTUM_APP_NAME=x\nQUANTUM_ENV=prod\n", encoding="utf-8")
@@ -155,12 +162,12 @@ def test_manager_snapshot_remains_stable_even_with_partial_env(tmp_workspace, is
 
 
 # ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ 7. Fallback for missing base_dir and default env                            │
+# │ Fallback for missing base_dir and default env                               │
 # ╰─────────────────────────────────────────────────────────────────────────────╯
 @pytest.mark.integration
 def test_load_env_fallback_to_cwd_when_no_root(tmp_path, iso_env):
     """
-    When root and env_file are None, load_env() must fall back to cwd safely.
+    When root and env_file are None, load_env() must fall back to cwd safely
     """
     cwd = Path.cwd()
     result = load_env(root=None, env_file=None, apply=False)

@@ -1,3 +1,10 @@
+"""
+Quantum Core — Integration Tests: ConfigState Snapshot and Runtime Consistency
+───────────────────────────────────────────────────────────────────────────────
+Validate the deterministic, thread-safe, and immutable behavior of the
+ConfigState singleton used by the Quantum Core runtime.
+"""
+
 from __future__ import annotations
 
 import copy
@@ -12,12 +19,12 @@ from quantum.core.config.runtime.state import ConfigState
 
 
 # ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ 1. Initial state and immutability                                           │
+# │ Initial state and immutability                                              │
 # ╰─────────────────────────────────────────────────────────────────────────────╯
 @pytest.mark.integration
 def test_initial_state_is_clean_and_immutable(iso_env):
     """
-    On first instantiation, ConfigState must be empty and immutable.
+    On first instantiation, ConfigState must be empty and its snapshot immutable
     """
     state = ConfigState.instance()
     snap = state.snapshot()
@@ -32,12 +39,12 @@ def test_initial_state_is_clean_and_immutable(iso_env):
 
 
 # ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ 2. Update and snapshot coherence                                            │
+# │ Update and snapshot coherence                                               │
 # ╰─────────────────────────────────────────────────────────────────────────────╯
 @pytest.mark.integration
 def test_update_and_snapshot_consistency(tmp_path: Path, iso_env):
     """
-    Updating base_dir, pid and env_cache must be reflected in snapshot().
+    Updating base_dir, pid, and env_cache must be reflected in snapshot()
     """
     state = ConfigState.instance()
     state.reset()
@@ -54,12 +61,12 @@ def test_update_and_snapshot_consistency(tmp_path: Path, iso_env):
 
 
 # ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ 3. Reset and deterministic reinitialization                                 │
+# │ Reset and deterministic reinitialization                                    │
 # ╰─────────────────────────────────────────────────────────────────────────────╯
 @pytest.mark.integration
 def test_reset_clears_state_deterministically(tmp_path: Path, iso_env):
     """
-    reset() must clear all internal state, restoring a clean snapshot.
+    reset() must clear all internal state, restoring a clean snapshot
     """
     state = ConfigState.instance()
     state.update(
@@ -76,12 +83,12 @@ def test_reset_clears_state_deterministically(tmp_path: Path, iso_env):
 
 
 # ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ 4. Stability between consecutive snapshots                                  │
+# │ Stability between consecutive snapshots                                     │
 # ╰─────────────────────────────────────────────────────────────────────────────╯
 @pytest.mark.integration
 def test_stable_snapshots_without_mutation(tmp_path: Path, iso_env):
     """
-    Two consecutive snapshots without mutation must be identical by value.
+    Two consecutive snapshots without mutation must be identical by value
     """
     state = ConfigState.instance()
     state.reset()
@@ -95,12 +102,12 @@ def test_stable_snapshots_without_mutation(tmp_path: Path, iso_env):
 
 
 # ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ 5. Thread safety of concurrent access() calls                               │
+# │ Thread safety of concurrent access() calls                                  │
 # ╰─────────────────────────────────────────────────────────────────────────────╯
 @pytest.mark.integration
 def test_concurrent_access_thread_safety(tmp_path: Path, iso_env):
     """
-    concurrent calls to access() must preserve atomicity and consistency.
+    Concurrent calls to access() must preserve atomicity and consistency
     """
     state = ConfigState.instance()
     state.reset()
@@ -131,13 +138,13 @@ def test_concurrent_access_thread_safety(tmp_path: Path, iso_env):
 
 
 # ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ 6. has_valid_cache() correctness                                            │
+# │ has_valid_cache() correctness                                               │
 # ╰─────────────────────────────────────────────────────────────────────────────╯
 @pytest.mark.integration
 def test_has_valid_cache_behaves_correctly(tmp_path: Path, iso_env):
     """
-    has_valid_cache() must return True only when env_cache is populated
-    and the loaded_pid matches the current process.
+    has_valid_cache() must return True only when cache is populated
+    and PID matches the current process
     """
     state = ConfigState.instance()
     state.reset()
@@ -152,12 +159,12 @@ def test_has_valid_cache_behaves_correctly(tmp_path: Path, iso_env):
 
 
 # ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ 7. describe() diagnostic output                                             │
+# │ describe() diagnostic output                                                │
 # ╰─────────────────────────────────────────────────────────────────────────────╯
 @pytest.mark.integration
 def test_describe_reflects_internal_state(tmp_path: Path, iso_env):
     """
-    describe() must produce a stable and human-readable representation.
+    describe() must produce a stable and human-readable representation
     """
     state = ConfigState.instance()
     state.reset()
