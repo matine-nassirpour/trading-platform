@@ -86,7 +86,6 @@ class CoreSettings(BaseSettings):
     @field_validator("quantum_env", mode="before")
     @classmethod
     def validate_environment(cls, v):
-        # Rule: core.runtime.environment
         return validate_field(
             "core.runtime.environment",
             v,

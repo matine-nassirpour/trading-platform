@@ -1,6 +1,6 @@
-import os
-
 from prometheus_client import Counter, Gauge, Info
+
+from quantum.core.config.runtime.manager import ConfigManager
 
 # ╭─────────────────────────────────────────────────────────────────────────────╮
 # │ Service / Build metadata (static, exported once)                            │
@@ -9,12 +9,14 @@ build_info = Info("quantum_build", "Build/Service info")
 
 
 def refresh_build_info_from_env() -> None:
+    core_settings = ConfigManager.load()
+
     build_info.info(
         {
-            "service_name": os.getenv("QUANTUM_APP_NAME", "unknown"),
-            "service_version": os.getenv("QUANTUM_APP_VERSION", "0.0.0"),
-            "service_namespace": os.getenv("QUANTUM_NS", "quantum"),
-            "env": os.getenv("QUANTUM_ENV", "dev"),
+            "service_name": core_settings.quantum_app_name,
+            "service_version": core_settings.quantum_app_version,
+            "service_namespace": core_settings.quantum_ns,
+            "env": core_settings.quantum_env,
         }
     )
 

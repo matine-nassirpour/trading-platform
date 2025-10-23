@@ -1,10 +1,10 @@
 import json
 import logging
-import os
 import re
 import threading
 import time
 
+from quantum.core.config.runtime.manager import ConfigManager
 from quantum.infrastructure.observability.logging.constants import get_audit_allowlist
 from quantum.infrastructure.observability.metrics.health import logging_redactions_total
 
@@ -48,9 +48,8 @@ class MonotonicTimestampFilter(logging.Filter):
 class AuditEventFilter(logging.Filter):
     def __init__(self) -> None:
         super().__init__()
-        # We keep reading the version from the env for compat, but the returned allowlist
-        # is version-agnostic anyway (see constants.py).
-        self._version = os.getenv("QUANTUM_AUDIT_EVENTS_VERSION", "v1").lower()
+        logging_settings = ConfigManager.load_logging()
+        self._version = logging_settings.quantum_audit_events_version.lower()
         self._allow = get_audit_allowlist(self._version)
 
     def filter(self, record: logging.LogRecord) -> bool:

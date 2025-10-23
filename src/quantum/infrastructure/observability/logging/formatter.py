@@ -1,6 +1,5 @@
 import json
 import logging
-import os
 import socket
 from contextlib import suppress
 from typing import Any
@@ -8,6 +7,7 @@ from typing import Any
 from opentelemetry.trace import get_current_span
 from pydantic import ValidationError
 
+from quantum.core.config.runtime.manager import ConfigManager
 from quantum.infrastructure.observability.logging.models.factory import from_log_record
 from quantum.infrastructure.observability.logging.models.log_payload_v1 import (
     LogPayloadV1,
@@ -16,9 +16,8 @@ from quantum.shared.context.run_id import get_run_id
 from quantum.shared.correlation.correlation_id import get_correlation_id
 from quantum.shared.time.format import now_mono_ms, to_rfc3339_ms
 
-INSTANCE_ID = (
-    os.getenv("QUANTUM_SERVICE_INSTANCE_ID", "").strip() or socket.gethostname()
-)
+core_settings = ConfigManager.load()
+INSTANCE_ID = core_settings.quantum_instance_id or socket.gethostname()
 EXCLUDED_STD_FIELDS = {
     "args",
     "asctime",

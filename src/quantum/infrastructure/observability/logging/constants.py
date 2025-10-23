@@ -1,6 +1,7 @@
-import os
 import re
 from typing import Final
+
+from quantum.core.config.runtime.manager import ConfigManager
 
 _AUDIT_EVENT_BASELINE_V1: Final = frozenset(
     {
@@ -42,11 +43,13 @@ def get_audit_allowlist(version: str | None = None) -> set[str]:
     - The historical baseline (V1) is used **for all versions** to avoid
     false negatives during a version upgrade (backward compatible).
     """
+    logging_settings = ConfigManager.load_logging()
+
     # Stable, version-independent baseline
     baseline = set(_AUDIT_EVENT_BASELINE_V1)
 
     # Extras from the env (CSV). We clean and remove any suffixes.
-    extra_csv = os.getenv("QUANTUM_AUDIT_EVENTS", "").strip()
+    extra_csv = (logging_settings.quantum_audit_events or "").strip()
     if extra_csv:
         for raw in extra_csv.split(","):
             n = _strip_version_suffix(raw)
