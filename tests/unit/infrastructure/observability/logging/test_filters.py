@@ -5,14 +5,28 @@ import logging
 import pytest
 
 from quantum.infrastructure.observability.logging.constants import get_audit_allowlist
-from quantum.infrastructure.observability.logging.filters import (
+from quantum.infrastructure.observability.logging.filters.audit_event_filter import (
     AuditEventFilter,
-    IgnoreLibrariesFilter,
-    InfoSamplerFilter,
+)
+from quantum.infrastructure.observability.logging.filters.context_filter import (
     LoggingContextFilter,
+)
+from quantum.infrastructure.observability.logging.filters.ignore_libraries_filter import (
+    IgnoreLibrariesFilter,
+)
+from quantum.infrastructure.observability.logging.filters.info_sampler_filter import (
+    InfoSamplerFilter,
+)
+from quantum.infrastructure.observability.logging.filters.monotonic_timestamp_filter import (
     MonotonicTimestampFilter,
+)
+from quantum.infrastructure.observability.logging.filters.rate_limit_filter import (
     RateLimitFilter,
+)
+from quantum.infrastructure.observability.logging.filters.redact_filter import (
     RedactFilter,
+)
+from quantum.infrastructure.observability.logging.filters.static_fields_filter import (
     StaticFieldsFilter,
 )
 from tests.support.factories import make_record
@@ -135,7 +149,7 @@ def test_redact_filter_attrs_and_msg_and_counter(monkeypatch):
     Then sensitive values are redacted, long strings are truncated,
          and a redaction counter is incremented when shrink occurs
     """
-    from quantum.infrastructure.observability.metrics.health import (
+    from quantum.infrastructure.observability.metrics.collectors.health_collector import (
         logging_redactions_total as red_counter,
     )
 
@@ -199,7 +213,7 @@ def test_rate_limit_filter_bucket_and_refill(monkeypatch):
     And after +0.5s exactly one token is refilled (with rate=2/s)
     And after +1.0s two more tokens are available
     """
-    import quantum.infrastructure.observability.logging.filters as fmod
+    import quantum.infrastructure.observability.logging.filters.monotonic_timestamp_filter as fmod
 
     # Controlled monotonic clock
     t = [1000.0]

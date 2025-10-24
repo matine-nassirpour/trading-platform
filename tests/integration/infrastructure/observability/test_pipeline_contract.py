@@ -8,7 +8,9 @@ from pathlib import Path
 
 import pytest
 
-from quantum.infrastructure.observability.metrics import health as m
+from quantum.infrastructure.observability.metrics.collectors import (
+    health_collector as m,
+)
 from tests.support.logging_utils import counter_value
 
 

@@ -246,7 +246,7 @@ def init_tracing(
 
     # ─── Health metric propagation (soft optional)
     try:
-        from quantum.infrastructure.observability.metrics.health import (
+        from quantum.infrastructure.observability.metrics.collectors.health_collector import (
             tracer_exporter_active,
         )
     except ModuleNotFoundError:
@@ -261,7 +261,7 @@ def init_tracing(
 
     # ─── Link provider reference for coordinated shutdown
     try:
-        import quantum.infrastructure.observability.init_observability as _init_mod
+        import quantum.infrastructure.observability.bootstrap.init_manager as _init_mod
 
         _init_mod._tracer_provider_ref = cast(object, tracer_provider)
     except ModuleNotFoundError:

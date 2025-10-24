@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from quantum.infrastructure.observability.logging.partitioned_handlers import (
+from quantum.infrastructure.observability.logging.handlers.partitioned_handler import (
     PartitionedJSONLFileHandler,
 )
 from tests.support.factories import make_record

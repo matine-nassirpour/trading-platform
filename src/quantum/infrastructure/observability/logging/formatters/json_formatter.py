@@ -255,7 +255,7 @@ class JsonFormatter(logging.Formatter):
             with suppress(
                 ModuleNotFoundError, AttributeError, ValueError, RuntimeError
             ):
-                from quantum.infrastructure.observability.metrics.health import (
+                from quantum.infrastructure.observability.metrics.collectors.health_collector import (
                     logging_schema_validation_errors_total,
                 )
 

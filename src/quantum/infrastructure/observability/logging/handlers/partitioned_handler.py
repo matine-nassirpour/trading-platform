@@ -15,7 +15,7 @@ from quantum.infrastructure.observability.logging._io_utils import (
 from quantum.shared.time.naming import partition_path_components
 
 try:
-    from quantum.infrastructure.observability.metrics.health import (
+    from quantum.infrastructure.observability.metrics.collectors.health_collector import (
         logging_file_rotations_total,
     )
 except (ModuleNotFoundError, ImportError):

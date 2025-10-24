@@ -10,7 +10,7 @@ def inc_disk_error_counter() -> None:
     Avoids a hard dependency on metrics.health.
     """
     try:
-        from quantum.infrastructure.observability.metrics.health import (
+        from quantum.infrastructure.observability.metrics.collectors.health_collector import (
             logging_disk_errors_total,
         )
 

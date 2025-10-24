@@ -25,12 +25,14 @@ from typing import Any, SupportsFloat, SupportsIndex, cast
 
 from opentelemetry import trace
 
-from quantum.infrastructure.observability.init_observability import (
+from quantum.infrastructure.observability.bootstrap.init_manager import (
     init_observability,
     shutdown_observability,
 )
 from quantum.infrastructure.observability.logging.event_emitter import emit_event
-from quantum.infrastructure.observability.metrics import health as m
+from quantum.infrastructure.observability.metrics.collectors import (
+    health_collector as m,
+)
 from quantum.infrastructure.observability.tracing.propagation import (
     baggage_context_from_ids,
 )

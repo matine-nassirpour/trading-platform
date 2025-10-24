@@ -15,14 +15,14 @@ import atexit
 import logging
 import time
 
+from quantum.core.config.runtime.manager import ConfigManager
 from quantum.infrastructure.execution.gateway_registry import get_gateway
 from quantum.infrastructure.execution.mt5_gateway import (
     init_mt5_terminal,
     shutdown_mt5_terminal,
 )
 from quantum.infrastructure.observability.metrics.mt5 import terminal_up
-from quantum.infrastructure.observability.tracing.traces import get_tracer
-from quantum.shared.config.config_manager import ConfigManager
+from quantum.infrastructure.observability.tracing.provider import get_tracer
 from quantum.shared.types.channels import ExecutionChannel
 
 logger = logging.getLogger(__name__)

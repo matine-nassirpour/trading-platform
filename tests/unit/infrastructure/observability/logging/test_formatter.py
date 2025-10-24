@@ -6,7 +6,9 @@ from typing import Any, cast
 
 import pytest
 
-from quantum.infrastructure.observability.logging.formatter import JsonFormatter
+from quantum.infrastructure.observability.logging.formatters.json_formatter import (
+    JsonFormatter,
+)
 from tests.support.factories import make_record
 from tests.support.logging_utils import counter_value
 
@@ -52,7 +54,7 @@ class TestFormatterOTelContext:
                 return _SpanContext()
 
         monkeypatch.setattr(
-            "quantum.infrastructure.observability.logging.formatter.get_current_span",
+            "quantum.infrastructure.observability.logging.formatters.json_formatter.get_current_span",
             lambda: _Span(),
             raising=True,
         )
@@ -87,7 +89,7 @@ class TestFormatterOTelContext:
                 return _BadCtx()
 
         monkeypatch.setattr(
-            "quantum.infrastructure.observability.logging.formatter.get_current_span",
+            "quantum.infrastructure.observability.logging.formatters.json_formatter.get_current_span",
             lambda: _SpanBad(),
             raising=True,
         )
@@ -122,7 +124,7 @@ class TestFormatterOTelContext:
                 return _CtxCallable()
 
         monkeypatch.setattr(
-            "quantum.infrastructure.observability.logging.formatter.get_current_span",
+            "quantum.infrastructure.observability.logging.formatters.json_formatter.get_current_span",
             lambda: _SpanCallable(),
             raising=True,
         )
@@ -142,7 +144,7 @@ class TestFormatterOTelContext:
                 return _CtxMask()
 
         monkeypatch.setattr(
-            "quantum.infrastructure.observability.logging.formatter.get_current_span",
+            "quantum.infrastructure.observability.logging.formatters.json_formatter.get_current_span",
             lambda: _SpanMask(),
             raising=True,
         )
@@ -191,7 +193,7 @@ class TestFormatterFallbackAndMetrics:
         When formatting
         Then a fallback payload is produced and the validation error counter increments
         """
-        from quantum.infrastructure.observability.metrics.health import (
+        from quantum.infrastructure.observability.metrics.collectors.health_collector import (
             logging_schema_validation_errors_total as counter,
         )
 
@@ -199,7 +201,7 @@ class TestFormatterFallbackAndMetrics:
 
         # Monkeypatch: get_correlation_id returns a non-UUID string
         monkeypatch.setattr(
-            "quantum.infrastructure.observability.logging.formatter.get_correlation_id",
+            "quantum.infrastructure.observability.logging.formatters.json_formatter.get_correlation_id",
             lambda: "not-a-uuid",
             raising=True,
         )

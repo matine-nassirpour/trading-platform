@@ -13,7 +13,7 @@ from tests.support.logging_utils import capture_logger, counter_value, propagate
 
 def _init_then_shutdown(*, force: bool = True) -> None:
     """Start then stop cleanly (isolate each scenario)."""
-    from quantum.infrastructure.observability.init_observability import (
+    from quantum.infrastructure.observability.bootstrap.init_manager import (
         init_observability,
         shutdown_observability,
     )
@@ -31,7 +31,7 @@ def _assert_inactive_with_reason(
     caplog: pytest.LogCaptureFixture,
     *,
     reason_expected: str,
-    log_name: str = "quantum.infrastructure.observability.tracing.traces",
+    log_name: str = "quantum.infrastructure.observability.tracing.provider",
 ) -> None:
     """
     Common assertion for 'inactive' scenarios:
@@ -39,7 +39,9 @@ def _assert_inactive_with_reason(
       - tracer_exporter_active == 0.0
       - warning log "OTLP exporter configured but INACTIVE" containing the expected reason
     """
-    from quantum.infrastructure.observability.metrics import health as m
+    from quantum.infrastructure.observability.metrics.collectors import (
+        health_collector as m,
+    )
 
     caplog.clear()
     caplog.set_level(logging.INFO)
@@ -74,7 +76,9 @@ class TestOTLPExporterSelection:
         """
         import os
 
-        from quantum.infrastructure.observability.metrics import health as m
+        from quantum.infrastructure.observability.metrics.collectors import (
+            health_collector as m,
+        )
 
         for exp in ("console", "none"):
             caplog.clear()
@@ -98,7 +102,9 @@ class TestOTLPExporterSelection:
         import sys
         import types
 
-        from quantum.infrastructure.observability.metrics import health as m
+        from quantum.infrastructure.observability.metrics.collectors import (
+            health_collector as m,
+        )
 
         fake_http_module = types.ModuleType(
             "opentelemetry.exporter.otlp.proto.http.trace_exporter"
@@ -168,7 +174,9 @@ class TestOTLPExporterSelection:
         import sys
         import types
 
-        from quantum.infrastructure.observability.metrics import health as m
+        from quantum.infrastructure.observability.metrics.collectors import (
+            health_collector as m,
+        )
 
         fake_grpc_module = types.ModuleType(
             "opentelemetry.exporter.otlp.proto.grpc.trace_exporter"
@@ -235,7 +243,9 @@ class TestOTLPExporterSelection:
         """
         import os
 
-        from quantum.infrastructure.observability.metrics import health as m
+        from quantum.infrastructure.observability.metrics.collectors import (
+            health_collector as m,
+        )
 
         os.environ["QUANTUM_TRACE_EXPORTER"] = "otlp"
         os.environ["QUANTUM_TRACE_OTLP_PROTOCOL"] = "ws"  # invalid literal
@@ -262,12 +272,14 @@ class TestOTLPExporterSelection:
         """
         import os
 
-        from quantum.infrastructure.observability.init_observability import (
+        from quantum.infrastructure.observability.bootstrap.init_manager import (
             init_observability,
             shutdown_observability,
         )
-        from quantum.infrastructure.observability.metrics import health as m
-        from quantum.infrastructure.observability.tracing import traces as tmod
+        from quantum.infrastructure.observability.metrics.collectors import (
+            health_collector as m,
+        )
+        from quantum.infrastructure.observability.tracing import provider as tmod
 
         os.environ["QUANTUM_TRACE_EXPORTER"] = "otlp"
         os.environ["QUANTUM_TRACE_OTLP_PROTOCOL"] = "http"
@@ -280,12 +292,12 @@ class TestOTLPExporterSelection:
         caplog.clear()
         caplog.set_level(logging.INFO)
 
-        with propagate_logger("quantum.infrastructure.observability.tracing.traces"):
+        with propagate_logger("quantum.infrastructure.observability.tracing.provider"):
             with propagate_logger(
-                "quantum.infrastructure.observability.init_observability"
+                "quantum.infrastructure.observability.bootstrap.init_manager"
             ):
                 with capture_logger(
-                    "quantum.infrastructure.observability.init_observability"
+                    "quantum.infrastructure.observability.bootstrap.init_manager"
                 ) as recs:
                     init_observability(force=True)
                     try:

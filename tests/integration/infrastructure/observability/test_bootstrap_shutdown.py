@@ -28,14 +28,16 @@ def test_bootstrap_shutdown_idempotence_and_cleanup(tmp_workspace):
        - no more handlers attached to the affected loggers
        - health gauges reset to 0
     """
-    from quantum.infrastructure.observability.init_observability import (
+    from quantum.infrastructure.observability.bootstrap.init_manager import (
         init_observability,
         shutdown_observability,
     )
-    from quantum.infrastructure.observability.logging.logs import (
+    from quantum.infrastructure.observability.logging.service import (
         close_and_remove_all_handlers as _close_handlers,
     )
-    from quantum.infrastructure.observability.metrics import health as m
+    from quantum.infrastructure.observability.metrics.collectors import (
+        health_collector as m,
+    )
 
     # First init: pipeline up
     init_observability()  # force=False by default

@@ -127,30 +127,47 @@ trading-platform/
 │       │   ├── messaging/
 │       │   │   └── __init__.py
 │       │   ├── observability/
+│       │   │   ├── bootstrap/
+│       │   │   │   ├── __init__.py
+│       │   │   │   └── init_manager.py
 │       │   │   ├── logging/
+│       │   │   │   ├── filters/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── audit_event_filter.py
+│       │   │   │   │   ├── context_filter.py
+│       │   │   │   │   ├── ignore_libraries_filter.py
+│       │   │   │   │   ├── info_sampler_filter.py
+│       │   │   │   │   ├── monotonic_timestamp_filter.py
+│       │   │   │   │   ├── rate_limit_filter.py
+│       │   │   │   │   ├── redact_filter.py
+│       │   │   │   │   └── static_fields_filter.py
+│       │   │   │   ├── formatters/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   └── json_formatter.py
+│       │   │   │   ├── handlers/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── audit_sink_handler.py
+│       │   │   │   │   └── partitioned_handler.py
 │       │   │   │   ├── models/
 │       │   │   │   │   ├── __init__.py
 │       │   │   │   │   ├── factory.py
 │       │   │   │   │   └── log_payload_v1.py
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── _io_utils.py
-│       │   │   │   ├── audit_sink.py
 │       │   │   │   ├── constants.py
 │       │   │   │   ├── event_emitter.py
-│       │   │   │   ├── filters.py
-│       │   │   │   ├── formatter.py
-│       │   │   │   ├── logs.py
-│       │   │   │   └── partitioned_handlers.py
+│       │   │   │   └── service.py
 │       │   │   ├── metrics/
+│       │   │   │   ├── collectors/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   └── health_collector.py
 │       │   │   │   ├── __init__.py
-│       │   │   │   ├── health.py
 │       │   │   │   └── mt5.py
 │       │   │   ├── tracing/
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── propagation.py
-│       │   │   │   └── traces.py
-│       │   │   ├── __init__.py
-│       │   │   └── init_observability.py
+│       │   │   │   └── provider.py
+│       │   │   └── __init__.py
 │       │   ├── runtime/
 │       │   │   ├── __init__.py
 │       │   │   └── mt5_runtime_bootstrap.py

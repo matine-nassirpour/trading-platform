@@ -10,11 +10,11 @@ from quantum.core.config.models.core import CoreSettings
 from quantum.core.config.models.logging import LoggingSettings
 from quantum.core.config.models.tracing import TracingSettings
 from quantum.core.config.runtime.manager import ConfigManager
-from quantum.infrastructure.observability.logging.logs import (
+from quantum.infrastructure.observability.logging.service import (
     close_and_remove_all_handlers,
     init_logging,
 )
-from quantum.infrastructure.observability.metrics.health import (
+from quantum.infrastructure.observability.metrics.collectors.health_collector import (
     logging_sink_up,
     otel_tracing_up,
     pipeline_logging_ok,
@@ -28,7 +28,7 @@ from quantum.infrastructure.observability.tracing.propagation import (
     install_process_baggage,
     setup_propagation,
 )
-from quantum.infrastructure.observability.tracing.traces import init_tracing
+from quantum.infrastructure.observability.tracing.provider import init_tracing
 from quantum.shared.context.run_id import generate_run_id, get_run_id
 
 # ╭─────────────────────────────────────────────────────────────────────────────╮

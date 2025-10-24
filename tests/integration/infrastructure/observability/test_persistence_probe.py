@@ -10,7 +10,7 @@ from tests.support.logging_utils import counter_value
 
 def _init_then_assert_then_shutdown(assert_fn) -> None:
     """Init → assert → shutdown (always cleanly, even on failure)."""
-    from quantum.infrastructure.observability.init_observability import (
+    from quantum.infrastructure.observability.bootstrap.init_manager import (
         init_observability,
         shutdown_observability,
     )
@@ -31,7 +31,9 @@ def _init_then_assert_then_shutdown(assert_fn) -> None:
 class TestPersistenceProbe:
     def test_no_persistent_sinks_sets_logging_sink_up_0(self, tmp_workspace):
         """Without QUANTUM_LOG_DIR or QUANTUM_AUDIT_DIR → logging_sink_up == 0."""
-        from quantum.infrastructure.observability.metrics import health as m
+        from quantum.infrastructure.observability.metrics.collectors import (
+            health_collector as m,
+        )
 
         os.environ.pop("QUANTUM_LOG_DIR", None)
         os.environ.pop("QUANTUM_AUDIT_DIR", None)
@@ -47,7 +49,9 @@ class TestPersistenceProbe:
 
     def test_log_dir_only_sets_logging_sink_up_1(self, tmp_workspace):
         """With QUANTUM_LOG_DIR writable (alone) → logging_sink_up == 1."""
-        from quantum.infrastructure.observability.metrics import health as m
+        from quantum.infrastructure.observability.metrics.collectors import (
+            health_collector as m,
+        )
 
         os.environ["QUANTUM_LOG_DIR"] = str(tmp_workspace["logs"])
         os.environ.pop("QUANTUM_AUDIT_DIR", None)
@@ -59,7 +63,9 @@ class TestPersistenceProbe:
 
     def test_audit_dir_only_sets_logging_sink_up_1(self, tmp_workspace):
         """With QUANTUM_AUDIT_DIR writable (alone) → logging_sink_up == 1."""
-        from quantum.infrastructure.observability.metrics import health as m
+        from quantum.infrastructure.observability.metrics.collectors import (
+            health_collector as m,
+        )
 
         os.environ["QUANTUM_AUDIT_DIR"] = str(tmp_workspace["audit"])
         os.environ.pop("QUANTUM_LOG_DIR", None)
@@ -71,7 +77,9 @@ class TestPersistenceProbe:
 
     def test_both_dirs_sets_logging_sink_up_1(self, tmp_workspace):
         """With both directories valid → logging_sink_up == 1."""
-        from quantum.infrastructure.observability.metrics import health as m
+        from quantum.infrastructure.observability.metrics.collectors import (
+            health_collector as m,
+        )
 
         os.environ["QUANTUM_LOG_DIR"] = str(tmp_workspace["logs"])
         os.environ["QUANTUM_AUDIT_DIR"] = str(tmp_workspace["audit"])
@@ -86,7 +94,9 @@ class TestPersistenceProbe:
         QUANTUM_LOG_DIR points to a FILE (os.makedirs fails) and no auditing → logging_sink_up == 0.
         This simulates a reliable cross-platform 'unwritable'.
         """
-        from quantum.infrastructure.observability.metrics import health as m
+        from quantum.infrastructure.observability.metrics.collectors import (
+            health_collector as m,
+        )
 
         bogus = Path(tmp_path) / "not_a_dir.jsonl"
         bogus.write_text("x", encoding="utf-8")
@@ -100,7 +110,9 @@ class TestPersistenceProbe:
 
     def test_invalid_log_dir_but_valid_audit_sets_1(self, tmp_workspace, tmp_path):
         """Invalid log dir but valid audit dir → at least one writable sink → logging_sink_up == 1."""
-        from quantum.infrastructure.observability.metrics import health as m
+        from quantum.infrastructure.observability.metrics.collectors import (
+            health_collector as m,
+        )
 
         bogus = Path(tmp_path) / "not_a_dir.jsonl"
         bogus.write_text("x", encoding="utf-8")
@@ -117,7 +129,9 @@ class TestPersistenceProbe:
         With QUANTUM_LOG_DIR + QUANTUM_LOG_DEEP_PROBE=1 → the write/read/cleanup probe passes,
         logging_sink_up == 1.
         """
-        from quantum.infrastructure.observability.metrics import health as m
+        from quantum.infrastructure.observability.metrics.collectors import (
+            health_collector as m,
+        )
 
         os.environ["QUANTUM_LOG_DIR"] = str(tmp_workspace["logs"])
         os.environ.pop("QUANTUM_AUDIT_DIR", None)

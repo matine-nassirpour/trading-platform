@@ -196,7 +196,7 @@ def tmp_workspace(iso_env, clean_registry) -> Generator[Workspace]:
     finally:
         # Teardown: pipeline shutdown + cleanup
         with suppress(Exception):
-            from quantum.infrastructure.observability.init_observability import (
+            from quantum.infrastructure.observability.bootstrap.init_manager import (
                 shutdown_observability,
             )
 
@@ -293,7 +293,7 @@ def obs_session(tmp_workspace):
     Open a full observability session in a controlled context and guarantee
     a clean closure (freeing FDs/handlers).
     """
-    from quantum.infrastructure.observability.init_observability import (
+    from quantum.infrastructure.observability.bootstrap.init_manager import (
         observability_session,
     )
 

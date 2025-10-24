@@ -257,7 +257,7 @@ Idempotent & thread-safe (`_init_lock`). `force=True` cleans existing root handl
 ### 7.1 CLI
 `apps/cli/bootstrap.py`:
 ```python
-from quantum.infrastructure.observability.init_observability import init_observability
+from quantum.infrastructure.observability.bootstrap.init_manager import init_observability
 
 def init_cli() -> None:
     init_observability()
@@ -265,7 +265,7 @@ def init_cli() -> None:
 
 `apps/cli/main.py` (simplified):
 ```python
-from quantum.infrastructure.observability.init_observability import init_observability
+from quantum.infrastructure.observability.bootstrap.init_manager import init_observability
 
 def init_cli() -> None:
     init_observability()
@@ -281,7 +281,7 @@ poetry run python -m apps.cli.main
 ```python
 import os
 
-from quantum.infrastructure.observability.init_observability import init_observability
+from quantum.infrastructure.observability.bootstrap.init_manager import init_observability
 
 def init_streamlit() -> None:
     init_observability()
@@ -293,7 +293,7 @@ import streamlit as st
 
 from apps.streamlit.bootstrap import init_streamlit
 from apps.streamlit.lib.obs import PageTimer, ui_action
-from quantum.shared.config.config_manager import ConfigManager
+from quantum.core.config.runtime.manager import ConfigManager
 
 ConfigManager.load()
 st.set_page_config()
