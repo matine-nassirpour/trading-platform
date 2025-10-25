@@ -13,7 +13,7 @@ from opentelemetry import trace
 from prometheus_client import REGISTRY
 
 from quantum.infrastructure.observability.logging.event_emitter import emit_event
-from quantum.shared.correlation.correlation_id import (
+from quantum.infrastructure.observability.tracing.correlation.correlation_id import (
     correlation_context,
     new_correlation_id,
 )

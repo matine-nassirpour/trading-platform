@@ -36,12 +36,12 @@ from quantum.infrastructure.observability.logging.event_emitter import emit_even
 from quantum.infrastructure.observability.metrics.collectors import (
     health_collector as m,
 )
-from quantum.infrastructure.observability.tracing.propagation import (
-    baggage_context_from_ids,
-)
-from quantum.shared.correlation.correlation_id import (
+from quantum.infrastructure.observability.tracing.correlation.correlation_id import (
     correlation_context,
     new_correlation_id,
+)
+from quantum.infrastructure.observability.tracing.propagation import (
+    baggage_context_from_ids,
 )
 
 # ╭───────────────────────────────────────────────────────────────────────────╮
@@ -264,15 +264,33 @@ def main() -> None:
             def _g(gauge):
                 return float(gauge._value.get())
 
-            # Asserts: in-memory metrics
-            if _g(registry.pipeline_up) != 1.0:
-                errs.append("pipeline_up != 1")
-            if _g(registry.pipeline_logging_ok) != 1.0:
+            # Core gauges
+            logging_ok = _g(registry.pipeline_logging_ok)
+            tracing_ok = _g(registry.pipeline_tracing_ok)
+            metrics_ok = (
+                _g(registry.pipeline_metrics_http_ok) if args.with_http_metrics else 0.0
+            )
+            pipeline_up = _g(registry.pipeline_up)
+
+            # pipeline_up now depends on logging_ok, tracing_ok and metrics_ok
+            expected_pipeline_up = (
+                1.0
+                if (logging_ok == 1.0 and tracing_ok == 1.0 and metrics_ok == 1.0)
+                else 0.0
+            )
+
+            if logging_ok != 1.0:
                 errs.append("pipeline_logging_ok != 1")
-            if _g(registry.pipeline_tracing_ok) != 1.0:
+            if tracing_ok != 1.0:
                 errs.append("pipeline_tracing_ok != 1")
-            if args.with_http_metrics and _g(registry.pipeline_metrics_http_ok) != 1.0:
+            if args.with_http_metrics and metrics_ok != 1.0:
                 errs.append("pipeline_metrics_http_ok != 1 (HTTP)")
+
+            if pipeline_up != expected_pipeline_up:
+                errs.append(
+                    f"pipeline_up = {pipeline_up}, expected {expected_pipeline_up} "
+                    f"(logging_ok={logging_ok}, tracing_ok={tracing_ok}, metrics_ok={metrics_ok})"
+                )
 
             # Asserts: log files + rollover
             latest_events = _latest_matching(log_dir, "events-*.jsonl")

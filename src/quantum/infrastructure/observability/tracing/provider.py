@@ -24,8 +24,10 @@ from opentelemetry.trace import get_tracer_provider, set_tracer_provider
 
 from quantum.core.config.models.core import CoreSettings
 from quantum.core.config.models.tracing import TracingSettings
+from quantum.infrastructure.observability.tracing.correlation.correlation_id import (
+    get_correlation_id,
+)
 from quantum.shared.context.run_id import get_run_id
-from quantum.shared.correlation.correlation_id import get_correlation_id
 
 logger = logging.getLogger(__name__)
 _ATEXIT_REGISTERED: bool = False

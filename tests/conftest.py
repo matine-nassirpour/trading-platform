@@ -324,6 +324,21 @@ def monotonic_stepper(monkeypatch):
     yield
 
 
+@pytest.fixture
+def free_port() -> int:
+    """
+    Return an available TCP port bound on 127.0.0.1 for ephemeral use in tests.
+
+    Thread-safe and reliable across OSes. Used by tests that need a temporary
+    HTTP or gRPC listener (e.g. Prometheus /metrics, OTLP exporters, etc.).
+    """
+    import socket
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(("127.0.0.1", 0))
+        return s.getsockname()[1]
+
+
 # ╭─────────────────────────────────────────────────────────────────────────────╮
 # │ JSONL Reading Helpers for Assertions                                        │
 # ╰─────────────────────────────────────────────────────────────────────────────╯
@@ -480,10 +495,5 @@ def pytest_configure(config: pytest.Config) -> None:
     """
     Register commonly used custom markers to avoid warnings and improve test filtering.
     """
-    for marker in (
-        "unit",
-        "filesystem",
-        "prometheus",
-        "otlp",
-    ):
+    for marker in ("unit", "filesystem", "prometheus", "otlp", "e2e"):
         config.addinivalue_line("markers", marker)

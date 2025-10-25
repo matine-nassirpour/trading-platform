@@ -6,8 +6,10 @@ import uuid
 import pytest
 
 from quantum.infrastructure.observability.logging.event_emitter import emit_event
+from quantum.infrastructure.observability.tracing.correlation.correlation_id import (
+    correlation_context,
+)
 from quantum.shared.context.run_id import generate_run_id, get_run_id, run_id_context
-from quantum.shared.correlation.correlation_id import correlation_context
 from tests.support.logging_utils import capture_logger
 
 

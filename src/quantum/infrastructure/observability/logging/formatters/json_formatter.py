@@ -15,8 +15,10 @@ from quantum.infrastructure.observability.logging.models.log_payload_v1 import (
 from quantum.infrastructure.observability.logging.models.severity_map import (
     SEVERITY_MAP,
 )
+from quantum.infrastructure.observability.tracing.correlation.correlation_id import (
+    get_correlation_id,
+)
 from quantum.shared.context.run_id import get_run_id
-from quantum.shared.correlation.correlation_id import get_correlation_id
 from quantum.shared.time.format import now_mono_ms, to_rfc3339_ms
 
 # ╭────────────────────────────────────────────────────────────────────────────╮

@@ -155,7 +155,8 @@ trading-platform/
 │       │   │   │   ├── models/
 │       │   │   │   │   ├── __init__.py
 │       │   │   │   │   ├── factory.py
-│       │   │   │   │   └── log_payload_v1.py
+│       │   │   │   │   ├── log_payload_v1.py
+│       │   │   │   │   └── severity_map.py
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── _io_utils.py
 │       │   │   │   ├── constants.py
@@ -168,6 +169,9 @@ trading-platform/
 │       │   │   │   ├── __init__.py
 │       │   │   │   └── mt5.py
 │       │   │   ├── tracing/
+│       │   │   │   ├── correlation/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   └── correlation_id.py
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── propagation.py
 │       │   │   │   └── provider.py
@@ -190,9 +194,6 @@ trading-platform/
 │       │   ├── context/
 │       │   │   ├── __init__.py
 │       │   │   └── run_id.py
-│       │   ├── correlation/
-│       │   │   ├── __init__.py
-│       │   │   └── correlation_id.py
 │       │   ├── errors/
 │       │   │   └── __init__.py
 │       │   ├── execution/
@@ -278,16 +279,22 @@ trading-platform/
 │   │   ├── infrastructure/
 │   │   │   ├── observability/
 │   │   │   │   ├── logging/
+│   │   │   │   │   ├── filters/
+│   │   │   │   │   │   ├── __init__.py
+│   │   │   │   │   │   └── test_filters.py
+│   │   │   │   │   ├── formatters/
+│   │   │   │   │   │   ├── __init__.py
+│   │   │   │   │   │   └── test_json_formatter.py
+│   │   │   │   │   ├── handlers/
+│   │   │   │   │   │   ├── __init__.py
+│   │   │   │   │   │   ├── test_audit_sink_handler.py
+│   │   │   │   │   │   └── test_partitioned_handler.py
 │   │   │   │   │   ├── models/
 │   │   │   │   │   │   ├── __init__.py
 │   │   │   │   │   │   └── test_factory.py
 │   │   │   │   │   ├── __init__.py
-│   │   │   │   │   ├── test_audit_sink.py
 │   │   │   │   │   ├── test_constants.py
-│   │   │   │   │   ├── test_event_emitter.py
-│   │   │   │   │   ├── test_filters.py
-│   │   │   │   │   ├── test_formatter.py
-│   │   │   │   │   └── test_partitioned_handlers.py
+│   │   │   │   │   └── test_event_emitter.py
 │   │   │   │   ├── tracing/
 │   │   │   │   │   ├── __init__.py
 │   │   │   │   │   └── test_propagation.py
