@@ -2,7 +2,7 @@ import json
 import logging
 import socket
 from contextlib import suppress
-from typing import Any
+from typing import Any, Final
 
 from opentelemetry.trace import get_current_span
 from pydantic import ValidationError
@@ -12,13 +12,19 @@ from quantum.infrastructure.observability.logging.models.factory import from_log
 from quantum.infrastructure.observability.logging.models.log_payload_v1 import (
     LogPayloadV1,
 )
+from quantum.infrastructure.observability.logging.models.severity_map import (
+    SEVERITY_MAP,
+)
 from quantum.shared.context.run_id import get_run_id
 from quantum.shared.correlation.correlation_id import get_correlation_id
 from quantum.shared.time.format import now_mono_ms, to_rfc3339_ms
 
-core_settings = ConfigManager.load()
-INSTANCE_ID = core_settings.quantum_instance_id or socket.gethostname()
-EXCLUDED_STD_FIELDS = {
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Constants                                                                  │
+# ╰────────────────────────────────────────────────────────────────────────────╯
+_CORE_SETTINGS: Final = ConfigManager.load()
+_INSTANCE_ID: Final[str] = _CORE_SETTINGS.quantum_instance_id or socket.gethostname()
+_EXCLUDED_STD_FIELDS: Final[set[str]] = {
     "args",
     "asctime",
     "created",
@@ -44,19 +50,24 @@ EXCLUDED_STD_FIELDS = {
 }
 
 
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Internal Helpers                                                           │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 def _json_sanitize(obj: Any) -> Any:
     """
-    Recursively converts to JSON-safe types.
+    Recursively convert arbitrary objects into JSON-safe representations.
 
-    - bytes -> base64-like str (ici: repr court)
-    - set/tuple -> list
-    - unknown objects -> truncated str(obj)
+    Strategies:
+        - bytes   → short repr()
+        - sets    → lists
+        - unknown → str() truncated to max length
     """
-    max_str = 10_000
+    _MAX_STR_LEN = 10_000
+
     if obj is None or isinstance(obj, (bool, int, float)):
         return obj
     if isinstance(obj, str):
-        return obj if len(obj) <= max_str else obj[:max_str] + "…"
+        return obj if len(obj) <= _MAX_STR_LEN else obj[:_MAX_STR_LEN] + "…"
     if isinstance(obj, (list, tuple, set)):
         return [_json_sanitize(x) for x in obj]
     if isinstance(obj, dict):
@@ -64,18 +75,13 @@ def _json_sanitize(obj: Any) -> Any:
     if isinstance(obj, bytes):
         return repr(obj[:64]) + ("… (truncated)" if len(obj) > 64 else "")
     s = str(obj)
-    return s[:max_str] + ("…" if len(s) > max_str else "")
+    return s[:_MAX_STR_LEN] + ("…" if len(s) > _MAX_STR_LEN else "")
 
 
 def _extract_trace_context() -> tuple[str | None, str | None, bool | None]:
     """
-    Cross-version extraction of (trace_id, span_id, sampled) from the current OTel span.
-
-    - Works with SpanContext.trace_flags as:
-        * bool property `.sampled` (some SDK versions)
-        * callable `.sampled()` (older forms)
-        * Int/IntFlag bitmask (use bit 0x01)
-    - Returns (None, None, None) when unavailable.
+    Extracts (trace_id, span_id, sampled) from the current OpenTelemetry span,
+    robust to cross-version API differences.
     """
     try:
         span = get_current_span()
@@ -83,102 +89,58 @@ def _extract_trace_context() -> tuple[str | None, str | None, bool | None]:
     except (AttributeError, TypeError):
         return None, None, None
 
-    # Validity flag can differ across versions; guard it.
     try:
         is_valid = bool(getattr(sc, "is_valid", False))
-    except (AttributeError, TypeError, ValueError):
+    except Exception:
         is_valid = False
 
     if not is_valid:
         return None, None, None
 
-    # IDs as fixed-width hex if possible
     try:
-        tid = getattr(sc, "trace_id", 0)
-        sid = getattr(sc, "span_id", 0)
-        # Some SDKs may already return ints; others an int-like
-        trace_id = f"{int(tid):032x}"
-        span_id = f"{int(sid):016x}"
-    except (AttributeError, TypeError, ValueError):
-        trace_id = None
-        span_id = None
+        trace_id = f"{int(getattr(sc, 'trace_id', 0)):032x}"
+        span_id = f"{int(getattr(sc, 'span_id', 0)):016x}"
+    except Exception:
+        trace_id = span_id = None
 
-    # Sampling flag resolution (robust to SDK variants)
+    # Sampling flag
     tf = getattr(sc, "trace_flags", None)
+    sampled: bool | None = None
     if tf is None:
         sampled = None
     else:
-        # Variant 1: boolean attribute
         attr = getattr(tf, "sampled", None)
         if isinstance(attr, bool):
             sampled = attr
         elif callable(attr):
-            # Variant 2: callable sampled()
-            try:
+            with suppress(Exception):
                 sampled = bool(attr())
-            except (TypeError, ValueError):
-                sampled = None
         else:
-            # Variant 3: Int/IntFlag mask (bit 0x01)
-            try:
+            with suppress(Exception):
                 sampled = bool(int(tf) & 0x01)
-            except (TypeError, ValueError):
-                sampled = None
 
     return trace_id, span_id, sampled
 
 
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Formatter                                                                  │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 class JsonFormatter(logging.Formatter):
+    """
+    Formats log records into structured JSON lines conforming to the Quantum schema.
+
+    On ValidationError, falls back to a simplified safe schema while emitting
+    a health metric for schema validation failures.
+    """
+
     def format(self, record: logging.LogRecord) -> str:
-        # OTEL context (cross-version safe extraction)
         trace_id, span_id, is_sampled = _extract_trace_context()
 
-        # Timestamps
         ts_unix_ms = int(record.created * 1000)
         ts_mono_ms = getattr(record, "ts_monotonic_ms", now_mono_ms())
 
-        # Collect extras → attrs
-        attrs: dict[str, Any] = {}
-        for k, v in record.__dict__.items():
-            if k in EXCLUDED_STD_FIELDS:
-                continue
-            # Avoid conflict with the top-level "exception" field (string expected)
-            if k == "exception":
-                try:
-                    if isinstance(v, dict):
-                        attrs["exception_obj"] = v  # structured copy on the attrs side
-                    elif v is not None:
-                        attrs["exception_text"] = str(v)
-                except Exception:
-                    pass
-                continue
-            if k in {"service_name", "service_version", "service_namespace", "env"}:
-                # These fields are passed via overrides, do not duplicate in attrs
-                continue
-            if k == "attrs" and isinstance(v, dict):
-                attrs.update(v)
-                continue
-            attrs[k] = v
-        attrs = _json_sanitize(attrs)
-
-        # Exceptions (structured)
-        exception_text = None
-        exception_type = None
-        exception_message = None
-        exception_stacktrace = None
-        if record.exc_info:
-            try:
-                etype, evalue, _tb = record.exc_info
-                exception_type = getattr(etype, "__name__", str(etype))
-                exception_message = str(evalue) if evalue is not None else None
-                exception_stacktrace = self.formatException(record.exc_info)
-                # legacy field maintained (short string)
-                exception_text = exception_stacktrace
-            except Exception:
-                exception_text = "exception formatting failed"
-                exception_type = "Exception"
-                exception_message = None
-                exception_stacktrace = None
+        attrs = self._extract_attrs(record)
+        exception_block = self._extract_exception_block(record)
 
         overrides = {
             # timestamps
@@ -187,7 +149,7 @@ class JsonFormatter(logging.Formatter):
             "ts_monotonic_ms": ts_mono_ms,
             # resource/env
             "env": getattr(record, "env", "unknown"),
-            "instance": INSTANCE_ID,
+            "instance": _INSTANCE_ID,
             "service_name": getattr(record, "service_name", None),
             "service_version": getattr(record, "service_version", None),
             "service_namespace": getattr(record, "service_namespace", None),
@@ -199,66 +161,126 @@ class JsonFormatter(logging.Formatter):
             "run_id": get_run_id(),
             # attrs
             "attrs": attrs,
-            # exceptions (structured + legacy)
-            "exception": exception_text,  # legacy key retained
+            # Exception data
+            **exception_block,
+        }
+
+        try:
+            model: LogPayloadV1 = from_log_record(record, **overrides)
+            return model.to_clean_json()
+        except ValidationError as e:
+            return self._build_fallback_payload(
+                record,
+                overrides,
+                e,
+                ts_unix_ms,
+                ts_mono_ms,
+                trace_id,
+                span_id,
+                is_sampled,
+                attrs,
+            )
+
+    # --------------------------------------------------------------------------
+    # Extractors
+    # --------------------------------------------------------------------------
+    @staticmethod
+    def _extract_attrs(record: logging.LogRecord) -> dict[str, Any]:
+        """Extracts and sanitizes custom attributes from a LogRecord."""
+        attrs: dict[str, Any] = {}
+        for k, v in record.__dict__.items():
+            if k in _EXCLUDED_STD_FIELDS:
+                continue
+            if k == "exception":
+                try:
+                    if isinstance(v, dict):
+                        attrs["exception_obj"] = v
+                    elif v is not None:
+                        attrs["exception_text"] = str(v)
+                except Exception:
+                    pass
+                continue
+            if k in {"service_name", "service_version", "service_namespace", "env"}:
+                continue
+            if k == "attrs" and isinstance(v, dict):
+                attrs.update(v)
+                continue
+            attrs[k] = v
+        return _json_sanitize(attrs)
+
+    def _extract_exception_block(self, record: logging.LogRecord) -> dict[str, Any]:
+        """Builds a structured exception block from exc_info if present."""
+        exception_text = exception_type = exception_message = exception_stacktrace = (
+            None
+        )
+        if record.exc_info:
+            try:
+                etype, evalue, _tb = record.exc_info
+                exception_type = getattr(etype, "__name__", str(etype))
+                exception_message = str(evalue) if evalue is not None else None
+                exception_stacktrace = self.formatException(record.exc_info)
+                exception_text = exception_stacktrace
+            except Exception:
+                exception_text = "exception formatting failed"
+                exception_type = "Exception"
+        return {
+            "exception": exception_text,
             "exception_type": exception_type,
             "exception_message": exception_message,
             "exception_stacktrace": exception_stacktrace,
         }
 
-        try:
-            # Centralize: severity_number + structured exception
-            model: LogPayloadV1 = from_log_record(record, **overrides)
-            return model.to_clean_json()
-        except ValidationError as e:
-            # OTel normalization (WARN/FATAL) + severity number
-            _sev_map = {
-                logging.NOTSET: ("TRACE", 1),
-                logging.DEBUG: ("DEBUG", 5),
-                logging.INFO: ("INFO", 9),
-                logging.WARNING: ("WARN", 13),
-                logging.ERROR: ("ERROR", 17),
-                logging.CRITICAL: ("FATAL", 21),
-            }
-            sev_text, sev_num = _sev_map.get(record.levelno, ("INFO", 9))
+    # --------------------------------------------------------------------------
+    # Fallback payload
+    # --------------------------------------------------------------------------
+    @staticmethod
+    def _build_fallback_payload(
+        record: logging.LogRecord,
+        overrides: dict[str, Any],
+        e: ValidationError,
+        ts_unix_ms: int,
+        ts_mono_ms: int,
+        trace_id: str | None,
+        span_id: str | None,
+        is_sampled: bool | None,
+        attrs: dict[str, Any],
+    ) -> str:
+        """Builds a simplified JSON payload when schema validation fails."""
+        sev_text, sev_num = SEVERITY_MAP.get(record.levelno, ("INFO", 9))
 
-            # Safe JSON fallback
-            payload_dict = {
-                "timestamp": overrides["timestamp"],
-                "ts_unix_ms": ts_unix_ms,
-                "ts_monotonic_ms": ts_mono_ms,
-                "level": sev_text,
-                "severity_number": sev_num,
-                "logger": record.name,
-                "message": record.getMessage(),
-                "env": overrides["env"],
-                "instance": INSTANCE_ID,
-                "service_name": overrides["service_name"],
-                "service_version": overrides["service_version"],
-                "service_namespace": overrides["service_namespace"],
-                "trace_id": trace_id,
-                "span_id": span_id,
-                "sampled": is_sampled,
-                "correlation_id": overrides["correlation_id"],
-                "run_id": overrides["run_id"],
-                "schema": "quantum.log",
-                "log_schema_version": "fallback",
-                "validation_error": str(e),
-                "attrs": attrs,
-                # structured exceptions in fallback too
-                "exception": overrides["exception"],
-                "exception_type": overrides["exception_type"],
-                "exception_message": overrides["exception_message"],
-                "exception_stacktrace": overrides["exception_stacktrace"],
-            }
+        payload = {
+            "timestamp": overrides["timestamp"],
+            "ts_unix_ms": ts_unix_ms,
+            "ts_monotonic_ms": ts_mono_ms,
+            "level": sev_text,
+            "severity_number": sev_num,
+            "logger": record.name,
+            "message": record.getMessage(),
+            "env": overrides["env"],
+            "instance": _INSTANCE_ID,
+            "service_name": overrides["service_name"],
+            "service_version": overrides["service_version"],
+            "service_namespace": overrides["service_namespace"],
+            "trace_id": trace_id,
+            "span_id": span_id,
+            "sampled": is_sampled,
+            "correlation_id": overrides["correlation_id"],
+            "run_id": overrides["run_id"],
+            "schema": "quantum.log",
+            "log_schema_version": "fallback",
+            "validation_error": str(e),
+            "attrs": attrs,
+            "exception": overrides["exception"],
+            "exception_type": overrides["exception_type"],
+            "exception_message": overrides["exception_message"],
+            "exception_stacktrace": overrides["exception_stacktrace"],
+        }
 
-            with suppress(
-                ModuleNotFoundError, AttributeError, ValueError, RuntimeError
-            ):
-                from quantum.infrastructure.observability.metrics.collectors.health_collector import (
-                    logging_schema_validation_errors_total,
-                )
+        with suppress(ModuleNotFoundError, AttributeError, ValueError, RuntimeError):
+            from quantum.infrastructure.observability.metrics.collectors.health_collector import (
+                logging_schema_validation_errors_total,
+            )
 
-                logging_schema_validation_errors_total.inc()
+            logging_schema_validation_errors_total.inc()
 
-            return json.dumps(payload_dict, ensure_ascii=False, separators=(",", ":"))
+        return json.dumps(payload, ensure_ascii=False, separators=(",", ":"))

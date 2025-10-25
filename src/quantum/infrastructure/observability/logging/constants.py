@@ -3,7 +3,10 @@ from typing import Final
 
 from quantum.core.config.runtime.manager import ConfigManager
 
-_AUDIT_EVENT_BASELINE_V1: Final = frozenset(
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Constants                                                                  │
+# ╰────────────────────────────────────────────────────────────────────────────╯
+_AUDIT_EVENT_BASELINE_V1: Final[frozenset[str]] = frozenset(
     {
         "order_submit",
         "order_ack",
@@ -14,63 +17,93 @@ _AUDIT_EVENT_BASELINE_V1: Final = frozenset(
     }
 )
 
-# strict snake_case, low cardinality
-_SAFE: Final = re.compile(r"^[a-z0-9_]+$")
-# Generic version suffix (eg: _v1, _v2, _v10)
-_VERSION_SUFFIX_RE: Final = re.compile(r"_v\d+$")
+_SAFE_NAME_RE: Final[re.Pattern[str]] = re.compile(r"^[a-z0-9_]+$")
+_VERSION_SUFFIX_RE: Final[re.Pattern[str]] = re.compile(r"_v\d+$")
 
 
-def _normalize(name: str) -> str:
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Internal Helpers                                                           │
+# ╰────────────────────────────────────────────────────────────────────────────╯
+def _normalize_name(name: str) -> str:
+    """Normalize event name to lowercase and strip whitespace."""
     return (name or "").strip().lower()
 
 
 def _strip_version_suffix(name: str) -> str:
-    """Removes a generic version suffix (_v<digits>) if present."""
-    n = _normalize(name)
-    return _VERSION_SUFFIX_RE.sub("", n)
+    """Remove trailing version suffix (e.g., _v1, _v2)."""
+    normalized = _normalize_name(name)
+    return _VERSION_SUFFIX_RE.sub("", normalized)
 
 
-def _validate(name: str) -> None:
-    if not _SAFE.match(name):
+def _validate_name(name: str) -> None:
+    """
+    Validate that a given audit event name follows snake_case syntax
+    and contains only lowercase alphanumerics or underscores.
+
+    Raises:
+        ValueError: if the name violates validation rules.
+    """
+    if not _SAFE_NAME_RE.match(name):
         raise ValueError(f"Invalid audit event name: {name!r}")
 
 
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Public API                                                                 │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 def get_audit_allowlist(version: str | None = None) -> set[str]:
     """
-    Returns the allowlist of *bare* names (without suffixes), merged with QUANTUM_AUDIT_EVENTS (CSV).
+    Compute the effective allowlist of audit event *base names*
+    (without version suffixes) for the given environment.
 
-    - Version suffixes (_v<digits>) are ignored on the allowlist side AND during the check.
-    - The historical baseline (V1) is used **for all versions** to avoid
-    false negatives during a version upgrade (backward compatible).
+    Behavior
+    --------
+    - Starts from a stable, version-agnostic baseline (V1).
+    - Merges optional CSV entries from QUANTUM_AUDIT_EVENTS.
+    - Strips version suffixes and validates all entries.
+    - Returns a normalized `set[str]` of allowed event names.
+
+    Args:
+        version: Audit schema version (currently ignored for backward compatibility).
+
+    Returns:
+        A set of normalized event names allowed in the current environment.
     """
     logging_settings = ConfigManager.load_logging()
 
-    # Stable, version-independent baseline
+    # Stable baseline
     baseline = set(_AUDIT_EVENT_BASELINE_V1)
 
-    # Extras from the env (CSV). We clean and remove any suffixes.
+    # Merge environment extras (CSV)
     extra_csv = (logging_settings.quantum_audit_events or "").strip()
     if extra_csv:
         for raw in extra_csv.split(","):
-            n = _strip_version_suffix(raw)
-            if n:
-                _validate(n)
-                baseline.add(n)
+            name = _strip_version_suffix(raw)
+            if not name:
+                continue
+            _validate_name(name)
+            baseline.add(name)
 
     return baseline
 
 
 def is_audit_event(event_name: str, version: str | None = None) -> bool:
     """
-    Checks if `event_name` (with or without a suffix, e.g., 'order_submit' or 'order_submit_v2')
-    is part of the effective allowlist.
+    Check if an event name (with or without version suffix) is
+    part of the current audit allowlist.
 
-    - `version` is retained for signature compatibility, but detection is intentionally
-    **version-agnostic**: the *bare* name is compared against the allowlist.
+    Example
+    -------
+    >>> is_audit_event("order_submit_v2")
+    True
+
+    Behavior
+    --------
+    - Strips version suffix before validation.
+    - Returns False if name syntax invalid or not in allowlist.
     """
-    n = _strip_version_suffix(event_name)
+    name = _strip_version_suffix(event_name)
     try:
-        _validate(n)
+        _validate_name(name)
     except ValueError:
         return False
-    return n in get_audit_allowlist(version)
+    return name in get_audit_allowlist(version)

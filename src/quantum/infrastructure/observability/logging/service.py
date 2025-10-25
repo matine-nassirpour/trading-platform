@@ -8,7 +8,7 @@ from quantum.infrastructure.observability.logging.filters.audit_event_filter imp
     AuditEventFilter,
 )
 from quantum.infrastructure.observability.logging.filters.context_filter import (
-    LoggingContextFilter,
+    ContextFilter,
 )
 from quantum.infrastructure.observability.logging.filters.ignore_libraries_filter import (
     IgnoreLibrariesFilter,
@@ -39,38 +39,61 @@ from quantum.infrastructure.observability.logging.handlers.partitioned_handler i
 )
 
 
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Internal Utilities                                                         │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 def close_and_remove_all_handlers(logger: logging.Logger) -> None:
     """
-    Cleanly closes and detaches all handlers from a logger.
-    Idempotent and fault-tolerant (protected flush/close/remove).
+    Safely closes and detaches all handlers from a given logger.
+
+    This operation is idempotent and fault-tolerant.
+    It ensures a clean reinitialization of the logging subsystem
+    without leaving open file descriptors or duplicate handlers.
     """
-    for h in list(logger.handlers):
-        flush = getattr(h, "flush", None)
-        if callable(flush):
-            with suppress(OSError, ValueError, RuntimeError, TypeError):
-                flush()
+    for handler in list(logger.handlers):
         with suppress(OSError, ValueError, RuntimeError, TypeError):
-            h.close()
+            if hasattr(handler, "flush"):
+                handler.flush()
+        with suppress(OSError, ValueError, RuntimeError, TypeError):
+            handler.close()
         with suppress(ValueError):
-            logger.removeHandler(h)
+            logger.removeHandler(handler)
 
 
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Internal Utilities                                                         │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 def init_logging(
     core_settings: CoreSettings, logging_settings: LoggingSettings
 ) -> None:
     """
-    Initializes structured JSON logging, audit file sinks, and optional rate limiting.
+    Initialize the Quantum structured logging infrastructure.
+
+    This function configures a consistent, production-grade
+    logging environment supporting both JSONL log rotation and
+    fine-grained audit event persistence.
+
+    Behavior:
+        1. Resets existing root handlers (idempotent).
+        2. Builds shared filters for context, timestamp, and redaction.
+        3. Instantiates handlers (console, partitioned, audit).
+        4. Applies optional rate-limiting and sampling filters.
+        5. Activates structured JSON formatting via JsonFormatter.
     """
     level = getattr(logging, logging_settings.quantum_log_level.upper(), logging.INFO)
 
-    # ─── Reset any existing handlers (idempotent re-init)
+    # --------------------------------------------------------------------------
+    # Reset any existing handlers (idempotent re-init)
+    # --------------------------------------------------------------------------
     root_logger = logging.getLogger()
     if root_logger.handlers:
         close_and_remove_all_handlers(root_logger)
 
-    # ─── Common filters for all handlers
-    def _add_base_filters(handler: logging.Handler) -> None:
-        handler.addFilter(LoggingContextFilter(env=core_settings.quantum_env))
+    # --------------------------------------------------------------------------
+    # Common filters for all handlers
+    # --------------------------------------------------------------------------
+    def _apply_base_filters(handler: logging.Handler) -> None:
+        handler.addFilter(ContextFilter(env=core_settings.quantum_env))
         handler.addFilter(IgnoreLibrariesFilter())
         handler.addFilter(MonotonicTimestampFilter())
         handler.addFilter(RedactFilter())
@@ -82,8 +105,10 @@ def init_logging(
             )
         )
 
-    # ─── Optional dynamic filters (rate limiting & sampling)
-    def _maybe_add_ratelimit_and_sampling(
+    # --------------------------------------------------------------------------
+    # Conditional rate limiting / sampling
+    # --------------------------------------------------------------------------
+    def _apply_dynamic_filters(
         handler: logging.Handler, *, allow_sampling: bool
     ) -> None:
         if logging_settings.quantum_log_ratelimit:
@@ -95,34 +120,43 @@ def init_logging(
                 InfoSamplerFilter(sample_every=logging_settings.quantum_log_sample_info)
             )
 
-    # ─── Console handler (stderr)
+    # --------------------------------------------------------------------------
+    # Console handler (stderr)
+    # --------------------------------------------------------------------------
     stderr_handler = logging.StreamHandler(sys.stderr)
     stderr_handler.setLevel(level)
     stderr_handler.setFormatter(JsonFormatter())
-    _add_base_filters(stderr_handler)
-    _maybe_add_ratelimit_and_sampling(stderr_handler, allow_sampling=True)
+    _apply_base_filters(stderr_handler)
+    _apply_dynamic_filters(stderr_handler, allow_sampling=True)
 
     handlers: list[logging.Handler] = [stderr_handler]
 
-    # ─── Partitioned JSONL handler
+    # --------------------------------------------------------------------------
+    # Partitioned JSONL handler
+    # --------------------------------------------------------------------------
     if logging_settings.quantum_log_dir:
         partition_handler = PartitionedJSONLFileHandler(core_settings, logging_settings)
         partition_handler.setLevel(level)
         partition_handler.setFormatter(JsonFormatter())
-        _add_base_filters(partition_handler)
-        _maybe_add_ratelimit_and_sampling(partition_handler, allow_sampling=True)
+        _apply_base_filters(partition_handler)
+        _apply_dynamic_filters(partition_handler, allow_sampling=True)
         handlers.append(partition_handler)
 
-    # ─── Apply handlers
+    # --------------------------------------------------------------------------
+    # Root Logger Configuration
+    # --------------------------------------------------------------------------
     root_logger.setLevel(level)
-    for h in handlers:
-        root_logger.addHandler(h)
+    for handler in handlers:
+        root_logger.addHandler(handler)
     root_logger.propagate = False
 
-    # ─── Audit sink
+    # --------------------------------------------------------------------------
+    # Audit Sink (per-event JSON files)
+    # --------------------------------------------------------------------------
     if logging_settings.quantum_audit_dir:
         audit_logger = logging.getLogger("quantum.trading")
 
+        # Clean any preexisting audit handlers
         for h in list(audit_logger.handlers):
             if isinstance(h, AuditEventFileHandler):
                 with suppress(OSError, ValueError, RuntimeError, TypeError):
@@ -139,11 +173,14 @@ def init_logging(
             namespace=core_settings.quantum_ns,
         )
         audit_handler.setLevel(logging.NOTSET)
-        _add_base_filters(audit_handler)
+        _apply_base_filters(audit_handler)
         audit_handler.addFilter(AuditEventFilter())
+
         audit_logger.addHandler(audit_handler)
         audit_logger.setLevel(logging.DEBUG)  # does not filter by level
 
-    # ─── Python warnings → logging
+    # --------------------------------------------------------------------------
+    # Python warnings → logging redirection
+    # --------------------------------------------------------------------------
     with suppress(AttributeError, RuntimeError):
         logging.captureWarnings(True)

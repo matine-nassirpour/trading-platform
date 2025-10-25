@@ -35,9 +35,13 @@ if TYPE_CHECKING:
 
 class LifecycleService:
     """
-    Responsible for initializing, shutting down, and probing the observability subsystems.
+    Centralized orchestrator for the observability lifecycle.
 
-    Each method is idempotent, fault-tolerant, and reports its outcome to the HealthRegistry.
+    Manages initialization, probing, and teardown of all subsystems.
+
+    Thread-safety:
+        Each method is idempotent and designed to handle repeated calls
+        safely without double initialization or inconsistent state.
     """
 
     def __init__(self, registry: HealthRegistry) -> None:
@@ -45,9 +49,9 @@ class LifecycleService:
         self._logger = logging.getLogger(__name__)
         self._tracer_provider_ref: object | None = None
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Internal Utilities
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     @staticmethod
     def _iter_persistent_handlers() -> list[logging.Handler]:
         """Return all logging handlers that have a 'base_dir' attribute."""
@@ -62,7 +66,7 @@ class LifecycleService:
 
     @staticmethod
     def _probe_path_writable(
-        base_dir: str | os.PathLike[str], deep_probe: bool = False
+        base_dir: str | os.PathLike[str], *, deep_probe: bool = False
     ) -> bool:
         """Check directory writability; optionally perform deep write probe."""
         try:
@@ -107,9 +111,9 @@ class LifecycleService:
                 self._logger.debug(f"Tracer shutdown failed: {exc}")
         self._tracer_provider_ref = None
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Initialization
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     @measure_latency("tracing")
     def init_tracing(
         self,
@@ -164,8 +168,8 @@ class LifecycleService:
             init_logging(core_settings, logging_settings)
             self._registry.mark_logging_ok(True)
             return True
-        except Exception as e:
-            self._logger.exception(f"Logging initialization failed: {e}")
+        except Exception as exc:
+            self._logger.exception(f"Logging initialization failed: {exc}")
             self._registry.mark_logging_ok(False)
             return False
 
@@ -182,15 +186,15 @@ class LifecycleService:
             start_http_server(port, addr=addr)
             self._registry.mark_metrics_http_ok(True)
             return True
-        except OSError as e:
-            self._logger.warning(f"Metrics HTTP server failed on {addr}:{port}: {e}")
+        except OSError as exc:
+            self._logger.warning(f"Metrics HTTP server failed on {addr}:{port}: {exc}")
             self._registry.mark_metrics_http_ok(False)
             return False
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Shutdown
-    # -------------------------------------------------------------------------
-    def shutdown_tracing(self, set_gauge_down: bool = True) -> None:
+    # --------------------------------------------------------------------------
+    def shutdown_tracing(self, *, set_gauge_down: bool = True) -> None:
         """Gracefully shut down the tracing subsystem."""
         with suppress(Exception):
             detach_process_baggage_if_any()
@@ -198,32 +202,33 @@ class LifecycleService:
         if set_gauge_down:
             self._registry.mark_tracing_up(False)
 
-    def shutdown_logging(self, set_gauge_down: bool = True) -> None:
+    def shutdown_logging(self, *, set_gauge_down: bool = True) -> None:
         """Close all logging handlers and sinks."""
         with suppress(Exception):
             close_and_remove_all_handlers(logging.getLogger())
         if set_gauge_down:
             self._registry.mark_logging_sink_up(False)
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Health & Utilities
-    # -------------------------------------------------------------------------
-    def probe_logging_sinks(self, deep_probe: bool = False) -> bool:
+    # --------------------------------------------------------------------------
+    def probe_logging_sinks(self, *, deep_probe: bool = False) -> bool:
         """Probe all logging sinks for writability."""
         try:
             ok = self._probe_logging_sinks(deep_probe=deep_probe)
             self._registry.mark_logging_sink_up(ok)
             return ok
-        except Exception as e:
-            self._logger.warning(f"Logging sinks probe failed: {e}")
+        except Exception as exc:
+            self._logger.warning(f"Logging sinks probe failed: {exc}")
             self._registry.mark_logging_sink_up(False)
             return False
 
-    def refresh_build_info(self) -> None:
+    @staticmethod
+    def refresh_build_info() -> None:
         """Refresh build info metadata from environment variables."""
         with suppress(Exception):
             refresh_build_info_from_env()
 
     def reset_health(self) -> None:
-        """Reset all gauges to zero."""
+        """Reset all Prometheus health gauges to zero."""
         self._registry.reset_all()

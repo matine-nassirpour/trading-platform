@@ -9,29 +9,35 @@ from quantum.infrastructure.observability.bootstrap.health_registry import (
 from quantum.infrastructure.observability.bootstrap.lifecycle import LifecycleService
 from quantum.shared.context.run_id import generate_run_id, get_run_id
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Internal state                                                              │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Internal state                                                             │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 
 _initialized = False
 _init_lock = threading.Lock()
 _logger = logging.getLogger(__name__)
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Core API                                                                    │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
-def init_observability(force: bool = False) -> None:
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Core API                                                                   │
+# ╰────────────────────────────────────────────────────────────────────────────╯
+def init_observability(*, force: bool = False) -> None:
     """
-    Thread-safe and idempotent initialization of the observability subsystems.
+    Thread-safe, idempotent initialization of the observability stack.
+
+    Loads configuration models, initializes tracing, logging, and metrics,
+    updates health gauges, and ensures that correlation context (run_id)
+    is properly established.
     """
     global _initialized
 
     with _init_lock:
         if _initialized and not force:
+            _logger.debug("[Observability] Already initialized — skipping reinit.")
             return
 
         if force:
+            _logger.info("[Observability] Force reinitialization requested.")
             with suppress(AttributeError):
                 ConfigManager.clear_caches()
 
@@ -66,10 +72,10 @@ def init_observability(force: bool = False) -> None:
         )
 
         # ─── Initialize metrics HTTP exporter
-        lifecycle.init_metrics(core_settings)
+        metrics_ok = lifecycle.init_metrics(core_settings)
 
         # ─── Aggregate pipeline health
-        pipeline_ok = tracing_ok and logging_ok
+        pipeline_ok = tracing_ok and logging_ok and metrics_ok
         registry.mark_pipeline_up(pipeline_ok)
 
         _initialized = pipeline_ok
@@ -99,6 +105,7 @@ def shutdown_observability(
 
     if reset_state:
         _initialized = False
+        _logger.info("[Observability] Stack shutdown complete; state reset.")
 
 
 @contextmanager
@@ -107,8 +114,8 @@ def observability_session(*, force: bool = False):
     Context manager for automatic observability setup and teardown.
 
     Example:
-        with observability_session():
-            run_trading_pipeline()
+        >>> with observability_session():
+                run_trading_pipeline()
     """
     init_observability(force=force)
     try:

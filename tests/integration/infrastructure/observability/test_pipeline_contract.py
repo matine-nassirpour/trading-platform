@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from quantum.core.config.runtime.manager import ConfigManager
 from quantum.infrastructure.observability.bootstrap.health_registry import (
     get_health_registry,
 )
@@ -39,12 +40,18 @@ def test_pipeline_contract(obs_session, tmp_workspace, assert_jsonl_tail):
         * redaction on attrs.secret → "[REDACTED]"
     """
     registry = get_health_registry()
+    core_settings = ConfigManager.load()
 
     # Health gauges
     assert registry.pipeline_logging_ok._value.get() == 1.0, "pipeline_logging_ok != 1"
     assert registry.pipeline_tracing_ok._value.get() == 1.0, "pipeline_tracing_ok != 1"
     assert registry.logging_sink_up._value.get() == 1.0, "logging_sink_up != 1"
-    assert registry.pipeline_up._value.get() == 1.0, "pipeline_up != 1"
+
+    metrics_enabled = core_settings.quantum_metrics_port > 0
+    expected_pipeline_up = 1.0 if metrics_enabled else 0.0
+    assert (
+        registry.pipeline_up._value.get() == expected_pipeline_up
+    ), f"pipeline_up should be {expected_pipeline_up} (metrics_enabled={metrics_enabled})"
 
     # Emit an allowlisted audit event
     from quantum.infrastructure.observability.logging.event_emitter import emit_event

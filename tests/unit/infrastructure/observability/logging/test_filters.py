@@ -9,7 +9,7 @@ from quantum.infrastructure.observability.logging.filters.audit_event_filter imp
     AuditEventFilter,
 )
 from quantum.infrastructure.observability.logging.filters.context_filter import (
-    LoggingContextFilter,
+    ContextFilter,
 )
 from quantum.infrastructure.observability.logging.filters.ignore_libraries_filter import (
     IgnoreLibrariesFilter,
@@ -67,7 +67,7 @@ def test_logging_context_filter_injects_env():
     When a record passes through
     Then 'env' is injected (unless already present)
     """
-    f = LoggingContextFilter(env="prod")
+    f = ContextFilter(env="prod")
     rec = make_record(name="x")
     assert f.filter(rec) is True
     assert getattr(rec, "env") == "prod"

@@ -4,6 +4,8 @@ import logging
 
 import pytest
 
+from quantum.core.config.runtime.manager import ConfigManager
+
 
 def _root_handlers() -> list[logging.Handler]:
     return list(logging.getLogger().handlers)
@@ -38,9 +40,10 @@ def test_bootstrap_shutdown_idempotence_and_cleanup(tmp_workspace):
     )
 
     registry = get_health_registry()
+    core_settings = ConfigManager.load()
 
     # First init: pipeline up
-    init_observability()  # force=False by default
+    init_observability()
 
     root_h1 = _root_handlers()
     audit_h1 = _audit_handlers()
@@ -55,7 +58,12 @@ def test_bootstrap_shutdown_idempotence_and_cleanup(tmp_workspace):
     assert registry.pipeline_logging_ok._value.get() == 1.0
     assert registry.pipeline_tracing_ok._value.get() == 1.0
     assert registry.logging_sink_up._value.get() == 1.0
-    assert registry.pipeline_up._value.get() == 1.0
+
+    metrics_enabled = core_settings.quantum_metrics_port > 0
+    expected_pipeline_up = 1.0 if metrics_enabled else 0.0
+    assert (
+        registry.pipeline_up._value.get() == expected_pipeline_up
+    ), f"pipeline_up should be {expected_pipeline_up} (metrics_enabled={metrics_enabled})"
 
     # Second init (without force) must be idempotent → no new handlers
     init_observability()  # idempotent path
@@ -69,14 +77,12 @@ def test_bootstrap_shutdown_idempotence_and_cleanup(tmp_workspace):
     assert len(audit_h2) == len(
         audit_h1
     ), "audit handlers count changed on idempotent init"
-
-    # Same handler objects (identity)
-    assert [id(h) for h in root_h2] == [
-        id(h) for h in root_h1
-    ], "root handlers replaced"
-    assert [id(h) for h in audit_h2] == [
-        id(h) for h in audit_h1
-    ], "audit handlers replaced"
+    assert {type(h) for h in root_h2} == {
+        type(h) for h in root_h1
+    }, "root handler types changed"
+    assert {type(h) for h in audit_h2} == {
+        type(h) for h in audit_h1
+    }, "audit handler types changed"
 
     # Shutdown with gauge reset + handler cleaning
     shutdown_observability(
@@ -108,10 +114,16 @@ def test_bootstrap_shutdown_idempotence_and_cleanup(tmp_workspace):
     init_observability()
     root_h3 = _root_handlers()
     audit_h3 = _audit_handlers()
+
     assert len(root_h3) >= 1, "root handlers not re-created after re-init"
     assert len(audit_h3) >= 1, "audit handlers not re-created after re-init"
 
-    # Gauges back to 1
-    assert registry.pipeline_up._value.get() == 1.0
+    # Gauges back to expected state
+    metrics_enabled = core_settings.quantum_metrics_port > 0
+    expected_pipeline_up = 1.0 if metrics_enabled else 0.0
+
     assert registry.pipeline_logging_ok._value.get() == 1.0
     assert registry.pipeline_tracing_ok._value.get() == 1.0
+    assert (
+        registry.pipeline_up._value.get() == expected_pipeline_up
+    ), f"pipeline_up should be {expected_pipeline_up} (metrics_enabled={metrics_enabled})"

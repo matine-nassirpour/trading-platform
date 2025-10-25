@@ -8,10 +8,14 @@ from prometheus_client import Gauge
 
 class HealthRegistry:
     """
-    Encapsulates all Prometheus health metrics for the observability stack.
+    Thread-safe registry encapsulating Prometheus Gauges
+    that track subsystem-level health for observability.
 
-    Each metric reflects the state of a specific subsystem or probe.
-    Provides explicit, self-descriptive methods for updating state.
+    Each setter method directly updates a specific Gauge.
+
+    Thread-safety:
+        The class follows a double-checked locking singleton pattern.
+        Access through `HealthRegistry.get_instance()` or `get_health_registry()`.
     """
 
     _instance_lock = threading.Lock()
@@ -26,9 +30,9 @@ class HealthRegistry:
     PIPELINE_METRICS_HTTP_OK: Final[str] = "quantum_pipeline_metrics_http_ok"
 
     def __init__(self) -> None:
-        # ---------------------------------------------------------------------
+        # ----------------------------------------------------------------------
         # Prometheus Gauges
-        # ---------------------------------------------------------------------
+        # ----------------------------------------------------------------------
         self.pipeline_up = Gauge(
             self.PIPELINE_UP,
             "Overall health of the observability pipeline (1=up, 0=down).",
@@ -59,9 +63,9 @@ class HealthRegistry:
             "Prometheus HTTP exporter availability (1=ok, 0=failed).",
         )
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Public API - High level setters
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     def mark_pipeline_up(self, ok: bool) -> None:
         self.pipeline_up.set(1 if ok else 0)
 
@@ -80,9 +84,9 @@ class HealthRegistry:
     def mark_metrics_http_ok(self, ok: bool) -> None:
         self.pipeline_metrics_http_ok.set(1 if ok else 0)
 
-    # -------------------------------------------------------------------------
-    # Utility methods
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
+    # Utilities
+    # --------------------------------------------------------------------------
     def reset_all(self) -> None:
         """Reset all gauges to zero (used on forced reinit)."""
         self.pipeline_up.set(0)
@@ -92,9 +96,9 @@ class HealthRegistry:
         self.pipeline_tracing_ok.set(0)
         self.pipeline_metrics_http_ok.set(0)
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Singleton access
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     @classmethod
     def get_instance(cls) -> HealthRegistry:
         """Thread-safe singleton accessor."""
@@ -105,7 +109,9 @@ class HealthRegistry:
         return cls._instance
 
 
-# Convenience alias
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Module-Level Convenience Accessor                                          │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 def get_health_registry() -> HealthRegistry:
     """
     Retrieve the global HealthRegistry instance.

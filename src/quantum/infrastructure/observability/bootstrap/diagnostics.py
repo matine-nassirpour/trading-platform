@@ -24,7 +24,14 @@ _logger = logging.getLogger(__name__)
 
 class BootstrapDiagnostics:
     """
-    Tracks internal metrics about the observability bootstrap lifecycle.
+    Tracks internal metrics for the observability bootstrap lifecycle.
+
+    This class records both initialization latencies and failures across
+    individual subsystems (e.g., tracing, logging, metrics).
+
+    Thread-safety:
+        Accessed through a singleton (`get_instance()`).
+        Safe for concurrent writes from multiple threads.
     """
 
     _instance_lock = threading.Lock()
@@ -35,9 +42,9 @@ class BootstrapDiagnostics:
     _FAILURE_METRIC: Final[str] = "quantum_observability_init_failures_total"
 
     def __init__(self) -> None:
-        # ---------------------------------------------------------------------
+        # ----------------------------------------------------------------------
         # Prometheus metrics
-        # ---------------------------------------------------------------------
+        # ----------------------------------------------------------------------
         self._latency_hist = Histogram(
             self._LATENCY_METRIC,
             "Initialization duration of observability subsystems (seconds).",
@@ -55,20 +62,21 @@ class BootstrapDiagnostics:
         self._results: dict[str, float] = {}
         self._failures: set[str] = set()
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Singleton Access
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     @classmethod
     def get_instance(cls) -> BootstrapDiagnostics:
+        """Retrieve the global diagnostics singleton."""
         if cls._instance is None:
             with cls._instance_lock:
                 if cls._instance is None:
                     cls._instance = cls()
         return cls._instance
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Metrics Recording
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     def record_init_latency(self, subsystem: str, duration: float) -> None:
         """Record initialization latency for a subsystem."""
         self._latency_hist.labels(subsystem=subsystem).observe(duration)
@@ -89,17 +97,16 @@ class BootstrapDiagnostics:
         }
 
 
-# ╭───────────────────────────────────────────────────────────────────────────╮
-# │ Decorator for automatic instrumentation                                   │
-# ╰───────────────────────────────────────────────────────────────────────────╯
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Decorator for automatic instrumentation                                    │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 def measure_latency(subsystem_name: str) -> Callable[..., Any]:
     """
     Decorator to measure and record initialization latency for a subsystem.
 
     Example:
-        @measure_latency("logging")
-        def init_logging(...):
-            ...
+        >>> @measure_latency("logging")
+            def init_logging(...):
     """
 
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
@@ -122,9 +129,9 @@ def measure_latency(subsystem_name: str) -> Callable[..., Any]:
     return decorator
 
 
-# ╭───────────────────────────────────────────────────────────────────────────╮
-# │ Convenience Accessor                                                      │
-# ╰───────────────────────────────────────────────────────────────────────────╯
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Convenience Accessor                                                       │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 def get_diagnostics() -> BootstrapDiagnostics:
     """Retrieve the global BootstrapDiagnostics instance."""
     return BootstrapDiagnostics.get_instance()
