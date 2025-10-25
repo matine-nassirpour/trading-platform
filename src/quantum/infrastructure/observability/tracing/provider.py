@@ -247,7 +247,7 @@ def init_tracing(
     # ─── Health metric propagation (soft optional)
     try:
         from quantum.infrastructure.observability.metrics.collectors.health_collector import (
-            tracer_exporter_active,
+            tracing_exporter_status,
         )
     except ModuleNotFoundError:
         logger.debug(
@@ -255,17 +255,19 @@ def init_tracing(
         )
     else:
         try:
-            tracer_exporter_active.set(1.0 if active_exporter else 0.0)
+            tracing_exporter_status.set(1.0 if active_exporter else 0.0)
         except (ValueError, RuntimeError, AttributeError) as exc:
             logger.debug(f"Unable to update tracer exporter metric: {exc}")
 
     # ─── Link provider reference for coordinated shutdown
     try:
-        import quantum.infrastructure.observability.bootstrap.init_manager as _init_mod
+        from quantum.infrastructure.observability.bootstrap.state import (
+            set_tracer_provider as tp,
+        )
 
-        _init_mod._tracer_provider_ref = cast(object, tracer_provider)
-    except ModuleNotFoundError:
-        pass
+        tp(tracer_provider)
+    except Exception as exc:
+        logger.debug(f"Failed to register tracer provider globally: {exc}")
 
     _ensure_atexit_registered()
     return tracer_provider

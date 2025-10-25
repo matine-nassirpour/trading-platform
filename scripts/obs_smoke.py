@@ -25,6 +25,9 @@ from typing import Any, SupportsFloat, SupportsIndex, cast
 
 from opentelemetry import trace
 
+from quantum.infrastructure.observability.bootstrap.health_registry import (
+    get_health_registry,
+)
 from quantum.infrastructure.observability.bootstrap.init_manager import (
     init_observability,
     shutdown_observability,
@@ -41,7 +44,10 @@ from quantum.shared.correlation.correlation_id import (
     new_correlation_id,
 )
 
-NumberLike = float | int | str | bytes  # acceptable for float()
+# ╭───────────────────────────────────────────────────────────────────────────╮
+# │ Internal utilities                                                        │
+# ╰───────────────────────────────────────────────────────────────────────────╯
+NumberLike = float | int | str | bytes
 Floatable = SupportsFloat | SupportsIndex | str | bytes | bytearray | memoryview
 
 
@@ -115,6 +121,9 @@ def _label_from_filename() -> str:
     return "SMOKE" if "smoke" in stem else "SELFTEST"
 
 
+# ╭───────────────────────────────────────────────────────────────────────────╮
+# │ Main E2E pipeline test                                                    │
+# ╰───────────────────────────────────────────────────────────────────────────╯
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument(
@@ -197,6 +206,7 @@ def main() -> None:
 
         # Pipeline launch
         init_observability(force=True)
+        registry = get_health_registry()
         log = logging.getLogger("selftest")
         tracer = trace.get_tracer("quantum.selftest")
 
@@ -228,7 +238,6 @@ def main() -> None:
                             },
                         )
                         log.info("inside span", extra={"attrs": {"in_span": True}})
-
                         log.warning("severity probe warning")
                         log.critical("severity probe critical")
 
@@ -251,17 +260,18 @@ def main() -> None:
                         for i in range(40):
                             log.info(f"fill {i} {payload}")
 
+            # HealthRegistry metrics validation
+            def _g(gauge):
+                return float(gauge._value.get())
+
             # Asserts: in-memory metrics
-            if _gauge_value(m.pipeline_up) != 1.0:
+            if _g(registry.pipeline_up) != 1.0:
                 errs.append("pipeline_up != 1")
-            if _gauge_value(m.pipeline_logging_ok) != 1.0:
+            if _g(registry.pipeline_logging_ok) != 1.0:
                 errs.append("pipeline_logging_ok != 1")
-            if _gauge_value(m.pipeline_tracing_ok) != 1.0:
+            if _g(registry.pipeline_tracing_ok) != 1.0:
                 errs.append("pipeline_tracing_ok != 1")
-            if (
-                args.with_http_metrics
-                and _gauge_value(m.pipeline_metrics_http_ok) != 1.0
-            ):
+            if args.with_http_metrics and _g(registry.pipeline_metrics_http_ok) != 1.0:
                 errs.append("pipeline_metrics_http_ok != 1 (HTTP)")
 
             # Asserts: log files + rollover
@@ -407,14 +417,14 @@ def main() -> None:
 
             # Trace exporter active (console->0, none->0, otlp->1 if built)
             exp = os.environ.get("QUANTUM_TRACE_EXPORTER", "console")
-            exp_active = _gauge_value(m.tracer_exporter_active)
+            exp_active = _gauge_value(m.tracing_exporter_status)
             if exp == "otlp":
                 if not exp_active == 1.0:
-                    errs.append("tracer_exporter_active != 1 with exporter=otlp")
+                    errs.append("tracing_exporter_status != 1 with exporter=otlp")
             else:
                 if not exp_active == 0.0:
                     errs.append(
-                        "tracer_exporter_active should be 0 with exporter!=otlp"
+                        "tracing_exporter_status should be 0 with exporter!=otlp"
                     )
 
             # Compteur de redaction > 0

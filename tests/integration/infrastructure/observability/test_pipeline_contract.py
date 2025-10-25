@@ -8,10 +8,9 @@ from pathlib import Path
 
 import pytest
 
-from quantum.infrastructure.observability.metrics.collectors import (
-    health_collector as m,
+from quantum.infrastructure.observability.bootstrap.health_registry import (
+    get_health_registry,
 )
-from tests.support.logging_utils import counter_value
 
 
 def _any_file(root: Path, pattern: str) -> Path | None:
@@ -39,11 +38,13 @@ def test_pipeline_contract(obs_session, tmp_workspace, assert_jsonl_tail):
         * severity mapping: WARNING→WARN(13), CRITICAL→FATAL(21)
         * redaction on attrs.secret → "[REDACTED]"
     """
+    registry = get_health_registry()
+
     # Health gauges
-    assert counter_value(m.pipeline_logging_ok) == 1.0, "pipeline_logging_ok != 1"
-    assert counter_value(m.pipeline_tracing_ok) == 1.0, "pipeline_tracing_ok != 1"
-    assert counter_value(m.logging_sink_up) == 1.0, "logging_sink_up != 1"
-    assert counter_value(m.pipeline_up) == 1.0, "pipeline_up != 1"
+    assert registry.pipeline_logging_ok._value.get() == 1.0, "pipeline_logging_ok != 1"
+    assert registry.pipeline_tracing_ok._value.get() == 1.0, "pipeline_tracing_ok != 1"
+    assert registry.logging_sink_up._value.get() == 1.0, "logging_sink_up != 1"
+    assert registry.pipeline_up._value.get() == 1.0, "pipeline_up != 1"
 
     # Emit an allowlisted audit event
     from quantum.infrastructure.observability.logging.event_emitter import emit_event

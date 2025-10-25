@@ -328,7 +328,7 @@ def render_kpis() -> None:
             "Pipeline up", "✅" if v == 1 else "❌", help="End-to-end bootstrap OK"
         )
     with col2:
-        v = _gauge_value("quantum_tracer_exporter_active")
+        v = _gauge_value("quantum_tracing_exporter_status")
         st.metric(
             "Tracer exporter",
             "ON" if v == 1 else "OFF",
