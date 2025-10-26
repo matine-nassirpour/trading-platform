@@ -22,9 +22,10 @@ trading-platform/
 │   │   └── README.md
 │   └── observability/
 │       ├── grafana_dashboard.json
+│       ├── log_schema_v1.json
 │       └── README.md
 ├── scripts/
-│   ├── obs_smoke.py
+│   ├── generate_log_schema.py
 │   └── print_tree.py
 ├── src/
 │   └── quantum/

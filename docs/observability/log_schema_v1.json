@@ -1,0 +1,264 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "_meta": {
+    "commit_instructions": "Commit this file under version control at docs/observability/log_schema_v1.json",
+    "generated_at_utc": "2025-10-26T17:51:15.495172Z",
+    "generator": "Quantum Observability Schema Generator",
+    "model": "LogPayloadV1",
+    "schema_version": "1.0",
+    "sha256": "126059a9ce6b4665c73a15ac254b93439d139e396adbdcf961458b3aacd65533"
+  },
+  "additionalProperties": false,
+  "description": "Canonical structured log payload (version 1).\n\nThis model defines the contract for all internal and external log\nrepresentations produced by the Quantum stack. It is immutable,\nfully validated, and aligned with OpenTelemetry logging semantics.",
+  "properties": {
+    "attrs": {
+      "additionalProperties": true,
+      "title": "Attrs",
+      "type": "object"
+    },
+    "correlation_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Correlation Id"
+    },
+    "env": {
+      "title": "Env",
+      "type": "string"
+    },
+    "exception": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Exception"
+    },
+    "exception_message": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Exception Message"
+    },
+    "exception_stacktrace": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Exception Stacktrace"
+    },
+    "exception_type": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Exception Type"
+    },
+    "instance": {
+      "title": "Instance",
+      "type": "string"
+    },
+    "level": {
+      "enum": [
+        "TRACE",
+        "DEBUG",
+        "INFO",
+        "WARN",
+        "ERROR",
+        "FATAL"
+      ],
+      "title": "Level",
+      "type": "string"
+    },
+    "log_schema_version": {
+      "default": "v1",
+      "title": "Log Schema Version",
+      "type": "string"
+    },
+    "logger": {
+      "title": "Logger",
+      "type": "string"
+    },
+    "message": {
+      "title": "Message",
+      "type": "string"
+    },
+    "run_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Run Id"
+    },
+    "sampled": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Sampled"
+    },
+    "schema": {
+      "default": "quantum.log",
+      "title": "Schema",
+      "type": "string"
+    },
+    "service_name": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Service Name"
+    },
+    "service_namespace": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Service Namespace"
+    },
+    "service_version": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Service Version"
+    },
+    "severity_number": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Severity Number"
+    },
+    "span_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Span Id"
+    },
+    "timestamp": {
+      "title": "Timestamp",
+      "type": "string"
+    },
+    "trace_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Trace Id"
+    },
+    "ts_monotonic_ms": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Ts Monotonic Ms"
+    },
+    "ts_unix_ms": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Ts Unix Ms"
+    },
+    "validation_error": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Validation Error"
+    }
+  },
+  "required": [
+    "timestamp",
+    "level",
+    "logger",
+    "message",
+    "env",
+    "instance",
+    "trace_id",
+    "span_id",
+    "sampled",
+    "correlation_id",
+    "run_id"
+  ],
+  "title": "LogPayloadV1",
+  "type": "object"
+}

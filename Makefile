@@ -10,7 +10,7 @@ PS  := powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -Command
 
 .DEFAULT_GOAL := help
 
-.PHONY: help fmt-check fmt typecheck pre-commit test audit clean contracts check-ci ui tree
+.PHONY: help fmt-check fmt typecheck pre-commit test audit clean contracts check-ci ui tree log-schema
 
 help:
 	@$(PS) "Write-Host 'Targets:'; Get-Content '$(MAKEFILE_LIST)' | Select-String '^\S+:.*?## ' | ForEach-Object { $$t = $$_.Line -replace ':.*',''; $$d = ($$_.Line -split '## ')[1]; '{0,-18} {1}' -f $$t, $$d } | Sort-Object"
@@ -64,4 +64,10 @@ ui: ## Launch Streamlit
 tree: ## Print repo tree into docs/architecture/tree.txt
 	@$(PS) "New-Item -ItemType Directory -Force -Path 'docs/architecture' | Out-Null"
 	@poetry run python scripts/print_tree.py . --output docs/architecture/tree.txt --respect-gitignore --max-depth 10
-	@echo Done. Output: docs/architecture/tree.txt
+	@echo "Done. Output: docs/architecture/tree.txt"
+
+log-schema: ## Generate the canonical JSON schema for LogPayloadV1
+	@echo "Generating LogPayloadV1 JSON schema..."
+	@$(PS) "New-Item -ItemType Directory -Force -Path 'docs/observability' | Out-Null"
+	@set PYTHONPATH=src;. && poetry run python scripts/generate_log_schema.py
+	@echo "Schema generated at docs/observability/log_schema_v1.json"
