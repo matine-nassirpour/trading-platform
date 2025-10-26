@@ -10,7 +10,7 @@ PS  := powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -Command
 
 .DEFAULT_GOAL := help
 
-.PHONY: help fmt-check fmt typecheck pre-commit test audit clean contracts check-ci ui tree obs-smoke obs-smoke-http obs-smoke-otlp-http obs-smoke-otlp-grpc obs-smoke-fsync
+.PHONY: help fmt-check fmt typecheck pre-commit test audit clean contracts check-ci ui tree log-schema
 
 help:
 	@$(PS) "Write-Host 'Targets:'; Get-Content '$(MAKEFILE_LIST)' | Select-String '^\S+:.*?## ' | ForEach-Object { $$t = $$_.Line -replace ':.*',''; $$d = ($$_.Line -split '## ')[1]; '{0,-18} {1}' -f $$t, $$d } | Sort-Object"
@@ -64,24 +64,10 @@ ui: ## Launch Streamlit
 tree: ## Print repo tree into docs/architecture/tree.txt
 	@$(PS) "New-Item -ItemType Directory -Force -Path 'docs/architecture' | Out-Null"
 	@poetry run python scripts/print_tree.py . --output docs/architecture/tree.txt --respect-gitignore --max-depth 10
-	@echo Done. Output: docs/architecture/tree.txt
+	@echo "Done. Output: docs/architecture/tree.txt"
 
-
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Observability smoke/self-test commands                                      │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
-
-obs-smoke: ## Run observability smoke test (console exporter)
-	@set PYTHONPATH=src;. && poetry run python scripts/obs_smoke.py
-
-obs-smoke-http: ## Smoke test with /metrics endpoint enabled
-	@set PYTHONPATH=src;. && poetry run python scripts/obs_smoke.py --with-http-metrics
-
-obs-smoke-otlp-http: ## Smoke test with OTLP/HTTP exporter (endpoint http://127.0.0.1:4318)
-	@set PYTHONPATH=src;. && poetry run python scripts/obs_smoke.py --with-http-metrics --exporter otlp --protocol http --endpoint http://127.0.0.1:4318
-
-obs-smoke-otlp-grpc: ## Smoke test with OTLP/gRPC exporter (endpoint 127.0.0.1:4317, insecure=1)
-	@set PYTHONPATH=src;. && poetry run python scripts/obs_smoke.py --exporter otlp --protocol grpc --endpoint 127.0.0.1:4317
-
-obs-smoke-fsync: ## Smoke test with fsync enabled (durability; slower)
-	@set PYTHONPATH=src;. && set QUANTUM_LOG_FSYNC=1 && poetry run python scripts/obs_smoke.py
+log-schema: ## Generate the canonical JSON schema for LogPayloadV1
+	@echo "Generating LogPayloadV1 JSON schema..."
+	@$(PS) "New-Item -ItemType Directory -Force -Path 'docs/observability' | Out-Null"
+	@set PYTHONPATH=src;. && poetry run python scripts/generate_log_schema.py
+	@echo "Schema generated at docs/observability/log_schema_v1.json"

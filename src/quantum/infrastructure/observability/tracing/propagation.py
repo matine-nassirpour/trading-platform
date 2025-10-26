@@ -14,11 +14,11 @@ from opentelemetry.propagate import set_global_textmap
 from opentelemetry.propagators.composite import CompositePropagator
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 
-from quantum.shared.context.run_id import get_run_id, run_id_context
-from quantum.shared.correlation.correlation_id import (
+from quantum.infrastructure.observability.tracing.correlation.correlation_id import (
     correlation_context,
     get_correlation_id,
 )
+from quantum.shared.context.run_id import get_run_id, run_id_context
 
 _PROCESS_BAGGAGE_TOKEN: Token[OTelContext] | None = None
 T = TypeVar("T")

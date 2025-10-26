@@ -9,7 +9,7 @@ from quantum.infrastructure.execution.mappings.mt5_request_mapper import (
     to_mt5_query_filter,
     to_mt5_trade_request,
 )
-from quantum.infrastructure.observability.tracing.traces import get_tracer
+from quantum.infrastructure.observability.tracing.provider import get_tracer
 from quantum.shared.types.channels import ExecutionChannel
 from quantum.shared.types.execution_request import (
     CheckRequest,

@@ -28,7 +28,7 @@ class TestMetricsHTTPEndpoint:
           - redaction counter exposed after a secret is logged
           - file rotation counter exposed after a burst with a small QUANTUM_LOG_MAX_BYTES
         """
-        from quantum.infrastructure.observability.init_observability import (
+        from quantum.infrastructure.observability.bootstrap.init_manager import (
             init_observability,
             shutdown_observability,
         )

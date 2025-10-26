@@ -196,7 +196,7 @@ def tmp_workspace(iso_env, clean_registry) -> Generator[Workspace]:
     finally:
         # Teardown: pipeline shutdown + cleanup
         with suppress(Exception):
-            from quantum.infrastructure.observability.init_observability import (
+            from quantum.infrastructure.observability.bootstrap.init_manager import (
                 shutdown_observability,
             )
 
@@ -293,7 +293,7 @@ def obs_session(tmp_workspace):
     Open a full observability session in a controlled context and guarantee
     a clean closure (freeing FDs/handlers).
     """
-    from quantum.infrastructure.observability.init_observability import (
+    from quantum.infrastructure.observability.bootstrap.init_manager import (
         observability_session,
     )
 
@@ -324,6 +324,21 @@ def monotonic_stepper(monkeypatch):
     yield
 
 
+@pytest.fixture
+def free_port() -> int:
+    """
+    Return an available TCP port bound on 127.0.0.1 for ephemeral use in tests.
+
+    Thread-safe and reliable across OSes. Used by tests that need a temporary
+    HTTP or gRPC listener (e.g. Prometheus /metrics, OTLP exporters, etc.).
+    """
+    import socket
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(("127.0.0.1", 0))
+        return s.getsockname()[1]
+
+
 # ╭─────────────────────────────────────────────────────────────────────────────╮
 # │ JSONL Reading Helpers for Assertions                                        │
 # ╰─────────────────────────────────────────────────────────────────────────────╯
@@ -340,10 +355,10 @@ def read_jsonl():
         files = sorted(
             Path(base_dir).rglob(pattern),
             key=lambda p: p.stat().st_mtime if p.exists() else 0.0,
-            reverse=True,
+            reverse=False,  # oldest → newest
         )
         out: list[dict] = []
-        for fp in files[:2]:
+        for fp in files:
             for line in _read_tail_complete_lines(fp, chunk_bytes=chunk_bytes):
                 with suppress(json.JSONDecodeError, TypeError):
                     out.append(json.loads(line))
@@ -480,10 +495,5 @@ def pytest_configure(config: pytest.Config) -> None:
     """
     Register commonly used custom markers to avoid warnings and improve test filtering.
     """
-    for marker in (
-        "unit",
-        "filesystem",
-        "prometheus",
-        "otlp",
-    ):
+    for marker in ("unit", "filesystem", "prometheus", "otlp", "e2e"):
         config.addinivalue_line("markers", marker)

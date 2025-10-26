@@ -6,15 +6,15 @@ from concurrent.futures import ThreadPoolExecutor
 import pytest
 from opentelemetry import trace
 
+from quantum.infrastructure.observability.tracing.correlation.correlation_id import (
+    correlation_context,
+    new_correlation_id,
+)
 from quantum.infrastructure.observability.tracing.propagation import (
     ContextPropagatingThread,
     baggage_context_from_ids,
     capture_context_snapshot,
     submit_with_context,
-)
-from quantum.shared.correlation.correlation_id import (
-    correlation_context,
-    new_correlation_id,
 )
 
 

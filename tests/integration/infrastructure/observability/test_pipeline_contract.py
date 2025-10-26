@@ -8,8 +8,10 @@ from pathlib import Path
 
 import pytest
 
-from quantum.infrastructure.observability.metrics import health as m
-from tests.support.logging_utils import counter_value
+from quantum.core.config.runtime.manager import ConfigManager
+from quantum.infrastructure.observability.bootstrap.health_registry import (
+    get_health_registry,
+)
 
 
 def _any_file(root: Path, pattern: str) -> Path | None:
@@ -37,11 +39,19 @@ def test_pipeline_contract(obs_session, tmp_workspace, assert_jsonl_tail):
         * severity mapping: WARNING→WARN(13), CRITICAL→FATAL(21)
         * redaction on attrs.secret → "[REDACTED]"
     """
+    registry = get_health_registry()
+    core_settings = ConfigManager.load()
+
     # Health gauges
-    assert counter_value(m.pipeline_logging_ok) == 1.0, "pipeline_logging_ok != 1"
-    assert counter_value(m.pipeline_tracing_ok) == 1.0, "pipeline_tracing_ok != 1"
-    assert counter_value(m.logging_sink_up) == 1.0, "logging_sink_up != 1"
-    assert counter_value(m.pipeline_up) == 1.0, "pipeline_up != 1"
+    assert registry.pipeline_logging_ok._value.get() == 1.0, "pipeline_logging_ok != 1"
+    assert registry.pipeline_tracing_ok._value.get() == 1.0, "pipeline_tracing_ok != 1"
+    assert registry.logging_sink_up._value.get() == 1.0, "logging_sink_up != 1"
+
+    metrics_enabled = core_settings.quantum_metrics_port > 0
+    expected_pipeline_up = 1.0 if metrics_enabled else 0.0
+    assert (
+        registry.pipeline_up._value.get() == expected_pipeline_up
+    ), f"pipeline_up should be {expected_pipeline_up} (metrics_enabled={metrics_enabled})"
 
     # Emit an allowlisted audit event
     from quantum.infrastructure.observability.logging.event_emitter import emit_event

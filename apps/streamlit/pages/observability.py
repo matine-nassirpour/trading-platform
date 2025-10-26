@@ -13,7 +13,7 @@ from opentelemetry import trace
 from prometheus_client import REGISTRY
 
 from quantum.infrastructure.observability.logging.event_emitter import emit_event
-from quantum.shared.correlation.correlation_id import (
+from quantum.infrastructure.observability.tracing.correlation.correlation_id import (
     correlation_context,
     new_correlation_id,
 )
@@ -328,7 +328,7 @@ def render_kpis() -> None:
             "Pipeline up", "✅" if v == 1 else "❌", help="End-to-end bootstrap OK"
         )
     with col2:
-        v = _gauge_value("quantum_tracer_exporter_active")
+        v = _gauge_value("quantum_tracing_exporter_status")
         st.metric(
             "Tracer exporter",
             "ON" if v == 1 else "OFF",

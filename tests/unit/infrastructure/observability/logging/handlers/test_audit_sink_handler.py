@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 
-import quantum.infrastructure.observability.logging.audit_sink as audit_mod
-from quantum.infrastructure.observability.logging.audit_sink import (
+import quantum.infrastructure.observability.logging.handlers.audit_sink_handler as audit_mod
+from quantum.infrastructure.observability.logging.handlers.audit_sink_handler import (
     AuditEventFileHandler,
 )
 from tests.support.factories import make_record
@@ -113,7 +113,7 @@ class TestAuditEventFileHandler:
         # Monkeypatch module-level counter increment
         monkeypatch.setattr(audit_mod, "inc_disk_error_counter", _inc, raising=True)
 
-        # Force the atomic replace step to fail to trigger the exception branch
+        # Force the atomic replacement step to fail to trigger the exception branch
         def _boom_replace(*_args, **_kwargs):
             raise OSError("iofail")
 

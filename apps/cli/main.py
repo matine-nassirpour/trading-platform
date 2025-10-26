@@ -25,7 +25,7 @@ def main() -> None:
         reconcile(_ReconcileStub())
     finally:
         # clean shutdown to avoid orphaned handlers in tests/e2e
-        from quantum.infrastructure.observability.init_observability import (
+        from quantum.infrastructure.observability.bootstrap.init_manager import (
             shutdown_observability,
         )
 

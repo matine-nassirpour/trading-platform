@@ -22,9 +22,10 @@ trading-platform/
 │   │   └── README.md
 │   └── observability/
 │       ├── grafana_dashboard.json
+│       ├── log_schema_v1.json
 │       └── README.md
 ├── scripts/
-│   ├── obs_smoke.py
+│   ├── generate_log_schema.py
 │   └── print_tree.py
 ├── src/
 │   └── quantum/
@@ -127,30 +128,55 @@ trading-platform/
 │       │   ├── messaging/
 │       │   │   └── __init__.py
 │       │   ├── observability/
+│       │   │   ├── bootstrap/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── diagnostics.py
+│       │   │   │   ├── health_registry.py
+│       │   │   │   ├── init_manager.py
+│       │   │   │   ├── lifecycle.py
+│       │   │   │   └── state.py
 │       │   │   ├── logging/
+│       │   │   │   ├── filters/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── audit_event_filter.py
+│       │   │   │   │   ├── context_filter.py
+│       │   │   │   │   ├── ignore_libraries_filter.py
+│       │   │   │   │   ├── info_sampler_filter.py
+│       │   │   │   │   ├── monotonic_timestamp_filter.py
+│       │   │   │   │   ├── rate_limit_filter.py
+│       │   │   │   │   ├── redact_filter.py
+│       │   │   │   │   └── static_fields_filter.py
+│       │   │   │   ├── formatters/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   └── json_formatter.py
+│       │   │   │   ├── handlers/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── audit_sink_handler.py
+│       │   │   │   │   └── partitioned_handler.py
 │       │   │   │   ├── models/
 │       │   │   │   │   ├── __init__.py
 │       │   │   │   │   ├── factory.py
-│       │   │   │   │   └── log_payload_v1.py
+│       │   │   │   │   ├── log_payload_v1.py
+│       │   │   │   │   └── severity_map.py
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── _io_utils.py
-│       │   │   │   ├── audit_sink.py
 │       │   │   │   ├── constants.py
 │       │   │   │   ├── event_emitter.py
-│       │   │   │   ├── filters.py
-│       │   │   │   ├── formatter.py
-│       │   │   │   ├── logs.py
-│       │   │   │   └── partitioned_handlers.py
+│       │   │   │   └── service.py
 │       │   │   ├── metrics/
+│       │   │   │   ├── collectors/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   └── health_collector.py
 │       │   │   │   ├── __init__.py
-│       │   │   │   ├── health.py
 │       │   │   │   └── mt5.py
 │       │   │   ├── tracing/
+│       │   │   │   ├── correlation/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   └── correlation_id.py
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── propagation.py
-│       │   │   │   └── traces.py
-│       │   │   ├── __init__.py
-│       │   │   └── init_observability.py
+│       │   │   │   └── provider.py
+│       │   │   └── __init__.py
 │       │   ├── runtime/
 │       │   │   ├── __init__.py
 │       │   │   └── mt5_runtime_bootstrap.py
@@ -169,9 +195,6 @@ trading-platform/
 │       │   ├── context/
 │       │   │   ├── __init__.py
 │       │   │   └── run_id.py
-│       │   ├── correlation/
-│       │   │   ├── __init__.py
-│       │   │   └── correlation_id.py
 │       │   ├── errors/
 │       │   │   └── __init__.py
 │       │   ├── execution/
@@ -200,6 +223,13 @@ trading-platform/
 │       └── __init__.py
 ├── tests/
 │   ├── e2e/
+│   │   ├── observability/
+│   │   │   ├── __init__.py
+│   │   │   ├── test_observability_fsync_e2e.py
+│   │   │   ├── test_observability_metrics_http_e2e.py
+│   │   │   ├── test_observability_otlp_grpc_e2e.py
+│   │   │   ├── test_observability_otlp_http_e2e.py
+│   │   │   └── test_observability_pipeline_e2e.py
 │   │   └── __init__.py
 │   ├── integration/
 │   │   ├── core/
@@ -228,6 +258,7 @@ trading-platform/
 │   │   ├── __init__.py
 │   │   ├── factories.py
 │   │   ├── logging_utils.py
+│   │   ├── observability.py
 │   │   ├── time_utils.py
 │   │   ├── types.py
 │   │   └── wait.py
@@ -257,16 +288,22 @@ trading-platform/
 │   │   ├── infrastructure/
 │   │   │   ├── observability/
 │   │   │   │   ├── logging/
+│   │   │   │   │   ├── filters/
+│   │   │   │   │   │   ├── __init__.py
+│   │   │   │   │   │   └── test_filters.py
+│   │   │   │   │   ├── formatters/
+│   │   │   │   │   │   ├── __init__.py
+│   │   │   │   │   │   └── test_json_formatter.py
+│   │   │   │   │   ├── handlers/
+│   │   │   │   │   │   ├── __init__.py
+│   │   │   │   │   │   ├── test_audit_sink_handler.py
+│   │   │   │   │   │   └── test_partitioned_handler.py
 │   │   │   │   │   ├── models/
 │   │   │   │   │   │   ├── __init__.py
 │   │   │   │   │   │   └── test_factory.py
 │   │   │   │   │   ├── __init__.py
-│   │   │   │   │   ├── test_audit_sink.py
 │   │   │   │   │   ├── test_constants.py
-│   │   │   │   │   ├── test_event_emitter.py
-│   │   │   │   │   ├── test_filters.py
-│   │   │   │   │   ├── test_formatter.py
-│   │   │   │   │   └── test_partitioned_handlers.py
+│   │   │   │   │   └── test_event_emitter.py
 │   │   │   │   ├── tracing/
 │   │   │   │   │   ├── __init__.py
 │   │   │   │   │   └── test_propagation.py

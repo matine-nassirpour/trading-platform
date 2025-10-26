@@ -39,21 +39,21 @@ It exposes a single entrypoint (`ConfigManager`) and several internal layers tha
                │                                │
      ┌──────────────────────┐        ┌─────────────────────┐
      │   Providers Layer    │        │    Runtime State    │
-     │ (env_loader, etc.)   │        │ (ConfigState)       │
+     │  (env_loader, etc.)  │        │    (ConfigState)    │
      └──────────────────────┘        └─────────────────────┘
                ▲                                ▲
                │                                │
                │                                │
      ┌──────────────────────┐        ┌──────────────────────┐
      │  Models Layer        │        │  Validators Layer    │
-     │ (Core, Logging, MT5, │        │  (Rules, Registry)   │
-     │  Tracing)            │        └──────────────────────┘
+     │  (Core, Logging,     │        │  (Rules, Registry)   │
+     │  MT5, Tracing)       │        └──────────────────────┘
      └──────────────────────┘
                ▲
                │
  ┌──────────────────────────────┐
- │   Contracts Layer (Protocols)│
- │   (Base + Settings Contracts)│
+ │  Contracts Layer (Protocols) │
+ │  (Base + Settings Contracts) │
  └──────────────────────────────┘
 ```
 > **Dependency flow:** `bottom → top` <br>
@@ -64,7 +64,7 @@ It exposes a single entrypoint (`ConfigManager`) and several internal layers tha
 ## 3. Core Principles
 
 | Principle                         | Description                                                                                                 |
-| --------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+|-----------------------------------|-------------------------------------------------------------------------------------------------------------|
 | **Single Responsibility**         | Each layer defines one role only — providers load, models define, validators enforce, runtime orchestrates. |
 | **Clean Architecture Compliance** | Unidirectional dependencies; `quantum.core` never imports upward.                                           |
 | **Immutability & Determinism**    | Models are frozen; runtime state is controlled and atomic.                                                  |
@@ -111,7 +111,7 @@ src/quantum/core/
 ### Layer-to-directory mapping:
 
 | Layer          | Directory     | Key Components                                  | Responsibility                                                                          |
-| -------------- | ------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------- |
+|----------------|---------------|-------------------------------------------------|-----------------------------------------------------------------------------------------|
 | **Contracts**  | `contracts/`  | `base_contracts.py`, `settings_contracts.py`    | Define all configuration protocols and invariants.                                      |
 | **Validators** | `validators/` | `base.py`, `rules.py`, `registry.py`            | Define reusable validation rules and the central registry.                              |
 | **Models**     | `models/`     | `core.py`, `logging.py`, `tracing.py`, `mt5.py` | Define immutable, validated Pydantic models for all configuration types.                |
@@ -154,7 +154,7 @@ The configuration lifecycle follows a deterministic sequence of atomic operation
 ## 6. Interaction with Other Subsystems
 
 | Subsystem                   | Interaction Type       | Direction    | Description                                                                         |
-| --------------------------- | ---------------------- | ------------ | ----------------------------------------------------------------------------------- |
+|-----------------------------|------------------------|--------------|-------------------------------------------------------------------------------------|
 | **Observability**           | Snapshot exposure      | Outbound     | Provides non-sensitive configuration metadata for logs and metrics.                 |
 | **Execution Engine**        | Read-only dependency   | Outbound     | Reads configuration via `ConfigManager.load()` APIs.                                |
 | **CLI & Streamlit Apps**    | Runtime initialization | Outbound     | Bootstrap configuration at startup for consistency.                                 |
@@ -169,7 +169,7 @@ The configuration lifecycle follows a deterministic sequence of atomic operation
 When extending the configuration system, respect the invariants below:
 
 | Category                             | Rule                                                                                                                                                   |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+|--------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **Adding a new configuration model** | Derive from `BaseModel` or `BaseSettings`. Keep it frozen (`ConfigDict(frozen=True)`), validated by explicit rules, and registered in `ConfigManager`. |
 | **Adding a new validator**           | Implement `ValidationRule`, register in `ValidatorRegistry` with a unique `rule_id`. Write unit + integration tests.                                   |
 | **Adding a new provider**            | Implement `EnvProviderProtocol` if needed (for secret manager, cloud API, etc.). Must be pure, testable, and deterministic.                            |
@@ -184,7 +184,7 @@ When extending the configuration system, respect the invariants below:
 The configuration subsystem exposes diagnostics utilities to ensure transparency:
 
 | Function                       | Description                                                         |
-| ------------------------------ | ------------------------------------------------------------------- |
+|--------------------------------|---------------------------------------------------------------------|
 | `ConfigState.describe()`       | Returns a concise summary (`base_dir`, PID, number of env vars).    |
 | `ConfigManager.snapshot()`     | Produces an immutable summary for metrics/logs.                     |
 | `ConfigManager.clear_caches()` | Resets all caches and state — used in testing or re-initialization. |

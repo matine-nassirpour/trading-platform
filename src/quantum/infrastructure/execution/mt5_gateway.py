@@ -5,6 +5,7 @@ import time
 from collections.abc import Callable
 from typing import Any
 
+from quantum.core.config.runtime.manager import ConfigManager
 from quantum.infrastructure.execution._timeout_utils import timeout_guard
 from quantum.infrastructure.execution.contracts import ExecutionFunctionProtocol
 from quantum.infrastructure.execution.gateway_registry import (
@@ -19,8 +20,7 @@ from quantum.infrastructure.observability.metrics.mt5 import (
     exec_channel_latency_ms,
     exec_channel_total,
 )
-from quantum.infrastructure.observability.tracing.traces import get_tracer
-from quantum.shared.config.config_manager import ConfigManager
+from quantum.infrastructure.observability.tracing.provider import get_tracer
 from quantum.shared.types.channels import ExecutionChannel
 from quantum.shared.types.execution import ExecutionCode
 from quantum.shared.types.execution_result import ExecutionResult

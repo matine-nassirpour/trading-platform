@@ -8,12 +8,12 @@ from opentelemetry import trace
 from opentelemetry.trace import get_current_span
 from prometheus_client import Counter, Histogram
 
-from quantum.infrastructure.observability.tracing.propagation import (
-    baggage_context_from_ids,
-)
-from quantum.shared.correlation.correlation_id import (
+from quantum.infrastructure.observability.tracing.correlation.correlation_id import (
     correlation_context,
     new_correlation_id,
+)
+from quantum.infrastructure.observability.tracing.propagation import (
+    baggage_context_from_ids,
 )
 
 P = ParamSpec("P")

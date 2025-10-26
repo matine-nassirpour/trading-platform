@@ -13,7 +13,7 @@ from tests.support.logging_utils import capture_logger, counter_value, propagate
 
 def _init_then_shutdown(*, force: bool = True) -> None:
     """Start then stop cleanly (isolate each scenario)."""
-    from quantum.infrastructure.observability.init_observability import (
+    from quantum.infrastructure.observability.bootstrap.init_manager import (
         init_observability,
         shutdown_observability,
     )
@@ -31,25 +31,36 @@ def _assert_inactive_with_reason(
     caplog: pytest.LogCaptureFixture,
     *,
     reason_expected: str,
-    log_name: str = "quantum.infrastructure.observability.tracing.traces",
+    log_name: str = "quantum.infrastructure.observability.tracing.provider",
 ) -> None:
     """
     Common assertion for 'inactive' scenarios:
       - pipeline_tracing_ok == 1.0
-      - tracer_exporter_active == 0.0
+      - tracing_exporter_status == 0.0
       - warning log "OTLP exporter configured but INACTIVE" containing the expected reason
     """
-    from quantum.infrastructure.observability.metrics import health as m
+    from quantum.infrastructure.observability.bootstrap.health_registry import (
+        get_health_registry,
+    )
+    from quantum.infrastructure.observability.metrics.collectors import (
+        health_collector as m,
+    )
 
     caplog.clear()
     caplog.set_level(logging.INFO)
+
+    registry = get_health_registry()
 
     with propagate_logger(log_name):
         with capture_logger(log_name) as recs:
             _init_then_shutdown(force=True)
 
-    assert counter_value(m.pipeline_tracing_ok) == 1.0
-    assert counter_value(m.tracer_exporter_active) == 0.0
+    assert (
+        registry.pipeline_tracing_ok._value.get() == 1.0
+    ), "Tracing pipeline should init (even inactive)"
+    assert (
+        counter_value(m.tracing_exporter_status) == 0.0
+    ), "Exporter should be inactive"
 
     reasons = [r for r in recs if "OTLP exporter inactive" in (r.getMessage() or "")]
     assert reasons, "Expected INACTIVE warning log"
@@ -69,12 +80,19 @@ def _assert_inactive_with_reason(
 class TestOTLPExporterSelection:
     def test_console_and_none_exporters_are_inactive(self, tmp_workspace, caplog):
         """
-        exporter=console|none → tracer_exporter_active == 0.0, pipeline_tracing_ok == 1.0
+        exporter=console|none → tracing_exporter_status == 0.0, pipeline_tracing_ok == 1.0
         (console active, none explicit).
         """
         import os
 
-        from quantum.infrastructure.observability.metrics import health as m
+        from quantum.infrastructure.observability.bootstrap.health_registry import (
+            get_health_registry,
+        )
+        from quantum.infrastructure.observability.metrics.collectors import (
+            health_collector as m,
+        )
+
+        registry = get_health_registry()
 
         for exp in ("console", "none"):
             caplog.clear()
@@ -85,8 +103,8 @@ class TestOTLPExporterSelection:
 
             _init_then_shutdown(force=True)
 
-            assert counter_value(m.pipeline_tracing_ok) == 1.0
-            assert counter_value(m.tracer_exporter_active) == 0.0
+            assert registry.pipeline_tracing_ok._value.get() == 1.0
+            assert counter_value(m.tracing_exporter_status) == 0.0
 
     def test_otlp_http_active_when_pkg_present(
         self, tmp_workspace, monkeypatch, caplog
@@ -98,7 +116,12 @@ class TestOTLPExporterSelection:
         import sys
         import types
 
-        from quantum.infrastructure.observability.metrics import health as m
+        from quantum.infrastructure.observability.bootstrap.health_registry import (
+            get_health_registry,
+        )
+        from quantum.infrastructure.observability.metrics.collectors import (
+            health_collector as m,
+        )
 
         fake_http_module = types.ModuleType(
             "opentelemetry.exporter.otlp.proto.http.trace_exporter"
@@ -122,11 +145,13 @@ class TestOTLPExporterSelection:
         caplog.clear()
         caplog.set_level(logging.INFO)
 
+        registry = get_health_registry()
+
         with propagate_logger("quantum.infrastructure.observability.tracing.traces"):
             _init_then_shutdown(force=True)
 
-        assert counter_value(m.pipeline_tracing_ok) == 1.0
-        assert counter_value(m.tracer_exporter_active) == 1.0
+        assert registry.pipeline_tracing_ok._value.get() == 1.0
+        assert counter_value(m.tracing_exporter_status) == 1.0
         assert not any("OTLP exporter inactive" in r.message for r in caplog.records)
 
     def test_otlp_http_inactive_when_pkg_missing(
@@ -168,7 +193,12 @@ class TestOTLPExporterSelection:
         import sys
         import types
 
-        from quantum.infrastructure.observability.metrics import health as m
+        from quantum.infrastructure.observability.bootstrap.health_registry import (
+            get_health_registry,
+        )
+        from quantum.infrastructure.observability.metrics.collectors import (
+            health_collector as m,
+        )
 
         fake_grpc_module = types.ModuleType(
             "opentelemetry.exporter.otlp.proto.grpc.trace_exporter"
@@ -193,11 +223,13 @@ class TestOTLPExporterSelection:
         caplog.clear()
         caplog.set_level(logging.INFO)
 
+        registry = get_health_registry()
+
         with propagate_logger("quantum.infrastructure.observability.tracing.traces"):
             _init_then_shutdown(force=True)
 
-        assert counter_value(m.pipeline_tracing_ok) == 1.0
-        assert counter_value(m.tracer_exporter_active) == 1.0
+        assert registry.pipeline_tracing_ok._value.get() == 1.0
+        assert counter_value(m.tracing_exporter_status) == 1.0
 
     def test_otlp_grpc_inactive_when_pkg_missing(
         self, tmp_workspace, monkeypatch, caplog
@@ -235,7 +267,9 @@ class TestOTLPExporterSelection:
         """
         import os
 
-        from quantum.infrastructure.observability.metrics import health as m
+        from quantum.infrastructure.observability.metrics.collectors import (
+            health_collector as m,
+        )
 
         os.environ["QUANTUM_TRACE_EXPORTER"] = "otlp"
         os.environ["QUANTUM_TRACE_OTLP_PROTOCOL"] = "ws"  # invalid literal
@@ -244,7 +278,7 @@ class TestOTLPExporterSelection:
         _init_then_shutdown(force=True)
 
         # Exporter should be active, since 'ws' defaulted to 'http'
-        assert counter_value(m.tracer_exporter_active) == 1.0
+        assert counter_value(m.tracing_exporter_status) == 1.0
         assert any(
             "Unsupported OTLP protocol 'ws'" in r.message for r in caplog.records
         )
@@ -257,17 +291,22 @@ class TestOTLPExporterSelection:
         falls back to exporter=none, sample_ratio=0.0.
 
         - pipeline_tracing_ok == 1.0
-        - tracer_exporter_active == 0.0
+        - tracing_exporter_status == 0.0
         - warning "Tracing fallback activated..."
         """
         import os
 
-        from quantum.infrastructure.observability.init_observability import (
+        from quantum.infrastructure.observability.bootstrap.health_registry import (
+            get_health_registry,
+        )
+        from quantum.infrastructure.observability.bootstrap.init_manager import (
             init_observability,
             shutdown_observability,
         )
-        from quantum.infrastructure.observability.metrics import health as m
-        from quantum.infrastructure.observability.tracing import traces as tmod
+        from quantum.infrastructure.observability.metrics.collectors import (
+            health_collector as m,
+        )
+        from quantum.infrastructure.observability.tracing import provider as tmod
 
         os.environ["QUANTUM_TRACE_EXPORTER"] = "otlp"
         os.environ["QUANTUM_TRACE_OTLP_PROTOCOL"] = "http"
@@ -280,17 +319,19 @@ class TestOTLPExporterSelection:
         caplog.clear()
         caplog.set_level(logging.INFO)
 
-        with propagate_logger("quantum.infrastructure.observability.tracing.traces"):
+        registry = get_health_registry()
+
+        with propagate_logger("quantum.infrastructure.observability.tracing.provider"):
             with propagate_logger(
-                "quantum.infrastructure.observability.init_observability"
+                "quantum.infrastructure.observability.bootstrap.lifecycle"
             ):
                 with capture_logger(
-                    "quantum.infrastructure.observability.init_observability"
+                    "quantum.infrastructure.observability.bootstrap.lifecycle"
                 ) as recs:
                     init_observability(force=True)
                     try:
-                        assert counter_value(m.pipeline_tracing_ok) == 1.0
-                        assert counter_value(m.tracer_exporter_active) == 0.0
+                        assert registry.pipeline_tracing_ok._value.get() == 1.0
+                        assert counter_value(m.tracing_exporter_status) == 0.0
                         assert any(
                             "Tracing fallback activated" in (r.getMessage() or "")
                             for r in recs
