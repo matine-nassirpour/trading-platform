@@ -44,8 +44,14 @@ def test_observability_logging_fsync_e2e(tmp_workspace):
     # Initialize the observability stack
     # --------------------------------------------------------------------------
     init_observability(force=True)
-    registry = get_health_registry()
 
+    # Note:
+    # The "[WARNING] OTLP exporter inactive" log message may appear here.
+    # This is expected in test mode when no external OpenTelemetry collector
+    # endpoint is configured. It does *not* indicate a failure of the pipeline
+    # or a misconfiguration — only that the tracing exporter is disabled.
+
+    registry = get_health_registry()
     log = logging.getLogger("fsync.test")
 
     # --------------------------------------------------------------------------

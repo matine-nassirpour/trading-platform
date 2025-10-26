@@ -355,10 +355,10 @@ def read_jsonl():
         files = sorted(
             Path(base_dir).rglob(pattern),
             key=lambda p: p.stat().st_mtime if p.exists() else 0.0,
-            reverse=True,
+            reverse=False,  # oldest → newest
         )
         out: list[dict] = []
-        for fp in files[:2]:
+        for fp in files:
             for line in _read_tail_complete_lines(fp, chunk_bytes=chunk_bytes):
                 with suppress(json.JSONDecodeError, TypeError):
                     out.append(json.loads(line))

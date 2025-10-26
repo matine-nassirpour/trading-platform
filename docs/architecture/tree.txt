@@ -222,6 +222,13 @@ trading-platform/
 │       └── __init__.py
 ├── tests/
 │   ├── e2e/
+│   │   ├── observability/
+│   │   │   ├── __init__.py
+│   │   │   ├── test_observability_fsync_e2e.py
+│   │   │   ├── test_observability_metrics_http_e2e.py
+│   │   │   ├── test_observability_otlp_grpc_e2e.py
+│   │   │   ├── test_observability_otlp_http_e2e.py
+│   │   │   └── test_observability_pipeline_e2e.py
 │   │   └── __init__.py
 │   ├── integration/
 │   │   ├── core/
@@ -250,6 +257,7 @@ trading-platform/
 │   │   ├── __init__.py
 │   │   ├── factories.py
 │   │   ├── logging_utils.py
+│   │   ├── observability.py
 │   │   ├── time_utils.py
 │   │   ├── types.py
 │   │   └── wait.py

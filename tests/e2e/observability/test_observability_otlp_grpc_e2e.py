@@ -19,6 +19,7 @@ from quantum.infrastructure.observability.bootstrap.init_manager import (
     init_observability,
     shutdown_observability,
 )
+from tests.support.observability import get_gauge_value
 
 
 @pytest.mark.e2e
@@ -51,19 +52,15 @@ def test_observability_otlp_grpc_exporter_e2e(tmp_workspace, free_port):
         health_collector as m,
     )
 
-    def _g(gauge) -> float:
-        maybe_get = getattr(getattr(gauge, "_value", None), "get", None)
-        return float(maybe_get()) if callable(maybe_get) else -1.0
-
-    exp_status = _g(m.tracing_exporter_status)
+    exp_status = get_gauge_value(m.tracing_exporter_status)
     assert exp_status == 1.0, "OTLP/gRPC exporter not marked active"
 
     # Logging and tracing should both be OK
-    assert _g(registry.pipeline_tracing_ok) == 1.0
-    assert _g(registry.pipeline_logging_ok) == 1.0
+    assert get_gauge_value(registry.pipeline_tracing_ok) == 1.0
+    assert get_gauge_value(registry.pipeline_logging_ok) == 1.0
 
     # pipeline_up may be 0.0 in partial mode (no /metrics HTTP)
-    pipeline_up = _g(registry.pipeline_up)
+    pipeline_up = get_gauge_value(registry.pipeline_up)
     if pipeline_up != 1.0:
         pytest.skip(
             f"pipeline_up={pipeline_up} (expected 0.0 in partial observability mode)"

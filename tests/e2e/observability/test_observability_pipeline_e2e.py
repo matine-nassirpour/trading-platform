@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import time
 from collections.abc import Callable
 from contextlib import suppress
@@ -51,10 +52,8 @@ from tests.support.observability import get_gauge_value
 @pytest.mark.filesystem
 @pytest.mark.prometheus
 @pytest.mark.otlp
-def test_observability_pipeline_e2e(
-    tmp_workspace,
-    assert_jsonl_tail,
-    read_jsonl,
+def test_pipeline_observability_e2e_fullstack(
+    tmp_workspace, assert_jsonl_tail, read_jsonl, free_port
 ):
     """
     Full E2E validation of the Quantum observability stack.
@@ -68,6 +67,16 @@ def test_observability_pipeline_e2e(
         - Audit events are emitted and JSON-valid
         - Health registry metrics reflect a healthy pipeline
     """
+    # --------------------------------------------------------------------------
+    # Runtime Overrides
+    # --------------------------------------------------------------------------
+    os.environ["QUANTUM_METRICS_PORT"] = str(free_port)
+    os.environ["QUANTUM_METRICS_ADDR"] = "127.0.0.1"
+    os.environ["QUANTUM_LOG_DEEP_PROBE"] = "1"
+    os.environ["QUANTUM_LOG_MAX_BYTES"] = "2048"  # ≈ 2KB rollover threshold
+    os.environ["QUANTUM_LOG_WARN_BYTES"] = "0"  # Disable pre-roll warnings
+    os.environ["QUANTUM_LOG_FSYNC"] = "0"  # Disable fsync for speed
+
     # --------------------------------------------------------------------------
     # Setup
     # --------------------------------------------------------------------------
@@ -131,8 +140,6 @@ def test_observability_pipeline_e2e(
     # Tracing may be inactive if no OTLP exporter is configured
     if tracing_ok != 1.0:
         # accept OTLP inactive if exporter is 'console' or 'none'
-        import os
-
         exp = os.environ.get("QUANTUM_TRACE_EXPORTER", "console")
         if exp in ("console", "none"):
             pytest.skip(
@@ -141,9 +148,9 @@ def test_observability_pipeline_e2e(
         else:
             assert tracing_ok == 1.0, "Tracing pipeline not marked OK"
 
-    # Final pipeline status
-    if pipeline_up != 1.0:
-        pytest.skip("pipeline_up=0.0 (expected in partial observability mode)")
+    assert (
+        pipeline_up == 1.0
+    ), f"pipeline_up={pipeline_up} (expected 1.0 in full pipeline mode)"
 
     # --------------------------------------------------------------------------
     # Assertions: Log files (existence + rollover)
