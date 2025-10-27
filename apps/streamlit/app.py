@@ -5,15 +5,15 @@ from opentelemetry import baggage
 from opentelemetry import context as otel_context
 
 from apps.streamlit.bootstrap import init_streamlit
+from apps.streamlit.config_runtime import get_config
 from apps.streamlit.lib.obs import PageTimer, ui_action
 from quantum.infrastructure.observability.tracing.correlation.correlation_id import (
     get_correlation_id,
 )
 from quantum.interface.streamlit.entrypoints import get_positions
-from quantum.shared.config.config_manager import ConfigManager
 from quantum.shared.context.run_id import get_run_id
 
-ConfigManager.load()
+get_config()
 
 st.set_page_config(page_title="Quantum Desk", layout="wide")
 

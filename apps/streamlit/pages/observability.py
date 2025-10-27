@@ -3,30 +3,26 @@ import logging
 import os
 import time
 from collections.abc import Iterable, Mapping
-from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Literal
 
 import streamlit as st
 from opentelemetry import trace
 from prometheus_client import REGISTRY
 
+from apps.streamlit.config_runtime import get_config
+from quantum.core.config.models.logging import LoggingSettings
+from quantum.core.config.runtime.state import CONFIG_STATE
 from quantum.infrastructure.observability.logging.event_emitter import emit_event
 from quantum.infrastructure.observability.tracing.correlation.correlation_id import (
     correlation_context,
     new_correlation_id,
 )
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Constants & Types                                                           │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
-
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Constants & Initialization                                                 │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 PAGE_TITLE = "Observability"
-
-LogRenderMode = Literal["code", "json"]
-TZMode = Literal["utc", "local"]
-
 LEVEL_EMOJI: Mapping[str, str] = {
     "DEBUG": "🐛",
     "INFO": "ℹ️",
@@ -35,67 +31,26 @@ LEVEL_EMOJI: Mapping[str, str] = {
     "CRITICAL": "🛑",
 }
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Configuration                                                               │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+# One-time config initialization (cached per Streamlit session)
+CFG_BUNDLE = get_config()
+LOG_CFG = CFG_BUNDLE.logging
 
-
-@dataclass(frozen=True)
-class PageConfig:
-    log_dir: Path | None
-    log_renderer: LogRenderMode
-    log_expanded: bool
-    log_chunk_bytes: int
-    log_tail_max_lines: int
-    log_glob: str
-    log_tz_mode: TZMode
-
-    @staticmethod
-    def from_env(env: Mapping[str, str]) -> "PageConfig":
-        log_dir_env = env.get("QUANTUM_LOG_DIR")
-        log_dir = Path(log_dir_env) if log_dir_env else None
-
-        renderer = env.get("STREAMLIT_LOG_RENDERER", "code").strip().lower()
-        log_renderer: LogRenderMode = "json" if renderer == "json" else "code"
-
-        tz = env.get("STREAMLIT_LOG_TZ", "utc").strip().lower()
-        log_tz_mode: TZMode = "local" if tz == "local" else "utc"
-
-        def _int(var: str, default: int) -> int:
-            try:
-                return int(env.get(var, str(default)))
-            except (TypeError, ValueError):
-                return default
-
-        return PageConfig(
-            log_dir=log_dir,
-            log_renderer=log_renderer,
-            log_expanded=env.get("STREAMLIT_LOG_EXPANDED", False),
-            log_chunk_bytes=_int("STREAMLIT_LOG_CHUNK_BYTES", 256_000),
-            log_tail_max_lines=_int("STREAMLIT_LOG_TAIL_MAX_LINES", 100),
-            log_glob=env.get("STREAMLIT_LOG_GLOB", "events-*.jsonl"),
-            log_tz_mode=log_tz_mode,
-        )
-
-
-CFG = PageConfig.from_env(os.environ)
-
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Streamlit page bootstrap                                                    │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
-
-st.set_page_config(page_title=PAGE_TITLE, layout="wide")
-st.title("🔭 Observability")
-
-# Reusable loggers / tracers
 logger = logging.getLogger("quantum.ui.observability")
 tracer = trace.get_tracer("quantum.ui.observability")
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Prometheus access helpers                                                   │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+logging.info("🔭 Observability page initialized via QuantumConfigBundle.")
+logging.info("Quantum configuration initialized: %s", CONFIG_STATE.describe())
+
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Streamlit page Setup                                                       │
+# ╰────────────────────────────────────────────────────────────────────────────╯
+st.set_page_config(page_title=PAGE_TITLE, layout="wide")
+st.title("🔭 Observability")
 
 
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Prometheus access helpers                                                  │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 def _iter_metrics():
     """
     Iterates over all metrics exposed by the registry via the public API.
@@ -205,11 +160,9 @@ def _histogram_quantiles(
         return {f"p{int(q * 100)}": None for q in quantiles}
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Log reading helpers                                                         │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
-
-
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Log reading helpers                                                        │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 def _tail_jsonl_complete_lines(
     path: Path, *, chunk_bytes: int, encoding: str = "utf-8"
 ) -> list[str]:
@@ -244,7 +197,7 @@ def _shorten(s: str, max_len: int = 80) -> str:
     return (s[: max_len - 1] + "…") if len(s) > max_len else s
 
 
-def _fmt_dt(obj: Mapping[str, object], *, tz_mode: TZMode) -> str:
+def _fmt_dt(obj: Mapping[str, object], *, tz_mode: str) -> str:
     """
     Returns 'YYYY-MM-DD HH:MM:SS.mmmZ' (UTC) or local (without 'Z').
     """
@@ -274,7 +227,7 @@ def _fmt_dt(obj: Mapping[str, object], *, tz_mode: TZMode) -> str:
         return dt.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3] + "Z"
 
 
-def _expander_title_from_obj(obj: Mapping[str, object], *, tz_mode: TZMode) -> str:
+def _expander_title_from_obj(obj: Mapping[str, object], *, tz_mode: str) -> str:
     lvl = str(obj.get("level", "INFO")).upper()
     emoji = LEVEL_EMOJI.get(lvl, "•")
     logger_name = str(obj.get("logger") or obj.get("service_name") or "log")
@@ -283,7 +236,7 @@ def _expander_title_from_obj(obj: Mapping[str, object], *, tz_mode: TZMode) -> s
 
 
 def _render_log(
-    line: str, *, render_mode: LogRenderMode, default_expanded: bool, tz_mode: TZMode
+    line: str, *, render_mode: str, default_expanded: bool, tz_mode: str
 ) -> None:
     """Displays a log line in an expander, pretty or raw JSON format."""
     try:
@@ -315,11 +268,9 @@ def _read_recent_jsonl_lines(
     return lines
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ UI sections                                                                 │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
-
-
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ UI sections                                                                │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 def render_kpis() -> None:
     col1, col2, col3, col4 = st.columns(4)
     with col1:
@@ -415,33 +366,34 @@ def render_mt5_section() -> None:
     st.divider()
 
 
-def render_log_tail(cfg: PageConfig) -> None:
+def render_log_tail(cfg: LoggingSettings) -> None:
     st.subheader("Recent logs (JSONL tail)")
-    if not cfg.log_dir:
-        st.info(
-            "QUANTUM_LOG_DIR is not set. Enable partitioned file logging to see tail."
-        )
-        return
 
-    base = cfg.log_dir
-    if not base.exists():
-        st.warning(f"Log directory does not exist: {base}")
+    log_dir = Path(cfg.quantum_log_dir) if cfg.quantum_log_dir else None
+    if not log_dir:
+        st.info("QUANTUM_LOG_DIR not set. Enable file logging to view logs.")
+        return
+    if not log_dir.exists():
+        st.warning(f"Log directory does not exist: {log_dir}")
         return
 
     lines = _read_recent_jsonl_lines(
-        base, cfg.log_glob, chunk_bytes=cfg.log_chunk_bytes, max_files=2
+        log_dir,
+        cfg.streamlit_log_glob,
+        chunk_bytes=cfg.streamlit_log_chunk_bytes,
+        max_files=2,
     )
 
     if not lines:
         st.write("No JSONL files yet.")
         return
 
-    for ln in lines[-cfg.log_tail_max_lines :]:
+    for ln in lines[-cfg.streamlit_log_tail_max_lines :]:
         _render_log(
             ln,
-            render_mode=cfg.log_renderer,
-            default_expanded=cfg.log_expanded,
-            tz_mode=cfg.log_tz_mode,
+            render_mode=cfg.streamlit_log_renderer,
+            default_expanded=cfg.streamlit_log_expanded,
+            tz_mode=cfg.streamlit_log_tz,
         )
 
 
@@ -518,14 +470,104 @@ def render_actions() -> None:
     )
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Page layout                                                                 │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Bootstrap diagnostics section                                              │
+# ╰────────────────────────────────────────────────────────────────────────────╯
+def render_bootstrap_diagnostics() -> None:
+    """
+    Display initialization latencies and failure counters recorded
+    by quantum.infrastructure.observability.bootstrap.diagnostics.
+    """
+    st.subheader("🧩 Bootstrap Diagnostics")
+
+    try:
+        # Retrieve latency histogram quantiles
+        _ = _histogram_quantiles(
+            "quantum_observability_init_duration_seconds", quantiles=(0.5, 0.95, 0.99)
+        )
+
+        # Group histogram samples by subsystem label
+        subsystems: dict[str, dict[str, float | None]] = {}
+        for metric in _iter_metrics():
+            if (
+                getattr(metric, "name", None)
+                != "quantum_observability_init_duration_seconds"
+            ):
+                continue
+            for s in getattr(metric, "samples", ()):
+                if not s.name.endswith("_bucket"):
+                    continue
+                subsystem = s.labels.get("subsystem") if s.labels else None  # type: ignore[attr-defined]
+                if subsystem is None:
+                    continue
+                subsystems.setdefault(subsystem, {})
+
+        # Compute failure counts per subsystem
+        failures: dict[str, int] = {}
+        for metric in _iter_metrics():
+            if (
+                getattr(metric, "name", None)
+                != "quantum_observability_init_failures_total"
+            ):
+                continue
+            for s in getattr(metric, "samples", ()):
+                if not s.name.endswith("_total"):
+                    continue
+                subsystem = s.labels.get("subsystem") if s.labels else None  # type: ignore[attr-defined]
+                if subsystem is None:
+                    continue
+                try:
+                    failures[subsystem] = int(float(s.value))
+                except (TypeError, ValueError):
+                    failures[subsystem] = 0
+
+        if not subsystems and not failures:
+            st.info("No bootstrap diagnostics metrics collected yet.")
+            st.divider()
+            return
+
+        # Render per-subsystem diagnostics table
+        cols = st.columns(3)
+        subs = sorted(set(subsystems.keys()) | set(failures.keys()))
+        for i, subsystem in enumerate(subs):
+            with cols[i % len(cols)]:
+                fail_count = failures.get(subsystem, 0)
+                quantiles = _histogram_quantiles(
+                    "quantum_observability_init_duration_seconds",
+                    quantiles=(0.5, 0.95, 0.99),
+                )
+                st.metric(
+                    f"{subsystem.title()} Init Failures",
+                    f"{fail_count}",
+                    help="Number of failed initializations",
+                )
+                st.write(
+                    {
+                        k: (round(v, 3) if v is not None else None)
+                        for k, v in quantiles.items()
+                    }
+                )
+
+        st.divider()
+
+    except Exception as exc:
+        logging.getLogger(__name__).warning(f"Diagnostics render failed: {exc}")
+        st.info("Diagnostics unavailable at this time.")
+        st.divider()
 
 
-render_kpis()
-render_logging_counters()
-render_ui_latency_histograms()
-render_mt5_section()
-render_log_tail(CFG)
-render_actions()
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Page layout                                                                │
+# ╰────────────────────────────────────────────────────────────────────────────╯
+def main() -> None:
+    """Main entry point for the Observability dashboard."""
+    render_kpis()
+    render_logging_counters()
+    render_ui_latency_histograms()
+    render_mt5_section()
+    render_log_tail(LOG_CFG)
+    render_actions()
+
+
+if __name__ == "__main__":
+    main()

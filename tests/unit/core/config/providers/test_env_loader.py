@@ -100,3 +100,24 @@ def test_load_env_uses_cache_if_valid(monkeypatch, tmp_path: Path):
     assert state.has_valid_cache()
     snap = state.snapshot()
     assert snap["env_cache"]["QUANTUM_ENV"] == "test"
+
+
+def test_load_env_with_override_replaces_existing(monkeypatch, tmp_path: Path):
+    """override=True must replace existing environment variables."""
+    os.environ["FOO"] = "old"
+    monkeypatch.setattr(env_loader, "dotenv_values", lambda *a, **kw: {"FOO": "new"})
+    monkeypatch.setattr(env_loader, "find_dotenv", lambda *a, **kw: None)
+    monkeypatch.chdir(tmp_path)
+
+    env_loader.load_env(apply=True, override=True)
+    assert os.environ["FOO"] == "new"
+
+
+def test_load_env_without_dotenv_module(monkeypatch):
+    """When python-dotenv is not installed, load_env must still return os.environ safely."""
+    monkeypatch.setattr(env_loader, "dotenv_values", None)
+    monkeypatch.setattr(env_loader, "find_dotenv", None)
+
+    result = env_loader.load_env(apply=False)
+    assert isinstance(result, dict)
+    assert all(isinstance(k, str) for k in result.keys())

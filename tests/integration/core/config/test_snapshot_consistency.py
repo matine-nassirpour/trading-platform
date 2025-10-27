@@ -18,9 +18,9 @@ import pytest
 from quantum.core.config.runtime.state import ConfigState
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Initial state and immutability                                              │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Initial state and immutability                                             │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 @pytest.mark.integration
 def test_initial_state_is_clean_and_immutable(iso_env):
     """
@@ -29,18 +29,19 @@ def test_initial_state_is_clean_and_immutable(iso_env):
     state = ConfigState.instance()
     snap = state.snapshot()
 
+    assert state is ConfigState.instance()
     assert snap["base_dir"] is None
     assert snap["loaded_pid"] is None
     assert snap["env_cache"] == {}
 
-    # Snapshot returns copies, not references
     snap["env_cache"]["FAKE"] = "x"
     assert "FAKE" not in state.get_env_cache()
+    assert snap is not state.snapshot()
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Update and snapshot coherence                                               │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Update and snapshot coherence                                              │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 @pytest.mark.integration
 def test_update_and_snapshot_consistency(tmp_path: Path, iso_env):
     """
@@ -49,42 +50,38 @@ def test_update_and_snapshot_consistency(tmp_path: Path, iso_env):
     state = ConfigState.instance()
     state.reset()
 
-    base_dir = tmp_path
     env = {"FOO": "bar", "QUANTUM_ENV": "test"}
-
-    state.update(base_dir=base_dir, loaded_pid=os.getpid(), env_cache=env)
+    state.update(base_dir=tmp_path, loaded_pid=os.getpid(), env_cache=env)
     snap = state.snapshot()
 
-    assert snap["base_dir"] == str(base_dir)
+    assert snap["base_dir"] == str(tmp_path)
     assert snap["loaded_pid"] == os.getpid()
     assert snap["env_cache"]["FOO"] == "bar"
+    assert state.has_valid_cache()
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Reset and deterministic reinitialization                                    │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Reset and deterministic reinitialization                                   │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 @pytest.mark.integration
 def test_reset_clears_state_deterministically(tmp_path: Path, iso_env):
     """
     reset() must clear all internal state, restoring a clean snapshot
     """
     state = ConfigState.instance()
-    state.update(
-        base_dir=tmp_path,
-        loaded_pid=os.getpid(),
-        env_cache={"K": "V"},
-    )
+    state.update(base_dir=tmp_path, loaded_pid=os.getpid(), env_cache={"K": "V"})
     state.reset()
-    snap = state.snapshot()
 
+    snap = state.snapshot()
     assert snap["base_dir"] is None
     assert snap["loaded_pid"] is None
     assert snap["env_cache"] == {}
+    assert state.has_valid_cache() is False
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Stability between consecutive snapshots                                     │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Stability between consecutive snapshots                                    │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 @pytest.mark.integration
 def test_stable_snapshots_without_mutation(tmp_path: Path, iso_env):
     """
@@ -98,12 +95,13 @@ def test_stable_snapshots_without_mutation(tmp_path: Path, iso_env):
     time.sleep(0.01)
     s2 = copy.deepcopy(state.snapshot())
 
-    assert s1 == s2, "Snapshots differ without state mutation"
+    assert s1 == s2
+    assert s1 is not s2
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Thread safety of concurrent access() calls                                  │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Thread safety of concurrent access() calls                                 │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 @pytest.mark.integration
 def test_concurrent_access_thread_safety(tmp_path: Path, iso_env):
     """
@@ -117,10 +115,11 @@ def test_concurrent_access_thread_safety(tmp_path: Path, iso_env):
 
     def increment():
         def op():
-            val = int(state._env_cache["CNT"])
-            val += 1
-            state._env_cache["CNT"] = str(val)
-            return val
+            val = int(state.get_env_cache()["CNT"])
+            env = state.get_env_cache()
+            env["CNT"] = str(val + 1)
+            state.update(env_cache=env)
+            return val + 1
 
         results.append(state.access(op))
 
@@ -128,18 +127,17 @@ def test_concurrent_access_thread_safety(tmp_path: Path, iso_env):
     for t in threads:
         t.start()
     for t in threads:
-        t.join()
+        t.join(timeout=3)
 
-    # All increments executed atomically, final count = number of threads
-    final = int(state.snapshot()["env_cache"]["CNT"])
-    assert final == 20
-    assert len(results) == 20
-    assert sorted(results) == list(range(1, 21))
+    snap = state.snapshot()
+    final = int(snap["env_cache"]["CNT"])
+    assert final == len(threads)
+    assert sorted(results) == list(range(1, len(threads) + 1))
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ has_valid_cache() correctness                                               │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ has_valid_cache() correctness                                              │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 @pytest.mark.integration
 def test_has_valid_cache_behaves_correctly(tmp_path: Path, iso_env):
     """
@@ -148,19 +146,21 @@ def test_has_valid_cache_behaves_correctly(tmp_path: Path, iso_env):
     """
     state = ConfigState.instance()
     state.reset()
-    assert state.has_valid_cache() is False
+    assert not state.has_valid_cache()
 
     state.update(base_dir=tmp_path, loaded_pid=os.getpid(), env_cache={"A": "B"})
-    assert state.has_valid_cache() is True
+    assert state.has_valid_cache()
 
-    # Simulate process mismatch
+    state.update(env_cache={})
+    assert not state.has_valid_cache()
+
     state.update(loaded_pid=999999)
-    assert state.has_valid_cache() is False
+    assert not state.has_valid_cache()
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ describe() diagnostic output                                                │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ describe() diagnostic output                                               │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 @pytest.mark.integration
 def test_describe_reflects_internal_state(tmp_path: Path, iso_env):
     """
@@ -170,8 +170,11 @@ def test_describe_reflects_internal_state(tmp_path: Path, iso_env):
     state.reset()
     state.update(base_dir=tmp_path, env_cache={"X": "Y"}, loaded_pid=os.getpid())
 
-    desc = state.describe()
-    assert isinstance(desc, str)
-    assert "ConfigState" in desc
-    assert str(tmp_path) in desc
-    assert "env_vars=1" in desc
+    desc1 = state.describe()
+    desc2 = state.describe()
+
+    assert isinstance(desc1, str)
+    assert "ConfigState" in desc1
+    assert str(tmp_path) in desc1
+    assert "env_vars=1" in desc1
+    assert desc1 == desc2

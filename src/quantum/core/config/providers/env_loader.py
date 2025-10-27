@@ -127,6 +127,16 @@ def load_env(
         if state.has_valid_cache():
             cached = state.get_env_cache()
             _LOGGER.debug("Reusing cached environment (pid=%s)", pid)
+
+            if apply:
+                for k, v in cached.items():
+                    if v is None:
+                        continue
+                    if not override and k in os.environ:
+                        continue
+                    os.environ[k] = v
+                _LOGGER.debug("Applied cached environment to os.environ (apply=True)")
+
             return cached
 
         # ---------------------------------------------------------------------

@@ -1,20 +1,15 @@
-import atexit
 import logging
-import os
 import threading
 
-from quantum.core.config.runtime.manager import ConfigManager
-from quantum.infrastructure.execution.gateway_registry import get_gateway
-from quantum.infrastructure.execution.mt5_gateway import (
-    init_mt5_terminal,
-    shutdown_mt5_terminal,
-)
+# from quantum.infrastructure.execution.gateway_registry import get_gateway
+# from quantum.infrastructure.execution.mt5_gateway import (
+#     init_mt5_terminal,
+#     shutdown_mt5_terminal,
+# )
 from quantum.infrastructure.observability.bootstrap.init_manager import (
     init_observability,
 )
-from quantum.infrastructure.observability.tracing.provider import get_tracer
 from quantum.shared.context.run_id import generate_run_id, get_run_id
-from quantum.shared.types.channels import ExecutionChannel
 
 # ╭─────────────────────────────────────────────────────────────────────────────╮
 # │ Global guards                                                               │
@@ -77,65 +72,65 @@ def _perform_streamlit_init() -> None:
     logger = logging.getLogger("apps.streamlit.bootstrap")
     logger.info("Initializing Quantum Streamlit UI with observability stack...")
 
-    _bootstrap_mt5_terminals(logger)
-    _validate_mt5_credentials(logger)
+    # _bootstrap_mt5_terminals(logger)
+    # _validate_mt5_credentials(logger)
 
     logger.info("Quantum Streamlit bootstrap completed successfully.")
 
 
-def _bootstrap_mt5_terminals(logger: logging.Logger) -> None:
-    """
-    Bootstraps all configured MetaTrader5 terminals (FTMO, FundedNext, etc.).
-    Ensures each terminal path is reachable and initialized once.
-    """
-    tracer = get_tracer("apps.streamlit.bootstrap")
+# def _bootstrap_mt5_terminals(logger: logging.Logger) -> None:
+#     """
+#     Bootstraps all configured MetaTrader5 terminals (FTMO, FundedNext, etc.).
+#     Ensures each terminal path is reachable and initialized once.
+#     """
+#     tracer = get_tracer("apps.streamlit.bootstrap")
+#
+#     with tracer.start_as_current_span("ui.mt5_bootstrap"):
+#         for channel in ExecutionChannel:
+#             gw = get_gateway(channel)
+#             term_path = gw.get("terminal_path")
+#
+#             if not term_path or not os.path.exists(term_path):
+#                 logger.warning(f"Terminal path not found for {channel}: {term_path}")
+#                 continue
+#
+#             try:
+#                 ok = init_mt5_terminal(channel, term_path)
+#                 if ok:
+#                     logger.info(f"MT5 terminal initialized for {channel}")
+#                 else:
+#                     logger.error(f"Failed to initialize MT5 terminal for {channel}")
+#             except Exception as e:
+#                 logger.exception(
+#                     f"Exception initializing MT5 terminal for {channel}: {e}"
+#                 )
+#
+#     # Register graceful shutdown only once
+#     atexit.register(_safe_shutdown, logger)
+#
+#
+# def _validate_mt5_credentials(logger: logging.Logger) -> None:
+#     """
+#     Validates that all MT5 credentials (login/server/password) are defined.
+#     Raises a RuntimeError immediately if a configuration is missing.
+#     """
+#     for channel in (ExecutionChannel.FTMO, ExecutionChannel.FUNDEDNEXT):
+#         creds = ConfigManager.get_mt5_credentials(channel.name)
+#         if not all(creds.values()):
+#             raise RuntimeError(
+#                 f"Missing credentials for {channel.name} in .env — "
+#                 f"please define MT5_{channel.name.upper()}_LOGIN, "
+#                 f"MT5_{channel.name.upper()}_SERVER and "
+#                 f"MT5_{channel.name.upper()}_PASSWORD."
+#             )
+#
+#     logger.info("MT5 credentials successfully validated for all channels.")
 
-    with tracer.start_as_current_span("ui.mt5_bootstrap"):
-        for channel in ExecutionChannel:
-            gw = get_gateway(channel)
-            term_path = gw.get("terminal_path")
 
-            if not term_path or not os.path.exists(term_path):
-                logger.warning(f"Terminal path not found for {channel}: {term_path}")
-                continue
-
-            try:
-                ok = init_mt5_terminal(channel, term_path)
-                if ok:
-                    logger.info(f"MT5 terminal initialized for {channel}")
-                else:
-                    logger.error(f"Failed to initialize MT5 terminal for {channel}")
-            except Exception as e:
-                logger.exception(
-                    f"Exception initializing MT5 terminal for {channel}: {e}"
-                )
-
-    # Register graceful shutdown only once
-    atexit.register(_safe_shutdown, logger)
-
-
-def _validate_mt5_credentials(logger: logging.Logger) -> None:
-    """
-    Validates that all MT5 credentials (login/server/password) are defined.
-    Raises a RuntimeError immediately if a configuration is missing.
-    """
-    for channel in (ExecutionChannel.FTMO, ExecutionChannel.FUNDEDNEXT):
-        creds = ConfigManager.get_mt5_credentials(channel.name)
-        if not all(creds.values()):
-            raise RuntimeError(
-                f"Missing credentials for {channel.name} in .env — "
-                f"please define MT5_{channel.name.upper()}_LOGIN, "
-                f"MT5_{channel.name.upper()}_SERVER and "
-                f"MT5_{channel.name.upper()}_PASSWORD."
-            )
-
-    logger.info("MT5 credentials successfully validated for all channels.")
-
-
-def _safe_shutdown(logger: logging.Logger) -> None:
-    """Gracefully shuts down all MetaTrader5 terminals on process exit."""
-    try:
-        shutdown_mt5_terminal()
-        logger.info("MT5 terminals shutdown completed.")
-    except Exception as e:
-        logger.exception(f"MT5 terminal shutdown error: {e}")
+# def _safe_shutdown(logger: logging.Logger) -> None:
+#     """Gracefully shuts down all MetaTrader5 terminals on process exit."""
+#     try:
+#         shutdown_mt5_terminal()
+#         logger.info("MT5 terminals shutdown completed.")
+#     except Exception as e:
+#         logger.exception(f"MT5 terminal shutdown error: {e}")
