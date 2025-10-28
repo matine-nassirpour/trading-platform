@@ -13,10 +13,10 @@ from quantum.shared.types.execution_result import ExecutionResult
 logger = logging.getLogger(__name__)
 
 
-class Mt5ExecutionAdapter:
+class ExecutionService:
     """
-    Application-level adapter using an injected execution port
-    (dependency inversion principle).
+    Application service orchestrating execution via an abstract port.
+    The domain only knows this service + the port (DIP).
     """
 
     def __init__(self, channel: ExecutionChannel, port: ExecutionPort):

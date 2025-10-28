@@ -33,11 +33,9 @@ from quantum.shared.types.execution_request import (
 logger = logging.getLogger(__name__)
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Enum & type conversions                                                     │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
-
-
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Enum & type conversions                                                    │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 def _map_trade_action(action: TradeAction) -> int:
     import MetaTrader5 as mt5  # lazy import for environment portability
 
@@ -97,11 +95,9 @@ def _decimal_to_float(value: Decimal | None) -> float | None:
     return float(value) if value is not None else None
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Main mappers                                                                │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
-
-
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Main mappers                                                               │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 def to_mt5_trade_request(req: OrderRequest) -> dict[str, Any]:
     """
     Converts an internal OrderRequest → MT5 TradeRequest dict.

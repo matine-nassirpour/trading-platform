@@ -1,23 +1,11 @@
-"""
-MT5 Runtime Bootstrap
-──────────────────────────────────────────────────────────────────────────────
-Responsible for initializing, monitoring, and gracefully shutting down all
-MetaTrader5 terminals defined in the execution gateway registry.
-
-Key guarantees:
-- All MT5 terminals (FTMO, FundedNext, etc.) are initialized safely before order flow.
-- Terminal state and connectivity are observable (metrics, traces, structured logs).
-- Runtime can be safely reused in multi-prop firm setups.
-- Clean shutdown registered automatically on exit.
-"""
-
 import atexit
 import logging
 import time
 
 from quantum.core.config.runtime.manager import ConfigManager
-from quantum.infrastructure.execution.gateway_registry import get_gateway
-from quantum.infrastructure.execution.mt5_gateway import (
+from quantum.infrastructure.mt5.runtime.gateway_registry import get_gateway
+from quantum.infrastructure.mt5.sessions.session_manager import Mt5SessionManager
+from quantum.infrastructure.mt5.transport.gateway import (
     init_mt5_terminal,
     shutdown_mt5_terminal,
 )
@@ -26,21 +14,20 @@ from quantum.infrastructure.observability.tracing.provider import get_tracer
 from quantum.shared.types.channels import ExecutionChannel
 
 logger = logging.getLogger(__name__)
-tracer = get_tracer("infra.runtime.mt5_bootstrap")
+tracer = get_tracer("infra.runtime.mt5.bootstrap")
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Channel Initialization Logic                                                │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
-
-
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Internal helpers                                                           │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 def _safe_init_channel(channel: ExecutionChannel) -> bool:
     """
-    Initializes a single MT5 terminal for a given execution channel,
-    with retries, telemetry, and fault tolerance.
+    Initializes a single MT5 terminal for a given execution channel.
 
-    Returns:
-        bool: True if terminal initialized successfully, False otherwise.
+    Handles:
+        - Retried initialization with exponential backoff
+        - Structured logging & tracing
+        - Prometheus health metrics
     """
     gw = get_gateway(channel)
     path = gw.terminal_path
@@ -85,8 +72,8 @@ def _safe_init_channel(channel: ExecutionChannel) -> bool:
 
         # All attempts failed
         logger.error(
-            f"[MT5] Terminal initialization failed after {settings.quantum_exec_retries} attempts "
-            f"for {channel.name}",
+            f"[MT5] Terminal initialization failed after "
+            f"{settings.quantum_exec_retries} attempts for {channel.name}",
             extra={"attrs": {"channel": channel.name, "terminal_path": path}},
         )
         span.set_attribute("mt5.init_status", "failed")
@@ -94,33 +81,41 @@ def _safe_init_channel(channel: ExecutionChannel) -> bool:
         return False
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Global Bootstrap                                                            │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
-
-
-def bootstrap_all_terminals() -> None:
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Global Bootstrap Entry Point                                               │
+# ╰────────────────────────────────────────────────────────────────────────────╯
+def bootstrap_all_terminals() -> Mt5SessionManager:
     """
-    Initializes all MT5 terminals declared in the gateway registry.
+    Initializes and validates all MT5 terminals at system startup.
 
-    - Called once at system startup.
-    - Ensures each terminal is initialized and healthy before trading begins.
-    - Registers a shutdown hook for clean exit.
+    Responsibilities:
+        - Iterates over all ExecutionChannels (FTMO, FUNDEDNEXT, ...)
+        - Performs resilient initialization with telemetry
+        - Starts MT5 sessions for healthy channels
+        - Registers graceful shutdown hook (atexit)
+        - Returns the active Mt5SessionManager instance
+
+    Returns:
+        Mt5SessionManager: ready-to-use manager containing all active adapters.
     """
     logger.info("Bootstrapping all MT5 execution terminals...")
-    with tracer.start_as_current_span("runtime.mt5.bootstrap_all") as span:
-        status_summary: dict[str, bool] = {}
+    session_manager = Mt5SessionManager()
+    status_summary: dict[str, bool] = {}
 
+    with tracer.start_as_current_span("runtime.mt5.bootstrap_all") as span:
         for channel in ExecutionChannel:
             try:
                 ok = _safe_init_channel(channel)
                 status_summary[channel.name] = ok
+
                 if ok:
-                    logger.info(f"MT5 terminal ready for {channel.name}")
+                    session_manager.start(channel)
+                    logger.info(f"[MT5] Session started for {channel.name}")
                 else:
                     logger.warning(
-                        f"MT5 terminal bootstrap incomplete for {channel.name}"
+                        f"[MT5] Terminal bootstrap incomplete for {channel.name}"
                     )
+
             except Exception as e:
                 logger.exception(
                     f"Unexpected error during MT5 bootstrap for {channel.name}: {e}",
@@ -129,24 +124,23 @@ def bootstrap_all_terminals() -> None:
                 terminal_up.labels(channel=channel.name).set(0.0)
                 status_summary[channel.name] = False
 
-        # Attach high-level summary to the trace
         span.set_attribute("mt5.bootstrap.summary", str(status_summary))
 
-    # Register clean shutdown hook
+    # Register global shutdown hook
     try:
         atexit.register(_graceful_shutdown)
         logger.info("Registered MT5 shutdown hook (atexit).")
     except Exception as e:
         logger.warning(f"Failed to register MT5 shutdown hook: {e}")
 
-
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Graceful Shutdown Logic                                                     │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+    return session_manager
 
 
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Graceful Shutdown                                                          │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 def _graceful_shutdown() -> None:
-    """Cleanly shuts down all MT5 terminals on process exit."""
+    """Gracefully shuts down all MT5 terminals on process exit."""
     logger.info("[MT5] Shutting down all terminals...")
     with tracer.start_as_current_span("runtime.mt5.shutdown"):
         try:

@@ -6,16 +6,14 @@ from collections.abc import Callable
 from typing import Any
 
 from quantum.core.config.runtime.manager import ConfigManager
-from quantum.infrastructure.execution._timeout_utils import timeout_guard
-from quantum.infrastructure.execution.contracts import ExecutionFunctionProtocol
-from quantum.infrastructure.execution.gateway_registry import (
+from quantum.infrastructure.mt5.mappings.retcode_map import map_mt5_res_to_exec
+from quantum.infrastructure.mt5.runtime.gateway_registry import (
     is_gateway_healthy,
     record_gateway_failure,
     record_gateway_success,
 )
-from quantum.infrastructure.execution.mappings.mt5_retcode_map import (
-    map_mt5_res_to_exec,
-)
+from quantum.infrastructure.mt5.transport.contracts import ExecutionFunctionProtocol
+from quantum.infrastructure.mt5.transport.timeout_utils import timeout_guard
 from quantum.infrastructure.observability.metrics.mt5 import (
     exec_channel_latency_ms,
     exec_channel_total,
@@ -29,9 +27,9 @@ logger = logging.getLogger(__name__)
 tracer = get_tracer("infra.execution.mt5")
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Terminal init / shutdown                                                    │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Terminal init / shutdown                                                   │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 def init_mt5_terminal(channel: ExecutionChannel, path: str | None = None) -> bool:
     """
     Initializes and logs into a MetaTrader5 terminal for the given execution channel.
@@ -94,11 +92,9 @@ def shutdown_mt5_terminal() -> None:
         pass
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Main MT5 execution harness (Protocol implementation)                        │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
-
-
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Main MT5 execution harness (Protocol implementation)                       │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 class Mt5ExecutionFunction(ExecutionFunctionProtocol):
     """
     Canonical implementation of the ExecutionFunctionProtocol for MetaTrader5.
