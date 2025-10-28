@@ -2,9 +2,11 @@ import atexit
 import logging
 import time
 
-from quantum.infrastructure.mt5.runtime.gateway_registry import get_gateway
-from quantum.infrastructure.mt5.sessions.session_manager import Mt5SessionManager
-from quantum.infrastructure.mt5.transport.gateway import (
+from quantum.infrastructure.adapters.mt5.runtime.gateway_registry import get_gateway
+from quantum.infrastructure.adapters.mt5.sessions.session_manager import (
+    Mt5SessionManager,
+)
+from quantum.infrastructure.adapters.mt5.transport.gateway import (
     init_mt5_terminal,
     shutdown_mt5_terminal,
 )

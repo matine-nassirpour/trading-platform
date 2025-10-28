@@ -5,14 +5,16 @@ import time
 from collections.abc import Callable
 from typing import Any
 
-from quantum.infrastructure.mt5.mappings.retcode_map import map_mt5_res_to_exec
-from quantum.infrastructure.mt5.runtime.gateway_registry import (
+from quantum.infrastructure.adapters.mt5.mappings.retcode_map import map_mt5_res_to_exec
+from quantum.infrastructure.adapters.mt5.runtime.gateway_registry import (
     is_gateway_healthy,
     record_gateway_failure,
     record_gateway_success,
 )
-from quantum.infrastructure.mt5.transport.contracts import ExecutionFunctionProtocol
-from quantum.infrastructure.mt5.transport.timeout_utils import timeout_guard
+from quantum.infrastructure.adapters.mt5.transport.contracts import (
+    ExecutionFunctionProtocol,
+)
+from quantum.infrastructure.adapters.mt5.transport.timeout_utils import timeout_guard
 from quantum.infrastructure.observability.metrics.mt5 import (
     exec_channel_latency_ms,
     exec_channel_total,

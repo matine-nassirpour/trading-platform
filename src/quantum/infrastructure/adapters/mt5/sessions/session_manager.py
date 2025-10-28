@@ -1,4 +1,4 @@
-from quantum.infrastructure.mt5.adapters.adapter_factory import create_adapter
+from quantum.infrastructure.adapters.mt5.adapters.adapter_factory import create_adapter
 from quantum.shared.types.channels import ExecutionChannel
 
 

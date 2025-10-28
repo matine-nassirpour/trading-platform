@@ -1,4 +1,4 @@
-from quantum.infrastructure.mt5.brokers.base_policy import BrokerPolicy
+from quantum.infrastructure.adapters.mt5.brokers.base_policy import BrokerPolicy
 from quantum.shared.types.execution_request import OrderRequest
 
 

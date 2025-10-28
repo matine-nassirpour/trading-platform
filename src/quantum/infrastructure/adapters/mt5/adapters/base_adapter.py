@@ -2,13 +2,15 @@ import logging
 import threading
 from types import ModuleType
 
-from quantum.infrastructure.mt5.mappings.request_mapper import (
+from quantum.infrastructure.adapters.mt5.mappings.request_mapper import (
     to_mt5_check_request,
     to_mt5_query_filter,
     to_mt5_trade_request,
 )
-from quantum.infrastructure.mt5.runtime.gateway_registry import get_gateway
-from quantum.infrastructure.mt5.transport.contracts import ExecutionFunctionProtocol
+from quantum.infrastructure.adapters.mt5.runtime.gateway_registry import get_gateway
+from quantum.infrastructure.adapters.mt5.transport.contracts import (
+    ExecutionFunctionProtocol,
+)
 from quantum.infrastructure.observability.tracing.provider import get_tracer
 from quantum.shared.types.channels import ExecutionChannel
 from quantum.shared.types.execution_request import (
