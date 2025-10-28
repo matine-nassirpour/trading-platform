@@ -2,8 +2,8 @@ import logging
 import re
 from typing import Final
 
-from quantum.core.config.runtime.manager import ConfigManager
 from quantum.infrastructure.observability.logging.constants import get_audit_allowlist
+from quantum.platform.config.runtime.manager import ConfigManager
 
 # Matches version suffixes such as "_v1", "_v2", "_v10" (case-insensitive)
 _SUFFIX_VERSION_RE: Final[re.Pattern[str]] = re.compile(r"_v\d+$", re.IGNORECASE)

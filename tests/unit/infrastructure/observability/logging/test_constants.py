@@ -14,7 +14,7 @@ class TestAuditConstants:
         """
         Given the default configuration
         When reading the audit allowlist
-        Then core baseline events must be present
+        Then platform baseline events must be present
         """
         allow = get_audit_allowlist()
         required = {

@@ -1,7 +1,7 @@
 import re
 from typing import Final
 
-from quantum.core.config.runtime.manager import ConfigManager
+from quantum.platform.config.runtime.manager import ConfigManager
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Constants                                                                  │

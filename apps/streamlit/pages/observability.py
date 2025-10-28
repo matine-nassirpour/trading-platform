@@ -11,13 +11,13 @@ from opentelemetry import trace
 from prometheus_client import REGISTRY
 
 from apps.streamlit.config_runtime import get_config
-from quantum.core.config.models.logging import LoggingSettings
-from quantum.core.config.runtime.state import CONFIG_STATE
 from quantum.infrastructure.observability.logging.event_emitter import emit_event
 from quantum.infrastructure.observability.tracing.correlation.correlation_id import (
     correlation_context,
     new_correlation_id,
 )
+from quantum.platform.config.models.logging import LoggingSettings
+from quantum.platform.config.runtime.state import CONFIG_STATE
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Constants & Initialization                                                 │

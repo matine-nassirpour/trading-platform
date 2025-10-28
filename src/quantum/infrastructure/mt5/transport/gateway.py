@@ -5,7 +5,6 @@ import time
 from collections.abc import Callable
 from typing import Any
 
-from quantum.core.config.runtime.manager import ConfigManager
 from quantum.infrastructure.mt5.mappings.retcode_map import map_mt5_res_to_exec
 from quantum.infrastructure.mt5.runtime.gateway_registry import (
     is_gateway_healthy,
@@ -19,6 +18,7 @@ from quantum.infrastructure.observability.metrics.mt5 import (
     exec_channel_total,
 )
 from quantum.infrastructure.observability.tracing.provider import get_tracer
+from quantum.platform.config.runtime.manager import ConfigManager
 from quantum.shared.types.channels import ExecutionChannel
 from quantum.shared.types.execution import ExecutionCode
 from quantum.shared.types.execution_result import ExecutionResult

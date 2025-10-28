@@ -25,12 +25,12 @@ from quantum.infrastructure.observability.tracing.propagation import (
 from quantum.infrastructure.observability.tracing.provider import init_tracing
 
 if TYPE_CHECKING:
-    from quantum.core.config.models.core import CoreSettings
-    from quantum.core.config.models.logging import LoggingSettings
-    from quantum.core.config.models.tracing import TracingSettings
     from quantum.infrastructure.observability.bootstrap.health_registry import (
         HealthRegistry,
     )
+    from quantum.platform.config.models.core import CoreSettings
+    from quantum.platform.config.models.logging import LoggingSettings
+    from quantum.platform.config.models.tracing import TracingSettings
 
 
 class LifecycleService:

@@ -20,7 +20,7 @@ class _ReconcileStub:
 def main() -> None:
     init_cli()
     try:
-        logger.info("Quantum trading core started.")
+        logger.info("Quantum trading platform started.")
         refresh_market(_RefreshMarketStub(), symbol=None)
         reconcile(_ReconcileStub())
     finally:

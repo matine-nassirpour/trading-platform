@@ -13,10 +13,10 @@ from pathlib import Path
 
 import pytest
 
-from quantum.core.config.models.core import CoreSettings
-from quantum.core.config.providers.env_loader import load_env
-from quantum.core.config.runtime.manager import ConfigManager
-from quantum.core.config.runtime.state import ConfigState
+from quantum.platform.config.models.core import CoreSettings
+from quantum.platform.config.providers.env_loader import load_env
+from quantum.platform.config.runtime.manager import ConfigManager
+from quantum.platform.config.runtime.state import ConfigState
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮

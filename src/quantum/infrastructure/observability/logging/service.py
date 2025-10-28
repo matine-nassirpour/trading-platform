@@ -2,8 +2,6 @@ import logging
 import sys
 from contextlib import suppress
 
-from quantum.core.config.models.core import CoreSettings
-from quantum.core.config.models.logging import LoggingSettings
 from quantum.infrastructure.observability.logging.filters.audit_event_filter import (
     AuditEventFilter,
 )
@@ -37,6 +35,8 @@ from quantum.infrastructure.observability.logging.handlers.audit_sink_handler im
 from quantum.infrastructure.observability.logging.handlers.partitioned_handler import (
     PartitionedJSONLFileHandler,
 )
+from quantum.platform.config.models.core import CoreSettings
+from quantum.platform.config.models.logging import LoggingSettings
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮

@@ -5,12 +5,12 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Final
 
-from quantum.core.config.runtime.manager import ConfigManager
 from quantum.infrastructure.mt5.transport.contracts import ExecutionFunctionProtocol
 from quantum.infrastructure.mt5.transport.gateway import (
     Mt5ExecutionFunction,
     init_mt5_terminal,
 )
+from quantum.platform.config.runtime.manager import ConfigManager
 from quantum.shared.types.channels import ExecutionChannel
 
 logger = logging.getLogger(__name__)

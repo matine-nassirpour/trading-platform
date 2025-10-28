@@ -22,11 +22,11 @@ from opentelemetry.trace import Span
 from opentelemetry.trace import TracerProvider as TracerProviderInterface
 from opentelemetry.trace import get_tracer_provider, set_tracer_provider
 
-from quantum.core.config.models.core import CoreSettings
-from quantum.core.config.models.tracing import TracingSettings
 from quantum.infrastructure.observability.tracing.correlation.correlation_id import (
     get_correlation_id,
 )
+from quantum.platform.config.models.core import CoreSettings
+from quantum.platform.config.models.tracing import TracingSettings
 from quantum.shared.context.run_id import get_run_id
 
 logger = logging.getLogger(__name__)

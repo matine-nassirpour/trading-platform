@@ -10,8 +10,8 @@ from pathlib import Path
 
 import pytest
 
-from quantum.core.config.providers.env_loader import load_env
-from quantum.core.config.runtime.state import ConfigState
+from quantum.platform.config.providers.env_loader import load_env
+from quantum.platform.config.runtime.state import ConfigState
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮

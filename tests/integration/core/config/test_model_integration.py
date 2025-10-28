@@ -10,12 +10,12 @@ from textwrap import dedent
 import pytest
 from pydantic import ValidationError
 
-from quantum.core.config.models.core import CoreSettings
-from quantum.core.config.models.logging import LoggingSettings
-from quantum.core.config.models.mt5 import MT5Settings
-from quantum.core.config.models.tracing import TracingSettings
-from quantum.core.config.providers.env_loader import load_env
-from quantum.core.config.runtime.manager import ConfigManager
+from quantum.platform.config.models.core import CoreSettings
+from quantum.platform.config.models.logging import LoggingSettings
+from quantum.platform.config.models.mt5 import MT5Settings
+from quantum.platform.config.models.tracing import TracingSettings
+from quantum.platform.config.providers.env_loader import load_env
+from quantum.platform.config.runtime.manager import ConfigManager
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮

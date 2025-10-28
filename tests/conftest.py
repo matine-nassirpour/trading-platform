@@ -22,8 +22,8 @@ from pathlib import Path
 
 import pytest
 
-from quantum.core.config.models.core import CoreSettings
-from quantum.core.config.models.logging import LoggingSettings
+from quantum.platform.config.models.core import CoreSettings
+from quantum.platform.config.models.logging import LoggingSettings
 from tests.support.types import Workspace
 
 _LOG_CLEANUP_LOCK = threading.Lock()
@@ -227,7 +227,7 @@ def cap_config_logs(caplog):
 @pytest.fixture
 def valid_core_settings(tmp_workspace) -> CoreSettings:
     """Return a valid CoreSettings instance using the temporary workspace."""
-    from quantum.core.config.runtime.manager import ConfigManager
+    from quantum.platform.config.runtime.manager import ConfigManager
 
     return ConfigManager.load(apply=False)
 
@@ -478,8 +478,8 @@ def reset_config_state():
     Ensures no residual environment or LRU cache contamination between tests,
     preserving hermeticity for configuration-dependent modules.
     """
-    from quantum.core.config.runtime.manager import ConfigManager
-    from quantum.core.config.runtime.state import ConfigState
+    from quantum.platform.config.runtime.manager import ConfigManager
+    from quantum.platform.config.runtime.state import ConfigState
 
     ConfigManager.clear_caches()
     ConfigState.instance().reset()

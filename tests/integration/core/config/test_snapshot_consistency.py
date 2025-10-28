@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from quantum.core.config.runtime.state import ConfigState
+from quantum.platform.config.runtime.state import ConfigState
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮

@@ -10,12 +10,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Final
 
-from quantum.core.config.models.core import CoreSettings
-from quantum.core.config.models.logging import LoggingSettings
 from quantum.infrastructure.observability.logging._io_utils import (
     fsync_dir,
     inc_disk_error_counter,
 )
+from quantum.platform.config.models.core import CoreSettings
+from quantum.platform.config.models.logging import LoggingSettings
 from quantum.shared.time.naming import partition_path_components
 
 try:

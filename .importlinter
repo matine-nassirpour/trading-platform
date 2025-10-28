@@ -55,7 +55,7 @@ include_external_packages = False
 # ╭─────────────────────────────────────────────────────────────────────────────╮
 # │ Contract 1 — Clean Architecture layering                                    │
 # │ Domain ← Application ← Infrastructure ← Interfaces                          │
-# │ Core layer (quantum.core) stands below all and remains dependency-free      │
+# │ Platform layer stands below all and remains dependency-free                 │
 # ╰─────────────────────────────────────────────────────────────────────────────╯
 
 [importlinter:contract:layers]
@@ -69,15 +69,15 @@ layers =
 
 
 # ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Contract 2 — Core must remain isolated                                      │
-# │ Core configuration cannot import from outer layers                          │
+# │ Contract 2 — Platform must remain isolated                                  │
+# │ Platform configuration cannot import from outer layers                      │
 # ╰─────────────────────────────────────────────────────────────────────────────╯
 
-[importlinter:contract:forbidden_core_upwards]
-name = Core layer must not depend on any outer layer
+[importlinter:contract:forbidden_platform_upwards]
+name = Platform layer must not depend on any outer layer
 type = forbidden
 source_modules =
-    quantum.core
+    quantum.platform
 forbidden_modules =
     quantum.domain
     quantum.application
@@ -142,27 +142,27 @@ forbidden_modules =
 
 
 # ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Contract 7 — Core layer is cross-cutting and may be imported anywhere       │
+# │ Contract 7 — Platform layer is cross-cutting and may be imported anywhere   │
 # │ It remains dependency-free but is explicitly allowed globally               │
 # ╰─────────────────────────────────────────────────────────────────────────────╯
 
-[importlinter:contract:core_independence]
-name = Core layer must remain globally independent
+[importlinter:contract:platform_independence]
+name = Platform layer must remain globally independent
 type = independence
 modules =
-    quantum.core
+    quantum.platform
 
 
 # ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Contract 8 — Shared & Core must not depend on Infrastructure or Interfaces  │
+# │ Contract 8 — Shared & Platform must not depend on Infrastructure or Interfaces  │
 # ╰─────────────────────────────────────────────────────────────────────────────╯
 
 [importlinter:contract:forbidden_crosscutting_upwards]
-name = Shared and Core must remain infrastructure-agnostic
+name = Shared and Platform must remain infrastructure-agnostic
 type = forbidden
 source_modules =
     quantum.shared
-    quantum.core
+    quantum.platform
 forbidden_modules =
     quantum.infrastructure
     quantum.interfaces

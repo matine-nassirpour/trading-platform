@@ -1,6 +1,6 @@
 from prometheus_client import Counter, Gauge, Info
 
-from quantum.core.config.runtime.manager import ConfigManager
+from quantum.platform.config.runtime.manager import ConfigManager
 
 # ╭───────────────────────────────────────────────────────────────────────────╮
 # │ Service / Build metadata                                                  │

@@ -8,10 +8,10 @@ from pathlib import Path
 
 import pytest
 
-from quantum.core.config.runtime.manager import ConfigManager
 from quantum.infrastructure.observability.bootstrap.health_registry import (
     get_health_registry,
 )
+from quantum.platform.config.runtime.manager import ConfigManager
 
 
 def _any_file(root: Path, pattern: str) -> Path | None:

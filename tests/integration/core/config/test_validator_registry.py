@@ -12,12 +12,12 @@ from typing import Any
 
 import pytest
 
-from quantum.core.config.validators.base import (
+from quantum.platform.config.validators.base import (
     ValidationContext,
     ValidationResult,
     ValidationRule,
 )
-from quantum.core.config.validators.registry import ValidatorRegistry
+from quantum.platform.config.validators.registry import ValidatorRegistry
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
@@ -193,11 +193,11 @@ def test_register_defaults_bootstraps_ruleset(iso_env):
 
     defaults = ValidatorRegistry.all()
     expected_prefixes = (
-        "core.runtime.environment",
-        "core.logging.log_level",
-        "core.logging.timezone",
-        "core.tracing.otlp_protocol",
-        "core.tracing.compression",
+        "platform.runtime.environment",
+        "platform.logging.log_level",
+        "platform.logging.timezone",
+        "platform.tracing.otlp_protocol",
+        "platform.tracing.compression",
     )
 
     for prefix in expected_prefixes:

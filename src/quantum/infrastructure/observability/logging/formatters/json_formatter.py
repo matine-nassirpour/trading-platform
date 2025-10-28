@@ -7,7 +7,6 @@ from typing import Any, Final
 from opentelemetry.trace import get_current_span
 from pydantic import ValidationError
 
-from quantum.core.config.runtime.manager import ConfigManager
 from quantum.infrastructure.observability.logging.models.factory import from_log_record
 from quantum.infrastructure.observability.logging.models.log_payload_v1 import (
     LogPayloadV1,
@@ -18,6 +17,7 @@ from quantum.infrastructure.observability.logging.models.severity_map import (
 from quantum.infrastructure.observability.tracing.correlation.correlation_id import (
     get_correlation_id,
 )
+from quantum.platform.config.runtime.manager import ConfigManager
 from quantum.shared.context.run_id import get_run_id
 from quantum.shared.time.format import now_mono_ms, to_rfc3339_ms
 

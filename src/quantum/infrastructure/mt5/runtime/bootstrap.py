@@ -2,7 +2,6 @@ import atexit
 import logging
 import time
 
-from quantum.core.config.runtime.manager import ConfigManager
 from quantum.infrastructure.mt5.runtime.gateway_registry import get_gateway
 from quantum.infrastructure.mt5.sessions.session_manager import Mt5SessionManager
 from quantum.infrastructure.mt5.transport.gateway import (
@@ -11,6 +10,7 @@ from quantum.infrastructure.mt5.transport.gateway import (
 )
 from quantum.infrastructure.observability.metrics.mt5 import terminal_up
 from quantum.infrastructure.observability.tracing.provider import get_tracer
+from quantum.platform.config.runtime.manager import ConfigManager
 from quantum.shared.types.channels import ExecutionChannel
 
 logger = logging.getLogger(__name__)
