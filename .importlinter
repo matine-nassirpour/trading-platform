@@ -1,21 +1,21 @@
-# ╔══════════════════════════════════════════════════════════════════════════════╗
-# ║                              GOVERNANCE HEADER                               ║
-# ║                     Quantum Platform — Architecture Policy                   ║
-# ╚══════════════════════════════════════════════════════════════════════════════╝
+# ╔════════════════════════════════════════════════════════════════════════════╗
+# ║                              GOVERNANCE HEADER                             ║
+# ║                     Quantum Platform — Architecture Policy                 ║
+# ╚════════════════════════════════════════════════════════════════════════════╝
 #
-#  Purpose : Formal architectural governance contract for the quantum platform.
+#  Purpose : Formal architectural governance contract for the Quantum Platform.
 #  Scope   : Applies to all Python packages within the 'quantum' namespace.
 #  Version : 1.0.0
 #  Updated : 2025-10-28
 #
-# ────────────────────────────────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────
 # 1. Mission
-#    This file defines **non-negotiable structural invariants** that govern the
-#    dependency topology of the codebase. It enforces Clean Architecture and
-#    Dependency Inversion principles to guarantee modularity, stability and
-#    testability over 10+ years of evolution.
+#    This file defines **non-negotiable structural invariants** that govern
+#    the dependency topology of the codebase. It enforces Clean Architecture
+#    and Dependency Inversion principles to guarantee modularity, stability
+#    and verifiability over 10+ years of system evolution.
 #
-# ────────────────────────────────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────
 # 2. Governance Model
 #    • Any modification of these contracts requires:
 #         - a formal Architecture Decision Record (ADR)
@@ -24,15 +24,15 @@
 #    • Violations discovered in CI/CD must block merges to protected branches.
 #    • Exception requests (temporary rule relaxation) must:
 #         - be documented in an ADR (type: deviation)
-#         - specify expiry date and mitigation plan
+#         - specify expiry date and mitigation plan.
 #
-# ────────────────────────────────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────
 # 3. Review & Audit
 #    • This contract is subject to quarterly architecture reviews.
 #    • Results are recorded in the Architecture Conformance Report (ACR).
 #    • Violations older than one release cycle must be remediated or justified.
 #
-# ────────────────────────────────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────
 # 4. Compliance Classification
 #    • Level 1 – Advised   : Informational rules (warnings only)
 #    • Level 2 – Required  : CI/CD blocking (must-fix)
@@ -40,23 +40,27 @@
 #
 #    All contracts defined below are Level 3 (Critical).
 #
-# ════════════════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 #                             End of Governance Header
-# ════════════════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 
 [importlinter]
 # Root packages to analyze (multiple)
 root_packages =
     quantum
-# Only analyze the internal graph
+# Only analyze the internal dependency graph
 include_external_packages = False
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Contract 1 — Clean Architecture layering                                    │
-# │ Domain ← Application ← Infrastructure ← Interfaces                          │
-# │ Platform layer stands below all and remains dependency-free                 │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Contract 1 — Clean Architecture Layering                                   │
+# │ Enforces the unidirectional dependency rule:                               │
+# │ Domain ← Application ← Infrastructure ← Interfaces                         │
+# │                                                                            │
+# │ The Platform and Shared layers are cross-cutting foundations. They are     │
+# │ not part of the vertical dependency chain and are governed separately      │
+# │ by independence and forbidden contracts below.                             │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 
 [importlinter:contract:layers]
 name = Clean architecture layering (application flow)
@@ -68,94 +72,118 @@ layers =
     quantum.interfaces
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Contract 2 — Platform must remain isolated                                  │
-# │ Platform configuration cannot import from outer layers                      │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Contract 2 — Platform Isolation                                            │
+# │ Ensures the Platform layer remains independent from all higher layers.     │
+# │ Platform components (runtime, config, validators) must never depend on     │
+# │ domain, application, infrastructure, or interface code.                    │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 
 [importlinter:contract:forbidden_platform_upwards]
 name = Platform layer must not depend on any outer layer
 type = forbidden
-source_modules =
-    quantum.platform
+source_modules = quantum.platform
 forbidden_modules =
     quantum.domain
     quantum.application
     quantum.infrastructure
     quantum.interfaces
+    quantum.shared
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Contract 3 — Interfaces must not import infrastructure directly             │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Contract 3 — Interface/Infrastructure Segregation                          │
+# │ Prevents presentation or external interface layers from directly accessing │
+# │ low-level infrastructure details (databases, brokers, transport, etc.).    │
+# │ Interfaces must always communicate indirectly via Application ports.       │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 
 [importlinter:contract:forbidden_ui_infra]
 name = Interfaces must not import infrastructure
 type = forbidden
-source_modules =
-    quantum.interfaces
-forbidden_modules =
-    quantum.infrastructure
+source_modules = quantum.interfaces
+forbidden_modules = quantum.infrastructure
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Contract 4 — Interfaces must not import domain directly                     │
-# │ It should always go through the Application layer                           │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Contract 4 — Interface/Domain Isolation                                    │
+# │ Prevents user-facing adapters (CLI, API, Streamlit, MQL5) from bypassing   │
+# │ the Application layer to access domain logic directly.                     │
+# │ This preserves the Application layer as the single orchestrator.           │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 
 [importlinter:contract:forbidden_ui_domain]
 name = Interfaces must not import domain
 type = forbidden
-source_modules =
-    quantum.interfaces
-forbidden_modules =
-    quantum.domain
+source_modules = quantum.interfaces
+forbidden_modules = quantum.domain
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Contract 5 — Application must not import infrastructure                     │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Contract 5 — Application/Infrastructure Boundary                           │
+# │ Prohibits application services and use-cases from importing any            │
+# │ infrastructure implementation details.                                     │
+# │ The Application layer must depend only on abstractions (ports).            │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 
 [importlinter:contract:forbidden_app_infra]
 name = Application must not import infrastructure
 type = forbidden
-source_modules =
-    quantum.application
-forbidden_modules =
-    quantum.infrastructure
+source_modules = quantum.application
+forbidden_modules = quantum.infrastructure
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Contract 6 — Domain must remain pure                                        │
-# │ No dependency on application, infra, or interfaces                          │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Contract 6 — Domain Purity                                                 │
+# │ The Domain layer must remain completely isolated and dependency-free.      │
+# │ It cannot depend on application, infrastructure, or interface layers.      │
+# │ Domain modules may only depend on the Shared layer for primitive value     │
+# │ objects, enumerations, or schema definitions.                              │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 
 [importlinter:contract:forbidden_domain_upwards]
 name = Domain must remain pure and dependency-free
 type = forbidden
-source_modules =
-    quantum.domain
+source_modules = quantum.domain
 forbidden_modules =
     quantum.application
     quantum.infrastructure
     quantum.interfaces
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Contract 7 — Platform layer is cross-cutting and may be imported anywhere   │
-# │ It remains dependency-free but is explicitly allowed globally               │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Contract 7 — Platform Independence                                         │
+# │ Validates that the Platform layer has no internal dependencies.            │
+# │ It may be imported by any other layer, but it must never import from them. │
+# │ This guarantees a stable runtime foundation across the entire system.      │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 
 [importlinter:contract:platform_independence]
 name = Platform layer must remain globally independent
 type = independence
-modules =
-    quantum.platform
+modules = quantum.platform
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Contract 8 — Shared & Platform must not depend on Infrastructure or Interfaces  │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Contract 8 — Shared Independence                                           │
+# │ Ensures that Shared utilities (types, time, context, errors, etc.) remain  │
+# │ fully decoupled from all business, infrastructure, or interface concerns.  │
+# │ The Shared layer defines reusable primitives only.                         │
+# ╰────────────────────────────────────────────────────────────────────────────╯
+
+[importlinter:contract:shared_independence]
+name = Shared layer must remain globally independent
+type = independence
+modules = quantum.shared
+
+
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Contract 9 — Cross-cutting Layer Isolation                                 │
+# │ Enforces that Shared and Platform layers never depend on higher-level      │
+# │ components such as Infrastructure or Interfaces.                           │
+# │ These layers must only use the Python standard library or pure third-party │
+# │ packages. This ensures cross-cutting purity and system determinism.        │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 
 [importlinter:contract:forbidden_crosscutting_upwards]
 name = Shared and Platform must remain infrastructure-agnostic
