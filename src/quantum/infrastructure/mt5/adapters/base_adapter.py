@@ -2,13 +2,13 @@ import logging
 import threading
 from types import ModuleType
 
-from quantum.infrastructure.execution.contracts import ExecutionFunctionProtocol
-from quantum.infrastructure.execution.gateway_registry import get_gateway
-from quantum.infrastructure.execution.mappings.mt5_request_mapper import (
+from quantum.infrastructure.mt5.mappings.request_mapper import (
     to_mt5_check_request,
     to_mt5_query_filter,
     to_mt5_trade_request,
 )
+from quantum.infrastructure.mt5.runtime.gateway_registry import get_gateway
+from quantum.infrastructure.mt5.transport.contracts import ExecutionFunctionProtocol
 from quantum.infrastructure.observability.tracing.provider import get_tracer
 from quantum.shared.types.channels import ExecutionChannel
 from quantum.shared.types.execution_request import (
@@ -21,10 +21,10 @@ from quantum.shared.types.execution_result import ExecutionResult
 logger = logging.getLogger(__name__)
 tracer = get_tracer("infra.adapters.mt5_exec")
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Lazy import cache for MetaTrader5                                           │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
 
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Lazy import cache for MetaTrader5                                          │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 _MT5_MODULE: ModuleType | None = None
 _MT5_LOCK = threading.Lock()
 
@@ -54,12 +54,10 @@ def _get_mt5_module() -> ModuleType:
     return _MT5_MODULE
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Adapter Implementation                                                      │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
-
-
-class Mt5ExecutionAdapterImpl:
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Adapter Implementation                                                     │
+# ╰────────────────────────────────────────────────────────────────────────────╯
+class BaseMt5Adapter:
     """
     Concrete implementation of the ExecutionPort using the MT5 gateway.
 

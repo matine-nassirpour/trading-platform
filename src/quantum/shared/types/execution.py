@@ -8,7 +8,7 @@ Each code represents a stable semantic layer decoupled from
 vendor-specific return codes (e.g. MT5 `retcode`).
 
 Design goals:
-- Provide 1:1 mapping with MT5 retcodes via `mt5_retcode_map.py`
+- Provide 1:1 mapping with MT5 retcodes via `retcode_map.py`
 - Be forward-compatible with other backends
 - Serve as canonical labels for observability and analytics
 """

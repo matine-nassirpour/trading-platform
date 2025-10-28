@@ -31,11 +31,11 @@ trading-platform/
 ├── src/
 │   └── quantum/
 │       ├── application/
-│       │   ├── adapters/
-│       │   │   ├── __init__.py
-│       │   │   └── mt5_execution_adapter.py
 │       │   ├── dto/
 │       │   │   └── __init__.py
+│       │   ├── events/
+│       │   │   ├── __init__.py
+│       │   │   └── execution_channel_event.py
 │       │   ├── ports/
 │       │   │   ├── inbound/
 │       │   │   │   └── __init__.py
@@ -43,6 +43,9 @@ trading-platform/
 │       │   │   │   ├── __init__.py
 │       │   │   │   └── execution_port.py
 │       │   │   └── __init__.py
+│       │   ├── services/
+│       │   │   ├── __init__.py
+│       │   │   └── execution_service.py
 │       │   ├── use_cases/
 │       │   │   └── __init__.py
 │       │   └── __init__.py
@@ -76,11 +79,6 @@ trading-platform/
 │       │   ├── entities/
 │       │   │   └── __init__.py
 │       │   ├── events/
-│       │   │   ├── system/
-│       │   │   │   ├── v1/
-│       │   │   │   │   ├── __init__.py
-│       │   │   │   │   └── execution_channel_event.py
-│       │   │   │   └── __init__.py
 │       │   │   ├── trading/
 │       │   │   │   ├── v1/
 │       │   │   │   │   ├── __init__.py
@@ -101,8 +99,7 @@ trading-platform/
 │       │   │   │   │   ├── takeprofit_trigger_event.py
 │       │   │   │   │   └── trailing_trigger_event.py
 │       │   │   │   └── __init__.py
-│       │   │   ├── __init__.py
-│       │   │   └── base.py
+│       │   │   └── __init__.py
 │       │   ├── services/
 │       │   │   └── __init__.py
 │       │   ├── types/
@@ -111,22 +108,40 @@ trading-platform/
 │       │   │   └── __init__.py
 │       │   └── __init__.py
 │       ├── infrastructure/
-│       │   ├── adapters/
-│       │   │   ├── __init__.py
-│       │   │   └── mt5_execution_adapter_impl.py
 │       │   ├── datafeeds/
 │       │   │   └── __init__.py
-│       │   ├── execution/
+│       │   ├── messaging/
+│       │   │   └── __init__.py
+│       │   ├── mt5/
+│       │   │   ├── adapters/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── adapter_factory.py
+│       │   │   │   ├── base_adapter.py
+│       │   │   │   ├── ftmo_adapter.py
+│       │   │   │   └── fundednext_adapter.py
+│       │   │   ├── brokers/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── base_policy.py
+│       │   │   │   ├── ftmo_policy.py
+│       │   │   │   └── fundednext_policy.py
 │       │   │   ├── mappings/
 │       │   │   │   ├── __init__.py
-│       │   │   │   ├── mt5_request_mapper.py
-│       │   │   │   └── mt5_retcode_map.py
-│       │   │   ├── __init__.py
-│       │   │   ├── _timeout_utils.py
-│       │   │   ├── contracts.py
-│       │   │   ├── gateway_registry.py
-│       │   │   └── mt5_gateway.py
-│       │   ├── messaging/
+│       │   │   │   ├── request_mapper.py
+│       │   │   │   └── retcode_map.py
+│       │   │   ├── runtime/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── bootstrap.py
+│       │   │   │   └── gateway_registry.py
+│       │   │   ├── sessions/
+│       │   │   │   ├── __init__.py
+│       │   │   │   └── session_manager.py
+│       │   │   ├── transport/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── contracts.py
+│       │   │   │   ├── gateway.py
+│       │   │   │   └── timeout_utils.py
+│       │   │   ├── utils/
+│       │   │   │   └── __init__.py
 │       │   │   └── __init__.py
 │       │   ├── observability/
 │       │   │   ├── bootstrap/
@@ -178,9 +193,6 @@ trading-platform/
 │       │   │   │   ├── propagation.py
 │       │   │   │   └── provider.py
 │       │   │   └── __init__.py
-│       │   ├── runtime/
-│       │   │   ├── __init__.py
-│       │   │   └── mt5_runtime_bootstrap.py
 │       │   ├── storage/
 │       │   │   └── __init__.py
 │       │   └── __init__.py
@@ -198,6 +210,9 @@ trading-platform/
 │       │   │   └── run_id.py
 │       │   ├── errors/
 │       │   │   └── __init__.py
+│       │   ├── events/
+│       │   │   ├── __init__.py
+│       │   │   └── base.py
 │       │   ├── execution/
 │       │   │   ├── __init__.py
 │       │   │   ├── resilience_policy.py

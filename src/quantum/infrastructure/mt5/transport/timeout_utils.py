@@ -29,11 +29,10 @@ _EXECUTOR = concurrent.futures.ThreadPoolExecutor(
     thread_name_prefix="quantum-timeout",
 )
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Timeout context manager                                                     │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
 
-
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Timeout context manager                                                    │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 @contextmanager
 def timeout_guard(seconds: float, call_name: str) -> Generator[None]:
     """
@@ -71,11 +70,9 @@ def timeout_guard(seconds: float, call_name: str) -> Generator[None]:
             raise exc
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Function wrapper (optional utility)                                         │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
-
-
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Function wrapper (optional utility)                                        │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 def run_with_timeout(
     func: Callable[..., T], *args, seconds: float, call_name: str, **kwargs
 ) -> T:

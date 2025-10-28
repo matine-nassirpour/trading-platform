@@ -14,6 +14,16 @@ class BaseEvent(BaseModel):
     - `use_enum_values=True` serializes enums into their values (str).
     """
 
+    event_name: ClassVar[str]
+    schema_version: ClassVar[int] = 1
+
+    timestamp: str  # RFC3339 with milliseconds and Z suffix
+
+    run_id: str | None = None
+    correlation_id: str | None = None
+    trace_id: str | None = None
+    span_id: str | None = None
+
     model_config = ConfigDict(
         extra="forbid",
         frozen=True,
@@ -21,18 +31,6 @@ class BaseEvent(BaseModel):
         populate_by_name=True,
         json_encoders={Decimal: str},
     )
-
-    # Constants (defined in subclasses)
-    event_name: ClassVar[str]
-    schema_version: ClassVar[int] = 1
-
-    # Common fields
-    timestamp: str  # RFC3339 with milliseconds and Z suffix
-
-    run_id: str | None = None
-    correlation_id: str | None = None
-    trace_id: str | None = None
-    span_id: str | None = None
 
     @field_validator("timestamp")
     @classmethod
