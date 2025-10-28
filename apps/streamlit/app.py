@@ -10,7 +10,7 @@ from apps.streamlit.lib.obs import PageTimer, ui_action
 from quantum.infrastructure.observability.tracing.correlation.correlation_id import (
     get_correlation_id,
 )
-from quantum.interface.streamlit.entrypoints import get_positions
+from quantum.interfaces.streamlit.entrypoints import get_positions
 from quantum.shared.context.run_id import get_run_id
 
 get_config()

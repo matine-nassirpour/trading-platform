@@ -1,7 +1,7 @@
 import logging
 
 from apps.cli.bootstrap import init_cli
-from quantum.interface.cli.entrypoints import reconcile, refresh_market
+from quantum.interfaces.cli.entrypoints import reconcile, refresh_market
 
 logger = logging.getLogger(__name__)
 
