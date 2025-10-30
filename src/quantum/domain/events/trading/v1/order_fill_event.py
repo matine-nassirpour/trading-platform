@@ -3,7 +3,7 @@ from typing import ClassVar
 
 from pydantic import Field, field_validator
 
-from quantum.shared.events.base import BaseEvent
+from quantum.domain.events.base import BaseEvent
 from quantum.shared.types.decimal_validators import NonNegativeDecimal, PositiveDecimal
 from quantum.shared.types.enums import App, DealEntry, DealReason
 from quantum.shared.types.value_objects import (

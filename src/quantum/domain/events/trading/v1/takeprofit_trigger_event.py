@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import ClassVar
 
-from quantum.shared.events.base import BaseEvent
+from quantum.domain.events.base import BaseEvent
 from quantum.shared.serialization.schema_registry import register_event
 from quantum.shared.types.decimal_validators import PositiveDecimal
 from quantum.shared.types.enums import App, DealEntry, DealReason

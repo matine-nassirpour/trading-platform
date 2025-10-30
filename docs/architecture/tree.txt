@@ -76,7 +76,8 @@ trading-platform/
 │       │   │   │   │   ├── takeprofit_trigger_event.py
 │       │   │   │   │   └── trailing_trigger_event.py
 │       │   │   │   └── __init__.py
-│       │   │   └── __init__.py
+│       │   │   ├── __init__.py
+│       │   │   └── base.py
 │       │   ├── services/
 │       │   │   └── __init__.py
 │       │   ├── types/
@@ -117,6 +118,30 @@ trading-platform/
 │       │   │   │   ├── utils/
 │       │   │   │   │   └── __init__.py
 │       │   │   │   └── __init__.py
+│       │   │   └── __init__.py
+│       │   ├── config/
+│       │   │   ├── contracts/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── base_contracts.py
+│       │   │   │   └── settings_contracts.py
+│       │   │   ├── models/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── core.py
+│       │   │   │   ├── logging.py
+│       │   │   │   ├── mt5.py
+│       │   │   │   └── tracing.py
+│       │   │   ├── providers/
+│       │   │   │   ├── __init__.py
+│       │   │   │   └── env_loader.py
+│       │   │   ├── runtime/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── manager.py
+│       │   │   │   └── state.py
+│       │   │   ├── validators/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── base.py
+│       │   │   │   ├── registry.py
+│       │   │   │   └── rules.py
 │       │   │   └── __init__.py
 │       │   ├── datafeeds/
 │       │   │   └── __init__.py
@@ -183,41 +208,10 @@ trading-platform/
 │       │   │   ├── __init__.py
 │       │   │   └── entrypoints.py
 │       │   └── __init__.py
-│       ├── platform/
-│       │   ├── config/
-│       │   │   ├── contracts/
-│       │   │   │   ├── __init__.py
-│       │   │   │   ├── base_contracts.py
-│       │   │   │   └── settings_contracts.py
-│       │   │   ├── models/
-│       │   │   │   ├── __init__.py
-│       │   │   │   ├── core.py
-│       │   │   │   ├── logging.py
-│       │   │   │   ├── mt5.py
-│       │   │   │   └── tracing.py
-│       │   │   ├── providers/
-│       │   │   │   ├── __init__.py
-│       │   │   │   └── env_loader.py
-│       │   │   ├── runtime/
-│       │   │   │   ├── __init__.py
-│       │   │   │   ├── manager.py
-│       │   │   │   └── state.py
-│       │   │   ├── validators/
-│       │   │   │   ├── __init__.py
-│       │   │   │   ├── base.py
-│       │   │   │   ├── registry.py
-│       │   │   │   └── rules.py
-│       │   │   └── __init__.py
-│       │   └── __init__.py
 │       ├── shared/
 │       │   ├── context/
 │       │   │   ├── __init__.py
 │       │   │   └── run_id.py
-│       │   ├── errors/
-│       │   │   └── __init__.py
-│       │   ├── events/
-│       │   │   ├── __init__.py
-│       │   │   └── base.py
 │       │   ├── execution/
 │       │   │   ├── __init__.py
 │       │   │   ├── resilience_policy.py
@@ -244,16 +238,18 @@ trading-platform/
 │       └── __init__.py
 ├── tests/
 │   ├── e2e/
-│   │   ├── observability/
-│   │   │   ├── __init__.py
-│   │   │   ├── test_observability_fsync_e2e.py
-│   │   │   ├── test_observability_metrics_http_e2e.py
-│   │   │   ├── test_observability_otlp_grpc_e2e.py
-│   │   │   ├── test_observability_otlp_http_e2e.py
-│   │   │   └── test_observability_pipeline_e2e.py
+│   │   ├── infrastructure/
+│   │   │   ├── observability/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── test_observability_fsync_e2e.py
+│   │   │   │   ├── test_observability_metrics_http_e2e.py
+│   │   │   │   ├── test_observability_otlp_grpc_e2e.py
+│   │   │   │   ├── test_observability_otlp_http_e2e.py
+│   │   │   │   └── test_observability_pipeline_e2e.py
+│   │   │   └── __init__.py
 │   │   └── __init__.py
 │   ├── integration/
-│   │   ├── core/
+│   │   ├── infrastructure/
 │   │   │   ├── config/
 │   │   │   │   ├── __init__.py
 │   │   │   │   ├── test_env_loader.py
@@ -263,8 +259,6 @@ trading-platform/
 │   │   │   │   ├── test_snapshot_consistency.py
 │   │   │   │   ├── test_state_runtime.py
 │   │   │   │   └── test_validator_registry.py
-│   │   │   └── __init__.py
-│   │   ├── infrastructure/
 │   │   │   ├── observability/
 │   │   │   │   ├── __init__.py
 │   │   │   │   ├── test_bootstrap_shutdown.py
@@ -285,6 +279,26 @@ trading-platform/
 │   │   └── wait.py
 │   ├── unit/
 │   │   ├── infrastructure/
+│   │   │   ├── config/
+│   │   │   │   ├── models/
+│   │   │   │   │   ├── __init__.py
+│   │   │   │   │   ├── test_core.py
+│   │   │   │   │   ├── test_logging.py
+│   │   │   │   │   ├── test_mt5.py
+│   │   │   │   │   └── test_tracing.py
+│   │   │   │   ├── providers/
+│   │   │   │   │   ├── __init__.py
+│   │   │   │   │   └── test_env_loader.py
+│   │   │   │   ├── runtime/
+│   │   │   │   │   ├── __init__.py
+│   │   │   │   │   ├── test_manager.py
+│   │   │   │   │   └── test_state.py
+│   │   │   │   ├── validators/
+│   │   │   │   │   ├── __init__.py
+│   │   │   │   │   ├── test_base.py
+│   │   │   │   │   ├── test_registry.py
+│   │   │   │   │   └── test_rules.py
+│   │   │   │   └── __init__.py
 │   │   │   ├── observability/
 │   │   │   │   ├── logging/
 │   │   │   │   │   ├── filters/
@@ -306,28 +320,6 @@ trading-platform/
 │   │   │   │   ├── tracing/
 │   │   │   │   │   ├── __init__.py
 │   │   │   │   │   └── test_propagation.py
-│   │   │   │   └── __init__.py
-│   │   │   └── __init__.py
-│   │   ├── platform/
-│   │   │   ├── config/
-│   │   │   │   ├── models/
-│   │   │   │   │   ├── __init__.py
-│   │   │   │   │   ├── test_core.py
-│   │   │   │   │   ├── test_logging.py
-│   │   │   │   │   ├── test_mt5.py
-│   │   │   │   │   └── test_tracing.py
-│   │   │   │   ├── providers/
-│   │   │   │   │   ├── __init__.py
-│   │   │   │   │   └── test_env_loader.py
-│   │   │   │   ├── runtime/
-│   │   │   │   │   ├── __init__.py
-│   │   │   │   │   ├── test_manager.py
-│   │   │   │   │   └── test_state.py
-│   │   │   │   ├── validators/
-│   │   │   │   │   ├── __init__.py
-│   │   │   │   │   ├── test_base.py
-│   │   │   │   │   ├── test_registry.py
-│   │   │   │   │   └── test_rules.py
 │   │   │   │   └── __init__.py
 │   │   │   └── __init__.py
 │   │   └── __init__.py

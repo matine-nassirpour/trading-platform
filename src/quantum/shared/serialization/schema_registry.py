@@ -8,11 +8,10 @@ logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Thread-safe registry for event schemas                                      │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
 
-
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Thread-safe registry for event schemas                                     │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 @final
 class EventSchemaRegistry:
     """
@@ -89,32 +88,20 @@ class EventSchemaRegistry:
 REGISTRY = EventSchemaRegistry()
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Decorator API                                                               │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
-
-
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Decorator API                                                              │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 def register_event(cls: type[T]) -> type[T]:
     """
     Decorator used to register an event class.
-
-    Example:
-    --------
-        @register_event
-        class OrderSubmitEvent(BaseEvent):
-            event_name = "trading.order_submit"
-            schema_version = 1
-            ...
     """
     REGISTRY.register(cls)
     return cls
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Helper functions for lookup                                                 │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
-
-
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Helper functions for lookup                                                │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 def resolve_event_schema(event_name: str, version: int = 1) -> type[Any] | None:
     """Resolves an event schema by name and version."""
     key = f"{event_name}.v{version}"

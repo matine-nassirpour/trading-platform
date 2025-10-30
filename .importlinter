@@ -5,141 +5,178 @@
 #
 #  Purpose : Formal architectural governance contract for the Quantum Platform.
 #  Scope   : Applies to all Python packages within the 'quantum' namespace.
-#  Version : 1.0.0
-#  Updated : 2025-10-28
+#  Version : 2.0.0
+#  Updated : 2025-10-30
 #
 # ──────────────────────────────────────────────────────────────────────────────
 # 1. Mission
-#    This file defines **non-negotiable structural invariants** that govern
-#    the dependency topology of the codebase. It enforces Clean Architecture
-#    and Dependency Inversion principles to guarantee modularity, stability
-#    and verifiability over 10+ years of system evolution.
+#    This file defines *immutable structural invariants* that enforce the
+#    Certified Ports & Adapters model of the Quantum Platform.
+#    It guarantees traceability, modularity, testability, and long-term
+#    certifiability under DO-178C / ISO 26262 / NASA SWE-134.
 #
 # ──────────────────────────────────────────────────────────────────────────────
-# 2. Governance Model
-#    • Any modification of these contracts requires:
-#         - a formal Architecture Decision Record (ADR)
+# 2. Governance Rules
+#    • Any modification requires:
+#         - an approved Architecture Decision Record (ADR)
 #         - validation by the Architecture Review Board
-#         - an update of this header’s version number and date
-#    • Violations discovered in CI/CD must block merges to protected branches.
-#    • Exception requests (temporary rule relaxation) must:
-#         - be documented in an ADR (type: deviation)
-#         - specify expiry date and mitigation plan.
+#         - version/date update of this header
+#    • Violations block protected-branch merges in CI/CD.
+#    • Deviations must be formally justified (ADR type: deviation).
 #
 # ──────────────────────────────────────────────────────────────────────────────
-# 3. Review & Audit
-#    • This contract is subject to quarterly architecture reviews.
-#    • Results are recorded in the Architecture Conformance Report (ACR).
-#    • Violations older than one release cycle must be remediated or justified.
-#
-# ──────────────────────────────────────────────────────────────────────────────
-# 4. Compliance Classification
-#    • Level 1 – Advised   : Informational rules (warnings only)
-#    • Level 2 – Required  : CI/CD blocking (must-fix)
-#    • Level 3 – Critical  : Immutable architectural invariant
-#
-#    All contracts defined below are Level 3 (Critical).
+# 3. Compliance Classification
+#    • Level 3 – Critical : Immutable architectural invariant
 #
 # ══════════════════════════════════════════════════════════════════════════════
 #                             End of Governance Header
 # ══════════════════════════════════════════════════════════════════════════════
 
+
 [importlinter]
-# Root packages to analyze (multiple)
-root_packages =
-    quantum
-# Only analyze the internal dependency graph
+root_package = quantum
 include_external_packages = False
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Contract 1 — Clean Architecture Layering                                   │
-# │ Enforces the unidirectional dependency rule:                               │
-# │ Domain ← Application ← Infrastructure ← Interfaces                         │
+# │ Contract 1 — Enforce Clean Architecture Layering                           │
+# │ -------------------------------------------------------------------------- │
+# │ Objective :                                                                │
+# │     Enforce a strict downward dependency flow (outer → inner layers).      │
+# │     Prevent cyclic or reversed imports across architectural tiers.         │
 # │                                                                            │
-# │ The Platform and Shared layers are cross-cutting foundations. They are     │
-# │ not part of the vertical dependency chain and are governed separately      │
-# │ by independence and forbidden contracts below.                             │
+# │ Assurance Rationale :                                                      │
+# │     Guarantees responsibility segregation and predictable build order.     │
+# │     Foundational to certifiable modularity (DO-178C §11.8, NASA-SWE-134).  │
+# │                                                                            │
+# │ Expected Result :                                                          │
+# │     Infrastructure → Interfaces → Application → Domain                     │
+# │     Each layer can import only those beneath it.                           │
 # ╰────────────────────────────────────────────────────────────────────────────╯
 
-[importlinter:contract:layers]
-name = Clean architecture layering (application flow)
+[importlinter:contract:enforce-clean-architecture-layering]
+name = Enforce Clean Architecture Layering
 type = layers
 layers =
-    quantum.domain
-    quantum.application
     quantum.infrastructure
     quantum.interfaces
+    quantum.application
+    quantum.domain
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Contract 3 — Interface/Infrastructure Segregation                          │
-# │ Prevents presentation or external interface layers from directly accessing │
-# │ low-level infrastructure details (databases, brokers, transport, etc.).    │
-# │ Interfaces must always communicate indirectly via Application ports.       │
+# │ Contract 2 — Maintain Domain Layer Purity                                  │
+# │ -------------------------------------------------------------------------- │
+# │ Objective :                                                                │
+# │     Preserve the functional and technological purity of the Domain layer.  │
+# │     Prohibit imports of frameworks, infrastructure, or I/O packages.       │
+# │                                                                            │
+# │ Assurance Rationale :                                                      │
+# │     Ensures deterministic logic, full unit-test independence, and          │
+# │     zero technological coupling (DO-178C §11.9, ISO 26262-6 §7).           │
+# │                                                                            │
+# │ Expected Result :                                                          │
+# │     quantum.domain contains only entities, value objects, and pure logic.  │
 # ╰────────────────────────────────────────────────────────────────────────────╯
 
-[importlinter:contract:forbidden_ui_infra]
-name = Interfaces must not import infrastructure
-type = forbidden
-source_modules = quantum.interfaces
-forbidden_modules = quantum.infrastructure
-
-
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Contract 4 — Interface/Domain Isolation                                    │
-# │ Prevents user-facing adapters (CLI, API, Streamlit, MQL5) from bypassing   │
-# │ the Application layer to access domain logic directly.                     │
-# │ This preserves the Application layer as the single orchestrator.           │
-# ╰────────────────────────────────────────────────────────────────────────────╯
-
-[importlinter:contract:forbidden_ui_domain]
-name = Interfaces must not import domain
-type = forbidden
-source_modules = quantum.interfaces
-forbidden_modules = quantum.domain
-
-
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Contract 5 — Application/Infrastructure Boundary                           │
-# │ Prohibits application services and use-cases from importing any            │
-# │ infrastructure implementation details.                                     │
-# │ The Application layer must depend only on abstractions (ports).            │
-# ╰────────────────────────────────────────────────────────────────────────────╯
-
-[importlinter:contract:forbidden_app_infra]
-name = Application must not import infrastructure
-type = forbidden
-source_modules = quantum.application
-forbidden_modules = quantum.infrastructure
-
-
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Contract 6 — Domain Purity                                                 │
-# │ The Domain layer must remain completely isolated and dependency-free.      │
-# │ It cannot depend on application, infrastructure, or interface layers.      │
-# │ Domain modules may only depend on the Shared layer for primitive value     │
-# │ objects, enumerations, or schema definitions.                              │
-# ╰────────────────────────────────────────────────────────────────────────────╯
-
-[importlinter:contract:forbidden_domain_upwards]
-name = Domain must remain pure and dependency-free
+[importlinter:contract:maintain-domain-layer-purity]
+name = Maintain Domain Layer Purity
 type = forbidden
 source_modules = quantum.domain
 forbidden_modules =
-    quantum.application
     quantum.infrastructure
     quantum.interfaces
+    quantum.application
+;    logging
+;    threading
+;    asyncio
+;    requests
+;    numpy
+;    pandas
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Contract 8 — Shared Independence                                           │
-# │ Ensures that Shared utilities (types, time, context, errors, etc.) remain  │
-# │ fully decoupled from all business, infrastructure, or interface concerns.  │
-# │ The Shared layer defines reusable primitives only.                         │
+# │ Contract 3 — Isolate Interface Adapters from Infrastructure                │
+# │ -------------------------------------------------------------------------- │
+# │ Objective :                                                                │
+# │     Prevent user-facing adapters (UI/API) from directly accessing          │
+# │     infrastructure components (network, persistence, brokers).             │
+# │                                                                            │
+# │ Assurance Rationale :                                                      │
+# │     Ensures presentation components remain replaceable and framework-free. │
+# │     Supports ISO/IEC 25010 (Maintainability) and NASA-SWE-135.             │
+# │                                                                            │
+# │ Expected Result :                                                          │
+# │     quantum.interfaces interacts only with Application and Domain types.   │
 # ╰────────────────────────────────────────────────────────────────────────────╯
 
-[importlinter:contract:shared_independence]
-name = Shared layer must remain globally independent
-type = independence
-modules = quantum.shared
+[importlinter:contract:isolate-interface-adapters-from-infrastructure]
+name = Isolate Interface Adapters from Infrastructure
+type = forbidden
+source_modules = quantum.interfaces
+forbidden_modules = quantum.infrastructure
+
+
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Contract 4 — Prevent Domain-to-Infrastructure Dependencies                 │
+# │ -------------------------------------------------------------------------- │
+# │ Objective :                                                                │
+# │     Prevent the Domain (core logic) from any awareness of infrastructure.  │
+# │     Enforce full inversion of dependencies via abstract ports.             │
+# │                                                                            │
+# │ Assurance Rationale :                                                      │
+# │     Eliminates bidirectional coupling and technology leakage.              │
+# │     Ensures Domain remains deployable and verifiable standalone.           │
+# │     Complies with DO-178C Level A data coupling independence.              │
+# ╰────────────────────────────────────────────────────────────────────────────╯
+
+[importlinter:contract:prevent-domain-to-infrastructure-dependencies]
+name = Prevent Domain-to-Infrastructure Dependencies
+type = forbidden
+source_modules = quantum.domain
+forbidden_modules = quantum.infrastructure
+
+
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Contract 5 — Prevent Domain-to-Interface Dependencies                      │
+# │ -------------------------------------------------------------------------- │
+# │ Objective :                                                                │
+# │     Shield the Domain from presentation or adapter concerns.               │
+# │     Prohibit imports of UI, serialization, or API-layer code.              │
+# │                                                                            │
+# │ Assurance Rationale :                                                      │
+# │     Avoids reverse feedback paths and non-deterministic dependencies.      │
+# │     Supports software component isolation (ISO 26262 Part 6 §7.4.10).      │
+# │                                                                            │
+# │ Expected Result :                                                          │
+# │     Domain entities and services remain independent of any UI logic.       │
+# ╰────────────────────────────────────────────────────────────────────────────╯
+
+[importlinter:contract:prevent-domain-to-interface-dependencies]
+name = Prevent Domain-to-Interface Dependencies
+type = forbidden
+source_modules = quantum.domain
+forbidden_modules = quantum.interfaces
+
+
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Contract 6 — Enforce Application-to-Port Dependency Only                   │
+# │ -------------------------------------------------------------------------- │
+# │ Objective :                                                                │
+# │     Ensure Application layer logic depends only on abstract ports,         │
+# │     never on concrete infrastructure implementations.                      │
+# │                                                                            │
+# │ Assurance Rationale :                                                      │
+# │     Guarantees strict application of the Dependency Inversion Principle.   │
+# │     Enables isolated unit testing and runtime plug/replacement.            │
+# │     Aligned with DO-178C §6.3.4 / ISO 26262-6 §9.4 (Data coupling control).│
+# │                                                                            │
+# │ Expected Result :                                                          │
+# │     Use-cases import only domain abstractions and outbound ports.          │
+# ╰────────────────────────────────────────────────────────────────────────────╯
+
+[importlinter:contract:enforce-application-to-port-dependency-only]
+name = Enforce Application-to-Port Dependency Only
+type = forbidden
+source_modules = quantum.application
+forbidden_modules = quantum.infrastructure

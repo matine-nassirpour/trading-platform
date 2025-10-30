@@ -1,7 +1,7 @@
 from decimal import Decimal
 from typing import ClassVar, Literal
 
-from quantum.shared.events.base import BaseEvent
+from quantum.domain.events.base import BaseEvent
 from quantum.shared.serialization.schema_registry import register_event
 from quantum.shared.types.enums import App
 from quantum.shared.types.value_objects import EpochMs, IntentId, PositionId, Symbol

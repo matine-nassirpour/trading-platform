@@ -2,7 +2,7 @@ from typing import Any, ClassVar
 
 from pydantic import field_validator
 
-from quantum.shared.events.base import BaseEvent
+from quantum.domain.events.base import BaseEvent
 from quantum.shared.serialization.schema_registry import register_event
 from quantum.shared.types.enums import App
 from quantum.shared.types.value_objects import EpochMs, IntentId, Symbol
