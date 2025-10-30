@@ -4,7 +4,7 @@ import logging
 
 import pytest
 
-from quantum.platform.config.runtime.manager import ConfigManager
+from quantum.infrastructure.config.runtime.manager import ConfigManager
 
 
 def _root_handlers() -> list[logging.Handler]:

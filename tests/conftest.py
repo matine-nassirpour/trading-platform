@@ -22,24 +22,24 @@ from pathlib import Path
 
 import pytest
 
-from quantum.platform.config.models.core import CoreSettings
-from quantum.platform.config.models.logging import LoggingSettings
+from quantum.infrastructure.config.models.core import CoreSettings
+from quantum.infrastructure.config.models.logging import LoggingSettings
 from tests.support.types import Workspace
 
 _LOG_CLEANUP_LOCK = threading.Lock()
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ sys.path: add "src/" to the test runner's PYTHONPATH                        │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ sys.path: add "src/" to the test runner's PYTHONPATH                       │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 _SRC = _PROJECT_ROOT / "src"
 if str(_SRC) not in sys.path:
     sys.path.insert(0, str(_SRC))  # prefer local sources during tests
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ General tools                                                               │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ General tools                                                              │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 @contextmanager
 def _preserve_environ():
     """Save/restore a snapshot of os.environ (key/value)."""
@@ -89,9 +89,9 @@ def _read_tail_complete_lines(
         return []
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Fixtures                                                                    │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Fixtures                                                                   │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 @pytest.fixture
 def fake_env_file(tmp_path: Path) -> Path:
     """
@@ -227,7 +227,7 @@ def cap_config_logs(caplog):
 @pytest.fixture
 def valid_core_settings(tmp_workspace) -> CoreSettings:
     """Return a valid CoreSettings instance using the temporary workspace."""
-    from quantum.platform.config.runtime.manager import ConfigManager
+    from quantum.infrastructure.config.runtime.manager import ConfigManager
 
     return ConfigManager.load(apply=False)
 
@@ -339,9 +339,9 @@ def free_port() -> int:
         return s.getsockname()[1]
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ JSONL Reading Helpers for Assertions                                        │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ JSONL Reading Helpers for Assertions                                       │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 @pytest.fixture(scope="function")
 def read_jsonl():
     """
@@ -417,9 +417,9 @@ def _safe_bool(fn: Callable[[dict], bool], obj: dict) -> bool:
     return False
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Defensive global teardown: closing handlers between tests                   │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Defensive global teardown: closing handlers between tests                  │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 def _iter_all_loggers() -> list[logging.Logger]:
     """
     Return all known loggers including root and children registered in the manager.
@@ -478,8 +478,8 @@ def reset_config_state():
     Ensures no residual environment or LRU cache contamination between tests,
     preserving hermeticity for configuration-dependent modules.
     """
-    from quantum.platform.config.runtime.manager import ConfigManager
-    from quantum.platform.config.runtime.state import ConfigState
+    from quantum.infrastructure.config.runtime.manager import ConfigManager
+    from quantum.infrastructure.config.runtime.state import ConfigState
 
     ConfigManager.clear_caches()
     ConfigState.instance().reset()
@@ -488,9 +488,9 @@ def reset_config_state():
     ConfigState.instance().reset()
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Pytest configuration hooks                                                  │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Pytest configuration hooks                                                 │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 def pytest_configure(config: pytest.Config) -> None:
     """
     Register commonly used custom markers to avoid warnings and improve test filtering.

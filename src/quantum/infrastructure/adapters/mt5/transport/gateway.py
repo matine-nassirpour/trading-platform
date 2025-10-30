@@ -15,12 +15,12 @@ from quantum.infrastructure.adapters.mt5.transport.contracts import (
     ExecutionFunctionProtocol,
 )
 from quantum.infrastructure.adapters.mt5.transport.timeout_utils import timeout_guard
+from quantum.infrastructure.config.runtime.manager import ConfigManager
 from quantum.infrastructure.observability.metrics.mt5 import (
     exec_channel_latency_ms,
     exec_channel_total,
 )
 from quantum.infrastructure.observability.tracing.provider import get_tracer
-from quantum.platform.config.runtime.manager import ConfigManager
 from quantum.shared.types.channels import ExecutionChannel
 from quantum.shared.types.execution import ExecutionCode
 from quantum.shared.types.execution_result import ExecutionResult

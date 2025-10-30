@@ -10,9 +10,9 @@ from quantum.infrastructure.adapters.mt5.transport.gateway import (
     init_mt5_terminal,
     shutdown_mt5_terminal,
 )
+from quantum.infrastructure.config.runtime.manager import ConfigManager
 from quantum.infrastructure.observability.metrics.mt5 import terminal_up
 from quantum.infrastructure.observability.tracing.provider import get_tracer
-from quantum.platform.config.runtime.manager import ConfigManager
 from quantum.shared.types.channels import ExecutionChannel
 
 logger = logging.getLogger(__name__)

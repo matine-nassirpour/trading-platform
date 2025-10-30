@@ -73,25 +73,6 @@ layers =
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Contract 2 — Platform Isolation                                            │
-# │ Ensures the Platform layer remains independent from all higher layers.     │
-# │ Platform components (runtime, config, validators) must never depend on     │
-# │ domain, application, infrastructure, or interface code.                    │
-# ╰────────────────────────────────────────────────────────────────────────────╯
-
-[importlinter:contract:forbidden_platform_upwards]
-name = Platform layer must not depend on any outer layer
-type = forbidden
-source_modules = quantum.platform
-forbidden_modules =
-    quantum.domain
-    quantum.application
-    quantum.infrastructure
-    quantum.interfaces
-    quantum.shared
-
-
-# ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Contract 3 — Interface/Infrastructure Segregation                          │
 # │ Prevents presentation or external interface layers from directly accessing │
 # │ low-level infrastructure details (databases, brokers, transport, etc.).    │
@@ -152,19 +133,6 @@ forbidden_modules =
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Contract 7 — Platform Independence                                         │
-# │ Validates that the Platform layer has no internal dependencies.            │
-# │ It may be imported by any other layer, but it must never import from them. │
-# │ This guarantees a stable runtime foundation across the entire system.      │
-# ╰────────────────────────────────────────────────────────────────────────────╯
-
-[importlinter:contract:platform_independence]
-name = Platform layer must remain globally independent
-type = independence
-modules = quantum.platform
-
-
-# ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Contract 8 — Shared Independence                                           │
 # │ Ensures that Shared utilities (types, time, context, errors, etc.) remain  │
 # │ fully decoupled from all business, infrastructure, or interface concerns.  │
@@ -175,22 +143,3 @@ modules = quantum.platform
 name = Shared layer must remain globally independent
 type = independence
 modules = quantum.shared
-
-
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Contract 9 — Cross-cutting Layer Isolation                                 │
-# │ Enforces that Shared and Platform layers never depend on higher-level      │
-# │ components such as Infrastructure or Interfaces.                           │
-# │ These layers must only use the Python standard library or pure third-party │
-# │ packages. This ensures cross-cutting purity and system determinism.        │
-# ╰────────────────────────────────────────────────────────────────────────────╯
-
-[importlinter:contract:forbidden_crosscutting_upwards]
-name = Shared and Platform must remain infrastructure-agnostic
-type = forbidden
-source_modules =
-    quantum.shared
-    quantum.platform
-forbidden_modules =
-    quantum.infrastructure
-    quantum.interfaces

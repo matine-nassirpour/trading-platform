@@ -2,11 +2,11 @@ import logging
 import threading
 from contextlib import contextmanager, suppress
 
+from quantum.infrastructure.config.runtime.manager import ConfigManager
 from quantum.infrastructure.observability.bootstrap.health_registry import (
     get_health_registry,
 )
 from quantum.infrastructure.observability.bootstrap.lifecycle import LifecycleService
-from quantum.platform.config.runtime.manager import ConfigManager
 from quantum.shared.context.run_id import generate_run_id, get_run_id
 
 # ╭────────────────────────────────────────────────────────────────────────────╮

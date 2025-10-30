@@ -12,7 +12,7 @@ from quantum.infrastructure.adapters.mt5.transport.gateway import (
     Mt5ExecutionFunction,
     init_mt5_terminal,
 )
-from quantum.platform.config.runtime.manager import ConfigManager
+from quantum.infrastructure.config.runtime.manager import ConfigManager
 from quantum.shared.types.channels import ExecutionChannel
 
 logger = logging.getLogger(__name__)

@@ -9,13 +9,13 @@ import threading
 from dataclasses import dataclass
 from pathlib import Path
 
-from quantum.platform.config.models.core import CoreSettings
-from quantum.platform.config.models.logging import LoggingSettings
-from quantum.platform.config.models.mt5 import MT5Settings
-from quantum.platform.config.models.tracing import TracingSettings
-from quantum.platform.config.providers.env_loader import load_env
-from quantum.platform.config.runtime.manager import ConfigManager
-from quantum.platform.config.runtime.state import ConfigState
+from quantum.infrastructure.config.models.core import CoreSettings
+from quantum.infrastructure.config.models.logging import LoggingSettings
+from quantum.infrastructure.config.models.mt5 import MT5Settings
+from quantum.infrastructure.config.models.tracing import TracingSettings
+from quantum.infrastructure.config.providers.env_loader import load_env
+from quantum.infrastructure.config.runtime.manager import ConfigManager
+from quantum.infrastructure.config.runtime.state import ConfigState
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Optional Streamlit integration (safe fallback if absent)                   │
