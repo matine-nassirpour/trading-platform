@@ -10,7 +10,7 @@ from quantum.infrastructure.observability.logging._io_utils import (
     inc_disk_error_counter,
     safe_unlink,
 )
-from quantum.shared.time.naming import generate_audit_blob_name
+from quantum.infrastructure.time.naming import generate_audit_blob_name
 
 
 class AuditEventFileHandler(logging.Handler):

@@ -1,9 +1,10 @@
+import re
 from decimal import Decimal
 from typing import ClassVar
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
-from quantum.shared.time.format import require_rfc3339_ms
+_RFC3339_MS = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$")
 
 
 class BaseEvent(BaseModel):
@@ -35,4 +36,6 @@ class BaseEvent(BaseModel):
     @field_validator("timestamp")
     @classmethod
     def _validate_ts(cls, v: str) -> str:
-        return require_rfc3339_ms(v)
+        if not _RFC3339_MS.match(v):
+            raise ValueError("Invalid RFC3339 timestamp")
+        return v

@@ -1,7 +1,7 @@
 import logging
 
+from quantum.application.policies.resilience_policy import resilient_call
 from quantum.application.ports.outbound.execution_port import ExecutionPort
-from quantum.shared.execution.resilience_policy import resilient_call
 from quantum.shared.types.channels import ExecutionChannel
 from quantum.shared.types.execution_request import (
     CheckRequest,

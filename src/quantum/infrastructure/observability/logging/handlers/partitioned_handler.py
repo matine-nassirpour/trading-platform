@@ -16,7 +16,7 @@ from quantum.infrastructure.observability.logging._io_utils import (
     fsync_dir,
     inc_disk_error_counter,
 )
-from quantum.shared.time.naming import partition_path_components
+from quantum.infrastructure.time.naming import partition_path_components
 
 try:
     from quantum.infrastructure.observability.metrics.collectors.health_collector import (

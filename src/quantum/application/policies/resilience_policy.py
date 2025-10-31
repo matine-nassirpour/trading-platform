@@ -1,10 +1,3 @@
-"""
-Resilience Policy — Dynamic, Observable, and Industry-Grade
-──────────────────────────────────────────────────────────────
-Provides fully configurable, testable, and composable resilience mechanisms
-for synchronous and asynchronous operations.
-"""
-
 from __future__ import annotations
 
 import asyncio
@@ -16,22 +9,16 @@ from dataclasses import dataclass
 from functools import wraps
 from typing import Any, Generic, ParamSpec, TypeVar
 
-from quantum.shared.execution.retry_policy import DefaultRetryPolicy, RetryPolicy
-from quantum.shared.execution.timeout_utils import (
-    run_with_timeout_async,
-    run_with_timeout_sync,
-)
+from quantum.application.policies.retry_policy import DefaultRetryPolicy, RetryPolicy
+from quantum.application.ports.outbound.timeout_runner_port import TimeoutRunnerPort
 
-# Generic typing
 P = ParamSpec("P")
 R = TypeVar("R")
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Configuration Model                                                         │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
-
-
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Configuration Model                                                        │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 @dataclass(frozen=True)
 class ResilienceConfig:
     """Immutable resilience configuration parameters."""
@@ -44,11 +31,9 @@ class ResilienceConfig:
     max_total_time: float | None = None  # Optional global deadline
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Logging Adapter                                                             │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
-
-
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Logging Adapter                                                            │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 class ResilienceLogger:
     """Adapter for consistent structured logging across sync/async flows."""
 
@@ -117,11 +102,9 @@ class ResilienceLogger:
         )
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Backoff Strategy                                                            │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
-
-
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Backoff Strategy                                                           │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 class BackoffStrategy:
     """Computes exponential backoff delays with optional jitter."""
 
@@ -144,23 +127,23 @@ class BackoffStrategy:
         return min(delay, self._cap)
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Core Executor                                                               │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
-
-
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Core Executor                                                              │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 class ResilienceExecutor(Generic[P, R]):
     """Unified executor for resilient sync/async calls."""
 
     def __init__(
         self,
-        operation: str,
         *,
+        operation: str,
+        timeout_runner: TimeoutRunnerPort,
         policy: RetryPolicy | None = None,
         cfg: ResilienceConfig | None = None,
         logger: ResilienceLogger | None = None,
     ) -> None:
         self.operation = operation
+        self.timeout_runner = timeout_runner
         self.policy = policy or DefaultRetryPolicy()
         self.cfg = cfg or ResilienceConfig()
         self.logger = logger or ResilienceLogger()
@@ -212,7 +195,7 @@ class ResilienceExecutor(Generic[P, R]):
             attempt += 1
             start = time.time()
             try:
-                result = run_with_timeout_sync(
+                result = self.timeout_runner.run_with_timeout_sync(
                     func,
                     *args,
                     timeout_sec=self.cfg.timeout_sec,
@@ -242,7 +225,7 @@ class ResilienceExecutor(Generic[P, R]):
             attempt += 1
             start = time.time()
             try:
-                result = await run_with_timeout_async(
+                result = await self.timeout_runner.run_with_timeout_async(
                     func,
                     *args,
                     timeout_sec=self.cfg.timeout_sec,
@@ -266,14 +249,13 @@ class ResilienceExecutor(Generic[P, R]):
             await asyncio.sleep(delay)
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Public decorators                                                           │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
-
-
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Public decorators                                                          │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 def resilient_call(
     func: Callable[P, R] | None = None,
     *,
+    timeout_runner: TimeoutRunnerPort,
     policy: RetryPolicy | None = None,
     cfg: ResilienceConfig | None = None,
 ) -> Callable[[Callable[P, R]], Callable[P, R]]:
@@ -287,7 +269,9 @@ def resilient_call(
 
         @wraps(inner_func)
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-            executor = ResilienceExecutor(operation=op_name, policy=policy, cfg=cfg)
+            executor = ResilienceExecutor(
+                operation=op_name, timeout_runner=timeout_runner, policy=policy, cfg=cfg
+            )
             return executor.execute_sync(inner_func, *args, **kwargs)
 
         wrapper._resilience_call_name = op_name
@@ -301,6 +285,7 @@ def resilient_call(
 def resilient_async_call(
     func: Callable[P, Awaitable[R]] | None = None,
     *,
+    timeout_runner: TimeoutRunnerPort,
     policy: RetryPolicy | None = None,
     cfg: ResilienceConfig | None = None,
 ) -> Callable[[Callable[P, Awaitable[R]]], Callable[P, Awaitable[R]]]:
@@ -314,7 +299,9 @@ def resilient_async_call(
 
         @wraps(inner_func)
         async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-            executor = ResilienceExecutor(operation=op_name, policy=policy, cfg=cfg)
+            executor = ResilienceExecutor(
+                operation=op_name, timeout_runner=timeout_runner, policy=policy, cfg=cfg
+            )
             return await executor.execute_async(inner_func, *args, **kwargs)
 
         wrapper._resilience_call_name = op_name
