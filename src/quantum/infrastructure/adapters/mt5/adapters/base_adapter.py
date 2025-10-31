@@ -2,6 +2,14 @@ import logging
 import threading
 from types import ModuleType
 
+from quantum.application.contracts.execution_request import (
+    CheckRequest,
+    OrderRequest,
+    QueryRequest,
+)
+from quantum.application.contracts.execution_result import ExecutionResult
+from quantum.application.ports.outbound.execution_port import ExecutionPort
+from quantum.domain.types.execution_channel import ExecutionChannel
 from quantum.infrastructure.adapters.mt5.mappings.request_mapper import (
     to_mt5_check_request,
     to_mt5_query_filter,
@@ -12,13 +20,6 @@ from quantum.infrastructure.adapters.mt5.transport.contracts import (
     ExecutionFunctionProtocol,
 )
 from quantum.infrastructure.observability.tracing.provider import get_tracer
-from quantum.shared.types.channels import ExecutionChannel
-from quantum.shared.types.execution_request import (
-    CheckRequest,
-    OrderRequest,
-    QueryRequest,
-)
-from quantum.shared.types.execution_result import ExecutionResult
 
 logger = logging.getLogger(__name__)
 tracer = get_tracer("infra.adapters.mt5_exec")
@@ -59,19 +60,9 @@ def _get_mt5_module() -> ModuleType:
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Adapter Implementation                                                     │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-class BaseMt5Adapter:
+class BaseMt5Adapter(ExecutionPort):
     """
-    Concrete implementation of the ExecutionPort using the MT5 gateway.
-
-    This adapter bridges the application layer and the MetaTrader5
-    infrastructure through a unified and instrumented gateway interface.
-
-    Responsibilities:
-    -----------------
-    - Delegate calls to MetaTrader5 API via gateway abstraction
-    - Enforce consistent ExecutionResult contract
-    - Support tracing, metrics, and error handling
-    - Optimize import performance with lazy caching
+    Concrete adapter implementing the ExecutionPort using the MetaTrader5 gateway.
     """
 
     def __init__(self, channel: ExecutionChannel):
@@ -87,13 +78,17 @@ class BaseMt5Adapter:
         self._exec_func: ExecutionFunctionProtocol = func
         self._terminal_path = gw.terminal_path
 
-    # ─── Properties
+    # --------------------------------------------------------------------------
+    # Properties
+    # --------------------------------------------------------------------------
     @property
     def terminal_path(self) -> str | None:
         """Return the underlying terminal path for diagnostics."""
         return self._terminal_path
 
-    # ─── Core Execution Operations
+    # --------------------------------------------------------------------------
+    # Core Execution Operations
+    # --------------------------------------------------------------------------
     def send_order(self, request: OrderRequest) -> ExecutionResult:
         """Send an order to the MetaTrader5 terminal."""
         mt5 = _get_mt5_module()

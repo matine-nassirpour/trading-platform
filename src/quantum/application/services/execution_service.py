@@ -1,14 +1,14 @@
 import logging
 
-from quantum.application.policies.resilience_policy import resilient_call
-from quantum.application.ports.outbound.execution_port import ExecutionPort
-from quantum.shared.types.channels import ExecutionChannel
-from quantum.shared.types.execution_request import (
+from quantum.application.contracts.execution_request import (
     CheckRequest,
     OrderRequest,
     QueryRequest,
 )
-from quantum.shared.types.execution_result import ExecutionResult
+from quantum.application.contracts.execution_result import ExecutionResult
+from quantum.application.policies.resilience_policy import resilient_call
+from quantum.application.ports.outbound.execution_port import ExecutionPort
+from quantum.domain.types.execution_channel import ExecutionChannel
 
 logger = logging.getLogger(__name__)
 

@@ -1,18 +1,12 @@
 from decimal import Decimal
 from typing import ClassVar
 
-from pydantic import Field, field_validator
+from pydantic import field_validator
 
 from quantum.domain.events.base import BaseEvent
-from quantum.shared.types.decimal_validators import NonNegativeDecimal, PositiveDecimal
-from quantum.shared.types.enums import App, DealEntry, DealReason
-from quantum.shared.types.value_objects import (
-    DealId,
-    EpochMs,
-    IntentId,
-    OrderId,
-    Symbol,
-)
+from quantum.domain.types.decimal_validators import NonNegativeDecimal, PositiveDecimal
+from quantum.domain.types.enums import App, DealEntry, DealReason
+from quantum.domain.value_objects import DealId, EpochMs, IntentId, OrderId, Symbol
 
 
 class OrderFillEvent(BaseEvent):
@@ -26,21 +20,14 @@ class OrderFillEvent(BaseEvent):
     symbol: Symbol
 
     # Current Fill
-    price: PositiveDecimal = Field(..., description="Deal price (> 0)")
-    volume: PositiveDecimal = Field(
-        ..., description="Executed volume on THIS deal (> 0)"
-    )
+    price: PositiveDecimal
+    volume: PositiveDecimal
     commission: Decimal
     swap: Decimal
     profit: Decimal
 
-    cum_volume: PositiveDecimal = Field(
-        ...,
-        description="Cumulative volume executed since order opening, including CE fill",
-    )
-    leaves_volume: NonNegativeDecimal = Field(
-        ..., description="Remaining volume to be executed after CE fill (>= 0)"
-    )
+    cum_volume: PositiveDecimal
+    leaves_volume: NonNegativeDecimal
 
     deal_entry: DealEntry
     reason: DealReason

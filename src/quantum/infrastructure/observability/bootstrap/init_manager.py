@@ -7,7 +7,10 @@ from quantum.infrastructure.observability.bootstrap.health_registry import (
     get_health_registry,
 )
 from quantum.infrastructure.observability.bootstrap.lifecycle import LifecycleService
-from quantum.shared.context.run_id import generate_run_id, get_run_id
+from quantum.infrastructure.observability.context.run_id import (
+    generate_run_id,
+    get_run_id,
+)
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Internal state                                                             │

@@ -5,6 +5,9 @@ import time
 from collections.abc import Callable
 from typing import Any
 
+from quantum.application.contracts.execution_code import ExecutionCode
+from quantum.application.contracts.execution_result import ExecutionResult
+from quantum.domain.types.execution_channel import ExecutionChannel
 from quantum.infrastructure.adapters.mt5.mappings.retcode_map import map_mt5_res_to_exec
 from quantum.infrastructure.adapters.mt5.runtime.gateway_registry import (
     is_gateway_healthy,
@@ -21,9 +24,6 @@ from quantum.infrastructure.observability.metrics.mt5 import (
     exec_channel_total,
 )
 from quantum.infrastructure.observability.tracing.provider import get_tracer
-from quantum.shared.types.channels import ExecutionChannel
-from quantum.shared.types.execution import ExecutionCode
-from quantum.shared.types.execution_result import ExecutionResult
 
 logger = logging.getLogger(__name__)
 tracer = get_tracer("infra.execution.mt5")

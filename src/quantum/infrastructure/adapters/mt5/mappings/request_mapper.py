@@ -18,16 +18,16 @@ import logging
 from decimal import Decimal
 from typing import Any
 
-from quantum.shared.types.enums import (
+from quantum.application.contracts.execution_request import (
+    CheckRequest,
+    OrderRequest,
+    QueryRequest,
+)
+from quantum.domain.types.enums import (
     OrderFillingType,
     OrderType,
     TimeInForce,
     TradeAction,
-)
-from quantum.shared.types.execution_request import (
-    CheckRequest,
-    OrderRequest,
-    QueryRequest,
 )
 
 logger = logging.getLogger(__name__)

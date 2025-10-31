@@ -2,10 +2,10 @@ import logging
 from collections.abc import Mapping
 from typing import Any, Final
 
+from quantum.infrastructure.observability.context.run_id import get_run_id
 from quantum.infrastructure.observability.tracing.correlation.correlation_id import (
     get_correlation_id,
 )
-from quantum.shared.context.run_id import get_run_id
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Constants                                                                  │

@@ -1,13 +1,13 @@
 from pydantic import BaseModel, ConfigDict
 
-from quantum.shared.types.decimal_validators import PositiveDecimal
-from quantum.shared.types.enums import (
+from quantum.domain.types.decimal_validators import PositiveDecimal
+from quantum.domain.types.enums import (
     OrderFillingType,
     OrderType,
     TimeInForce,
     TradeAction,
 )
-from quantum.shared.types.value_objects import Symbol
+from quantum.domain.value_objects import Symbol
 
 
 class OrderRequest(BaseModel):
@@ -31,8 +31,6 @@ class OrderRequest(BaseModel):
 class CheckRequest(BaseModel):
     """Request to check an order's validity before execution."""
 
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
     symbol: Symbol
     volume: PositiveDecimal
     type: OrderType
@@ -40,10 +38,12 @@ class CheckRequest(BaseModel):
     stop_price: PositiveDecimal | None = None
     limit_price: PositiveDecimal | None = None
 
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
 
 class QueryRequest(BaseModel):
     """Request to query orders or positions (optionally filtered)."""
 
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
     symbol: Symbol | None = None
+
+    model_config = ConfigDict(extra="forbid", frozen=True)

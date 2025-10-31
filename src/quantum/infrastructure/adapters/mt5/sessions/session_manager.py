@@ -1,5 +1,5 @@
+from quantum.domain.types.execution_channel import ExecutionChannel
 from quantum.infrastructure.adapters.mt5.adapters.adapter_factory import create_adapter
-from quantum.shared.types.channels import ExecutionChannel
 
 
 class Mt5SessionManager:

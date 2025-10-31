@@ -3,29 +3,22 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from quantum.shared.types.execution import ExecutionCode
+from quantum.application.contracts.execution_code import ExecutionCode
 
 
 @dataclass(frozen=True)
 class ExecutionResult:
     """
     Immutable result of an execution request.
-
-    Attributes
-    ----------
-    code : ExecutionCode
-        Outcome code (success, error, etc.)
-    message : str
-        Diagnostic or informational message
-    payload : Any | None
-        Optional attached data (response, error detail, etc.)
     """
 
     code: ExecutionCode
     message: str
     payload: Any | None = None
 
-    # ─── Constructors / Factory methods
+    # --------------------------------------------------------------------------
+    # Factory Methods
+    # --------------------------------------------------------------------------
     @classmethod
     def ok(
         cls, message: str = "success", payload: Any | None = None
@@ -49,7 +42,9 @@ class ExecutionResult:
         """Non-recoverable failure."""
         return cls(code=ExecutionCode.INTERNAL_FAIL, message=message, payload=payload)
 
-    # ─── Helpers
+    # --------------------------------------------------------------------------
+    # Helpers
+    # --------------------------------------------------------------------------
     def succeeded(self) -> bool:
         """Return True if the operation succeeded."""
         return self.code == ExecutionCode.OK

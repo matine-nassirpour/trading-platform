@@ -9,7 +9,10 @@ import threading
 from quantum.infrastructure.observability.bootstrap.init_manager import (
     init_observability,
 )
-from quantum.shared.context.run_id import generate_run_id, get_run_id
+from quantum.infrastructure.observability.context.run_id import (
+    generate_run_id,
+    get_run_id,
+)
 
 # ╭─────────────────────────────────────────────────────────────────────────────╮
 # │ Global guards                                                               │

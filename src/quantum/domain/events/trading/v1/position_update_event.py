@@ -4,10 +4,10 @@ from typing import ClassVar
 from pydantic import field_validator
 
 from quantum.domain.events.base import BaseEvent
-from quantum.shared.serialization.schema_registry import register_event
-from quantum.shared.types.decimal_validators import PositiveDecimal
-from quantum.shared.types.enums import App
-from quantum.shared.types.value_objects import EpochMs, IntentId, PositionId, Symbol
+from quantum.domain.serialization import register_event
+from quantum.domain.types.decimal_validators import PositiveDecimal
+from quantum.domain.types.enums import App
+from quantum.domain.value_objects import EpochMs, IntentId, PositionId, Symbol
 
 
 @register_event

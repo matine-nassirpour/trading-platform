@@ -7,6 +7,10 @@ from opentelemetry import baggage
 from opentelemetry import context as otel_context
 from opentelemetry.propagate import get_global_textmap
 
+from quantum.infrastructure.observability.context.run_id import (
+    get_run_id,
+    run_id_context,
+)
 from quantum.infrastructure.observability.tracing.correlation.correlation_id import (
     correlation_context,
     get_correlation_id,
@@ -20,7 +24,6 @@ from quantum.infrastructure.observability.tracing.propagation import (
     use_context_snapshot,
     wrap_callable_with_context,
 )
-from quantum.shared.context.run_id import get_run_id, run_id_context
 
 # ╭─────────────────────────────────────────────────────────────────────────────╮
 # │ Helpers                                                                     │

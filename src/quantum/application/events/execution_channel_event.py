@@ -1,11 +1,11 @@
 from typing import ClassVar
 
+from quantum.application.contracts.execution_code import ExecutionCode
 from quantum.domain.events.base import BaseEvent
-from quantum.shared.serialization.schema_registry import register_event
-from quantum.shared.types.channels import ExecutionChannel
-from quantum.shared.types.enums import App
-from quantum.shared.types.execution import ExecutionCode
-from quantum.shared.types.value_objects import EpochMs
+from quantum.domain.serialization import register_event
+from quantum.domain.types.enums import App
+from quantum.domain.types.execution_channel import ExecutionChannel
+from quantum.domain.value_objects import EpochMs
 
 
 @register_event
