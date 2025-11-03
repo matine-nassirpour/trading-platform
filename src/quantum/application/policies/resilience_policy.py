@@ -28,7 +28,7 @@ class ResilienceConfig:
     base_backoff: float = 0.5
     backoff_cap: float = 5.0
     enable_jitter: bool = True
-    max_total_time: float | None = None  # Optional global deadline
+    max_total_time: float | None = None  # Optional global deadline (seconds)
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
@@ -51,6 +51,7 @@ class ResilienceLogger:
                     "operation": operation,
                     "attempt": attempt,
                     "latency_ms": latency_ms,
+                    "event": "success",
                 }
             },
         )
@@ -69,16 +70,25 @@ class ResilienceLogger:
                     "attempt": attempt,
                     "error_type": type(exc).__name__,
                     "latency_ms": latency_ms,
+                    "event": "failure",
                 }
             },
         )
 
     def log_retry(self, operation: str, attempt: int, delay: float) -> None:
         self._logger.debug(
-            "[Resilience] Retrying %s in %.2fs",
+            "[Resilience] Retrying %s in %.2fs (attempt=%d)",
             operation,
             delay,
-            extra={"attrs": {"operation": operation, "attempt": attempt}},
+            attempt,
+            extra={
+                "attrs": {
+                    "operation": operation,
+                    "attempt": attempt,
+                    "delay": delay,
+                    "event": "retry",
+                }
+            },
         )
 
     def log_abort(
@@ -87,16 +97,18 @@ class ResilienceLogger:
         level = logging.ERROR if exc else logging.WARNING
         self._logger.log(
             level,
-            "[Resilience] %s aborted after %d attempts (%.2fs total)",
+            "[Resilience] %s aborted after %d attempts (%.2fs total) — %s",
             operation,
             attempt,
             total_time,
+            type(exc).__name__ if exc else "max_time_exceeded",
             extra={
                 "attrs": {
                     "operation": operation,
                     "attempt": attempt,
                     "error": str(exc) if exc else None,
                     "total_time_s": total_time,
+                    "event": "abort",
                 }
             },
         )
@@ -128,6 +140,22 @@ class BackoffStrategy:
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Domain Exception for Aborts                                                │
+# ╰────────────────────────────────────────────────────────────────────────────╯
+class ResilienceAbortError(RuntimeError):
+    """Raised when retries are exhausted or deadline exceeded."""
+
+    def __init__(self, operation: str, attempts: int, cause: Exception | None = None):
+        msg = f"[{operation}] aborted after {attempts} attempts"
+        if cause:
+            msg += f" — cause: {type(cause).__name__}: {cause}"
+        super().__init__(msg)
+        self.operation = operation
+        self.attempts = attempts
+        self.__cause__ = cause  # keep original cause for traceback chain
+
+
+# ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Core Executor                                                              │
 # ╰────────────────────────────────────────────────────────────────────────────╯
 class ResilienceExecutor(Generic[P, R]):
@@ -153,37 +181,54 @@ class ResilienceExecutor(Generic[P, R]):
             jitter=self.cfg.enable_jitter,
         )
 
-    def _after_attempt(
-        self,
-        attempt: int,
-        start_global: float,
-        result: Any,
-        exc: Exception | None,
-    ) -> float:
-        """
-        Common post-attempt handler (sync + async).
-        Handles abort decision, logging, and backoff computation.
-        """
-        elapsed = time.time() - start_global
-        if self._should_abort(attempt, elapsed, result, exc):
-            self.logger.log_abort(self.operation, attempt, elapsed, exc)
-            raise exc
-
+    # --------------------------------------------------------------------------
+    # Internal Helpers
+    # --------------------------------------------------------------------------
+    def _compute_delay(self, attempt: int, elapsed_total: float) -> float:
+        """Compute backoff delay while respecting max_total_time if set."""
         delay = self.backoff.compute_delay(attempt)
-        self.logger.log_retry(self.operation, attempt, delay)
+        if (
+            self.cfg.max_total_time is not None
+            and elapsed_total + delay > self.cfg.max_total_time
+        ):
+            remaining = self.cfg.max_total_time - elapsed_total
+            return max(0.0, remaining)
         return delay
 
     def _should_abort(
-        self, attempt: int, elapsed: float, result: Any, exc: Exception | None
+        self, attempt: int, elapsed_total: float, result: Any, exc: Exception | None
     ) -> bool:
         """Determine if retries should stop based on policy or limits."""
         return (
             attempt >= self.cfg.max_retries
             or not self.policy.should_retry(result, exc)
-            or (self.cfg.max_total_time and elapsed > self.cfg.max_total_time)
+            or (self.cfg.max_total_time and elapsed_total >= self.cfg.max_total_time)
         )
 
-    # ─── Synchronous Execution
+    def _handle_post_attempt(
+        self,
+        attempt: int,
+        start_global: float,
+        result: Any,
+        last_exc: Exception | None,
+    ) -> float:
+        """
+        Common post-attempt handler (sync + async).
+        Handles abort decision, logging, and backoff computation.
+        Returns the next delay (seconds) or raises ResilienceAbortError.
+        """
+        elapsed = time.time() - start_global
+        if self._should_abort(attempt, elapsed, result, last_exc):
+            self.logger.log_abort(self.operation, attempt, elapsed, last_exc)
+            raise ResilienceAbortError(self.operation, attempt, last_exc) from last_exc
+
+        delay = self._compute_delay(attempt, elapsed)
+        self.logger.log_retry(self.operation, attempt, delay)
+        return delay
+
+    # --------------------------------------------------------------------------
+    # Synchronous Execution
+    # --------------------------------------------------------------------------
     def execute_sync(
         self, func: Callable[P, R], *args: P.args, **kwargs: P.kwargs
     ) -> R:
@@ -205,15 +250,18 @@ class ResilienceExecutor(Generic[P, R]):
                 latency_ms = int((time.time() - start) * 1000)
                 self.logger.log_success(self.operation, attempt, latency_ms)
                 return result
+
             except Exception as e:
-                exc = e
+                last_exc = e
                 latency_ms = int((time.time() - start) * 1000)
                 self.logger.log_failure(self.operation, attempt, e, latency_ms)
 
-            delay = self._after_attempt(attempt, start_global, result, exc)
+            delay = self._handle_post_attempt(attempt, start_global, result, last_exc)
             time.sleep(delay)
 
-    # ─── Asynchronous Execution
+    # --------------------------------------------------------------------------
+    # Asynchronous Execution
+    # --------------------------------------------------------------------------
     async def execute_async(
         self, func: Callable[P, Awaitable[R]], *args: P.args, **kwargs: P.kwargs
     ) -> R:
@@ -235,17 +283,19 @@ class ResilienceExecutor(Generic[P, R]):
                 latency_ms = int((time.time() - start) * 1000)
                 self.logger.log_success(self.operation, attempt, latency_ms)
                 return result
+
             except asyncio.CancelledError:
                 self.logger.log_abort(
                     self.operation, attempt, time.time() - start_global, None
                 )
                 raise
+
             except Exception as e:
-                exc = e
+                last_exc = e
                 latency_ms = int((time.time() - start) * 1000)
                 self.logger.log_failure(self.operation, attempt, e, latency_ms)
 
-            delay = self._after_attempt(attempt, start_global, result, exc)
+            delay = self._handle_post_attempt(attempt, start_global, result, last_exc)
             await asyncio.sleep(delay)
 
 
@@ -255,20 +305,21 @@ class ResilienceExecutor(Generic[P, R]):
 def resilient_call(
     func: Callable[P, R] | None = None,
     *,
-    timeout_runner: TimeoutRunnerPort,
+    timeout_runner: TimeoutRunnerPort | None = None,
     policy: RetryPolicy | None = None,
     cfg: ResilienceConfig | None = None,
 ) -> Callable[[Callable[P, R]], Callable[P, R]]:
-    """
-    Decorator for resilient synchronous operations.
-    Automatically derives the call name (no string literal required).
-    """
+    """Decorator for resilient synchronous operations."""
 
     def decorator(inner_func: Callable[P, R]) -> Callable[P, R]:
         op_name = inner_func.__qualname__
 
         @wraps(inner_func)
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+            if timeout_runner is None:
+                raise RuntimeError(
+                    f"[{op_name}] resilient_call used without timeout_runner injection"
+                )
             executor = ResilienceExecutor(
                 operation=op_name, timeout_runner=timeout_runner, policy=policy, cfg=cfg
             )
@@ -277,28 +328,27 @@ def resilient_call(
         wrapper._resilience_call_name = op_name
         return wrapper
 
-    if func is not None:
-        return decorator(func)
-    return decorator
+    return decorator if func is None else decorator(func)
 
 
 def resilient_async_call(
     func: Callable[P, Awaitable[R]] | None = None,
     *,
-    timeout_runner: TimeoutRunnerPort,
+    timeout_runner: TimeoutRunnerPort | None,
     policy: RetryPolicy | None = None,
     cfg: ResilienceConfig | None = None,
 ) -> Callable[[Callable[P, Awaitable[R]]], Callable[P, Awaitable[R]]]:
-    """
-    Decorator for resilient asynchronous operations.
-    Automatically derives the call name (no string literal required).
-    """
+    """Decorator for resilient asynchronous operations."""
 
     def decorator(inner_func: Callable[P, Awaitable[R]]) -> Callable[P, Awaitable[R]]:
         op_name = inner_func.__qualname__
 
         @wraps(inner_func)
         async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+            if timeout_runner is None:
+                raise RuntimeError(
+                    f"[{op_name}] resilient_async_call used without timeout_runner injection"
+                )
             executor = ResilienceExecutor(
                 operation=op_name, timeout_runner=timeout_runner, policy=policy, cfg=cfg
             )
@@ -307,6 +357,4 @@ def resilient_async_call(
         wrapper._resilience_call_name = op_name
         return wrapper
 
-    if func is not None:
-        return decorator(func)  # type: ignore[arg-type]
-    return decorator
+    return decorator if func is None else decorator(func)
