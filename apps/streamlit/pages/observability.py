@@ -10,6 +10,7 @@ import streamlit as st
 from opentelemetry import trace
 from prometheus_client import REGISTRY
 
+from apps.streamlit.bootstrap import init_streamlit
 from apps.streamlit.config_runtime import get_config
 from quantum.infrastructure.config.models.logging import LoggingSettings
 from quantum.infrastructure.config.runtime.state import CONFIG_STATE
@@ -34,6 +35,8 @@ LEVEL_EMOJI: Mapping[str, str] = {
 # One-time config initialization (cached per Streamlit session)
 CFG_BUNDLE = get_config()
 LOG_CFG = CFG_BUNDLE.logging
+
+init_streamlit()
 
 logger = logging.getLogger("quantum.ui.observability")
 tracer = trace.get_tracer("quantum.ui.observability")
@@ -308,64 +311,6 @@ def render_logging_counters() -> None:
     st.divider()
 
 
-def render_ui_latency_histograms() -> None:
-    q_ui_action_s = _histogram_quantiles("quantum_ui_action_latency_seconds")
-    q_ui_render_s = _histogram_quantiles("quantum_ui_page_render_seconds")
-
-    c1, c2 = st.columns(2)
-    with c1:
-        st.subheader("UI Action Latency (seconds)")
-        st.write(
-            {
-                k: (round(v, 2) if v is not None else None)
-                for k, v in q_ui_action_s.items()
-            }
-        )
-    with c2:
-        st.subheader("UI Page Render (seconds)")
-        st.write(
-            {
-                k: (round(v, 2) if v is not None else None)
-                for k, v in q_ui_render_s.items()
-            }
-        )
-    st.divider()
-
-
-def render_mt5_section() -> None:
-    st.subheader("MetaTrader5 Gateway Status")
-
-    cols = st.columns(4)
-    with cols[0]:
-        hb = _gauge_value("quantum_mt5_terminal_up")
-        st.metric("MT5 Terminal", "✅" if hb == 1 else ("❌" if hb == 0 else "—"))
-    with cols[1]:
-        st.metric(
-            "Positions Open", int(_gauge_value("quantum_mt5_positions_open") or 0)
-        )
-    with cols[2]:
-        st.metric(
-            "Order Rejects", int(_counter_value("quantum_mt5_order_reject_total") or 0)
-        )
-    with cols[3]:
-        st.metric("Requotes", int(_counter_value("quantum_mt5_requotes_total") or 0))
-
-    # New subsection: Execution Channels
-    st.markdown("#### Execution Channel Metrics")
-    exec_total = _counter_value("quantum_mt5_exec_channel_total") or 0
-    exec_lat_q = _histogram_quantiles("quantum_mt5_exec_channel_latency_ms")
-
-    col1, col2 = st.columns(2)
-    with col1:
-        st.metric("Total Exec Calls", int(exec_total))
-    with col2:
-        st.write(
-            {k: (round(v, 2) if v is not None else None) for k, v in exec_lat_q.items()}
-        )
-
-    st.divider()
-
-
 def render_log_tail(cfg: LoggingSettings) -> None:
     st.subheader("Recent logs (JSONL tail)")
 
@@ -404,7 +349,6 @@ def render_actions() -> None:
 
     with col_a:
         if st.button("Emit INFO log"):
-            # INFO can be sampled -> additional WARNING for visibility
             cid = new_correlation_id()
             with correlation_context(cid):
                 logger.info(
@@ -457,7 +401,6 @@ def render_actions() -> None:
 
     with col_d:
         if st.button("Burst (rollover)"):
-            # Generate multiple lines to trigger rotation if QUANTUM_LOG_MAX_BYTES is low
             payload = "X" * 512
             cid = new_correlation_id()
             with correlation_context(cid):
@@ -497,7 +440,7 @@ def render_bootstrap_diagnostics() -> None:
             for s in getattr(metric, "samples", ()):
                 if not s.name.endswith("_bucket"):
                     continue
-                subsystem = s.labels.get("subsystem") if s.labels else None  # type: ignore[attr-defined]
+                subsystem = s.labels.get("subsystem") if s.labels else None
                 if subsystem is None:
                     continue
                 subsystems.setdefault(subsystem, {})
@@ -513,7 +456,7 @@ def render_bootstrap_diagnostics() -> None:
             for s in getattr(metric, "samples", ()):
                 if not s.name.endswith("_total"):
                     continue
-                subsystem = s.labels.get("subsystem") if s.labels else None  # type: ignore[attr-defined]
+                subsystem = s.labels.get("subsystem") if s.labels else None
                 if subsystem is None:
                     continue
                 try:
@@ -563,8 +506,6 @@ def main() -> None:
     """Main entry point for the Observability dashboard."""
     render_kpis()
     render_logging_counters()
-    render_ui_latency_histograms()
-    render_mt5_section()
     render_log_tail(LOG_CFG)
     render_actions()
 
