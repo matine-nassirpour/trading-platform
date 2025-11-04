@@ -1,18 +1,13 @@
+from __future__ import annotations
+
 import logging
 import threading
 
-from quantum.infrastructure.observability.bootstrap.init_manager import (
-    init_observability,
-)
-from quantum.infrastructure.observability.context.run_id import (
-    generate_run_id,
-    get_run_id,
-)
+from runtime.runtime_composer import get_runtime
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Global guards                                                              │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-
 _BOOTSTRAP_LOCK = threading.Lock()
 _BOOTSTRAP_DONE = False
 
@@ -26,16 +21,15 @@ def init_streamlit() -> None:
 
     Ensures:
     - Observability stack (logging, tracing, metrics) is initialized once.
-    - MT5 terminals are bootstrapped for all configured execution channels.
-    - Safe re-entry on Streamlit "rerun" or multithreaded reload.
+    - A unique run_id is generated for each runtime.
+    - Safe re-entry across Streamlit reruns and multithreaded reloads.
     """
     global _BOOTSTRAP_DONE
 
     if _BOOTSTRAP_DONE:
-        return  # Fast path: already initialized
+        return  # Already initialized
 
     with _BOOTSTRAP_LOCK:
-        # Double-checked locking
         if _BOOTSTRAP_DONE:
             return
 
@@ -43,9 +37,8 @@ def init_streamlit() -> None:
             _perform_streamlit_init()
             _BOOTSTRAP_DONE = True
         except Exception as e:
-            # Ensure consistent recovery state (no partial init)
             logger = logging.getLogger("apps.streamlit.bootstrap")
-            logger.exception(f"Streamlit bootstrap failed: {e}")
+            logger.exception("Streamlit bootstrap failed: %s", e)
             raise
 
 
@@ -54,16 +47,14 @@ def init_streamlit() -> None:
 # ╰────────────────────────────────────────────────────────────────────────────╯
 def _perform_streamlit_init() -> None:
     """
-    Encapsulates the actual initialization logic (observability + MT5 terminals).
-    This function is invoked once under a thread-safe lock.
+    Encapsulates the actual initialization logic (observability, run_id, etc.).
     """
+    runtime = get_runtime()
 
-    if not get_run_id():
-        generate_run_id()
-
-    init_observability()
+    obs = runtime.observability_provider
+    obs.ensure_run_id()
+    obs.initialize_observability()
 
     logger = logging.getLogger("apps.streamlit.bootstrap")
     logger.info("Initializing Quantum Streamlit UI with observability stack...")
-
     logger.info("Quantum Streamlit bootstrap completed successfully.")

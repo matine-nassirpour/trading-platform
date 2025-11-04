@@ -62,6 +62,7 @@ layers =
     quantum.interfaces
     quantum.application
     quantum.domain
+    quantum.contracts
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
