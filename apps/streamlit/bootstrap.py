@@ -3,13 +3,20 @@ from __future__ import annotations
 import logging
 import threading
 
+from quantum.application.ports.outbound.observability_port import ObservabilityPort
 from runtime.runtime_composer import get_runtime
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Global guards                                                              │
 # ╰────────────────────────────────────────────────────────────────────────────╯
+_RUNTIME = get_runtime()
 _BOOTSTRAP_LOCK = threading.Lock()
 _BOOTSTRAP_DONE = False
+
+
+def get_runtime_context():
+    """Return the globally composed Quantum runtime context."""
+    return _RUNTIME
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
@@ -49,9 +56,7 @@ def _perform_streamlit_init() -> None:
     """
     Encapsulates the actual initialization logic (observability, run_id, etc.).
     """
-    runtime = get_runtime()
-
-    obs = runtime.observability_provider
+    obs: ObservabilityPort = _RUNTIME.observability_provider
     obs.ensure_run_id()
     obs.initialize_observability()
 

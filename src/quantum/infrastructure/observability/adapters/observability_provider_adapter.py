@@ -29,10 +29,12 @@ class ObservabilityProviderAdapter(ObservabilityPort):
         """Initialize the observability stack (logging, metrics, tracing, etc.)."""
         init_observability()
 
-    def ensure_run_id(self) -> None:
+    def ensure_run_id(self) -> str:
         """Ensure a unique run_id is available for the current process."""
-        if not get_run_id():
-            generate_run_id()
+        rid = get_run_id()
+        if not rid:
+            rid = generate_run_id()
+        return rid
 
     # --------------------------------------------------------------------------
     # Metrics access (Prometheus REGISTRY)

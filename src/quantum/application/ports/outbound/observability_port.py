@@ -9,7 +9,7 @@ class ObservabilityPort(Protocol):
         """Initialize logging, metrics, tracing, etc."""
         ...
 
-    def ensure_run_id(self) -> None:
+    def ensure_run_id(self) -> str:
         """Generate or retrieve a unique runtime run_id."""
         ...
 

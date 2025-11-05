@@ -17,8 +17,7 @@ from pathlib import Path
 import streamlit as st
 from opentelemetry import trace
 
-from apps.streamlit.bootstrap import init_streamlit
-from runtime.runtime_composer import get_runtime
+from apps.streamlit.bootstrap import get_runtime_context, init_streamlit
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Constants & Initialization                                                 │
@@ -32,7 +31,7 @@ LEVEL_EMOJI: Mapping[str, str] = {
     "CRITICAL": "🛑",
 }
 
-runtime = get_runtime()
+runtime = get_runtime_context()
 cfg_bundle = runtime.config_provider.get_bundle()
 log_cfg = cfg_bundle.logging
 log_provider = runtime.logging_provider
@@ -222,9 +221,6 @@ def render_actions() -> None:
                 log_provider.emit_info("log inside parent span", in_span=True)
                 with tracer.start_as_current_span("ui.demo.child"):
                     log_provider.emit_info("log inside child span", in_span_child=True)
-            tracer_provider = trace.get_tracer_provider()
-            if hasattr(tracer_provider, "force_flush"):
-                tracer_provider.force_flush()
             st.success("Span(s) + logs emitted ✔")
 
     with col_c:

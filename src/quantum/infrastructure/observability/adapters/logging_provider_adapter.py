@@ -15,6 +15,16 @@ class LoggingProviderAdapter(LoggingPort):
     def __init__(self) -> None:
         self._logger = logging.getLogger("quantum.logging.adapter")
 
+        if not self._logger.handlers:
+            handler = logging.StreamHandler()
+            handler.setLevel(logging.INFO)  # ensure deterministic emission level
+            fmt = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
+            handler.setFormatter(fmt)
+            self._logger.addHandler(handler)
+
+            self._logger.setLevel(logging.INFO)
+            self._logger.propagate = True
+
     # --------------------------------------------------------------------------
     # Log tailing (file read)
     # --------------------------------------------------------------------------
