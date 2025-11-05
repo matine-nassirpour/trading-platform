@@ -15,16 +15,6 @@ class LoggingProviderAdapter(LoggingPort):
     def __init__(self) -> None:
         self._logger = logging.getLogger("quantum.logging.adapter")
 
-        if not self._logger.handlers:
-            handler = logging.StreamHandler()
-            handler.setLevel(logging.INFO)  # ensure deterministic emission level
-            fmt = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
-            handler.setFormatter(fmt)
-            self._logger.addHandler(handler)
-
-            self._logger.setLevel(logging.INFO)
-            self._logger.propagate = True
-
     # --------------------------------------------------------------------------
     # Log tailing (file read)
     # --------------------------------------------------------------------------
@@ -80,8 +70,50 @@ class LoggingProviderAdapter(LoggingPort):
     # Structured logging API
     # --------------------------------------------------------------------------
     def emit_info(self, message: str, **attrs) -> None:
-        """Emit an INFO-level structured log message."""
-        self._logger.info(message, extra={"attrs": attrs})
+        """
+        Emit an INFO-level structured log message deterministically,
+        with proper redaction via each handler’s formatter chain.
+        """
+        try:
+            record = logging.LogRecord(
+                name="quantum.logging.adapter",
+                level=logging.INFO,
+                pathname=__file__,
+                lineno=0,
+                msg=message,
+                args=(),
+                exc_info=None,
+                func=None,
+            )
+            record.attrs = attrs
+
+            root_logger = logging.getLogger()
+            for h in root_logger.handlers:
+                try:
+                    h.acquire()
+
+                    # Apply each handler's filter chain manually
+                    for flt in getattr(h, "filters", []):
+                        if not flt.filter(record):
+                            break
+
+                    # Apply formatter if present (for redaction, schema)
+                    fmt = getattr(h, "formatter", None)
+                    if fmt:
+                        try:
+                            fmt.format(record)  # triggers formatter/redactor logic
+                        except Exception:
+                            pass
+
+                    # Emit directly to handler (thread-safe, deterministic)
+                    h.emit(record)
+                    if hasattr(h, "flush"):
+                        h.flush()
+                finally:
+                    h.release()
+
+        except Exception as exc:
+            logging.getLogger(__name__).warning("emit_info failed: %s", exc)
 
     def emit_event(self, payload: dict) -> None:
         """Emit an audit/telemetry event via the event emitter."""

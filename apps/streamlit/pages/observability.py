@@ -210,9 +210,6 @@ def render_actions() -> None:
                 action="emit_info",
                 secret="fake-secret",  # pragma: allowlist secret
             )
-            log_provider.emit_info(
-                "demo info log (visible)", action="emit_info_visible"
-            )
             st.success("INFO/Warning log emitted ✔")
 
     with col_b:
