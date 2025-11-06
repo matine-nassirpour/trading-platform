@@ -37,14 +37,12 @@ except ImportError:
     dotenv_values = None
     find_dotenv = None
 
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Module-level logger                                                        │
-# ╰────────────────────────────────────────────────────────────────────────────╯
+
 _LOGGER: Final = logging.getLogger("quantum.config.env_loader")
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Utility functions                                                          │
+# │ Internal Helpers                                                           │
 # ╰────────────────────────────────────────────────────────────────────────────╯
 def _merge_envs(*layers: Mapping[str, str | None]) -> dict[str, str]:
     """
@@ -91,6 +89,64 @@ def _resolve_env_path(
     return Path.cwd(), None
 
 
+def _load_from_cache(
+    state: ConfigState, apply: bool, override: bool
+) -> dict[str, str] | None:
+    """Return cached environment if valid; apply optionally."""
+    if not state.has_valid_cache():
+        return None
+
+    cached = state.get_env_cache()
+    _LOGGER.debug("Reusing cached environment (pid=%s)", os.getpid())
+
+    if apply:
+        _apply_env_vars(cached, apply=True, override=override)
+        _LOGGER.debug("Applied cached environment to os.environ (from cache)")
+
+    return cached
+
+
+def _load_from_files(
+    root: str | Path | None, env_file: str | Path | None
+) -> tuple[dict[str, str], Path]:
+    """Load environment dictionaries from .env files."""
+    if dotenv_values is None:
+        _LOGGER.warning("python-dotenv not installed; skipping .env loading")
+        return dict(os.environ), Path.cwd()
+
+    base_dir, explicit_file = _resolve_env_path(root, env_file)
+    base_dir = base_dir or Path.cwd()
+
+    env_base = (
+        dotenv_values(explicit_file)
+        if explicit_file
+        else dotenv_values(base_dir / ".env")
+    )
+    env_base = env_base or {}
+
+    current_env = os.getenv("QUANTUM_ENV") or env_base.get("QUANTUM_ENV") or "dev"
+    env_specific = dotenv_values(base_dir / f".env.{current_env}") or {}
+    env_local = dotenv_values(base_dir / ".env.local") or {}
+
+    merged = _merge_envs(env_base, env_specific, env_local)
+    return merged, base_dir
+
+
+def _apply_env_vars(
+    envs: Mapping[str, str | None], apply: bool, override: bool
+) -> None:
+    """Apply environment variables to os.environ deterministically."""
+    if not apply:
+        return
+
+    for k, v in envs.items():
+        if v is None:
+            continue
+        if not override and k in os.environ:
+            continue
+        os.environ[k] = v
+
+
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Core Loader                                                                │
 # ╰────────────────────────────────────────────────────────────────────────────╯
@@ -121,65 +177,14 @@ def load_env(
     pid = os.getpid()
     state = ConfigState.instance()
 
-    def _load_logic() -> dict[str, str]:
-        # ----------------------------------------------------------------------
-        # Step 1: fast path (reuse cache if valid)
-        # ----------------------------------------------------------------------
-        if state.has_valid_cache():
-            cached = state.get_env_cache()
-            _LOGGER.debug("Reusing cached environment (pid=%s)", pid)
-
-            if apply:
-                for k, v in cached.items():
-                    if v is None:
-                        continue
-                    if not override and k in os.environ:
-                        continue
-                    os.environ[k] = v
-                _LOGGER.debug("Applied cached environment to os.environ (apply=True)")
-
+    def _execute_load() -> dict[str, str]:
+        cached = _load_from_cache(state, apply, override)
+        if cached is not None:
             return cached
 
-        # ----------------------------------------------------------------------
-        # Step 2: resolve file paths
-        # ----------------------------------------------------------------------
-        if dotenv_values is None:
-            _LOGGER.warning("python-dotenv not installed; skipping .env loading")
-            merged = dict(os.environ)
-            base_dir = Path.cwd()
-        else:
-            base_dir, explicit_file = _resolve_env_path(root, env_file)
-            base_dir = base_dir or Path.cwd()
+        merged, base_dir = _load_from_files(root, env_file)
+        _apply_env_vars(merged, apply, override)
 
-            env_base = (
-                dotenv_values(explicit_file)
-                if explicit_file
-                else dotenv_values(base_dir / ".env")
-            ) or {}
-
-            current_env = (
-                os.getenv("QUANTUM_ENV") or env_base.get("QUANTUM_ENV") or "dev"
-            )
-
-            env_specific = dotenv_values(base_dir / f".env.{current_env}") or {}
-            env_local = dotenv_values(base_dir / ".env.local") or {}
-
-            merged = _merge_envs(env_base, env_specific, env_local)
-
-        # ----------------------------------------------------------------------
-        # Step 3: apply to os.environ (optional, explicit)
-        # ----------------------------------------------------------------------
-        if apply:
-            for k, v in merged.items():
-                if v is None:
-                    continue
-                if not override and k in os.environ:
-                    continue
-                os.environ[k] = v
-
-        # ----------------------------------------------------------------------
-        # Step 4: cache in ConfigState
-        # ----------------------------------------------------------------------
         state.update(base_dir=base_dir, loaded_pid=pid, env_cache=merged)
         _LOGGER.info(
             "Environment loaded",
@@ -195,4 +200,4 @@ def load_env(
         return merged
 
     # Execute atomically under internal lock
-    return state.access(_load_logic)
+    return state.access(_execute_load)

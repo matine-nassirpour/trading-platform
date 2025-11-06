@@ -66,6 +66,9 @@ class ObservabilityAdapter(ObservabilityPort):
         """Alias to get_gauge_value (for counter metrics)."""
         return self.get_gauge_value(name)
 
+    # --------------------------------------------------------------------------
+    # Histogram quantiles
+    # --------------------------------------------------------------------------
     def get_histogram_quantiles(
         self,
         metric_name: str,
@@ -73,43 +76,70 @@ class ObservabilityAdapter(ObservabilityPort):
     ) -> dict[str, float | None]:
         """Approximate quantiles from histogram buckets."""
         try:
-            buckets: dict[float, float] = {}
-            total_count = 0.0
-
-            for metric in REGISTRY.collect():
-                if getattr(metric, "name", None) != metric_name:
-                    continue
-                for s in getattr(metric, "samples", ()):
-                    n = s.name
-                    if n.endswith("_bucket"):
-                        le = s.labels.get("le") if s.labels else None
-                        if le is None:
-                            continue
-                        bound = float("inf") if le == "+Inf" else float(le)
-                        buckets[bound] = buckets.get(bound, 0.0) + float(s.value)
-                    elif n.endswith("_count"):
-                        total_count = max(total_count, float(s.value))
-
+            buckets, total_count = self._accumulate_histogram_buckets(metric_name)
             sorted_bounds = sorted(buckets.items(), key=lambda kv: kv[0])
             total = total_count or (sorted_bounds[-1][1] if sorted_bounds else 0.0)
-            result: dict[str, float | None] = {}
-
-            for q in quantiles:
-                rank = q * total
-                prev_bound, prev_count = 0.0, 0.0
-                value = None
-                for upper_bound, cum in sorted_bounds:
-                    if rank <= cum:
-                        in_bucket = cum - prev_count
-                        if in_bucket > 0:
-                            frac = (rank - prev_count) / in_bucket
-                            value = prev_bound + frac * (upper_bound - prev_bound)
-                        else:
-                            value = upper_bound
-                        break
-                    prev_bound, prev_count = upper_bound, cum
-                result[f"p{int(q * 100)}"] = value
-            return result
+            return self._compute_quantiles(sorted_bounds, quantiles, total)
         except Exception as exc:
             self._logger.debug("Failed to compute histogram quantiles: %s", exc)
             return {f"p{int(q * 100)}": None for q in quantiles}
+
+    def _accumulate_histogram_buckets(
+        self, metric_name: str
+    ) -> tuple[dict[float, float], float]:
+        """
+        Collect and aggregate bucket counts and totals for a given histogram metric.
+        Returns (buckets, total_count).
+        """
+        buckets: dict[float, float] = {}
+        total_count = 0.0
+
+        for metric in self._collect_histogram_samples(metric_name):
+            for s in getattr(metric, "samples", ()):
+                n = s.name
+                if n.endswith("_bucket"):
+                    le = s.labels.get("le") if s.labels else None
+                    if le is None:
+                        continue
+                    bound = float("inf") if le == "+Inf" else float(le)
+                    buckets[bound] = buckets.get(bound, 0.0) + float(s.value)
+                elif n.endswith("_count"):
+                    total_count = max(total_count, float(s.value))
+
+        return buckets, total_count
+
+    @staticmethod
+    def _collect_histogram_samples(metric_name: str):
+        """Return all metrics matching the given histogram name."""
+        for metric in REGISTRY.collect():
+            if getattr(metric, "name", None) == metric_name:
+                yield metric
+
+    @staticmethod
+    def _compute_quantiles(
+        sorted_bounds: list[tuple[float, float]],
+        quantiles: tuple[float, ...],
+        total: float,
+    ) -> dict[str, float | None]:
+        """
+        Compute interpolated quantiles from cumulative bucket data.
+        """
+        result: dict[str, float | None] = {}
+        for q in quantiles:
+            rank = q * total
+            prev_bound, prev_count = 0.0, 0.0
+            value = None
+
+            for upper_bound, cum in sorted_bounds:
+                if rank <= cum:
+                    in_bucket = cum - prev_count
+                    if in_bucket > 0:
+                        frac = (rank - prev_count) / in_bucket
+                        value = prev_bound + frac * (upper_bound - prev_bound)
+                    else:
+                        value = upper_bound
+                    break
+                prev_bound, prev_count = upper_bound, cum
+
+            result[f"p{int(q * 100)}"] = value
+        return result

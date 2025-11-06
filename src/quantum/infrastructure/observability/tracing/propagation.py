@@ -142,6 +142,57 @@ def capture_context_snapshot() -> ContextSnapshot:
     )
 
 
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Internal Helpers                                                           │
+# ╰────────────────────────────────────────────────────────────────────────────╯
+def _enter_app_contexts(snap: ContextSnapshot):
+    rid_cm = run_id_context(snap.run_id) if snap.run_id else None
+    cid_cm = correlation_context(snap.correlation_id) if snap.correlation_id else None
+
+    if rid_cm:
+        rid_cm.__enter__()
+    if cid_cm:
+        cid_cm.__enter__()
+
+    return rid_cm, cid_cm
+
+
+def _enter_otel_or_baggage(
+    snap: ContextSnapshot,
+    attach_otel: bool,
+    ensure_baggage_from_ids: bool,
+):
+    otel_token: Token[OTelContext] | None = None
+    baggage_cm = None
+
+    if attach_otel and snap.otel is not None:
+        otel_token = otel_context.attach(snap.otel)
+    elif ensure_baggage_from_ids:
+        baggage_cm = baggage_context_from_ids()
+        baggage_cm.__enter__()
+
+    return otel_token, baggage_cm
+
+
+def _exit_all_contexts(
+    rid_cm,
+    cid_cm,
+    otel_token: Token[OTelContext] | None,
+    baggage_cm,
+) -> None:
+    if otel_token is not None:
+        otel_context.detach(otel_token)
+    if baggage_cm is not None:
+        baggage_cm.__exit__(None, None, None)
+    if cid_cm:
+        cid_cm.__exit__(None, None, None)
+    if rid_cm:
+        rid_cm.__exit__(None, None, None)
+
+
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Main ContextManager                                                        │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 @contextmanager
 def use_context_snapshot(
     snap: ContextSnapshot,
@@ -158,38 +209,19 @@ def use_context_snapshot(
 
     Also sets app ContextVars (run_id/correlation_id) for the duration.
     """
-    # App ContextVars (enter/exit via their own context managers)
-    rid_cm = run_id_context(snap.run_id) if snap.run_id else None
-    cid_cm = correlation_context(snap.correlation_id) if snap.correlation_id else None
-
-    otel_token: Token[OTelContext] | None = None
-    baggage_cm = None
-
+    rid_cm, cid_cm = _enter_app_contexts(snap)
+    otel_token, baggage_cm = _enter_otel_or_baggage(
+        snap, attach_otel, ensure_baggage_from_ids
+    )
     try:
-        if rid_cm:
-            rid_cm.__enter__()
-        if cid_cm:
-            cid_cm.__enter__()
-
-        if attach_otel and snap.otel is not None:
-            otel_token = otel_context.attach(snap.otel)
-        elif ensure_baggage_from_ids:
-            # Ensure baggage keys exist even without full OTel context attach.
-            baggage_cm = baggage_context_from_ids()
-            baggage_cm.__enter__()
-
         yield
     finally:
-        if otel_token is not None:
-            otel_context.detach(otel_token)
-        if baggage_cm is not None:
-            baggage_cm.__exit__(None, None, None)
-        if cid_cm:
-            cid_cm.__exit__(None, None, None)
-        if rid_cm:
-            rid_cm.__exit__(None, None, None)
+        _exit_all_contexts(rid_cm, cid_cm, otel_token, baggage_cm)
 
 
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Concurrency utilities                                                      │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 def run_in_context(snap: ContextSnapshot, fn: Callable[[], T]) -> T:
     """
     Run a no-arg callable under a given snapshot (helpers for thread entrypoints).
@@ -208,21 +240,14 @@ class ContextPropagatingThread(threading.Thread):
         t.start(); t.join()
     """
 
-    def __init__(
-        self,
-        *args,
-        snapshot: ContextSnapshot | None = None,
-        **kwargs,
-    ):
+    def __init__(self, *args, snapshot: ContextSnapshot | None = None, **kwargs):
         super().__init__(*args, **kwargs)
-        # If no snapshot provided, capture at construction time (parent thread).
         self._snapshot = snapshot or capture_context_snapshot()
 
     def run(self) -> None:
         target = getattr(self, "_target", None)
         if target is None:
             return
-        # Re-bind context for the lifetime of this thread execution.
         with use_context_snapshot(self._snapshot):
             target(*getattr(self, "_args", ()), **getattr(self, "_kwargs", {}))
 

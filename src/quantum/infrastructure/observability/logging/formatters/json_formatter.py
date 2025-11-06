@@ -109,9 +109,7 @@ def _extract_trace_context() -> tuple[str | None, str | None, bool | None]:
     # Sampling flag
     tf = getattr(sc, "trace_flags", None)
     sampled: bool | None = None
-    if tf is None:
-        sampled = None
-    else:
+    if tf is not None:
         attr = getattr(tf, "sampled", None)
         if isinstance(attr, bool):
             sampled = attr
@@ -138,7 +136,6 @@ class JsonFormatter(logging.Formatter):
 
     def format(self, record: logging.LogRecord) -> str:
         trace_id, span_id, is_sampled = _extract_trace_context()
-
         ts_unix_ms = int(record.created * 1000)
         ts_mono_ms = getattr(record, "ts_monotonic_ms", now_mono_ms())
 
@@ -185,30 +182,39 @@ class JsonFormatter(logging.Formatter):
             )
 
     # --------------------------------------------------------------------------
-    # Extractors
+    # Internal Helpers
     # --------------------------------------------------------------------------
     @staticmethod
-    def _extract_attrs(record: logging.LogRecord) -> dict[str, Any]:
-        """Extracts and sanitizes custom attributes from a LogRecord."""
+    def _filter_record_fields(record: logging.LogRecord) -> dict[str, Any]:
+        """Filter out excluded or reserved fields."""
+        return {
+            k: v
+            for k, v in record.__dict__.items()
+            if k not in _EXCLUDED_STD_FIELDS
+            and k not in {"service_name", "service_version", "service_namespace", "env"}
+        }
+
+    @staticmethod
+    def _normalize_field(key: str, value: Any, attrs: dict[str, Any]) -> None:
+        """Normalize special cases: exception blocks and embedded attrs."""
+        if key == "exception":
+            try:
+                if isinstance(value, dict):
+                    attrs["exception_obj"] = value
+                elif value is not None:
+                    attrs["exception_text"] = str(value)
+            except Exception:
+                pass
+        elif key == "attrs" and isinstance(value, dict):
+            attrs.update(value)
+        else:
+            attrs[key] = value
+
+    def _extract_attrs(self, record: logging.LogRecord) -> dict[str, Any]:
+        """Extract and sanitize custom attributes from a LogRecord."""
         attrs: dict[str, Any] = {}
-        for k, v in record.__dict__.items():
-            if k in _EXCLUDED_STD_FIELDS:
-                continue
-            if k == "exception":
-                try:
-                    if isinstance(v, dict):
-                        attrs["exception_obj"] = v
-                    elif v is not None:
-                        attrs["exception_text"] = str(v)
-                except Exception:
-                    pass
-                continue
-            if k in {"service_name", "service_version", "service_namespace", "env"}:
-                continue
-            if k == "attrs" and isinstance(v, dict):
-                attrs.update(v)
-                continue
-            attrs[k] = v
+        for k, v in self._filter_record_fields(record).items():
+            self._normalize_field(k, v, attrs)
         return _json_sanitize(attrs)
 
     def _extract_exception_block(self, record: logging.LogRecord) -> dict[str, Any]:
@@ -233,9 +239,6 @@ class JsonFormatter(logging.Formatter):
             "exception_stacktrace": exception_stacktrace,
         }
 
-    # --------------------------------------------------------------------------
-    # Fallback payload
-    # --------------------------------------------------------------------------
     @staticmethod
     def _build_fallback_payload(
         record: logging.LogRecord,
