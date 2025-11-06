@@ -8,6 +8,7 @@ Validate the cross-model coherence of configuration schemas
 from textwrap import dedent
 
 import pytest
+
 from pydantic import ValidationError
 
 from quantum.infrastructure.config.models.core import CoreSettings

@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import logging
+
 from concurrent.futures import ThreadPoolExecutor
 
 import pytest
+
 from opentelemetry import trace
 
 from quantum.infrastructure.observability.tracing.correlation.correlation_id import (

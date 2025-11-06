@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import json
 import logging
+
 from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
 
 import quantum.infrastructure.observability.logging.handlers.audit_sink_handler as audit_mod
+
 from quantum.infrastructure.observability.logging.handlers.audit_sink_handler import (
     AuditEventFileHandler,
 )

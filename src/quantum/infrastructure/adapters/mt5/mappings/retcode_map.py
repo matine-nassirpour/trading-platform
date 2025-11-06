@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import logging
 import threading
+
 from typing import Final
 
 from quantum.application.contracts.execution_code import ExecutionCode

@@ -4,6 +4,7 @@ import logging
 import os
 import socket
 import urllib.request
+
 from typing import Final
 
 import pytest

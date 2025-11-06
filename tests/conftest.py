@@ -16,6 +16,7 @@ import sys
 import tempfile
 import threading
 import time
+
 from collections.abc import Callable, Generator
 from contextlib import contextmanager, suppress
 from pathlib import Path
@@ -133,6 +134,7 @@ def clean_registry(monkeypatch):
     """
     try:
         import prometheus_client
+
         from prometheus_client import CollectorRegistry
         from prometheus_client import core as pc_core
     except Exception:

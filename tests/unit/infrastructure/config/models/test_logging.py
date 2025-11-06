@@ -1,6 +1,7 @@
 import os
 
 import pytest
+
 from pydantic import ValidationError
 
 from quantum.infrastructure.config.models.logging import LoggingSettings

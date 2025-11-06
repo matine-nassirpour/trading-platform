@@ -1,5 +1,6 @@
 import re
 import uuid
+
 from datetime import datetime, timezone
 
 _SAFE = re.compile(r"^[A-Za-z0-9\-]+$")

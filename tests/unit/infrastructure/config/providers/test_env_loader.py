@@ -1,4 +1,5 @@
 import os
+
 from pathlib import Path
 
 from quantum.infrastructure.config.providers import env_loader

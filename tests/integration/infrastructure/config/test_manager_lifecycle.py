@@ -8,9 +8,11 @@ and thread-safe access to cached configuration instances.
 
 import os
 import threading
+
 from pathlib import Path
 
 import pytest
+
 from pydantic import ValidationError
 
 from quantum.infrastructure.config.models.core import CoreSettings

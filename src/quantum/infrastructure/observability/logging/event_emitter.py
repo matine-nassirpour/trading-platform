@@ -1,4 +1,5 @@
 import logging
+
 from collections.abc import Mapping
 from typing import Any, Final
 

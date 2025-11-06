@@ -1,6 +1,7 @@
 import json
 import logging
 import re
+
 from typing import Any, Final
 
 from quantum.infrastructure.observability.metrics.collectors.health_collector import (

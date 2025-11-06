@@ -10,11 +10,13 @@ from __future__ import annotations
 import json
 import logging
 import time
+
 from collections.abc import Mapping
 from datetime import datetime, timezone
 from pathlib import Path
 
 import streamlit as st
+
 from opentelemetry import trace
 
 from apps.streamlit.bootstrap import get_runtime_context, init_streamlit

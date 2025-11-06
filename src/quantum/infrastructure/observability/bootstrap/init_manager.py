@@ -1,5 +1,6 @@
 import logging
 import threading
+
 from contextlib import contextmanager, suppress
 
 from quantum.infrastructure.config.runtime.manager import ConfigManager

@@ -22,6 +22,7 @@ Design Principles
 from __future__ import annotations
 
 import logging
+
 from dataclasses import dataclass
 
 from quantum.application.ports.outbound.config_port import ConfigPort

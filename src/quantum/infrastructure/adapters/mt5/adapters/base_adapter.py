@@ -1,5 +1,6 @@
 import logging
 import threading
+
 from types import ModuleType
 
 from quantum.application.contracts.execution_request import (

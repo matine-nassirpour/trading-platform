@@ -25,6 +25,7 @@ from __future__ import annotations
 import hashlib
 import json
 import sys
+
 from datetime import datetime
 from importlib import import_module
 from pathlib import Path
@@ -81,7 +82,9 @@ def main() -> None:
             "model": "LogPayloadV1",
             "schema_version": "1.0",
             "generator": "Quantum Observability Schema Generator",
-            "commit_instructions": "Commit this file under version control at docs/observability/log_schema_v1.json",
+            "commit_instructions": (
+                "Commit this file under version control at docs/observability/log_schema_v1.json"
+            ),
             "sha256": schema_hash,
         },
         **schema_dict,

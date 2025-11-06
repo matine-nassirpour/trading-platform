@@ -18,6 +18,7 @@ import ctypes
 import fnmatch
 import logging
 import os
+
 from collections.abc import Callable, Sequence
 from ctypes import wintypes
 from functools import lru_cache

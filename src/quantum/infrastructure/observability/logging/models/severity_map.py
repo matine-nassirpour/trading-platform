@@ -9,6 +9,7 @@ ensure consistent interpretation of log severity.
 from __future__ import annotations
 
 import logging
+
 from typing import Final
 
 from quantum.infrastructure.observability.logging.models.log_payload_v1 import (

@@ -1,6 +1,7 @@
 import json
 import logging
 import socket
+
 from contextlib import suppress
 from typing import Any, Final
 

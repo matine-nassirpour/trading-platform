@@ -1,4 +1,5 @@
 import re
+
 from typing import Final
 
 from quantum.infrastructure.config.runtime.manager import ConfigManager

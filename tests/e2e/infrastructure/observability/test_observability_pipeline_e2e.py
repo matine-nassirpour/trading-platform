@@ -19,12 +19,14 @@ import json
 import logging
 import os
 import time
+
 from collections.abc import Callable
 from contextlib import suppress
 from pathlib import Path
 from typing import Any
 
 import pytest
+
 from opentelemetry import trace
 
 from quantum.infrastructure.observability.bootstrap.health_registry import (

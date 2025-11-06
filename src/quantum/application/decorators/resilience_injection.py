@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import inspect
+
 from collections.abc import Callable
 from functools import wraps
 from typing import TypeVar, cast

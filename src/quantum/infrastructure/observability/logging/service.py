@@ -1,5 +1,6 @@
 import logging
 import sys
+
 from contextlib import suppress
 
 from quantum.infrastructure.config.models.core import CoreSettings

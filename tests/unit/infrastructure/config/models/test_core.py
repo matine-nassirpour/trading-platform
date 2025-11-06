@@ -1,4 +1,5 @@
 import pytest
+
 from pydantic import ValidationError
 
 from quantum.infrastructure.config.models.core import CoreSettings

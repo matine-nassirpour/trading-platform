@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+
 from typing import Any, Protocol
 
 from quantum.application.contracts.execution_code import ExecutionCode

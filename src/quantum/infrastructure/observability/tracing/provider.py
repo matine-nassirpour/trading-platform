@@ -1,6 +1,7 @@
 import atexit
 import logging
 import socket
+
 from typing import Any, cast
 
 from opentelemetry import trace as _trace
@@ -178,8 +179,9 @@ def init_tracing(
             SERVICE_VERSION: core_settings.quantum_app_version,
             SERVICE_NAMESPACE: core_settings.quantum_ns,
             DEPLOYMENT_ENVIRONMENT: core_settings.quantum_env,
-            SERVICE_INSTANCE_ID: core_settings.quantum_instance_id
-            or socket.gethostname(),
+            SERVICE_INSTANCE_ID: (
+                core_settings.quantum_instance_id or socket.gethostname()
+            ),
         }
     )
 
