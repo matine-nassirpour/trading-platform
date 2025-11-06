@@ -9,7 +9,7 @@ from quantum.application.ports.outbound.logging_port import LoggingPort
 from quantum.infrastructure.observability.logging.event_emitter import emit_event
 
 
-class LoggingProviderAdapter(LoggingPort):
+class LoggingAdapter(LoggingPort):
     """Concrete implementation of LoggingPort using Quantum's observability stack."""
 
     def __init__(self) -> None:

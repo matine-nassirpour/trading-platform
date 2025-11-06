@@ -27,14 +27,10 @@ from dataclasses import dataclass
 from quantum.application.ports.outbound.config_port import ConfigPort
 from quantum.application.ports.outbound.logging_port import LoggingPort
 from quantum.application.ports.outbound.observability_port import ObservabilityPort
-from quantum.infrastructure.config.adapters.config_provider_adapter import (
-    ConfigProviderAdapter,
-)
-from quantum.infrastructure.observability.adapters.logging_provider_adapter import (
-    LoggingProviderAdapter,
-)
-from quantum.infrastructure.observability.adapters.observability_provider_adapter import (
-    ObservabilityProviderAdapter,
+from quantum.infrastructure.config.adapters.config_adapter import ConfigAdapter
+from quantum.infrastructure.observability.adapters.logging_adapter import LoggingAdapter
+from quantum.infrastructure.observability.adapters.observability_adapter import (
+    ObservabilityAdapter,
 )
 
 
@@ -83,9 +79,9 @@ class RuntimeComposer:
         logger = logging.getLogger(__name__)
         logger.info("Assembling Quantum runtime context...")
 
-        config_provider = ConfigProviderAdapter()
-        logging_provider = LoggingProviderAdapter()
-        observability_provider = ObservabilityProviderAdapter()
+        config_provider = ConfigAdapter()
+        logging_provider = LoggingAdapter()
+        observability_provider = ObservabilityAdapter()
 
         cls._instance = QuantumRuntimeContext(
             config_provider=config_provider,

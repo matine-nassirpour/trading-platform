@@ -22,7 +22,7 @@ _logger = logging.getLogger(__name__)
 _INIT_LOCK = RLock()
 
 
-class ConfigProviderAdapter(ConfigPort):
+class ConfigAdapter(ConfigPort):
     """
     Concrete implementation of ConfigPort backed by the
     Quantum infrastructure configuration system.

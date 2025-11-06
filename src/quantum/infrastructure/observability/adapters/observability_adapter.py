@@ -16,7 +16,7 @@ from quantum.infrastructure.observability.context.run_id import (
 )
 
 
-class ObservabilityProviderAdapter(ObservabilityPort):
+class ObservabilityAdapter(ObservabilityPort):
     """Concrete adapter implementing observability access and telemetry control."""
 
     def __init__(self) -> None:
