@@ -59,7 +59,7 @@ check-ci: pre-commit test ## Run CI-equivalent checks locally
 	@echo "All CI checks completed"
 
 ui: ## Launch Streamlit
-	@set PYTHONPATH=src;. && poetry run streamlit run apps/streamlit/pages/observability.py --server.headless true
+	@set PYTHONPATH=src;. && poetry run streamlit run apps/streamlit/pages/observability_page.py --server.headless true
 
 tree: ## Print repo tree into docs/architecture/tree.txt
 	@$(PS) "New-Item -ItemType Directory -Force -Path 'docs/architecture' | Out-Null"
