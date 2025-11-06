@@ -13,9 +13,10 @@ requires-python = ">=3.11,<3.12"
 readme = "README.md"
 packages = [{ include = "quantum", from = "src" }]
 
-# ------------------------------------------------------------------------------
-# Python runtime policy
-# ------------------------------------------------------------------------------
+
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Python runtime policy                                                      │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 [tool.poetry.dependencies]
 pydantic = "^2.11.9"
 pydantic-settings = "^2.11.0"
@@ -26,9 +27,10 @@ streamlit = "^1.50.0"
 python-dotenv = "^1.1.1"
 metatrader5 = "^5.0.5328"
 
-# ------------------------------------------------------------------------------
-# Dev toolchain (QA / security / lint / typing / tests)
-# ------------------------------------------------------------------------------
+
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Dev toolchain (QA / security / lint / typing / tests)                      │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^4.3.0"
 detect-secrets = "^1.5.0"
@@ -51,7 +53,7 @@ build-backend = "poetry.core.masonry.api"
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Code Style & Lint                                                          │
+# │ BLACK — Canonical Code Formatter                                           │
 # ╰────────────────────────────────────────────────────────────────────────────╯
 [tool.black]
 line-length = 88
@@ -60,15 +62,25 @@ skip-string-normalization = false
 skip-magic-trailing-comma = false
 preview = true
 
+
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ ISORT — Canonical Import Organization                                      │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 [tool.isort]
 profile = "black"
 line_length = 88
 multi_line_output = 3
+
+# Trailing commas and parentheses for clarity and consistency
 include_trailing_comma = true
 use_parentheses = true
+
+# Advanced import control
 combine_as_imports = false
 force_grid_wrap = 0
 ensure_newline_before_comments = true
+
+# Import section hierarchy (matches Clean Architecture layering)
 sections = ["FUTURE", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
 known_first_party = ["quantum"]
 default_section = "THIRDPARTY"
@@ -76,25 +88,42 @@ lines_between_types = 1
 case_sensitive = true
 atomic = true
 
+
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ RUFF — Unified Static Analysis and Linting Engine                          │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 [tool.ruff]
-select = ["F", "W", "B", "UP", "I", "C90"]
-ignore = ["I001", "I002"]  # Let isort handle the imports
+select = [
+    "F",   # Pyflakes: syntax and import errors
+    "W",   # PEP 8 warnings (style)
+    "B",   # Bugbear: common pitfalls and antipatterns
+    "UP",  # Pyupgrade: enforce modern syntax
+    "I",   # Import checks (supplemental to Isort)
+    "C90"  # Cyclomatic complexity enforcement
+]
+ignore = ["I001", "I002"]  # Ignore rules delegated to Isort
 fix = true
 line-length = 88
 target-version = "py311"
 respect-gitignore = true
 format.preview = true
 
+# ------------------------------------------------------------------------------
+# RUFF MCCABE — Cyclomatic Complexity Limitation
+# ------------------------------------------------------------------------------
 [tool.ruff.lint.mccabe]
 max-complexity = 8
 
+# ------------------------------------------------------------------------------
+# RUFF — Per-Directory Linting Exceptions
+# ------------------------------------------------------------------------------
 [tool.ruff.lint.per-file-ignores]
 # Rule C901 (complexity) only for the core architecture
-"tests/**/*.py" = ["C901"]
+"tests/**/*.py"   = ["C901"]
 "scripts/**/*.py" = ["C901"]
 "runtime/**/*.py" = ["C901"]
-"apps/**/*.py" = ["C901"]
-"docs/**/*.py" = ["C901"]
+"apps/**/*.py"    = ["C901"]
+"docs/**/*.py"    = ["C901"]
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Typing (mypy)                                                              │

@@ -135,11 +135,7 @@ def _load_from_files(
 def _apply_env_vars(
     envs: Mapping[str, str | None], apply: bool, override: bool
 ) -> None:
-    """
-    Apply environment variables to os.environ deterministically.
-
-    :param envs: environment variables to apply.
-    """
+    """Apply environment variables to os.environ deterministically."""
     if not apply:
         return
 
