@@ -5,8 +5,8 @@
 #
 #  Purpose : Formal architectural governance contract for the Quantum Platform.
 #  Scope   : Applies to all Python packages within the 'quantum' namespace.
-#  Version : 2.0.0
-#  Updated : 2025-10-30
+#  Version : 2.1.0
+#  Updated : 2025-11-06
 #
 # ──────────────────────────────────────────────────────────────────────────────
 # 1. Mission
@@ -35,7 +35,7 @@
 
 [importlinter]
 root_package = quantum
-include_external_packages = False
+include_external_packages = True
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
@@ -50,7 +50,7 @@ include_external_packages = False
 # │     Foundational to certifiable modularity (DO-178C §11.8, NASA-SWE-134).  │
 # │                                                                            │
 # │ Expected Result :                                                          │
-# │     Infrastructure → Interfaces → Application → Domain                     │
+# │     Infrastructure → Interfaces → Application → Domain → Contracts         │
 # │     Each layer can import only those beneath it.                           │
 # ╰────────────────────────────────────────────────────────────────────────────╯
 
@@ -173,11 +173,14 @@ forbidden_modules = quantum.interfaces
 # │     Aligned with DO-178C §6.3.4 / ISO 26262-6 §9.4 (Data coupling control).│
 # │                                                                            │
 # │ Expected Result :                                                          │
-# │     Use-cases import only domain abstractions and outbound ports.          │
+# │     Application layer imports only domain abstractions and outbound ports. │
+# │     It must never import infrastructure or runtime modules directly.       │
 # ╰────────────────────────────────────────────────────────────────────────────╯
 
 [importlinter:contract:enforce-application-to-port-dependency-only]
 name = Enforce Application-to-Port Dependency Only
 type = forbidden
 source_modules = quantum.application
-forbidden_modules = quantum.infrastructure
+forbidden_modules =
+    quantum.infrastructure
+    runtime
