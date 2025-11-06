@@ -1,6 +1,6 @@
 """
 Quantum Core Configuration Models — Logging Settings
-────────────────────────────────────────────────────────────────────────────────
+────────────────────────────────────────────────────
 Immutable schema defining all configuration parameters related to logging
 and audit subsystems within the Quantum platform.
 
@@ -32,9 +32,9 @@ class LoggingSettings(BaseModel):
     Structured configuration model for Quantum logging and audit subsystems.
     """
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Logging
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     quantum_log_level: str = Field(
         default="INFO",
         description="Global logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL).",
@@ -73,9 +73,9 @@ class LoggingSettings(BaseModel):
         default=None, description="Base directory for partitioned JSONL logs."
     )
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Audit
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     quantum_audit_dir: str | None = Field(
         default=None, description="Directory for audit event JSONL files."
     )
@@ -87,9 +87,9 @@ class LoggingSettings(BaseModel):
         default="v1", description="Version of audit event schema."
     )
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Streamlit integration (optional visualization defaults)
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     streamlit_log_tz: str = Field(
         default="utc", description="Timezone for log display (utc or local)."
     )
@@ -112,9 +112,9 @@ class LoggingSettings(BaseModel):
         description="Glob pattern for log discovery in Streamlit UI.",
     )
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Validators
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     @field_validator("quantum_log_level", mode="before")
     @classmethod
     def validate_log_level(cls, v):
@@ -152,9 +152,9 @@ class LoggingSettings(BaseModel):
             return 0
         return v
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Model configuration
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     model_config = ConfigDict(
         extra="ignore",
         frozen=True,

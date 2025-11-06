@@ -1,6 +1,6 @@
 """
 Quantum Core Configuration Contracts — Base Interfaces
-────────────────────────────────────────────────────────────────────────────────
+──────────────────────────────────────────────────────
 Defines abstract protocols and contracts governing interactions between
 configuration models, providers, and runtime managers in the Quantum platform.
 
@@ -29,9 +29,9 @@ from typing import Protocol, TypeVar, runtime_checkable
 T = TypeVar("T")
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Environment Provider Contract                                               │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Environment Provider Contract                                              │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 @runtime_checkable
 class EnvProviderProtocol(Protocol):
     """
@@ -64,9 +64,9 @@ class EnvProviderProtocol(Protocol):
         ...
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Configuration Loader Contract                                               │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Configuration Loader Contract                                              │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 @runtime_checkable
 class ConfigLoaderProtocol(Protocol[T]):
     """
@@ -86,11 +86,9 @@ class ConfigLoaderProtocol(Protocol[T]):
         ...
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Configuration State Contract                                                │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
-
-
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Configuration State Contract                                               │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 @runtime_checkable
 class ConfigStateProtocol(Protocol):
     """
@@ -134,11 +132,9 @@ class ConfigStateProtocol(Protocol):
         ...
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Configuration Snapshot Contract                                             │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
-
-
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Configuration Snapshot Contract                                            │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 @runtime_checkable
 class ConfigSnapshotProtocol(Protocol):
     """

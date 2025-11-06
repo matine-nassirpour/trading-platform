@@ -1,6 +1,6 @@
 """
 Quantum Core Configuration Contracts — Settings Models
-────────────────────────────────────────────────────────────────────────────────
+──────────────────────────────────────────────────────
 Defines stable interfaces (protocols) describing the expected structure
 and invariants of all configuration models within the Quantum platform.
 
@@ -26,9 +26,9 @@ from collections.abc import Mapping
 from typing import Protocol, runtime_checkable
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Base Settings Contract                                                      │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Base Settings Contract                                                     │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 @runtime_checkable
 class BaseSettingsContract(Protocol):
     """
@@ -47,9 +47,9 @@ class BaseSettingsContract(Protocol):
         ...
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Core Settings Contract                                                      │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Core Settings Contract                                                     │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 @runtime_checkable
 class CoreSettingsContract(BaseSettingsContract, Protocol):
     """Contract for the platform runtime configuration model."""
@@ -67,9 +67,9 @@ class CoreSettingsContract(BaseSettingsContract, Protocol):
     quantum_exec_backoff_max: float
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Logging Settings Contract                                                   │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Logging Settings Contract                                                  │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 @runtime_checkable
 class LoggingSettingsContract(BaseSettingsContract, Protocol):
     """Contract for the logging configuration model."""
@@ -94,9 +94,9 @@ class LoggingSettingsContract(BaseSettingsContract, Protocol):
     streamlit_log_glob: str
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Tracing Settings Contract                                                   │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Tracing Settings Contract                                                  │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 @runtime_checkable
 class TracingSettingsContract(BaseSettingsContract, Protocol):
     """Contract for the tracing and telemetry configuration model."""
@@ -111,9 +111,9 @@ class TracingSettingsContract(BaseSettingsContract, Protocol):
     quantum_trace_sample: float
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ MT5 Settings Contract                                                       │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ MT5 Settings Contract                                                      │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 @runtime_checkable
 class MT5SettingsContract(BaseSettingsContract, Protocol):
     """Contract for MetaTrader 5 broker and terminal configuration."""

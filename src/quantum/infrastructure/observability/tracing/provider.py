@@ -33,11 +33,9 @@ logger = logging.getLogger(__name__)
 _ATEXIT_REGISTERED: bool = False
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Lifecycle Management                                                        │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
-
-
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Lifecycle Management                                                       │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 def _shutdown_provider_safely() -> None:
     """Gracefully shutdown the current tracer provider (safe for multiple calls)."""
     try:
@@ -61,11 +59,9 @@ def _ensure_atexit_registered() -> None:
         logger.debug(f"Failed to register atexit tracer shutdown: {exc}")
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Context Processor                                                           │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
-
-
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Context Processor                                                          │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 class _ContextEnricherProcessor(SpanProcessor):
     """Injects run_id and correlation_id into every span at start time."""
 
@@ -92,11 +88,9 @@ class _ContextEnricherProcessor(SpanProcessor):
         return True
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ OTLP Exporter Builder                                                       │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
-
-
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ OTLP Exporter Builder                                                      │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 def _build_otlp_exporter(
     tracing_settings: TracingSettings,
 ) -> tuple[Any | None, str | None]:
@@ -161,11 +155,9 @@ def _build_otlp_exporter(
         return None, f"otlp_exporter_error:{exc}"
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Main Initialization Logic                                                   │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
-
-
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Main Initialization Logic                                                  │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 def init_tracing(
     core_settings: CoreSettings,
     tracing_settings: TracingSettings,
@@ -275,11 +267,9 @@ def init_tracing(
     return tracer_provider
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Logging Helpers                                                             │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
-
-
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Logging Helpers                                                            │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 def _log_exporter_status(
     active_exporter: Any | None,
     tracing_settings: TracingSettings,
@@ -312,11 +302,9 @@ def _log_exporter_status(
         logger.warning("OTLP exporter inactive", extra={"attrs": attrs})
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Public API                                                                  │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
-
-
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Public API                                                                 │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 def get_tracer(component: str, version: str = "1.0.0"):
     """
     Return a canonical tracer for the given component.

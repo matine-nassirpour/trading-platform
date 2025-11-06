@@ -1,6 +1,6 @@
 """
 Quantum Core Configuration Models — MT5 Settings
-────────────────────────────────────────────────────────────────────────────────
+────────────────────────────────────────────────
 Immutable schema defining broker credentials and terminal paths for
 MetaTrader 5 integrations within the Quantum platform.
 
@@ -27,23 +27,23 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 class MT5Settings(BaseModel):
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # FTMO
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     quantum_mt5_ftmo_login: int | None = Field(None)
     quantum_mt5_ftmo_server: str | None = Field(None)
     quantum_mt5_ftmo_password: str | None = Field(None)
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # FundedNext
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     quantum_mt5_fundednext_login: int | None = Field(None)
     quantum_mt5_fundednext_server: str | None = Field(None)
     quantum_mt5_fundednext_password: str | None = Field(None)
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Terminal paths
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     mt5_ftmo_terminal_path: str | None = Field(
         default=None, description="Absolute path to FTMO MetaTrader terminal executable"
     )
@@ -52,9 +52,9 @@ class MT5Settings(BaseModel):
         description="Absolute path to FundedNext MetaTrader terminal executable",
     )
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Validators
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     @model_validator(mode="after")
     def validate_credentials(self) -> MT5Settings:
         """Ensure that any declared broker has a complete credential set."""
@@ -77,9 +77,9 @@ class MT5Settings(BaseModel):
 
         return self
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Model configuration
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     model_config = ConfigDict(
         extra="ignore",
         frozen=True,

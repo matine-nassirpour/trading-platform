@@ -1,6 +1,6 @@
 """
 Quantum Core Configuration Runtime State
-────────────────────────────────────────────────────────────────────────────────
+────────────────────────────────────────
 Encapsulates the in-process configuration state, ensuring atomicity,
 thread safety, and consistency across concurrent threads.
 
@@ -66,9 +66,9 @@ class ConfigState:
         # Cached environment variables (merged result from providers)
         self._env_cache: dict[str, str] | None = None
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Singleton Accessor
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     @classmethod
     def instance(cls) -> ConfigState:
         """
@@ -82,9 +82,9 @@ class ConfigState:
                 cls._instance = cls()
             return cls._instance
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Controlled Access
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     def access(self, func: Callable[[], T]) -> T:
         """
         Execute a callable within a thread-safe lock context.
@@ -95,9 +95,9 @@ class ConfigState:
         with self._lock:
             return func()
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Snapshot and Getters
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     def snapshot(self) -> dict[str, Any]:
         """
         Return an immutable snapshot of the current configuration state.
@@ -122,9 +122,9 @@ class ConfigState:
         with self._lock:
             return dict(self._env_cache or {})
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Mutators
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     def update(
         self,
         *,
@@ -159,9 +159,9 @@ class ConfigState:
             self._loaded_pid = None
             self._env_cache = None
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Diagnostics Helpers
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     def has_valid_cache(self) -> bool:
         """
         Determine whether the cache is valid for the current process.
@@ -190,9 +190,9 @@ class ConfigState:
         return f"ConfigState(base_dir={base_dir}, pid={pid}, env_vars={env_size})"
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Module-level constant for introspection (optional convenience)              │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Module-level constant for introspection (optional convenience)             │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 CONFIG_STATE: Final[ConfigState] = ConfigState.instance()
 """
 Global access point for the process-local ConfigState.

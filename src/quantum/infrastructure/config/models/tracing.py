@@ -1,6 +1,6 @@
 """
 Quantum Core Configuration Models — Tracing Settings
-────────────────────────────────────────────────────────────────────────────────
+────────────────────────────────────────────────────
 Immutable schema defining tracing and telemetry configuration parameters
 for distributed observability within the Quantum platform.
 
@@ -34,17 +34,17 @@ class TracingSettings(BaseModel):
     Structured configuration model for tracing and telemetry subsystems.
     """
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Exporter type
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     quantum_trace_exporter: Literal["otlp", "console", "none"] = Field(
         default="console",
         description="Tracing exporter type ('otlp', 'console', or 'none').",
     )
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # OTLP endpoint & connection parameters
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     quantum_trace_otlp_endpoint: str = Field(
         default="http://127.0.0.1:4318",
         description="OTLP collector endpoint URL.",
@@ -70,17 +70,17 @@ class TracingSettings(BaseModel):
         description="Allow insecure (non-TLS) connections to the OTLP endpoint.",
     )
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Sampling
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     quantum_trace_sample: float = Field(
         default=1.0,
         description="Trace sampling ratio in [0.0, 1.0] (fraction of traces kept).",
     )
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Validators
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     @field_validator("quantum_trace_otlp_protocol", mode="before")
     @classmethod
     def validate_protocol(cls, v):
@@ -110,9 +110,9 @@ class TracingSettings(BaseModel):
             raise ValueError("quantum_trace_sample must be in [0, 1]")
         return v
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Model configuration
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     model_config = ConfigDict(
         extra="ignore",
         frozen=True,

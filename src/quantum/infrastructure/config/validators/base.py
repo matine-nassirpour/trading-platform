@@ -1,6 +1,6 @@
 """
 Quantum Core Configuration Validators — Base Contracts
-────────────────────────────────────────────────────────
+──────────────────────────────────────────────────────
 Defines abstract classes and base types for reusable,
 composable, and introspectable validation rules.
 """
@@ -90,9 +90,9 @@ class ValidationRule(abc.ABC):
         """Execute validation on the given value."""
         raise NotImplementedError
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Helpers
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     def success(self, value: str) -> ValidationResult:
         return ValidationResult(ok=True, message=None, value=value, rule=self.rule_id)
 

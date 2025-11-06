@@ -1,6 +1,6 @@
 """
 Quantum Core Configuration Manager
-────────────────────────────────────────────────────────────────────────────────
+──────────────────────────────────
 Unified runtime facade for configuration management across the Quantum platform.
 
 Responsibilities
@@ -48,17 +48,17 @@ class ConfigManager:
     tracing, brokers) and utilities for cache management.
     """
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Internal helpers
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     @staticmethod
     def _normalize_env(env: Mapping[str, str] | None = None) -> dict[str, str]:
         """Normalize environment keys to lowercase for Pydantic model compatibility."""
         return {k.lower(): v for k, v in (env or os.environ).items()}
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Core loader
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     @staticmethod
     @lru_cache
     def load(
@@ -99,9 +99,9 @@ class ConfigManager:
         )
         return settings
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Singleton Accessor
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     @staticmethod
     @lru_cache
     def load_logging(env: Mapping[str, str] | None = None) -> LoggingSettings:
@@ -120,9 +120,9 @@ class ConfigManager:
         """Load and validate broker connection configuration (MT5)."""
         return MT5Settings(**ConfigManager._normalize_env(env))
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Cache management
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     @staticmethod
     def clear_caches() -> None:
         """
@@ -143,9 +143,9 @@ class ConfigManager:
         ConfigState.instance().reset()
         _LOGGER.info("ConfigManager caches cleared and ConfigState reset.")
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Snapshot helpers
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     @staticmethod
     def snapshot(
         settings: CoreSettings | None = None,
@@ -172,9 +172,9 @@ class ConfigManager:
             "metrics_port": str(s.quantum_metrics_port),
         }
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Convenience: credentials accessors
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     @staticmethod
     def get_mt5_credentials(
         channel: str,

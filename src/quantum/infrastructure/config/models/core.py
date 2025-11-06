@@ -1,6 +1,6 @@
 """
 Quantum Core Configuration Models — Core Settings
-────────────────────────────────────────────────────────────────────────────────
+─────────────────────────────────────────────────
 Immutable, validated schema defining the platform runtime configuration used
 throughout the Quantum platform.
 
@@ -36,9 +36,9 @@ class CoreSettings(BaseSettings):
     execution, and metrics binding.
     """
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Core identity
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     quantum_app_name: str = Field("python_core")
     quantum_app_version: str = Field("0.0.0+dev")
     quantum_env: str = Field(
@@ -54,15 +54,15 @@ class CoreSettings(BaseSettings):
         description="Optional unique instance identifier for this runtime.",
     )
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Metrics
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     quantum_metrics_addr: str = Field("0.0.0.0")
     quantum_metrics_port: int = Field(0, ge=0)
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Execution policy
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     quantum_exec_timeout: float = Field(
         default=5.0,
         description="Default upper bound (seconds) for bounded operations.",
@@ -80,9 +80,9 @@ class CoreSettings(BaseSettings):
         description="Maximum backoff (seconds) between retries.",
     )
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Validators
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     @field_validator("quantum_env", mode="before")
     @classmethod
     def validate_environment(cls, v):
@@ -93,9 +93,9 @@ class CoreSettings(BaseSettings):
             model="CoreSettings",
         )
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Settings metadata
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

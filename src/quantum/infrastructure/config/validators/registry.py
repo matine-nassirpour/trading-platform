@@ -1,6 +1,6 @@
 """
 Quantum Core Configuration Validators — Rule Registry
-──────────────────────────────────────────────────────
+─────────────────────────────────────────────────────
 Central registry tracking all available validation rules
 and exposing introspection and retrieval APIs.
 """
@@ -29,9 +29,9 @@ class ValidatorRegistry:
 
     _registry: dict[str, ValidationRule] = {}
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Lifecycle Management
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     @classmethod
     def clear_registry(cls) -> None:
         """
@@ -41,9 +41,9 @@ class ValidatorRegistry:
         """
         cls._registry.clear()
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Registration
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     @classmethod
     def register(cls, rule: ValidationRule) -> None:
         if rule.rule_id in cls._registry:
@@ -65,9 +65,9 @@ class ValidatorRegistry:
             if rid not in cls._registry:
                 cls.register(factory())
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Lookup
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     @classmethod
     def get(cls, rule_id: str) -> ValidationRule:
         """Retrieve a registered validation rule by id."""
@@ -81,9 +81,9 @@ class ValidatorRegistry:
         """Return a shallow copy of the registry for inspection."""
         return dict(cls._registry)
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Execution helpers
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     @classmethod
     def validate(
         cls,

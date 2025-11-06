@@ -1,6 +1,6 @@
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Project Metadata                                                            │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Project Metadata                                                           │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 [project]
 name = "quantum"
 version = "0.1.0"
@@ -14,9 +14,9 @@ readme = "README.md"
 packages = [{ include = "quantum", from = "src" }]
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Dependencies                                                                │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Dependencies                                                               │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 [tool.poetry.dependencies]
 pydantic = "^2.11.9"
 pydantic-settings = "^2.11.0"
@@ -28,9 +28,9 @@ python-dotenv = "^1.1.1"
 metatrader5 = "^5.0.5328"
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Development Dependencies                                                    │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Development Dependencies                                                   │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^4.3.0"
 detect-secrets = "^1.5.0"
@@ -44,17 +44,17 @@ pip-audit = "^2.9.0"
 import-linter = "^2.5"
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Build System                                                                │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Build System                                                               │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Code Style Tools                                                            │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Code Style Tools                                                           │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 [tool.black]
 line-length = 88
 target-version = ["py311"]
@@ -73,30 +73,39 @@ ensure_newline_before_comments = true
 known_first_party = ["quantum"]
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Testing Configuration (pytest)                                              │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Testing Configuration (pytest)                                             │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+python_files = ["test_*.py"]
+python_classes = ["Test*", "*Tests"]
+python_functions = ["test_*"]
+
 addopts = "-ra -q --strict-markers --tb=short --cov=src/quantum --cov-report=term-missing"
+
 markers = [
-    "integration: mark tests that perform multi-layer or system integration checks",
     "unit: mark fast, isolated unit tests",
-    "slow: mark slow tests that may take longer to execute"
+    "integration: mark tests that perform multi-layer or adapter-level checks",
+    "e2e: mark end-to-end tests crossing multiple runtime boundaries",
+    "slow: mark slow tests that may take longer to execute",
 ]
+
 filterwarnings = [
     "ignore::DeprecationWarning",
-    "ignore::PendingDeprecationWarning"
+    "ignore::PendingDeprecationWarning",
 ]
+
 log_cli = true
 log_cli_level = "INFO"
-log_cli_format = "%(asctime)s [%(levelname)s] %(message)s"
-log_cli_date_format = "%H:%M:%S"
+log_cli_format = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+log_cli_date_format = "%Y-%m-%d %H:%M:%S"
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Test Coverage (coverage.py)                                                 │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Test Coverage (coverage.py)                                                │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 [tool.coverage.run]
 branch = true
 source = ["src/quantum"]
@@ -113,6 +122,7 @@ exclude_lines = [
     "pragma: no cover",
     "if __name__ == .__main__.:",
     "raise NotImplementedError",
+    "pass",
 ]
 
 [tool.coverage.html]
