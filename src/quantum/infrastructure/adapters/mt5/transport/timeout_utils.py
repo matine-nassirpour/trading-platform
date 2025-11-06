@@ -84,6 +84,8 @@ def run_with_timeout(
     future = _EXECUTOR.submit(func, *args, **kwargs)
     try:
         return future.result(timeout=seconds)
-    except concurrent.futures.TimeoutError:
+    except concurrent.futures.TimeoutError as err:
         future.cancel()
-        raise TimeoutError(f"Execution call '{call_name}' exceeded {seconds:.1f}s")
+        raise TimeoutError(
+            f"Execution call '{call_name}' exceeded {seconds:.1f}s"
+        ) from err

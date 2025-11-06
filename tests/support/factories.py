@@ -45,6 +45,6 @@ def make_record(
             setattr(rec, k, v)
 
     if event is not None:
-        setattr(rec, "event", event)
+        rec.event = event
 
     return rec

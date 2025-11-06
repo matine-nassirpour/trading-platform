@@ -56,7 +56,7 @@ def bind_resilience(
                 if getattr(method, "_resilience_bound", False):
                     continue
 
-                op_name = getattr(method, "_resilience_call_name")
+                op_name = method._resilience_call_name
 
                 # Detect async vs sync wrapper automatically
                 if inspect.iscoroutinefunction(method):
@@ -69,8 +69,8 @@ def bind_resilience(
                     )(method)
 
                 # Mark as bound to avoid future rewrapping
-                setattr(decorated, "_resilience_bound", True)
-                setattr(decorated, "_resilience_operation", op_name)
+                decorated._resilience_bound = True
+                decorated._resilience_operation = op_name
 
                 # Replace method on instance
                 setattr(self, name, decorated)

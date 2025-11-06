@@ -130,7 +130,7 @@ class LogPayloadV1(BaseModel):
         try:
             uuid.UUID(v)
         except Exception as e:
-            raise ValueError(f"Invalid UUID: {e}")
+            raise ValueError(f"Invalid UUID: {e}") from None
         return v
 
     # --------------------------------------------------------------------------

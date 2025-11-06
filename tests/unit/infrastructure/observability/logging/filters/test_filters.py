@@ -70,7 +70,7 @@ def test_logging_context_filter_injects_env():
     f = ContextFilter(env="prod")
     rec = make_record(name="x")
     assert f.filter(rec) is True
-    assert getattr(rec, "env") == "prod"
+    assert rec.env == "prod"
 
 
 def test_monotonic_timestamp_filter_injects_once():
@@ -83,13 +83,13 @@ def test_monotonic_timestamp_filter_injects_once():
     rec = make_record()
     assert not hasattr(rec, "ts_monotonic_ms")
     assert f.filter(rec) is True
-    first = getattr(rec, "ts_monotonic_ms")
+    first = rec.ts_monotonic_ms
     assert isinstance(first, int)
 
     # Do not rewrite if already present
     rec2 = make_record(extra={"ts_monotonic_ms": 123})
     assert f.filter(rec2) is True
-    assert getattr(rec2, "ts_monotonic_ms") == 123
+    assert rec2.ts_monotonic_ms == 123
 
 
 # ╭─────────────────────────────────────────────────────────────────────────────╮
@@ -170,7 +170,7 @@ def test_redact_filter_attrs_and_msg_and_counter(monkeypatch):
     assert f.filter(rec) is True
 
     # Secrets redacted + truncation applied
-    red = getattr(rec, "attrs")
+    red = rec.attrs
     assert red["password"] == "[REDACTED]"
     assert red["nested"]["client_secret"] == "[REDACTED]"
     assert isinstance(red["plain"], str) and red["plain"] == "fine"
@@ -288,9 +288,9 @@ def test_static_fields_filter_sets_and_does_not_overwrite():
     # Inject when absent
     rec = make_record()
     assert f.filter(rec) is True
-    assert getattr(rec, "service_name") == "svcA"
-    assert getattr(rec, "service_namespace") == "nsA"
-    assert getattr(rec, "service_version") == "1.0.0"
+    assert rec.service_name == "svcA"
+    assert rec.service_namespace == "nsA"
+    assert rec.service_version == "1.0.0"
 
     # Do not replace when already present
     rec2 = make_record(
@@ -301,6 +301,6 @@ def test_static_fields_filter_sets_and_does_not_overwrite():
         }
     )
     assert f.filter(rec2) is True
-    assert getattr(rec2, "service_name") == "svcB"
-    assert getattr(rec2, "service_namespace") == "nsB"
-    assert getattr(rec2, "service_version") == "2.0.0"
+    assert rec2.service_name == "svcB"
+    assert rec2.service_namespace == "nsB"
+    assert rec2.service_version == "2.0.0"

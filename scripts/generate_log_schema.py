@@ -64,7 +64,7 @@ def main() -> None:
 
     try:
         module = import_module(MODEL_IMPORT_PATH)
-        model_cls = getattr(module, "LogPayloadV1")
+        model_cls = module.LogPayloadV1
     except Exception as e:
         print(f"[ERROR] Impossible de charger LogPayloadV1 : {e}", file=sys.stderr)
         sys.exit(1)

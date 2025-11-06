@@ -30,7 +30,7 @@ def set_correlation_id(value: str | None) -> None:
         try:
             uuid.UUID(value)
         except Exception:
-            raise ValueError(f"Invalid correlation_id: {value!r}")
+            raise ValueError(f"Invalid correlation_id: {value!r}") from None
     correlation_id_ctx.set(value)
 
 
@@ -57,7 +57,7 @@ def correlation_context(
     try:
         uuid.UUID(cid)
     except (ValueError, TypeError):
-        raise ValueError(f"Invalid correlation_id: {cid!r}")
+        raise ValueError(f"Invalid correlation_id: {cid!r}") from None
 
     token = correlation_id_ctx.set(cid)
     try:

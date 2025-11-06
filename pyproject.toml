@@ -77,10 +77,8 @@ case_sensitive = true
 atomic = true
 
 [tool.ruff]
-# ⚙️ Analyse statique complète (Flake8 + isort + pycodestyle + bugbear + pydocstyle)
-#select = ["E", "F", "W", "B", "UP", "I", "C90"]
-select = ["F", "W", "UP", "I", "C90"]
-ignore = ["I001", "I002"]  # Laisse isort gérer les imports
+select = ["F", "W", "B", "UP", "I", "C90"]
+ignore = ["I001", "I002"]  # Let isort handle the imports
 fix = true
 line-length = 88
 target-version = "py311"
@@ -91,7 +89,7 @@ format.preview = true
 max-complexity = 8
 
 [tool.ruff.lint.per-file-ignores]
-# Disables rule C901 (complexity) for everything that is not part of the core architecture
+# Rule C901 (complexity) only for the core architecture
 "tests/**/*.py" = ["C901"]
 "scripts/**/*.py" = ["C901"]
 "runtime/**/*.py" = ["C901"]
