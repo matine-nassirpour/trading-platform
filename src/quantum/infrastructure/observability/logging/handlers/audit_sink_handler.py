@@ -2,7 +2,7 @@ import json
 import logging
 import os
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Final
 
@@ -72,7 +72,7 @@ class AuditEventFileHandler(logging.Handler):
         Computes the target file path for the given record timestamp.
         Ensures that the parent directories exist.
         """
-        dt = datetime.fromtimestamp(record.created, tz=timezone.utc)
+        dt = datetime.fromtimestamp(record.created, tz=UTC)
         blob_name = generate_audit_blob_name(now=dt)
         path = (
             self._base_dir / self._environment / self._namespace / self._app / blob_name

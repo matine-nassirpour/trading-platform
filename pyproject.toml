@@ -76,6 +76,18 @@ lines_between_types = 1
 case_sensitive = true
 atomic = true
 
+[tool.ruff]
+# ⚙️ Analyse statique complète (Flake8 + isort + pycodestyle + bugbear + pydocstyle)
+#select = ["E", "F", "W", "B", "UP", "I", "C90"]
+select = ["F", "W", "UP"]
+ignore = ["I001", "I002"]  # Laisse isort gérer les imports
+fix = true
+line-length = 88
+target-version = "py311"
+respect-gitignore = true
+#extend-exclude = ["docs/", "tests/support/"]
+format.preview = true
+
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Typing (mypy)                                                              │

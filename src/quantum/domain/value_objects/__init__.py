@@ -14,7 +14,7 @@ from __future__ import annotations
 import re
 import uuid
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any, ClassVar
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -107,7 +107,7 @@ class EpochMs(ValueObject):
     @classmethod
     def now(cls) -> EpochMs:
         """Returns the current UTC epoch time (ms)."""
-        ms = int(datetime.now(tz=timezone.utc).timestamp() * 1_000)
+        ms = int(datetime.now(tz=UTC).timestamp() * 1_000)
         return cls(value=ms)
 
     @classmethod
@@ -135,7 +135,7 @@ class EpochMs(ValueObject):
 
     def to_datetime(self) -> datetime:
         """Returns a UTC datetime equivalent of this epoch."""
-        return datetime.fromtimestamp(self.to_seconds(), tz=timezone.utc)
+        return datetime.fromtimestamp(self.to_seconds(), tz=UTC)
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -64,7 +64,7 @@ class TestPartitionedJSONLFileHandler:
     ):
         """Ensure correct partition and filename when writing one record."""
         obs = make_observability()
-        dt = datetime(2025, 10, 7, 12, 34, 56, tzinfo=timezone.utc)
+        dt = datetime(2025, 10, 7, 12, 34, 56, tzinfo=UTC)
         ts = to_timestamp(dt)
 
         h = PartitionedJSONLFileHandler(base_settings, obs)
@@ -93,7 +93,7 @@ class TestPartitionedJSONLFileHandler:
     ):
         """Rollover creates '.part1' file once size threshold exceeded."""
         obs = make_observability(quantum_log_max_bytes=120)
-        dt = datetime(2025, 10, 7, 13, 0, 0, tzinfo=timezone.utc)
+        dt = datetime(2025, 10, 7, 13, 0, 0, tzinfo=UTC)
         ts = to_timestamp(dt)
 
         h = PartitionedJSONLFileHandler(base_settings, obs)
@@ -120,7 +120,7 @@ class TestPartitionedJSONLFileHandler:
     ):
         """Malformed log entries go to quarantine file."""
         obs = make_observability()
-        dt = datetime(2025, 10, 7, 14, 0, 0, tzinfo=timezone.utc)
+        dt = datetime(2025, 10, 7, 14, 0, 0, tzinfo=UTC)
         ts = to_timestamp(dt)
 
         h = PartitionedJSONLFileHandler(base_settings, obs)
@@ -148,7 +148,7 @@ class TestPartitionedJSONLFileHandler:
     ):
         """fsync path executes safely without error."""
         obs = make_observability(quantum_log_fsync=True)
-        dt = datetime(2025, 10, 7, 15, 0, 0, tzinfo=timezone.utc)
+        dt = datetime(2025, 10, 7, 15, 0, 0, tzinfo=UTC)
         ts = to_timestamp(dt)
 
         h = PartitionedJSONLFileHandler(base_settings, obs)

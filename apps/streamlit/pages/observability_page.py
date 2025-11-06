@@ -12,7 +12,7 @@ import logging
 import time
 
 from collections.abc import Mapping
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import streamlit as st
@@ -118,7 +118,7 @@ def _fmt_dt(obj: Mapping[str, object], *, tz_mode: str) -> str:
     if dt is None:
         ms = obj.get("ts_unix_ms")
         if isinstance(ms, (int, float)):
-            dt = datetime.fromtimestamp(float(ms) / 1000.0, tz=timezone.utc)
+            dt = datetime.fromtimestamp(float(ms) / 1000.0, tz=UTC)
     if dt is None:
         return "—"
 
@@ -126,7 +126,7 @@ def _fmt_dt(obj: Mapping[str, object], *, tz_mode: str) -> str:
         dt = dt.astimezone()
         return dt.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
     else:
-        dt = dt.astimezone(timezone.utc)
+        dt = dt.astimezone(UTC)
         return dt.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3] + "Z"
 
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import logging
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -28,7 +28,7 @@ class TestAuditEventFileHandler:
         """
         # Arrange
         base = tmp_path / "_audit"
-        dt = datetime(2025, 10, 7, 16, 12, 34, tzinfo=timezone.utc)
+        dt = datetime(2025, 10, 7, 16, 12, 34, tzinfo=UTC)
         ts = to_timestamp(dt)
 
         h = AuditEventFileHandler(
@@ -84,7 +84,7 @@ class TestAuditEventFileHandler:
         """
         # Arrange
         base = tmp_path / "_audit"
-        dt = datetime(2025, 10, 7, 17, 0, 0, tzinfo=timezone.utc)
+        dt = datetime(2025, 10, 7, 17, 0, 0, tzinfo=UTC)
         ts = to_timestamp(dt)
 
         h = AuditEventFileHandler(

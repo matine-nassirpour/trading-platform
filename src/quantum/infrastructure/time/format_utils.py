@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import time
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
@@ -10,13 +10,13 @@ from datetime import datetime, timezone
 # ╰────────────────────────────────────────────────────────────────────────────╯
 def now_rfc3339_ms() -> str:
     """Current UTC time as RFC3339 string with millisecond precision."""
-    dt = datetime.now(tz=timezone.utc)
+    dt = datetime.now(tz=UTC)
     return dt.isoformat(timespec="milliseconds").replace("+00:00", "Z")
 
 
 def now_epoch_ms() -> int:
     """Current UTC epoch time in milliseconds."""
-    return int(datetime.now(tz=timezone.utc).timestamp() * 1_000)
+    return int(datetime.now(tz=UTC).timestamp() * 1_000)
 
 
 def now_mono_ms() -> int:
@@ -29,5 +29,5 @@ def now_mono_ms() -> int:
 # ╰────────────────────────────────────────────────────────────────────────────╯
 def to_rfc3339_ms(seconds: float) -> str:
     """Convert UNIX timestamp (seconds) to RFC3339 with ms precision."""
-    dt = datetime.fromtimestamp(seconds, tz=timezone.utc)
+    dt = datetime.fromtimestamp(seconds, tz=UTC)
     return dt.isoformat(timespec="milliseconds").replace("+00:00", "Z")

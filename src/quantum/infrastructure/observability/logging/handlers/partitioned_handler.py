@@ -7,7 +7,7 @@ import os
 import sys
 
 from contextlib import suppress
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Final
 
@@ -107,7 +107,7 @@ class PartitionedJSONLFileHandler(logging.Handler):
     def _resolve_partition(self, record: logging.LogRecord) -> tuple[Path, Path, Path]:
         """Determines the partition directory and file paths for the record."""
         try:
-            dt = datetime.fromtimestamp(record.created, tz=timezone.utc)
+            dt = datetime.fromtimestamp(record.created, tz=UTC)
             yyyy, mm, dd, hh = partition_path_components(dt)
             dir_path = (
                 self._base_dir
@@ -200,7 +200,7 @@ class PartitionedJSONLFileHandler(logging.Handler):
 
             if size >= self._max_bytes:
                 self._part_index += 1
-                dt = datetime.fromtimestamp(record.created, tz=timezone.utc)
+                dt = datetime.fromtimestamp(record.created, tz=UTC)
                 yyyy, mm, dd, hh = partition_path_components(dt)
                 dir_path = (
                     self._current_path.parent if self._current_path else self._base_dir
