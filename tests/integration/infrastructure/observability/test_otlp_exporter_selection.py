@@ -107,7 +107,6 @@ class TestOTLPExporterSelection:
             assert registry.pipeline_tracing_ok._value.get() == 1.0
             assert counter_value(m.tracing_exporter_status) == 0.0
 
-    @pytest.mark.integration
     def test_otlp_http_active_when_pkg_present(
         self, tmp_workspace, monkeypatch, caplog
     ):
@@ -156,7 +155,6 @@ class TestOTLPExporterSelection:
         assert counter_value(m.tracing_exporter_status) == 1.0
         assert not any("OTLP exporter inactive" in r.message for r in caplog.records)
 
-    @pytest.mark.integration
     def test_otlp_http_inactive_when_pkg_missing(
         self, tmp_workspace, monkeypatch, caplog
     ):
@@ -186,7 +184,6 @@ class TestOTLPExporterSelection:
 
         _assert_inactive_with_reason(caplog, reason_expected="otlp_package_missing")
 
-    @pytest.mark.integration
     def test_otlp_grpc_active_when_pkg_present(
         self, tmp_workspace, monkeypatch, caplog
     ):
@@ -235,7 +232,6 @@ class TestOTLPExporterSelection:
         assert registry.pipeline_tracing_ok._value.get() == 1.0
         assert counter_value(m.tracing_exporter_status) == 1.0
 
-    @pytest.mark.integration
     def test_otlp_grpc_inactive_when_pkg_missing(
         self, tmp_workspace, monkeypatch, caplog
     ):
@@ -266,7 +262,6 @@ class TestOTLPExporterSelection:
 
         _assert_inactive_with_reason(caplog, reason_expected="otlp_package_missing")
 
-    @pytest.mark.integration
     def test_otlp_unsupported_protocol_defaults_to_http(self, tmp_workspace, caplog):
         """
         exporter=otlp, protocol unsupported ('ws') → normalized to 'http', exporter active.
@@ -289,7 +284,6 @@ class TestOTLPExporterSelection:
             "Unsupported OTLP protocol 'ws'" in r.message for r in caplog.records
         )
 
-    @pytest.mark.integration
     def test_otlp_init_failure_triggers_fallback(
         self, tmp_workspace, monkeypatch, caplog
     ):

@@ -26,9 +26,9 @@ def _init_then_assert_then_shutdown(assert_fn) -> None:
         )
 
 
+@pytest.mark.integration
 @pytest.mark.usefixtures("no_rate_limit_no_sampling")
 class TestPersistenceProbe:
-    @pytest.mark.integration
     def test_no_persistent_sinks_sets_logging_sink_up_0(self, tmp_workspace):
         """Without QUANTUM_LOG_DIR or QUANTUM_AUDIT_DIR → logging_sink_up == 0."""
         from quantum.infrastructure.observability.bootstrap.health_registry import (
@@ -49,7 +49,6 @@ class TestPersistenceProbe:
 
         _init_then_assert_then_shutdown(_assert)
 
-    @pytest.mark.integration
     def test_log_dir_only_sets_logging_sink_up_1(self, tmp_workspace):
         """With QUANTUM_LOG_DIR writable (alone) → logging_sink_up == 1."""
         from quantum.infrastructure.observability.bootstrap.health_registry import (
@@ -66,7 +65,6 @@ class TestPersistenceProbe:
 
         _init_then_assert_then_shutdown(_assert)
 
-    @pytest.mark.integration
     def test_audit_dir_only_sets_logging_sink_up_1(self, tmp_workspace):
         """With QUANTUM_AUDIT_DIR writable (alone) → logging_sink_up == 1."""
         from quantum.infrastructure.observability.bootstrap.health_registry import (
@@ -83,7 +81,6 @@ class TestPersistenceProbe:
 
         _init_then_assert_then_shutdown(_assert)
 
-    @pytest.mark.integration
     def test_both_dirs_sets_logging_sink_up_1(self, tmp_workspace):
         """With both directories valid → logging_sink_up == 1."""
         from quantum.infrastructure.observability.bootstrap.health_registry import (
@@ -100,7 +97,6 @@ class TestPersistenceProbe:
 
         _init_then_assert_then_shutdown(_assert)
 
-    @pytest.mark.integration
     def test_invalid_log_dir_and_no_audit_sets_0(self, tmp_workspace, tmp_path):
         """
         QUANTUM_LOG_DIR points to a FILE (os.makedirs fails) and no auditing → logging_sink_up == 0.
@@ -122,7 +118,6 @@ class TestPersistenceProbe:
 
         _init_then_assert_then_shutdown(_assert)
 
-    @pytest.mark.integration
     def test_invalid_log_dir_but_valid_audit_sets_1(self, tmp_workspace, tmp_path):
         """Invalid log dir but valid audit dir → at least one writable sink → logging_sink_up == 1."""
         from quantum.infrastructure.observability.bootstrap.health_registry import (
@@ -141,7 +136,6 @@ class TestPersistenceProbe:
 
         _init_then_assert_then_shutdown(_assert)
 
-    @pytest.mark.integration
     def test_deep_probe_enabled_keeps_logging_sink_up_1(self, tmp_workspace):
         """
         With QUANTUM_LOG_DIR + QUANTUM_LOG_DEEP_PROBE=1 → the write/read/cleanup probe passes,
