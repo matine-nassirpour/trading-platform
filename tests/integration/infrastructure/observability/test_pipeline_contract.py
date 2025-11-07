@@ -29,6 +29,7 @@ def _latest(root: Path, pattern: str) -> Path | None:
     return files[0]
 
 
+@pytest.mark.integration
 @pytest.mark.usefixtures("no_rate_limit_no_sampling")
 def test_pipeline_contract(obs_session, tmp_workspace, assert_jsonl_tail):
     """

@@ -15,6 +15,7 @@ def _audit_handlers() -> list[logging.Handler]:
     return list(logging.getLogger("quantum.trading").handlers)
 
 
+@pytest.mark.integration
 @pytest.mark.usefixtures("no_rate_limit_no_sampling")
 def test_bootstrap_shutdown_idempotence_and_cleanup(tmp_workspace):
     """

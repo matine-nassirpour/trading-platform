@@ -2,10 +2,13 @@ from __future__ import annotations
 
 import logging
 
+import pytest
+
 from quantum.infrastructure.observability.logging.models.factory import from_log_record
 from tests.support.factories import make_record
 
 
+@pytest.mark.unit
 def test_from_log_record_maps_severity_and_builds_payload():
     """
     Given a LogRecord with message formatting, WARNING level and rich context

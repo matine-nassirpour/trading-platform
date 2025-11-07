@@ -8,6 +8,7 @@ from quantum.infrastructure.observability.logging.constants import (
 )
 
 
+@pytest.mark.unit
 @pytest.mark.usefixtures("iso_env")
 class TestAuditConstants:
     def test_baseline_allowlist_contains_core_events(self):

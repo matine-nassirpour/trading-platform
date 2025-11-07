@@ -30,6 +30,7 @@ def _parse(formatted: str) -> dict[str, Any]:
 # ╰─────────────────────────────────────────────────────────────────────────────╯
 
 
+@pytest.mark.unit
 @pytest.mark.usefixtures("no_rate_limit_no_sampling")
 class TestFormatterOTelContext:
     def test_valid_trace_context_with_bool_sampled(self, monkeypatch):
@@ -153,6 +154,7 @@ class TestFormatterOTelContext:
         assert js2.get("sampled") is True
 
 
+@pytest.mark.unit
 @pytest.mark.usefixtures("no_rate_limit_no_sampling")
 class TestFormatterExceptions:
     def test_structured_and_legacy_exception_fields_present(self):
@@ -184,6 +186,7 @@ class TestFormatterExceptions:
         assert isinstance(js.get("exception"), str) and "ValueError" in js["exception"]
 
 
+@pytest.mark.unit
 @pytest.mark.usefixtures("no_rate_limit_no_sampling")
 class TestFormatterFallbackAndMetrics:
     def test_pydantic_validation_error_fallback_and_counter_increment(
@@ -218,6 +221,7 @@ class TestFormatterFallbackAndMetrics:
         assert after >= 0.0 and after == before + 1.0
 
 
+@pytest.mark.unit
 @pytest.mark.usefixtures("no_rate_limit_no_sampling")
 class TestFormatterAttrsAndExclusions:
     def test_attrs_sanitize_and_std_exclusions(self):
@@ -299,6 +303,7 @@ class TestFormatterAttrsAndExclusions:
         assert js["attrs"].get("exception_obj") == {"kind": "ValueError", "msg": "x"}
 
 
+@pytest.mark.unit
 @pytest.mark.usefixtures("no_rate_limit_no_sampling")
 class TestFormatterSeveritiesAndTimestamps:
     def test_severity_mapping_and_numbers_and_timestamps(self):
