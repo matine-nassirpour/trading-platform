@@ -6,11 +6,8 @@ from quantum.infrastructure.config.validators.base import (
     ValidationRule,
 )
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ ValidationResult                                                            │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
 
-
+@pytest.mark.unit
 def test_validation_result_success_ok_type():
     result = ValidationResult(ok=True, message=None, value="ok", rule="platform.rule")
     value = result.raise_if_failed()
@@ -20,6 +17,7 @@ def test_validation_result_success_ok_type():
     assert result.rule == "platform.rule"
 
 
+@pytest.mark.unit
 def test_validation_result_failure_raises():
     result = ValidationResult(
         ok=False, message="error", value=None, rule="platform.fail"
@@ -29,11 +27,7 @@ def test_validation_result_failure_raises():
         result.raise_if_failed()
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ ValidationContext                                                           │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
-
-
+@pytest.mark.unit
 def test_context_describe_default():
     ctx = ValidationContext()
     desc = ctx.describe()
@@ -42,16 +36,12 @@ def test_context_describe_default():
     assert "field=" not in desc
 
 
+@pytest.mark.unit
 def test_context_describe_full():
     ctx = ValidationContext(model_name="CoreSettings", field_name="quantum_env")
     s = ctx.describe()
     assert "model=CoreSettings" in s
     assert "field=quantum_env" in s
-
-
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ ValidationRule — via Dummy subclass                                         │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
 
 
 class DummyRule(ValidationRule):
@@ -64,6 +54,7 @@ class DummyRule(ValidationRule):
         return self.success(value.upper())
 
 
+@pytest.mark.unit
 def test_validation_rule_success_and_failure_helpers():
     rule = DummyRule()
     ok = rule.success("ok")
@@ -74,6 +65,7 @@ def test_validation_rule_success_and_failure_helpers():
     assert isinstance(fail, ValidationResult)
 
 
+@pytest.mark.unit
 def test_validation_rule_invocation_returns_result():
     rule = DummyRule()
     result = rule("abc")
@@ -83,6 +75,7 @@ def test_validation_rule_invocation_returns_result():
     assert result.value == "ABC"
 
 
+@pytest.mark.unit
 def test_validation_rule_failure_path():
     rule = DummyRule()
     res = rule("")

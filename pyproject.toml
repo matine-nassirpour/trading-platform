@@ -149,27 +149,25 @@ pretty = true
 [tool.pytest.ini_options]
 testpaths = ["tests", "src/quantum"]
 
-python_files = ["test_*.py"]
-python_classes = ["Test*", "*Tests"]
-python_functions = ["test_*"]
-
 addopts = """
--ra -q --strict-markers --tb=short
---cov=src/quantum
---cov-report=term-missing
---cov-report=xml:coverage.xml
---cov-report=html:htmlcov
---junitxml=test-results/results.xml
---disable-warnings
+    -ra -q --strict-markers --tb=short
+    --rootdir=.
+    --import-mode=importlib
+    --cov=src/quantum
+    --cov-report=term-missing
+    --cov-report=xml:coverage.xml
+    --cov-report=html:htmlcov
+    --junitxml=test-results/results.xml
+    --disable-warnings
 """
 # --cov-fail-under=90
-# --rootdir=. tests
 
 markers = [
-    "unit: mark fast, isolated unit tests",
-    "integration: mark tests that perform multi-layer or adapter-level checks",
-    "e2e: mark end-to-end tests crossing multiple runtime boundaries",
-    "slow: mark slow tests that may take longer to execute",
+    "unit: isolated, pure, no I/O",
+    "integration: multiple layers/adapters",
+    "e2e: end-to-end scenario",
+    "slow: long-running test",
+    "internal: internal CI integrity checks",
 ]
 
 filterwarnings = [

@@ -6,16 +6,7 @@ from quantum.infrastructure.config.runtime.manager import ConfigManager
 from quantum.infrastructure.config.runtime.state import ConfigState
 
 
-@pytest.fixture(autouse=True)
-def clean_runtime_state():
-    """Ensure ConfigState and LRU caches are clean before and after each test."""
-    ConfigManager.clear_caches()
-    ConfigState.instance().reset()
-    yield
-    ConfigManager.clear_caches()
-    ConfigState.instance().reset()
-
-
+@pytest.mark.unit
 def test_load_reads_env_and_returns_valid_core_settings(monkeypatch):
     """load() must use load_env() and produce a CoreSettings instance."""
     fake_env = {
@@ -37,6 +28,7 @@ def test_load_reads_env_and_returns_valid_core_settings(monkeypatch):
     assert isinstance(settings.quantum_app_name, str)
 
 
+@pytest.mark.unit
 def test_clear_caches_resets_configstate(caplog):
     """clear_caches() must reset ConfigState and LRU caches."""
     with patch(
@@ -54,6 +46,7 @@ def test_clear_caches_resets_configstate(caplog):
     assert "ConfigManager caches cleared" in caplog.text
 
 
+@pytest.mark.unit
 def test_snapshot_includes_core_and_tracing_fields(monkeypatch):
     """snapshot() must expose coherent configuration summary."""
     core = MagicMock()
@@ -71,6 +64,7 @@ def test_snapshot_includes_core_and_tracing_fields(monkeypatch):
     assert res["env"] == "test"
 
 
+@pytest.mark.unit
 def test_load_invalid_env_triggers_fallback(monkeypatch):
     """Invalid QUANTUM_ENV should fallback to default environment, not raise."""
     fake_env = {"QUANTUM_ENV": "invalid"}
@@ -82,6 +76,7 @@ def test_load_invalid_env_triggers_fallback(monkeypatch):
         assert settings.quantum_env in ("dev", "test", "staging", "prod")
 
 
+@pytest.mark.unit
 def test_load_apply_false_does_not_mutate_configstate(monkeypatch):
     """When apply=False, the ConfigState must remain empty."""
     fake_env = {"QUANTUM_ENV": "test"}
@@ -94,6 +89,7 @@ def test_load_apply_false_does_not_mutate_configstate(monkeypatch):
     assert not snap["env_cache"]  # No mutation
 
 
+@pytest.mark.unit
 def test_load_apply_true_updates_runtime(monkeypatch):
     """apply=True should commit the configuration to ConfigState."""
     fake_env = {"QUANTUM_ENV": "prod"}
@@ -110,6 +106,7 @@ def test_load_apply_true_updates_runtime(monkeypatch):
     assert settings.quantum_env in ("dev", "test", "staging", "prod")
 
 
+@pytest.mark.unit
 def test_get_mt5_credentials_returns_expected_fields(monkeypatch):
     """get_mt5_credentials() must resolve broker credentials correctly."""
     fake_model = MagicMock()

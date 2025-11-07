@@ -5,15 +5,7 @@ import pytest
 from quantum.infrastructure.config.runtime.state import ConfigState
 
 
-@pytest.fixture(autouse=True)
-def reset_state_between_tests():
-    """Ensure a clean state before and after each test."""
-    state = ConfigState.instance()
-    state.reset()
-    yield
-    state.reset()
-
-
+@pytest.mark.unit
 def test_instance_returns_singleton():
     """Two calls to instance() must return the exact same object."""
     s1 = ConfigState.instance()
@@ -22,6 +14,7 @@ def test_instance_returns_singleton():
     assert id(s1) == id(s2)
 
 
+@pytest.mark.unit
 def test_snapshot_reflects_updates(tmp_path):
     """snapshot() must reflect updates after atomic mutation."""
     state = ConfigState.instance()
@@ -36,6 +29,7 @@ def test_snapshot_reflects_updates(tmp_path):
     assert snap["env_cache"]["QUANTUM_ENV"] == "test"
 
 
+@pytest.mark.unit
 def test_get_env_cache_returns_copy():
     """get_env_cache() must return a copy, not a direct reference."""
     state = ConfigState.instance()
@@ -46,6 +40,7 @@ def test_get_env_cache_returns_copy():
     assert state.get_env_cache()["A"] == "1"
 
 
+@pytest.mark.unit
 def test_reset_clears_state():
     """reset() must remove all internal data."""
     state = ConfigState.instance()
@@ -57,6 +52,7 @@ def test_reset_clears_state():
     assert snap["env_cache"] == {}
 
 
+@pytest.mark.unit
 def test_thread_safety_of_instance():
     """Multiple threads must all reference the same singleton."""
     results = []
@@ -73,6 +69,7 @@ def test_thread_safety_of_instance():
     assert len({id(r) for r in results}) == 1
 
 
+@pytest.mark.unit
 def test_describe_contains_expected_fields():
     """describe() output must include PID, base_dir, and env_vars count."""
     state = ConfigState.instance()
@@ -84,6 +81,7 @@ def test_describe_contains_expected_fields():
     assert "env_vars=" in desc
 
 
+@pytest.mark.unit
 def test_has_valid_cache_behaviour(monkeypatch):
     """has_valid_cache() must depend on PID and env presence."""
     state = ConfigState.instance()

@@ -28,9 +28,8 @@ fmt: ## Format & fixe (ruff + black)
 typecheck: ## Strict typing (mypy)
 	poetry run mypy $(SRC)
 
-test: ## Run tests with coverage (HTML, XML, JUnit)
-	@echo "Running tests + Coverage"
-	@$(PS) "New-Item -ItemType Directory -Force -Path 'test-results','htmlcov' | Out-Null"
+test: ## Run full test suite with coverage
+	@echo "Running tests with full isolation and coverage..."
 	@poetry run pytest -v
 
 pre-commit: ## Run pre-commit hooks on the entire repo

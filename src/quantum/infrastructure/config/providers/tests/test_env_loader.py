@@ -2,10 +2,13 @@ import os
 
 from pathlib import Path
 
+import pytest
+
 from quantum.infrastructure.config.providers import env_loader
 from quantum.infrastructure.config.runtime.state import ConfigState
 
 
+@pytest.mark.unit
 def test_merge_envs_applies_last_wins_policy():
     """Later layers override earlier ones and None values are ignored."""
     merged = env_loader._merge_envs(
@@ -16,6 +19,7 @@ def test_merge_envs_applies_last_wins_policy():
     assert merged == {"A": "1", "B": "2", "C": "3"}
 
 
+@pytest.mark.unit
 def test_resolve_env_path_prefers_explicit_file(tmp_path: Path):
     """Explicit env_file path must take precedence over root directory."""
     env_file = tmp_path / ".env"
@@ -26,6 +30,7 @@ def test_resolve_env_path_prefers_explicit_file(tmp_path: Path):
     assert base_dir == tmp_path
 
 
+@pytest.mark.unit
 def test_resolve_env_path_falls_back_to_cwd(monkeypatch, tmp_path: Path):
     """When no .env file exists, must fall back to current working directory."""
     monkeypatch.chdir(tmp_path)
@@ -34,6 +39,7 @@ def test_resolve_env_path_falls_back_to_cwd(monkeypatch, tmp_path: Path):
     assert resolved is None
 
 
+@pytest.mark.unit
 def test_load_env_without_apply_does_not_modify_os_environ(monkeypatch, tmp_path: Path):
     """apply=False must not alter os.environ nor persist environment state."""
     monkeypatch.setattr(
@@ -50,10 +56,9 @@ def test_load_env_without_apply_does_not_modify_os_environ(monkeypatch, tmp_path
     assert result["QUANTUM_ENV"] == "test"
 
 
+@pytest.mark.unit
 def test_load_env_with_apply_injects_variables(monkeypatch, tmp_path: Path):
     """apply=True must inject merged variables into os.environ."""
-    ConfigState.instance().reset()
-
     monkeypatch.setattr(
         env_loader, "dotenv_values", lambda *a, **kw: {"QUANTUM_ENV": "prod"}
     )
@@ -64,6 +69,7 @@ def test_load_env_with_apply_injects_variables(monkeypatch, tmp_path: Path):
     assert os.environ.get("QUANTUM_ENV") == "prod"
 
 
+@pytest.mark.unit
 def test_load_env_returns_merged_environment(monkeypatch, tmp_path: Path):
     """load_env() must return a merged environment and update ConfigState."""
     monkeypatch.setattr(
@@ -84,6 +90,7 @@ def test_load_env_returns_merged_environment(monkeypatch, tmp_path: Path):
     assert snap["env_cache"]["QUANTUM_ENV"] == "staging"
 
 
+@pytest.mark.unit
 def test_load_env_uses_cache_if_valid(monkeypatch, tmp_path: Path):
     """Second call must reuse the cached environment if still valid."""
     monkeypatch.setattr(
@@ -105,10 +112,9 @@ def test_load_env_uses_cache_if_valid(monkeypatch, tmp_path: Path):
     assert snap["env_cache"]["QUANTUM_ENV"] == "test"
 
 
+@pytest.mark.unit
 def test_load_env_with_override_replaces_existing(monkeypatch, tmp_path: Path):
     """override=True must replace existing environment variables."""
-    ConfigState.instance().reset()
-
     os.environ["FOO"] = "old"
     monkeypatch.setattr(env_loader, "dotenv_values", lambda *a, **kw: {"FOO": "new"})
     monkeypatch.setattr(env_loader, "find_dotenv", lambda *a, **kw: None)
@@ -118,6 +124,7 @@ def test_load_env_with_override_replaces_existing(monkeypatch, tmp_path: Path):
     assert os.environ["FOO"] == "new"
 
 
+@pytest.mark.unit
 def test_load_env_without_dotenv_module(monkeypatch):
     """When python-dotenv is not installed, load_env must still return os.environ safely."""
     monkeypatch.setattr(env_loader, "dotenv_values", None)

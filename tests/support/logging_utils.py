@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import logging
+import os
+import threading
 
 from collections.abc import Callable
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
+from pathlib import Path
 from typing import Any, cast
 
 from tests.support.types import NumberLike
@@ -72,3 +75,75 @@ def propagate_logger(name: str):
         yield
     finally:
         logger.propagate = old
+
+
+def _iter_all_loggers() -> list[logging.Logger]:
+    """
+    Return all known loggers including root and children registered in the manager.
+
+    This helps aggressively close/flush every handler that may have been added
+    by the code under test, avoiding FD leaks across tests.
+    """
+    # Start with root
+    loggers: list[logging.Logger] = [logging.getLogger()]
+    # Add any named loggers present in the registry
+    for name in list(logging.root.manager.loggerDict.keys()):
+        try:
+            loggers.append(logging.getLogger(name))
+        except Exception:
+            # Defensive: ignore malformed entries
+            continue
+    return loggers
+
+
+def close_all_handlers():
+    """
+    Cleanly flush/close and detach all handlers of all known loggers.
+
+    Thread-safe: ensures that only one cleanup operation runs at a time,
+    preventing race conditions under pytest-xdist or multithreaded tests.
+    """
+    _LOG_CLEANUP_LOCK = threading.Lock()
+
+    with _LOG_CLEANUP_LOCK:
+        for logger in _iter_all_loggers():
+            for h in list(logger.handlers):
+                with suppress(Exception):
+                    h.flush()
+                with suppress(Exception):
+                    h.close()
+                with suppress(Exception):
+                    logger.removeHandler(h)
+
+
+def read_tail_complete_lines(
+    path: Path, *, chunk_bytes: int, encoding: str = "utf-8"
+) -> list[str]:
+    """
+    Read the tail of a JSONL file, preserving only complete lines.
+
+    Robust to rotations/permissions/encoding:
+    - Seeks near the end of file (chunk_bytes)
+    - Drops a potentially truncated first/last line
+    - Normalizes newlines
+    """
+    try:
+        with open(path, "rb") as fh:
+            fh.seek(0, os.SEEK_END)
+            file_end = fh.tell()
+            start_offset = max(0, file_end - chunk_bytes)
+            fh.seek(start_offset)
+            buf = fh.read().decode(encoding, "replace")
+
+        if start_offset > 0:
+            buf = buf.split("\n", 1)[-1]  # drop possibly truncated first line
+
+        buf = buf.replace("\r\n", "\n")
+        raw_lines = buf.split("\n")
+
+        if raw_lines and buf and not buf.endswith("\n"):
+            raw_lines = raw_lines[:-1]  # drop last incomplete line
+
+        return [line for line in raw_lines if line.strip()]
+    except (OSError, UnicodeDecodeError):
+        return []

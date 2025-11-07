@@ -7,6 +7,7 @@ from pydantic import ValidationError
 from quantum.infrastructure.config.models.logging import LoggingSettings
 
 
+@pytest.mark.unit
 def test_logging_settings_defaults_are_safe(tmp_path):
     """Default logging settings must define valid paths and thresholds."""
     s = LoggingSettings(quantum_log_dir=str(tmp_path), quantum_audit_dir=str(tmp_path))
@@ -16,6 +17,7 @@ def test_logging_settings_defaults_are_safe(tmp_path):
     assert s.quantum_log_warn_bytes >= 0
 
 
+@pytest.mark.unit
 def test_logging_settings_rejects_negative_sizes(tmp_path):
     """Negative log size limits must trigger validation error."""
     with pytest.raises(ValidationError):
@@ -26,6 +28,7 @@ def test_logging_settings_rejects_negative_sizes(tmp_path):
         )
 
 
+@pytest.mark.unit
 def test_logging_settings_roundtrip():
     """Roundtrip serialization/deserialization must preserve semantics."""
     s = LoggingSettings(

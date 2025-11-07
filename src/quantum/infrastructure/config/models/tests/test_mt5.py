@@ -1,6 +1,9 @@
+import pytest
+
 from quantum.infrastructure.config.models.mt5 import MT5Settings
 
 
+@pytest.mark.unit
 def test_mt5_settings_defaults_are_safe():
     """Defaults must define consistent timeouts and credentials placeholders."""
     s = MT5Settings()  # type: ignore[arg-type]
@@ -14,6 +17,7 @@ def test_mt5_settings_defaults_are_safe():
     assert hasattr(s, "mt5_fundednext_terminal_path")
 
 
+@pytest.mark.unit
 def test_mt5_settings_roundtrip():
     """model_dump()/model_validate() roundtrip must preserve semantics."""
     s = MT5Settings(
