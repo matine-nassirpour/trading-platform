@@ -1,8 +1,8 @@
 # ADR 0001 — Placement of the MT5 Macro-Adapter
 
-> **Status:** Accepted
-> **Date:** 2025-10-28
-> **Version:** 1.0.0
+> **Status:** Accepted <br>
+> **Date:** 2025-10-28 <br>
+> **Version:** 1.0.0 <br>
 > **Compliance Level:** Level 3 — Critical (Immutable Architectural Invariant)
 
 ---
@@ -49,9 +49,9 @@ governance rules (Contract 1: Clean Architecture Layering).
 
 ## 4. Consequences
 
-✅ The MT5 subsystem is verifiable, mockable, and isolated from business logic.
-✅ Cross-broker adapters (FTMO, FundedNext, etc.) can coexist under the same structure.
-✅ Observability and runtime elements remain within Infrastructure scope.
+✅ The MT5 subsystem is verifiable, mockable, and isolated from business logic. <br>
+✅ Cross-broker adapters (FTMO, FundedNext, etc.) can coexist under the same structure. <br>
+✅ Observability and runtime elements remain within Infrastructure scope. <br>
 ❌ Moving it under `application/` or `platform/` would break layer isolation.
 
 ---

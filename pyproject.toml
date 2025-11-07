@@ -147,13 +147,7 @@ pretty = true
 # │ Testing Configuration (pytest)                                             │
 # ╰────────────────────────────────────────────────────────────────────────────╯
 [tool.pytest.ini_options]
-testpaths = [
-    "tests",
-    "src/quantum/application",
-    "src/quantum/domain",
-    "src/quantum/infrastructure",
-    "src/quantum/interfaces",
-]
+testpaths = ["tests", "src/quantum"]
 
 python_files = ["test_*.py"]
 python_classes = ["Test*", "*Tests"]
@@ -163,7 +157,13 @@ addopts = """
 -ra -q --strict-markers --tb=short
 --cov=src/quantum
 --cov-report=term-missing
+--cov-report=xml:coverage.xml
+--cov-report=html:htmlcov
+--junitxml=test-results/results.xml
+--disable-warnings
 """
+# --cov-fail-under=90
+# --rootdir=. tests
 
 markers = [
     "unit: mark fast, isolated unit tests",

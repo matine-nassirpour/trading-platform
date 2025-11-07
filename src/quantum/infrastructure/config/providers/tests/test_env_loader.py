@@ -52,6 +52,8 @@ def test_load_env_without_apply_does_not_modify_os_environ(monkeypatch, tmp_path
 
 def test_load_env_with_apply_injects_variables(monkeypatch, tmp_path: Path):
     """apply=True must inject merged variables into os.environ."""
+    ConfigState.instance().reset()
+
     monkeypatch.setattr(
         env_loader, "dotenv_values", lambda *a, **kw: {"QUANTUM_ENV": "prod"}
     )
@@ -105,6 +107,8 @@ def test_load_env_uses_cache_if_valid(monkeypatch, tmp_path: Path):
 
 def test_load_env_with_override_replaces_existing(monkeypatch, tmp_path: Path):
     """override=True must replace existing environment variables."""
+    ConfigState.instance().reset()
+
     os.environ["FOO"] = "old"
     monkeypatch.setattr(env_loader, "dotenv_values", lambda *a, **kw: {"FOO": "new"})
     monkeypatch.setattr(env_loader, "find_dotenv", lambda *a, **kw: None)
