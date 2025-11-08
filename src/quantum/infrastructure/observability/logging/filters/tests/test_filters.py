@@ -32,10 +32,6 @@ from quantum.infrastructure.observability.logging.filters.static_fields_filter i
 from tests.support.factories import make_record
 from tests.support.logging_utils import counter_value
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ IgnoreLibrariesFilter / LoggingContextFilter / MonotonicTimestampFilter     │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
-
 
 @pytest.mark.unit
 def test_ignore_libraries_filter_blocks_known_prefixes():
@@ -95,11 +91,6 @@ def test_monotonic_timestamp_filter_injects_once():
     assert rec2.ts_monotonic_ms == 123
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ AuditEventFilter                                                            │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
-
-
 @pytest.mark.unit
 def test_audit_event_filter_allowlist_and_suffix(monkeypatch):
     """
@@ -138,11 +129,6 @@ def test_audit_event_filter_allowlist_and_suffix(monkeypatch):
     # 5) our custom (with suffix v1) → accepted
     rec5 = make_record(extra={"event": {"event_name": "custom_evt_v1"}})
     assert f.filter(rec5) is True
-
-
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ RedactFilter                                                                │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
 
 
 @pytest.mark.unit
@@ -205,11 +191,6 @@ def test_redact_filter_attrs_and_msg_and_counter(monkeypatch):
     assert len(rec2.msg) == RedactFilter.MAX_VALUE_LEN + 1
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ RateLimitFilter                                                             │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
-
-
 @pytest.mark.unit
 def test_rate_limit_filter_bucket_and_refill(monkeypatch):
     """
@@ -254,11 +235,6 @@ def test_rate_limit_filter_bucket_and_refill(monkeypatch):
     assert r6 is True and r7 is True and r8 is False
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ InfoSamplerFilter                                                           │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
-
-
 @pytest.mark.unit
 def test_info_sampler_filter_every_3():
     """
@@ -275,11 +251,6 @@ def test_info_sampler_filter_every_3():
     # INFO: 1 → drop ; 2 → drop ; 3 → pass ; 4 → drop ; 5 → drop ; 6 → pass
     results = [s.filter(make_record(level=logging.INFO)) for _ in range(6)]
     assert results == [False, False, True, False, False, True]
-
-
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ StaticFieldsFilter                                                          │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
 
 
 @pytest.mark.unit

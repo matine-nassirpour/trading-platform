@@ -13,10 +13,9 @@ from quantum.infrastructure.observability.logging.formatters.json_formatter impo
 from tests.support.factories import make_record
 from tests.support.logging_utils import counter_value
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Helpers                                                                     │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
-
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Helpers                                                                    │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 formatter = JsonFormatter()
 
 
@@ -25,11 +24,9 @@ def _parse(formatted: str) -> dict[str, Any]:
     return cast(dict[str, Any], json.loads(formatted))
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Tests                                                                       │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
-
-
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Tests                                                                      │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 @pytest.mark.unit
 @pytest.mark.usefixtures("no_rate_limit_no_sampling")
 class TestFormatterOTelContext:

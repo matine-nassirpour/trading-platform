@@ -13,11 +13,10 @@ from quantum.infrastructure.observability.logging.handlers.partitioned_handler i
 from tests.support.factories import make_record
 from tests.support.time_utils import to_timestamp
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Helpers                                                                     │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
 
-
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Helpers                                                                    │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 class _EchoFormatter(logging.Formatter):
     """Formatter that returns exactly the LogRecord message."""
 
@@ -52,11 +51,9 @@ def _badlogs_glob(dt: datetime) -> str:
     return dt.strftime("bad-logs-%Y%m%d-%H*.jsonl")
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Tests                                                                       │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
-
-
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Tests                                                                      │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 @pytest.mark.unit
 @pytest.mark.usefixtures("iso_env", "_auto_cleanup_handlers", "clean_registry")
 class TestPartitionedJSONLFileHandler:
