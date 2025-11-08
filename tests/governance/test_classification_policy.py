@@ -5,61 +5,35 @@ Compliant with Clean Architecture & Certifiable Software Standards.
 
 import ast
 
-from pathlib import Path
-
 import pytest
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-SRC_DIR = PROJECT_ROOT / "src" / "quantum"
-TEST_DIR = PROJECT_ROOT / "tests"
-
-VALID_MARKS = {"unit", "integration", "e2e", "internal"}
-IGNORED_MARKS = {
-    "parametrize",
-    "skip",
-    "skipif",
-    "xfail",
-    "usefixtures",
-    "filterwarnings",
-}
+from tests.support.governance_common import (
+    IGNORED_MARKS,
+    PROJECT_ROOT,
+    VALID_MARKS,
+    candidate_files,
+    collect_aliases,
+)
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Internal Helpers                                                           │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-def _collect_aliases(tree: ast.Module) -> tuple[set[str], set[str]]:
-    """
-    Identify aliases used for 'pytest' and 'pytest.mark' imports.
-
-    Returns:
-        - pytest_aliases: all names referring to the pytest module (e.g., {'pytest', 'p'})
-        - mark_aliases: all names referring to 'pytest.mark' (e.g., {'mark', 'm'})
-    """
-    pytest_aliases, mark_aliases = {"pytest"}, {"mark"}
-    for node in tree.body:
-        if isinstance(node, ast.Import):
-            for n in node.names:
-                if n.name == "pytest" and n.asname:
-                    pytest_aliases.add(n.asname)
-        elif isinstance(node, ast.ImportFrom) and node.module == "pytest":
-            for n in node.names:
-                if n.name == "mark":
-                    mark_aliases.add(n.asname or "mark")
-    return pytest_aliases, mark_aliases
-
-
 def _is_classification_mark(
     node: ast.AST, *, pytest_aliases: set[str], mark_aliases: set[str]
 ) -> str | None:
     """
-    Accepts:
-      - <pytest_alias>.mark.<name>[()]
-      - <mark_alias>.<name>[()]
+    Detect whether a decorator corresponds to a pytest classification mark.
 
-    Ignores non-classification marks (parametrize/skip/...).
+    Accepts:
+        - <pytest_alias>.mark.<name>[()]
+        - <mark_alias>.<name>[()]
+
+    Ignores:
+        - parametrize, skip, xfail, usefixtures, etc.
 
     Returns:
-         One of the valid marker if decorator is a classification mark.
+        The classification mark name if valid, else None.
     """
     target = node.func if isinstance(node, ast.Call) else node
 
@@ -89,23 +63,8 @@ def _decorator_marks(
     decorators: list[ast.expr], *, pytest_aliases: set[str], mark_aliases: set[str]
 ) -> set[str]:
     """
-    Ensures:
-        - Only valid classification marks are returned.
-        - Non-classification marks (parametrize/skip/xfail/...) are ignored.
-        - The function is deterministic and free of side effects.
-
-    Args:
-        decorators:
-            List of AST decorator nodes applied to a function or class definition.
-        pytest_aliases:
-            Set of all names used to reference the 'pytest' module (e.g., {'pytest', 'p'}).
-        mark_aliases:
-            Set of all names used to reference 'pytest.mark' (e.g., {'mark', 'm'}).
-
-    Returns:
-        set[str]:
-            The subset of classification marks found among the decorators.
-            Each element is one of {'unit', 'integration', 'e2e', 'internal'}.
+    Extract all classification marks from a function or class decorator list.
+    Deterministic, pure, and side-effect-free.
     """
     return {
         m
@@ -121,7 +80,9 @@ def _decorator_marks(
 def _iter_tests(tree: ast.Module, *, pytest_aliases: set[str], mark_aliases: set[str]):
     """
     Yield (lineno, display_name, marks) for every test function or method.
-    This ignores module-level 'pytestmark' on purpose (policy: explicit per function).
+
+    Explicit function-level classification required.
+    Class-level marks are inherited for methods.
     """
     for node in tree.body:
         if isinstance(
@@ -132,7 +93,7 @@ def _iter_tests(tree: ast.Module, *, pytest_aliases: set[str], mark_aliases: set
                 pytest_aliases=pytest_aliases,
                 mark_aliases=mark_aliases,
             )
-        if isinstance(node, ast.ClassDef):
+        elif isinstance(node, ast.ClassDef):
             class_marks = _decorator_marks(
                 node.decorator_list,
                 pytest_aliases=pytest_aliases,
@@ -153,16 +114,6 @@ def _iter_tests(tree: ast.Module, *, pytest_aliases: set[str], mark_aliases: set
                     yield sub.lineno, f"{node.name}.{sub.name}", marks
 
 
-def _candidate_files() -> list[Path]:
-    """
-    Scan both roots:
-      - top-level tests/**/test_*.py   (e.g., tests/integration/...)
-      - src/quantum/**/tests/test_*.py (module-local unit tests)
-    """
-    files = list(TEST_DIR.rglob("test_*.py")) + list(SRC_DIR.rglob("tests/test_*.py"))
-    return sorted(set(files))
-
-
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Test                                                                       │
 # ╰────────────────────────────────────────────────────────────────────────────╯
@@ -180,13 +131,13 @@ def test_each_test_function_is_explicitly_marked():
     """
     unmarked = []
 
-    for path in _candidate_files():
+    for path in candidate_files():
         try:
             src = path.read_text(encoding="utf-8")
         except UnicodeDecodeError:
             continue
         tree = ast.parse(src, filename=str(path))
-        pytest_aliases, mark_aliases = _collect_aliases(tree)
+        pytest_aliases, mark_aliases = collect_aliases(tree)
 
         for lineno, name, marks in _iter_tests(
             tree, pytest_aliases=pytest_aliases, mark_aliases=mark_aliases
