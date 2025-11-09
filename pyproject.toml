@@ -164,7 +164,7 @@ addopts = """
 
 markers = [
     "governance: meta-level tests ensuring internal codebase governance, structure, naming, and fixture policy compliance (non-functional, QA governance layer)",
-    "unit: isolated, pure, no I/O",
+    "verification: isolated unit-level verification of individual components or functions (pure unit tests; no external dependency or cross-layer interaction)",
     "integration: multiple layers/adapters",
     "e2e: end-to-end scenario",
     "slow: long-running test",

@@ -54,7 +54,7 @@ def _badlogs_glob(dt: datetime) -> str:
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Tests                                                                      │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-@pytest.mark.unit
+@pytest.mark.verification
 @pytest.mark.usefixtures("iso_env", "_auto_cleanup_handlers", "clean_registry")
 class TestPartitionedJSONLFileHandler:
     def test_writes_to_expected_partition_and_filename(

@@ -124,7 +124,7 @@ def test_each_test_function_is_explicitly_marked():
 
     Ensures:
         Every test function is decorated with one of:
-        @pytest.mark.unit | @pytest.mark.integration | @pytest.mark.e2e | @pytest.mark.governance
+        @pytest.mark.verification | @pytest.mark.integration | @pytest.mark.e2e | @pytest.mark.governance
 
     Rationale:
         Enables traceability and coverage classification per DO-178C/ISO 26262 guidelines.

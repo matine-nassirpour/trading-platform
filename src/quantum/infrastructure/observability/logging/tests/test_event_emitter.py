@@ -34,7 +34,7 @@ def _is_uuid(s: str | None) -> bool:
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Tests                                                                      │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-@pytest.mark.unit
+@pytest.mark.verification
 def test_emit_event_injects_ids_and_uses_default_level_info(monkeypatch):
     """
     Given run_id and correlation_id are set in ContextVars
@@ -63,7 +63,7 @@ def test_emit_event_injects_ids_and_uses_default_level_info(monkeypatch):
     assert _is_uuid(ev.get("correlation_id"))
 
 
-@pytest.mark.unit
+@pytest.mark.verification
 @pytest.mark.parametrize(
     ("event_name", "expected_level"),
     [
@@ -88,7 +88,7 @@ def test_emit_event_respects_default_level_mapping(
     assert [r.getMessage() for r in recs] == [event_name]
 
 
-@pytest.mark.unit
+@pytest.mark.verification
 def test_emit_event_extra_is_merged_and_event_key_preserved():
     """
     Given `extra` dict is provided to emit_event
@@ -111,7 +111,7 @@ def test_emit_event_extra_is_merged_and_event_key_preserved():
     assert "SHOULD_NOT" not in ev
 
 
-@pytest.mark.unit
+@pytest.mark.verification
 def test_emit_event_accepts_pydantic_like_model():
     """
     Given an object exposing .model_dump()
@@ -134,7 +134,7 @@ def test_emit_event_accepts_pydantic_like_model():
     assert ev["a"] == 2
 
 
-@pytest.mark.unit
+@pytest.mark.verification
 def test_emit_event_invalid_type_raises_typeerror():
     """
     Given an unsupported payload type (neither dict nor pydantic-like)
@@ -145,7 +145,7 @@ def test_emit_event_invalid_type_raises_typeerror():
         emit_event(object())
 
 
-@pytest.mark.unit
+@pytest.mark.verification
 def test_emit_event_fills_ids_when_context_vars_missing(monkeypatch):
     """
     Given ContextVars for run_id/correlation_id may be missing
@@ -164,7 +164,7 @@ def test_emit_event_fills_ids_when_context_vars_missing(monkeypatch):
     # correlation_id may be None if never generated; we don't assert its presence here
 
 
-@pytest.mark.unit
+@pytest.mark.verification
 def test_emit_event_does_not_mutate_input_payload():
     """
     Given a dict payload passed to emit_event

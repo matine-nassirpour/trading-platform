@@ -5,7 +5,7 @@ from pydantic import ValidationError
 from quantum.infrastructure.config.models.tracing import TracingSettings
 
 
-@pytest.mark.unit
+@pytest.mark.verification
 def test_tracing_settings_defaults_are_valid():
     """Default tracing config must be safe and within valid parameter ranges."""
     s = TracingSettings()
@@ -14,7 +14,7 @@ def test_tracing_settings_defaults_are_valid():
     assert s.quantum_trace_otlp_compression in ("none", "gzip", "deflate")
 
 
-@pytest.mark.unit
+@pytest.mark.verification
 def test_tracing_settings_rejects_invalid_protocol(caplog):
     """Invalid OTLP protocol must trigger fallback and warning, not crash."""
     with caplog.at_level("WARNING"):
@@ -24,7 +24,7 @@ def test_tracing_settings_rejects_invalid_protocol(caplog):
     assert s.quantum_trace_otlp_protocol == "http"
 
 
-@pytest.mark.unit
+@pytest.mark.verification
 def test_tracing_settings_sample_bounds():
     """Sample rate outside [0, 1] must trigger validation error."""
     with pytest.raises(ValidationError):

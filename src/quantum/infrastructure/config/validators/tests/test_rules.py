@@ -9,7 +9,7 @@ from quantum.infrastructure.config.validators.rules import (
 )
 
 
-@pytest.mark.unit
+@pytest.mark.verification
 @pytest.mark.parametrize(
     "value,expected",
     [("DEV", "dev"), ("prod", "prod"), ("Staging", "staging"), (None, "dev")],
@@ -22,7 +22,7 @@ def test_environment_validator_accepts_valid(value, expected):
     assert result.value == expected
 
 
-@pytest.mark.unit
+@pytest.mark.verification
 def test_environment_validator_rejects_invalid():
     v = EnvironmentValidator()
     result = v("wrong-env")
@@ -30,7 +30,7 @@ def test_environment_validator_rejects_invalid():
     assert "Invalid" in result.message
 
 
-@pytest.mark.unit
+@pytest.mark.verification
 @pytest.mark.parametrize("value", ["INFO", "debug", "CRITICAL"])
 def test_log_level_validator_accepts_valid(value):
     v = LogLevelValidator()
@@ -39,7 +39,7 @@ def test_log_level_validator_accepts_valid(value):
     assert res.value in {"INFO", "DEBUG", "WARNING", "ERROR", "CRITICAL"}
 
 
-@pytest.mark.unit
+@pytest.mark.verification
 def test_log_level_validator_rejects_unknown():
     v = LogLevelValidator()
     res = v("unknown")
@@ -47,7 +47,7 @@ def test_log_level_validator_rejects_unknown():
     assert "Invalid log level" in res.message
 
 
-@pytest.mark.unit
+@pytest.mark.verification
 @pytest.mark.parametrize("value", ["utc", "local", "UTC"])
 def test_timezone_validator_valid(value):
     v = TimezoneValidator()
@@ -56,14 +56,14 @@ def test_timezone_validator_valid(value):
     assert res.value.lower() in {"utc", "local"}
 
 
-@pytest.mark.unit
+@pytest.mark.verification
 def test_timezone_validator_invalid():
     v = TimezoneValidator()
     res = v("mars")
     assert not res.ok
 
 
-@pytest.mark.unit
+@pytest.mark.verification
 @pytest.mark.parametrize("value,expected", [("grpc", "grpc"), ("http", "http")])
 def test_otlp_protocol_validator_valid(value, expected):
     v = OtlpProtocolValidator()
@@ -72,7 +72,7 @@ def test_otlp_protocol_validator_valid(value, expected):
     assert res.value == expected
 
 
-@pytest.mark.unit
+@pytest.mark.verification
 def test_otlp_protocol_validator_invalid_warns(caplog):
     v = OtlpProtocolValidator()
     res = v("invalid")
@@ -81,7 +81,7 @@ def test_otlp_protocol_validator_invalid_warns(caplog):
     assert "Unsupported OTLP protocol" in caplog.text
 
 
-@pytest.mark.unit
+@pytest.mark.verification
 @pytest.mark.parametrize("value", ["gzip", "none"])
 def test_compression_validator_valid(value):
     v = CompressionValidator()
@@ -90,7 +90,7 @@ def test_compression_validator_valid(value):
     assert res.value == value
 
 
-@pytest.mark.unit
+@pytest.mark.verification
 def test_compression_validator_invalid():
     v = CompressionValidator()
     res = v("snappy")

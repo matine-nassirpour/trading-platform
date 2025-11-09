@@ -9,7 +9,7 @@ from quantum.infrastructure.config.validators import (
 )
 
 
-@pytest.mark.unit
+@pytest.mark.verification
 def test_registry_register_defaults_contains_expected_rules():
     reg = registry.ValidatorRegistry()
     reg.register_defaults()
@@ -25,7 +25,7 @@ def test_registry_register_defaults_contains_expected_rules():
         assert expected in ids
 
 
-@pytest.mark.unit
+@pytest.mark.verification
 def test_registry_rejects_duplicate_registration():
     reg = registry.ValidatorRegistry()
     reg.clear_registry()
@@ -35,7 +35,7 @@ def test_registry_rejects_duplicate_registration():
         reg.register(rule)
 
 
-@pytest.mark.unit
+@pytest.mark.verification
 def test_validate_field_success(monkeypatch):
     reg = registry.ValidatorRegistry()
     reg.register_defaults()
@@ -47,7 +47,7 @@ def test_validate_field_success(monkeypatch):
     assert result.value == "dev"
 
 
-@pytest.mark.unit
+@pytest.mark.verification
 def test_validate_field_failure(monkeypatch):
     with pytest.raises(ValueError) as exc:
         validate_field(
@@ -60,7 +60,7 @@ def test_validate_field_failure(monkeypatch):
     assert "Invalid environment" in str(exc.value)
 
 
-@pytest.mark.unit
+@pytest.mark.verification
 def test_validate_model_integration(monkeypatch):
     dummy_values = {
         "environment": "dev",

@@ -60,7 +60,7 @@ def _ids_ctx(run_id: str, corr_id: str):
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Tests                                                                      │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-@pytest.mark.unit
+@pytest.mark.verification
 def test_setup_propagation_sets_composite_propagator():
     """
     Given setup_propagation()
@@ -73,7 +73,7 @@ def test_setup_propagation_sets_composite_propagator():
     assert "CompositePropagator" in type(prop).__name__
 
 
-@pytest.mark.unit
+@pytest.mark.verification
 def test_install_and_detach_process_baggage_idempotent():
     """
     Given install_process_baggage(run_id, correlation_id)
@@ -105,7 +105,7 @@ def test_install_and_detach_process_baggage_idempotent():
     assert _baggage("correlation_id") in (None, "")
 
 
-@pytest.mark.unit
+@pytest.mark.verification
 def test_baggage_context_from_ids_temporarily_sets_keys():
     """
     Given baggage_context_from_ids()
@@ -131,7 +131,7 @@ def test_baggage_context_from_ids_temporarily_sets_keys():
         assert _baggage("correlation_id") in (None, "")
 
 
-@pytest.mark.unit
+@pytest.mark.verification
 def test_capture_and_use_context_snapshot_with_baggage_injection():
     """
     Given capture_context_snapshot() and use_context_snapshot(..., attach_otel=False, ensure_baggage_from_ids=True)
@@ -169,7 +169,7 @@ def test_capture_and_use_context_snapshot_with_baggage_injection():
         assert _baggage("correlation_id") in (None, "")
 
 
-@pytest.mark.unit
+@pytest.mark.verification
 def test_wrap_callable_with_context_runs_under_snapshot():
     """
     Given wrap_callable_with_context()

@@ -33,7 +33,7 @@ from tests.support.factories import make_record
 from tests.support.logging_utils import counter_value
 
 
-@pytest.mark.unit
+@pytest.mark.verification
 def test_ignore_libraries_filter_blocks_known_prefixes():
     """
     Given noisy library logger prefixes
@@ -58,7 +58,7 @@ def test_ignore_libraries_filter_blocks_known_prefixes():
     assert f.filter(rec2) is True
 
 
-@pytest.mark.unit
+@pytest.mark.verification
 def test_logging_context_filter_injects_env():
     """
     Given a LoggingContextFilter configured with env='prod'
@@ -71,7 +71,7 @@ def test_logging_context_filter_injects_env():
     assert rec.env == "prod"
 
 
-@pytest.mark.unit
+@pytest.mark.verification
 def test_monotonic_timestamp_filter_injects_once():
     """
     Given a record without ts_monotonic_ms
@@ -91,7 +91,7 @@ def test_monotonic_timestamp_filter_injects_once():
     assert rec2.ts_monotonic_ms == 123
 
 
-@pytest.mark.unit
+@pytest.mark.verification
 def test_audit_event_filter_allowlist_and_suffix(monkeypatch):
     """
     Given QUANTUM_AUDIT_EVENTS extends the allowlist
@@ -131,7 +131,7 @@ def test_audit_event_filter_allowlist_and_suffix(monkeypatch):
     assert f.filter(rec5) is True
 
 
-@pytest.mark.unit
+@pytest.mark.verification
 @pytest.mark.usefixtures("no_rate_limit_no_sampling")
 def test_redact_filter_attrs_and_msg_and_counter(monkeypatch):
     """
@@ -191,7 +191,7 @@ def test_redact_filter_attrs_and_msg_and_counter(monkeypatch):
     assert len(rec2.msg) == RedactFilter.MAX_VALUE_LEN + 1
 
 
-@pytest.mark.unit
+@pytest.mark.verification
 def test_rate_limit_filter_bucket_and_refill(monkeypatch):
     """
     Given max_per_sec=2
@@ -235,7 +235,7 @@ def test_rate_limit_filter_bucket_and_refill(monkeypatch):
     assert r6 is True and r7 is True and r8 is False
 
 
-@pytest.mark.unit
+@pytest.mark.verification
 def test_info_sampler_filter_every_3():
     """
     Given sample_every=3
@@ -253,7 +253,7 @@ def test_info_sampler_filter_every_3():
     assert results == [False, False, True, False, False, True]
 
 
-@pytest.mark.unit
+@pytest.mark.verification
 def test_static_fields_filter_sets_and_does_not_overwrite():
     """
     Given StaticFieldsFilter(service_name/namespace/version)
