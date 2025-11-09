@@ -117,14 +117,14 @@ def _iter_tests(tree: ast.Module, *, pytest_aliases: set[str], mark_aliases: set
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Test                                                                       │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-@pytest.mark.internal
+@pytest.mark.governance
 def test_each_test_function_is_explicitly_marked():
     """
     Verify that each test function or method declares an explicit classification mark.
 
     Ensures:
         Every test function is decorated with one of:
-        @pytest.mark.unit | @pytest.mark.integration | @pytest.mark.e2e | @pytest.mark.internal
+        @pytest.mark.unit | @pytest.mark.integration | @pytest.mark.e2e | @pytest.mark.governance
 
     Rationale:
         Enables traceability and coverage classification per DO-178C/ISO 26262 guidelines.

@@ -5,7 +5,7 @@ import pytest
 from tests.support.governance_common import candidate_files
 
 
-@pytest.mark.internal
+@pytest.mark.governance
 def test_fixture_naming_policy():
     """
     Fixtures must follow visibility rules:

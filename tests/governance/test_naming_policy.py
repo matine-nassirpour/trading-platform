@@ -5,7 +5,7 @@ import pytest
 from tests.support.governance_common import PROJECT_ROOT, candidate_files
 
 
-@pytest.mark.internal
+@pytest.mark.governance
 def test_test_files_naming_convention():
     """
     Enforce pytest naming convention for test files.
@@ -57,7 +57,7 @@ def test_test_files_naming_convention():
         assert not violations, summary
 
 
-@pytest.mark.internal
+@pytest.mark.governance
 def test_test_functions_naming_convention():
     """
     Enforce pytest naming convention: test_*, not test*, not *_test.

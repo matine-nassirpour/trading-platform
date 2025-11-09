@@ -163,11 +163,11 @@ addopts = """
 # --cov-fail-under=90
 
 markers = [
+    "governance: meta-level tests ensuring internal codebase governance, structure, naming, and fixture policy compliance (non-functional, QA governance layer)",
     "unit: isolated, pure, no I/O",
     "integration: multiple layers/adapters",
     "e2e: end-to-end scenario",
     "slow: long-running test",
-    "internal: internal CI integrity checks",
 ]
 
 filterwarnings = [

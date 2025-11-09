@@ -3,7 +3,7 @@ import pytest
 from tests.support.governance_common import PROJECT_ROOT, candidate_files
 
 
-@pytest.mark.internal
+@pytest.mark.governance
 def test_no_test_files_outside_designated_paths():
     """
     Ensure all test files are under 'tests/' or '<src>/.../tests/'.
