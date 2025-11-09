@@ -64,7 +64,7 @@ audit: ## Dependency and vulnerability audit
 
 contracts: ## Enforce architectural boundaries (Import Linter)
 	@echo "Checking architecture contracts..."
-	@set PYTHONPATH=src;. && poetry run lint-imports
+	@set PYTHONPATH=src;. && poetry run lint-imports --config assurance/architecture/.importlinter
 
 check-ci: ## Run full CI-equivalent validation suite
 	@echo "Running full CI-equivalent checks..."

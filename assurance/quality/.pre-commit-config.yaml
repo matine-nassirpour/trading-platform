@@ -75,6 +75,7 @@ repos:
         language: system
         pass_filenames: false
         entry: poetry run lint-imports
+        args: ["--config", "assurance/architecture/.importlinter"]
 
 default_language_version:
   python: python3.11
