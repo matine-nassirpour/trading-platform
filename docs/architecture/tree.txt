@@ -1,4 +1,5 @@
 trading-platform/
+├── __pycache__/
 ├── apps/
 │   ├── streamlit/
 │   │   ├── pages/
@@ -11,6 +12,7 @@ trading-platform/
 │   ├── architecture/
 │   │   ├── decisions/
 │   │   │   ├── 0001-designate-mt5-as-infrastructure-adapter.md
+│   │   │   ├── 0002-distribute-tests-by-functional-domain.md
 │   │   │   └── README.md
 │   │   └── tree.txt
 │   ├── config/
@@ -146,19 +148,37 @@ trading-platform/
 │       │   │   │   ├── __init__.py
 │       │   │   │   └── config_adapter.py
 │       │   │   ├── models/
+│       │   │   │   ├── tests/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── test_core.py
+│       │   │   │   │   ├── test_logging.py
+│       │   │   │   │   ├── test_mt5.py
+│       │   │   │   │   └── test_tracing.py
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── core.py
 │       │   │   │   ├── logging.py
 │       │   │   │   ├── mt5.py
 │       │   │   │   └── tracing.py
 │       │   │   ├── providers/
+│       │   │   │   ├── tests/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   └── test_env_loader.py
 │       │   │   │   ├── __init__.py
 │       │   │   │   └── env_loader.py
 │       │   │   ├── runtime/
+│       │   │   │   ├── tests/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── test_manager.py
+│       │   │   │   │   └── test_state.py
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── manager.py
 │       │   │   │   └── state.py
 │       │   │   ├── validators/
+│       │   │   │   ├── tests/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── test_base.py
+│       │   │   │   │   ├── test_registry.py
+│       │   │   │   │   └── test_rules.py
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── base.py
 │       │   │   │   ├── registry.py
@@ -188,6 +208,9 @@ trading-platform/
 │       │   │   │   └── run_id.py
 │       │   │   ├── logging/
 │       │   │   │   ├── filters/
+│       │   │   │   │   ├── tests/
+│       │   │   │   │   │   ├── __init__.py
+│       │   │   │   │   │   └── test_filters.py
 │       │   │   │   │   ├── __init__.py
 │       │   │   │   │   ├── audit_event_filter.py
 │       │   │   │   │   ├── context_filter.py
@@ -198,17 +221,31 @@ trading-platform/
 │       │   │   │   │   ├── redact_filter.py
 │       │   │   │   │   └── static_fields_filter.py
 │       │   │   │   ├── formatters/
+│       │   │   │   │   ├── tests/
+│       │   │   │   │   │   ├── __init__.py
+│       │   │   │   │   │   └── test_json_formatter.py
 │       │   │   │   │   ├── __init__.py
 │       │   │   │   │   └── json_formatter.py
 │       │   │   │   ├── handlers/
+│       │   │   │   │   ├── tests/
+│       │   │   │   │   │   ├── __init__.py
+│       │   │   │   │   │   ├── test_audit_sink_handler.py
+│       │   │   │   │   │   └── test_partitioned_handler.py
 │       │   │   │   │   ├── __init__.py
 │       │   │   │   │   ├── audit_sink_handler.py
 │       │   │   │   │   └── partitioned_handler.py
 │       │   │   │   ├── models/
+│       │   │   │   │   ├── tests/
+│       │   │   │   │   │   ├── __init__.py
+│       │   │   │   │   │   └── test_factory.py
 │       │   │   │   │   ├── __init__.py
 │       │   │   │   │   ├── factory.py
 │       │   │   │   │   ├── log_payload_v1.py
 │       │   │   │   │   └── severity_map.py
+│       │   │   │   ├── tests/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── test_constants.py
+│       │   │   │   │   └── test_event_emitter.py
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── _io_utils.py
 │       │   │   │   ├── constants.py
@@ -224,6 +261,9 @@ trading-platform/
 │       │   │   │   ├── correlation/
 │       │   │   │   │   ├── __init__.py
 │       │   │   │   │   └── correlation_id.py
+│       │   │   │   ├── tests/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   └── test_propagation.py
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── propagation.py
 │       │   │   │   └── provider.py
@@ -253,6 +293,19 @@ trading-platform/
 │   │   │   │   └── test_observability_pipeline_e2e.py
 │   │   │   └── __init__.py
 │   │   └── __init__.py
+│   ├── fixtures/
+│   │   ├── __init__.py
+│   │   ├── environment.py
+│   │   ├── logging.py
+│   │   ├── observability.py
+│   │   ├── settings.py
+│   │   └── state.py
+│   ├── governance/
+│   │   ├── __init__.py
+│   │   ├── test_classification_policy.py
+│   │   ├── test_fixture_policy.py
+│   │   ├── test_naming_policy.py
+│   │   └── test_structure_policy.py
 │   ├── integration/
 │   │   ├── infrastructure/
 │   │   │   ├── config/
@@ -277,57 +330,12 @@ trading-platform/
 │   ├── support/
 │   │   ├── __init__.py
 │   │   ├── factories.py
+│   │   ├── governance_common.py
 │   │   ├── logging_utils.py
 │   │   ├── observability.py
 │   │   ├── time_utils.py
 │   │   ├── types.py
 │   │   └── wait.py
-│   ├── unit/
-│   │   ├── infrastructure/
-│   │   │   ├── config/
-│   │   │   │   ├── models/
-│   │   │   │   │   ├── __init__.py
-│   │   │   │   │   ├── test_core.py
-│   │   │   │   │   ├── test_logging.py
-│   │   │   │   │   ├── test_mt5.py
-│   │   │   │   │   └── test_tracing.py
-│   │   │   │   ├── providers/
-│   │   │   │   │   ├── __init__.py
-│   │   │   │   │   └── test_env_loader.py
-│   │   │   │   ├── runtime/
-│   │   │   │   │   ├── __init__.py
-│   │   │   │   │   ├── test_manager.py
-│   │   │   │   │   └── test_state.py
-│   │   │   │   ├── validators/
-│   │   │   │   │   ├── __init__.py
-│   │   │   │   │   ├── test_base.py
-│   │   │   │   │   ├── test_registry.py
-│   │   │   │   │   └── test_rules.py
-│   │   │   │   └── __init__.py
-│   │   │   ├── observability/
-│   │   │   │   ├── logging/
-│   │   │   │   │   ├── filters/
-│   │   │   │   │   │   ├── __init__.py
-│   │   │   │   │   │   └── test_filters.py
-│   │   │   │   │   ├── formatters/
-│   │   │   │   │   │   ├── __init__.py
-│   │   │   │   │   │   └── test_json_formatter.py
-│   │   │   │   │   ├── handlers/
-│   │   │   │   │   │   ├── __init__.py
-│   │   │   │   │   │   ├── test_audit_sink_handler.py
-│   │   │   │   │   │   └── test_partitioned_handler.py
-│   │   │   │   │   ├── models/
-│   │   │   │   │   │   ├── __init__.py
-│   │   │   │   │   │   └── test_factory.py
-│   │   │   │   │   ├── __init__.py
-│   │   │   │   │   ├── test_constants.py
-│   │   │   │   │   └── test_event_emitter.py
-│   │   │   │   ├── tracing/
-│   │   │   │   │   ├── __init__.py
-│   │   │   │   │   └── test_propagation.py
-│   │   │   │   └── __init__.py
-│   │   │   └── __init__.py
-│   │   └── __init__.py
 │   ├── __init__.py
 │   └── conftest.py
 ├── .env.example
