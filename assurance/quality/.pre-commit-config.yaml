@@ -54,8 +54,8 @@ repos:
     rev: v1.5.0
     hooks:
       - id: detect-secrets
-        args: ["--baseline", ".secrets.baseline"]
-        exclude: (^\.secrets\.baseline$|docs/)
+        args: ["--baseline", "assurance/security/.secrets.baseline"]
+        exclude: (^assurance/security/.secrets\.baseline$|docs/)
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
