@@ -1,6 +1,7 @@
-# Makefile — Windows (cmd) + Poetry
-# Default shell: cmd.exe. PowerShell is called explicitly via $(PS).
-
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Makefile — Quantum Trading Platform (Windows + Poetry)                     │
+# │ Purpose: unified software assurance and build orchestration                │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 SHELL := cmd.exe
 .SHELLFLAGS := /V:ON /E:ON /C
 
@@ -10,56 +11,84 @@ PS  := powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -Command
 
 .DEFAULT_GOAL := help
 
-.PHONY: help fmt-check fmt typecheck pre-commit test audit clean contracts check-ci ui tree log-schema
+.PHONY: help fmt-check fmt lint typecheck bandit pre-commit test audit contracts check-ci clean ui tree log-schema
 
+
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Help                                                                       │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 help:
-	@$(PS) "Write-Host 'Targets:'; Get-Content '$(MAKEFILE_LIST)' | Select-String '^\S+:.*?## ' | ForEach-Object { $$t = $$_.Line -replace ':.*',''; $$d = ($$_.Line -split '## ')[1]; '{0,-18} {1}' -f $$t, $$d } | Sort-Object"
+	@$(PS) "Write-Host 'Targets:'; Get-Content '$(MAKEFILE_LIST)' | Select-String '^\S+:.*?## ' | ForEach-Object { $$t = $$_.Line -replace ':.*',''; $$d = ($$_.Line -split '## ')[1]; '{0,-20} {1}' -f $$t, $$d } | Sort-Object"
 
-fmt-check: ## Check the format (without modifying)
-	poetry run ruff check .
-	poetry run ruff format --check .
-	poetry run black --check .
 
-fmt: ## Format & fixe (ruff + black)
-#	poetry run ruff check --fix .
-#	poetry run ruff format .
-	poetry run black . --config assurance/quality/black.toml
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Code Quality & Formatting                                                  │
+# ╰────────────────────────────────────────────────────────────────────────────╯
+fmt-check: ## Check formatting and style compliance (Ruff + Black)
+	@poetry run ruff check . --config assurance/quality/ruff.toml
+	@poetry run black --check . --config assurance/quality/black.toml
 
-typecheck: ## Strict typing (mypy)
-	poetry run mypy $(SRC)
+fmt: ## Auto-format and fix style issues (Ruff + Black)
+	@poetry run ruff check --fix . --config assurance/quality/ruff.toml
+	@poetry run black . --config assurance/quality/black.toml
 
-test: ## Run full test suite with coverage
-	@echo "Running tests with full isolation and coverage..."
-	@poetry run pytest -v
+lint: ## Comprehensive linting (Ruff + Isort)
+	@poetry run ruff check . --config assurance/quality/ruff.toml
+	@poetry run isort . --check-only --settings-file assurance/quality/isort.cfg
 
-pre-commit: ## Run pre-commit hooks on the entire repo
-	@echo "Running pre-commit hooks"
+
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Typing, Security, and Pre-commit                                           │
+# ╰────────────────────────────────────────────────────────────────────────────╯
+typecheck: ## Strict static typing (Mypy)
+	@poetry run mypy --config-file assurance/quality/mypy.ini $(SRC)
+
+bandit: ## Static security analysis (Bandit)
+	@poetry run bandit --ini assurance/security/bandit.ini
+
+pre-commit: ## Run all pre-commit hooks
+	@echo "Running pre-commit hooks..."
 	@poetry run pre-commit run --all-files --show-diff-on-failure --config assurance/quality/.pre-commit-config.yaml
 
-audit: ## Check pyproject/lock and vulnerabilities
-	poetry check
-	poetry run pip-audit -l || (echo "pip-audit found issues" & exit /b 1)
 
-contracts: ## Enforce architecture contracts (import-linter)
-	@echo "Checking architecture contracts (import-linter)"
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Tests & Quality Gates                                                      │
+# ╰────────────────────────────────────────────────────────────────────────────╯
+test: ## Run test suite with full coverage
+	@echo "Running tests with coverage..."
+	@poetry run pytest -v
+
+audit: ## Dependency and vulnerability audit
+	@poetry check
+	@poetry run pip-audit -l || (echo "pip-audit found issues" & exit /b 1)
+
+contracts: ## Enforce architectural boundaries (Import Linter)
+	@echo "Checking architecture contracts..."
 	@set PYTHONPATH=src;. && poetry run lint-imports
 
-clean: ## Remove build/test caches
-	-@$(PS) "Remove-Item -Recurse -Force -ErrorAction SilentlyContinue .pytest_cache,.mypy_cache,.ruff_cache,htmlcov,dist,build,*.egg-info,.coverage,coverage.xml,test-results"
+check-ci: ## Run full CI-equivalent validation suite
+	@echo "Running full CI-equivalent checks..."
+	@$(MAKE) pre-commit
+	@$(MAKE) test
+	@echo "All CI checks passed successfully."
 
-check-ci: pre-commit test ## Run CI-equivalent checks locally
-	@echo "All CI checks completed"
+
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Utilities                                                                  │
+# ╰────────────────────────────────────────────────────────────────────────────╯
+clean: ## Remove build/test artifacts and caches
+	-@$(PS) "Remove-Item -Recurse -Force -ErrorAction SilentlyContinue .pytest_cache,.mypy_cache,.ruff_cache,.isort_cache,htmlcov,dist,build,*.egg-info,.coverage,coverage.xml,test-results,build/coverage"
 
 ui: ## Launch Streamlit
 	@set PYTHONPATH=src;. && poetry run streamlit run apps/streamlit/pages/observability_page.py --server.headless true
 
-tree: ## Print repo tree into docs/architecture/tree.txt
+tree: ## Generate documentation of directory structure
 	@$(PS) "New-Item -ItemType Directory -Force -Path 'docs/architecture' | Out-Null"
 	@poetry run python scripts/print_tree.py . --output docs/architecture/tree.txt --respect-gitignore --max-depth 10
-	@echo "Done. Output: docs/architecture/tree.txt"
+	@echo "Architecture tree generated: docs/architecture/tree.txt"
 
-log-schema: ## Generate the canonical JSON schema for LogPayloadV1
-	@echo "Generating LogPayloadV1 JSON schema..."
+log-schema: ## Generate canonical JSON schema for LogPayloadV1
+	@echo "Generating LogPayloadV1 schema..."
 	@$(PS) "New-Item -ItemType Directory -Force -Path 'docs/observability' | Out-Null"
 	@set PYTHONPATH=src;. && poetry run python scripts/generate_log_schema.py
 	@echo "Schema generated at docs/observability/log_schema_v1.json"
