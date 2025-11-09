@@ -4,8 +4,9 @@ import logging
 
 import pytest
 
-from quantum.infrastructure.observability.logging.models.factory import from_log_record
 from tests.support.factories import make_record
+
+from quantum.infrastructure.observability.logging.models.factory import from_log_record
 
 
 @pytest.mark.verification

@@ -204,7 +204,9 @@ class JsonFormatter(logging.Formatter):
                 elif value is not None:
                     attrs["exception_text"] = str(value)
             except Exception:
-                pass
+                logging.getLogger(__name__).debug(
+                    "Failed to normalize exception", exc_info=True
+                )
         elif key == "attrs" and isinstance(value, dict):
             attrs.update(value)
         else:

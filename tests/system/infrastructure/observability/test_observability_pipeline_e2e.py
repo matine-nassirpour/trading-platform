@@ -28,6 +28,7 @@ from typing import Any
 import pytest
 
 from opentelemetry import trace
+from tests.support.observability import get_gauge_value
 
 from quantum.infrastructure.observability.bootstrap.health_registry import (
     get_health_registry,
@@ -47,7 +48,6 @@ from quantum.infrastructure.observability.tracing.correlation.correlation_id imp
 from quantum.infrastructure.observability.tracing.propagation import (
     baggage_context_from_ids,
 )
-from tests.support.observability import get_gauge_value
 
 
 @pytest.mark.system

@@ -4,6 +4,9 @@ import logging
 
 import pytest
 
+from tests.support.factories import make_record
+from tests.support.logging_utils import counter_value
+
 from quantum.infrastructure.observability.logging.constants import get_audit_allowlist
 from quantum.infrastructure.observability.logging.filters.audit_event_filter import (
     AuditEventFilter,
@@ -29,8 +32,6 @@ from quantum.infrastructure.observability.logging.filters.redact_filter import (
 from quantum.infrastructure.observability.logging.filters.static_fields_filter import (
     StaticFieldsFilter,
 )
-from tests.support.factories import make_record
-from tests.support.logging_utils import counter_value
 
 
 @pytest.mark.verification

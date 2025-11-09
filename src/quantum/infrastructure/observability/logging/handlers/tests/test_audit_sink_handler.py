@@ -8,13 +8,14 @@ from pathlib import Path
 
 import pytest
 
+from tests.support.factories import make_record
+from tests.support.time_utils import to_timestamp
+
 import quantum.infrastructure.observability.logging.handlers.audit_sink_handler as audit_mod
 
 from quantum.infrastructure.observability.logging.handlers.audit_sink_handler import (
     AuditEventFileHandler,
 )
-from tests.support.factories import make_record
-from tests.support.time_utils import to_timestamp
 
 
 @pytest.mark.verification

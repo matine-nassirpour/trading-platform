@@ -12,6 +12,8 @@ import os
 
 import pytest
 
+from tests.support.observability import get_gauge_value
+
 from quantum.infrastructure.observability.bootstrap.health_registry import (
     get_health_registry,
 )
@@ -19,7 +21,6 @@ from quantum.infrastructure.observability.bootstrap.init_manager import (
     init_observability,
     shutdown_observability,
 )
-from tests.support.observability import get_gauge_value
 
 
 @pytest.mark.system

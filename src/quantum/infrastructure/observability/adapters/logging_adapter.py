@@ -103,8 +103,14 @@ class LoggingAdapter(LoggingPort):
                     if fmt:
                         try:
                             fmt.format(record)  # triggers formatter/redactor logic
-                        except Exception:
-                            pass
+                        except Exception as exc:
+                            self._logger.debug(
+                                "Formatter '%s' failed to process log record (%s): %s",
+                                getattr(fmt, "__class__", type(fmt)).__name__,
+                                getattr(record, "msg", "<no message>"),
+                                exc,
+                                exc_info=True,
+                            )
 
                     # Emit directly to handler (thread-safe, deterministic)
                     h.emit(record)

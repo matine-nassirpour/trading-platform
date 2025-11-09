@@ -17,9 +17,8 @@ from pathlib import Path
 
 import streamlit as st
 
-from opentelemetry import trace
-
 from apps.streamlit.bootstrap import get_runtime_context, init_streamlit
+from opentelemetry import trace
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Constants & Initialization                                                 │

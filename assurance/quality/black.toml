@@ -1,0 +1,9 @@
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ BLACK — Canonical Code Formatter                                           │
+# ╰────────────────────────────────────────────────────────────────────────────╯
+[tool.black]
+line-length = 88
+target-version = ["py311"]
+skip-string-normalization = false
+skip-magic-trailing-comma = false
+preview = true

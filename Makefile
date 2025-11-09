@@ -21,9 +21,9 @@ fmt-check: ## Check the format (without modifying)
 	poetry run black --check .
 
 fmt: ## Format & fixe (ruff + black)
-	poetry run ruff check --fix .
-	poetry run ruff format .
-	poetry run black .
+#	poetry run ruff check --fix .
+#	poetry run ruff format .
+	poetry run black . --config assurance/quality/black.toml
 
 typecheck: ## Strict typing (mypy)
 	poetry run mypy $(SRC)
@@ -34,7 +34,7 @@ test: ## Run full test suite with coverage
 
 pre-commit: ## Run pre-commit hooks on the entire repo
 	@echo "Running pre-commit hooks"
-	@poetry run pre-commit run --all-files --show-diff-on-failure
+	@poetry run pre-commit run --all-files --show-diff-on-failure --config assurance/quality/.pre-commit-config.yaml
 
 audit: ## Check pyproject/lock and vulnerabilities
 	poetry check

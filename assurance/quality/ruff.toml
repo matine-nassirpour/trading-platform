@@ -1,0 +1,38 @@
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ RUFF — Unified Static Analysis and Linting Engine                          │
+# ╰────────────────────────────────────────────────────────────────────────────╯
+fix = true
+line-length = 88
+target-version = "py311"
+respect-gitignore = true
+format.preview = true
+
+[lint]
+select = [
+    "F",   # Pyflakes: syntax and import errors
+    "W",   # PEP 8 warnings (style)
+    "B",   # Bugbear: common pitfalls and antipatterns
+    "UP",  # Pyupgrade: enforce modern syntax
+    "I",   # Import checks (supplemental to Isort)
+    "C90"  # Cyclomatic complexity enforcement
+]
+
+# Ignore rules delegated to Isort
+ignore = ["I001", "I002"]
+
+# ------------------------------------------------------------------------------
+# Cyclomatic Complexity Limitation
+# ------------------------------------------------------------------------------
+[lint.mccabe]
+max-complexity = 8
+
+# ------------------------------------------------------------------------------
+# Per-Directory Linting Exceptions
+# Rule C901 (complexity) only for the core architecture
+# ------------------------------------------------------------------------------
+[lint.per-file-ignores]
+"tests/**/*.py"   = ["C901"]
+"scripts/**/*.py" = ["C901"]
+"runtime/**/*.py" = ["C901"]
+"apps/**/*.py"    = ["C901"]
+"docs/**/*.py"    = ["C901"]

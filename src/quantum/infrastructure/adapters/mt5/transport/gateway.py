@@ -91,8 +91,8 @@ def shutdown_mt5_terminal() -> None:
         import MetaTrader5 as mt5  # lazy import
 
         mt5.shutdown()
-    except Exception:
-        pass
+    except (ImportError, ModuleNotFoundError):
+        logger.debug("MetaTrader5 not installed — skipping shutdown.")
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
@@ -163,8 +163,15 @@ class Mt5ExecutionFunction(ExecutionFunctionProtocol):
             try:
                 exec_channel_latency_ms.labels(call=call).observe(dur_ms)
                 exec_channel_total.labels(call=call, code=str(code)).inc()
-            except Exception:
-                pass  # metrics should never break execution
+            except Exception as exc:
+                logger.debug(
+                    "Failed to record metrics for call '%s' (code=%s, duration=%dms): %s",
+                    call,
+                    code,
+                    dur_ms,
+                    exc,
+                    exc_info=True,
+                )
 
             # ─── Tracing enrichment
             span.set_attribute("exec.channel", str(channel or "unknown"))

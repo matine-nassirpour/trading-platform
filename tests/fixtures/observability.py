@@ -1,7 +1,8 @@
 import pytest
 
-from quantum.infrastructure.config.models.logging import LoggingSettings
 from tests.support.logging_utils import close_all_handlers
+
+from quantum.infrastructure.config.models.logging import LoggingSettings
 
 
 @pytest.fixture(scope="function")

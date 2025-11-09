@@ -7,11 +7,12 @@ from typing import Any, cast
 
 import pytest
 
+from tests.support.factories import make_record
+from tests.support.logging_utils import counter_value
+
 from quantum.infrastructure.observability.logging.formatters.json_formatter import (
     JsonFormatter,
 )
-from tests.support.factories import make_record
-from tests.support.logging_utils import counter_value
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Helpers                                                                    │

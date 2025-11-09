@@ -3,8 +3,9 @@ from __future__ import annotations
 import logging
 import threading
 
-from quantum.application.ports.outbound.observability_port import ObservabilityPort
 from runtime.runtime_composer import get_runtime
+
+from quantum.application.ports.outbound.observability_port import ObservabilityPort
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Global guards                                                              │

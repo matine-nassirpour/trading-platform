@@ -7,11 +7,12 @@ from pathlib import Path
 
 import pytest
 
+from tests.support.factories import make_record
+from tests.support.time_utils import to_timestamp
+
 from quantum.infrastructure.observability.logging.handlers.partitioned_handler import (
     PartitionedJSONLFileHandler,
 )
-from tests.support.factories import make_record
-from tests.support.time_utils import to_timestamp
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮

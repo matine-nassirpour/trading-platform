@@ -1,0 +1,21 @@
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ BANDIT — Static Security Analysis Policy                                   │
+# ╰────────────────────────────────────────────────────────────────────────────╯
+targets:
+  - src/quantum
+
+exclude_dirs:
+  - tests
+
+# Rule skips (B101 allows 'assert' in non-production code)
+skips:
+  - B101
+
+# Default severity and confidence thresholds
+severity: LOW
+confidence: HIGH
+
+# Output options
+format: txt
+verbose: true
+color: true
