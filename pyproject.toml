@@ -154,10 +154,12 @@ addopts = """
     --rootdir=.
     --import-mode=importlib
     --cov=src/quantum
+    --cov-branch
     --cov-report=term-missing
-    --cov-report=xml:coverage.xml
-    --cov-report=html:htmlcov
-    --junitxml=test-results/results.xml
+    --cov-report=html:build/coverage/htmlcov
+    --cov-report=xml:build/coverage/coverage.xml
+    --cov-report=json:build/coverage/coverage.json
+    --junitxml=build/test-results/results.xml
     --disable-warnings
 """
 # --cov-fail-under=90
@@ -189,6 +191,7 @@ log_cli_date_format = "%Y-%m-%d %H:%M:%S"
 [tool.coverage.run]
 branch = true
 source = ["src/quantum"]
+data_file = "build/coverage/.coverage"
 omit = [
     "*/__init__.py",
     "*/tests/*",
@@ -206,11 +209,15 @@ exclude_lines = [
 ]
 
 [tool.coverage.html]
-directory = "htmlcov"
+directory = "build/coverage/htmlcov"
 title = "Quantum Coverage Report"
 
 [tool.coverage.xml]
-output = "coverage.xml"
+output = "build/coverage/coverage.xml"
+
+[tool.coverage.json]
+output = "build/coverage/coverage.json"
+pretty_print = true
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
