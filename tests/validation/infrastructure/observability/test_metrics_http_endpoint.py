@@ -19,7 +19,7 @@ def _free_port() -> int:
         return s.getsockname()[1]
 
 
-@pytest.mark.integration
+@pytest.mark.validation
 @pytest.mark.usefixtures("no_rate_limit_no_sampling")
 class TestMetricsHTTPEndpoint:
     def test_metrics_http_endpoint_exposes_core_metrics(self, tmp_workspace, tmp_path):

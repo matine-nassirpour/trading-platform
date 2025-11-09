@@ -26,7 +26,7 @@ from quantum.infrastructure.config.runtime.state import ConfigState
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Core model loading and validation                                          │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-@pytest.mark.integration
+@pytest.mark.validation
 def test_core_load_creates_valid_model(tmp_path: Path, iso_env):
     """
     Load a minimal .env file and ensure ConfigManager.load() returns a valid CoreSettings.
@@ -61,7 +61,7 @@ def test_core_load_creates_valid_model(tmp_path: Path, iso_env):
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Secondary model loaders and immutability                                   │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-@pytest.mark.integration
+@pytest.mark.validation
 def test_secondary_loaders_return_valid_models(tmp_workspace):
     """
     Ensure that all secondary loaders return valid, frozen model instances.
@@ -97,7 +97,7 @@ def test_secondary_loaders_return_valid_models(tmp_workspace):
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Cache clearing and lifecycle reset                                         │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-@pytest.mark.integration
+@pytest.mark.validation
 def test_clear_caches_resets_all_state(tmp_workspace):
     """
     Ensure ConfigManager.clear_caches() resets all LRU caches and ConfigState.
@@ -121,7 +121,7 @@ def test_clear_caches_resets_all_state(tmp_workspace):
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Snapshot generation and coherence                                          │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-@pytest.mark.integration
+@pytest.mark.validation
 def test_snapshot_returns_minimal_consistent_view(tmp_workspace):
     """
     ConfigManager.snapshot() should produce a coherent dict view.
@@ -141,7 +141,7 @@ def test_snapshot_returns_minimal_consistent_view(tmp_workspace):
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Environment isolation and cache behavior                                   │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-@pytest.mark.integration
+@pytest.mark.validation
 def test_environment_isolation_between_loads(tmp_workspace, iso_env):
     """
     Changing os.environ after first load should not mutate cached models.
@@ -164,7 +164,7 @@ def test_environment_isolation_between_loads(tmp_workspace, iso_env):
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Broker credentials resilience                                              │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-@pytest.mark.integration
+@pytest.mark.validation
 def test_get_mt5_credentials_handles_partial_values(tmp_workspace):
     """
     get_mt5_credentials() must return safe string values even if env vars are missing.
@@ -177,7 +177,7 @@ def test_get_mt5_credentials_handles_partial_values(tmp_workspace):
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Thread-safety and shared cache consistency                                 │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-@pytest.mark.integration
+@pytest.mark.validation
 def test_thread_safe_access_to_loaders(tmp_workspace):
     """
     Multiple threads calling ConfigManager.load_logging() concurrently

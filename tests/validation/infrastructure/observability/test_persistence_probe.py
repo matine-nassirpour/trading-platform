@@ -26,7 +26,7 @@ def _init_then_assert_then_shutdown(assert_fn) -> None:
         )
 
 
-@pytest.mark.integration
+@pytest.mark.validation
 @pytest.mark.usefixtures("no_rate_limit_no_sampling")
 class TestPersistenceProbe:
     def test_no_persistent_sinks_sets_logging_sink_up_0(self, tmp_workspace):

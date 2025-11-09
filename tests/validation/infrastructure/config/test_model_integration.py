@@ -22,7 +22,7 @@ from quantum.infrastructure.config.runtime.manager import ConfigManager
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Cross-model initialization and environment loading                         │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-@pytest.mark.integration
+@pytest.mark.validation
 def test_models_initialize_consistently_from_env(tmp_workspace, iso_env):
     """
     Ensure all configuration models can be instantiated consistently from the same environment snapshot.
@@ -68,7 +68,7 @@ def test_models_initialize_consistently_from_env(tmp_workspace, iso_env):
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Validation resilience and type coercion                                    │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-@pytest.mark.integration
+@pytest.mark.validation
 def test_invalid_env_values_trigger_fallback(tmp_workspace, iso_env):
     """
     Invalid types should fall back to model default without crashing.
@@ -84,7 +84,7 @@ def test_invalid_env_values_trigger_fallback(tmp_workspace, iso_env):
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Deterministic defaults and stable initialization                           │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-@pytest.mark.integration
+@pytest.mark.validation
 def test_defaults_are_deterministic_and_stable(iso_env):
     """
     Instantiating models without .env should always produce deterministic defaults.
@@ -102,7 +102,7 @@ def test_defaults_are_deterministic_and_stable(iso_env):
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Serialization and schema validation                                        │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-@pytest.mark.integration
+@pytest.mark.validation
 def test_models_serialization_and_schema_coherence(tmp_workspace, iso_env):
     """
     Ensure each model can be serialized to JSON, reconstructed, and schema is valid.
@@ -125,7 +125,7 @@ def test_models_serialization_and_schema_coherence(tmp_workspace, iso_env):
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ ConfigManager coherence with manual models                                 │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-@pytest.mark.integration
+@pytest.mark.validation
 def test_configmanager_and_models_remain_coherent(tmp_workspace, iso_env):
     """
     Verify ConfigManager.load() and manual model instantiation remain consistent.
@@ -149,7 +149,7 @@ def test_configmanager_and_models_remain_coherent(tmp_workspace, iso_env):
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ MT5 strict validation and credential enforcement                           │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-@pytest.mark.integration
+@pytest.mark.validation
 def test_partial_mt5_config_is_strict_with_incomplete_credentials(
     tmp_workspace, iso_env
 ):
@@ -180,7 +180,7 @@ def test_partial_mt5_config_is_strict_with_incomplete_credentials(
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Field aliasing and case-insensitive environment mapping                    │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-@pytest.mark.integration
+@pytest.mark.validation
 def test_model_field_aliases_and_case_insensitivity(tmp_workspace, iso_env):
     """
     Model fields should accept environment variable names case-insensitively.

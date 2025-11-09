@@ -20,7 +20,7 @@ from quantum.infrastructure.config.runtime.state import ConfigState
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Singleton identity and lifecycle invariants                                │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-@pytest.mark.integration
+@pytest.mark.validation
 def test_singleton_identity_across_imports():
     """
     ConfigState must always return the same instance across imports
@@ -32,7 +32,7 @@ def test_singleton_identity_across_imports():
     assert callable(state1.snapshot)
 
 
-@pytest.mark.integration
+@pytest.mark.validation
 def test_snapshot_and_reset_cycle(tmp_path: Path, iso_env):
     """
     snapshot() reflects env cache after load_env(), and reset() clears pid/cache
@@ -59,7 +59,7 @@ def test_snapshot_and_reset_cycle(tmp_path: Path, iso_env):
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Concurrency and thread safety                                              │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-@pytest.mark.integration
+@pytest.mark.validation
 def test_thread_safety_during_concurrent_access(tmp_path: Path, iso_env):
     """
     Concurrent readers/writers must not corrupt the cache; last write wins
@@ -98,7 +98,7 @@ def test_thread_safety_during_concurrent_access(tmp_path: Path, iso_env):
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ PID validation and cache invalidation                                      │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-@pytest.mark.integration
+@pytest.mark.validation
 def test_pid_invalidation(tmp_path: Path, iso_env):
     """
     Cache validity must depend on current PID; mismatch invalidates cache
@@ -122,7 +122,7 @@ def test_pid_invalidation(tmp_path: Path, iso_env):
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Reset idempotence and safe reentrancy                                      │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-@pytest.mark.integration
+@pytest.mark.validation
 def test_multiple_resets_are_idempotent():
     """
     reset() is safe to call repeatedly; state remains consistent
@@ -145,7 +145,7 @@ def test_multiple_resets_are_idempotent():
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Atomicity and coherence of updates                                         │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-@pytest.mark.integration
+@pytest.mark.validation
 def test_env_cache_consistency_during_updates(tmp_path: Path, iso_env):
     """
     Updates to env cache are atomic; final snapshot reflects the last write

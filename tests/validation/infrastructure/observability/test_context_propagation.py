@@ -20,7 +20,7 @@ from quantum.infrastructure.observability.tracing.propagation import (
 )
 
 
-@pytest.mark.integration
+@pytest.mark.validation
 @pytest.mark.usefixtures("no_rate_limit_no_sampling")
 def test_context_propagation_threads_and_executor(
     obs_session, tmp_workspace, assert_jsonl_tail

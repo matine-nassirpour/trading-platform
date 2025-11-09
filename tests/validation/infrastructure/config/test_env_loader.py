@@ -18,7 +18,7 @@ from quantum.infrastructure.config.runtime.state import ConfigState
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Layer merging and precedence                                               │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-@pytest.mark.integration
+@pytest.mark.validation
 def test_env_loader_merges_layers(tmp_path: Path, iso_env):
     """
     Verify that .env, .env.local, and .env.{env} are merged deterministically
@@ -54,7 +54,7 @@ def test_env_loader_merges_layers(tmp_path: Path, iso_env):
     assert reloaded == merged
 
 
-@pytest.mark.integration
+@pytest.mark.validation
 def test_env_loader_handles_missing_layers(tmp_path: Path, iso_env):
     """
     Validate behavior when optional .env.local or .env.{env} are missing.
@@ -72,7 +72,7 @@ def test_env_loader_handles_missing_layers(tmp_path: Path, iso_env):
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Environment application                                                    │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-@pytest.mark.integration
+@pytest.mark.validation
 def test_env_loader_apply_and_noapply_modes(tmp_path: Path, iso_env):
     """
     Ensure apply=False preserves purity, while apply=True injects variables
@@ -104,7 +104,7 @@ def test_env_loader_apply_and_noapply_modes(tmp_path: Path, iso_env):
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Override semantics and cache reset                                         │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-@pytest.mark.integration
+@pytest.mark.validation
 def test_env_loader_respects_override_and_cache(tmp_path: Path, iso_env):
     """
     Verify that override=False preserves os.environ values.
@@ -129,7 +129,7 @@ def test_env_loader_respects_override_and_cache(tmp_path: Path, iso_env):
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Cache reuse and process consistency                                        │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-@pytest.mark.integration
+@pytest.mark.validation
 def test_env_loader_cache_reuse_and_pid_invalidation(tmp_path: Path, iso_env):
     """
     Verify that subsequent calls reuse the cached environment when PID unchanged,
@@ -159,7 +159,7 @@ def test_env_loader_cache_reuse_and_pid_invalidation(tmp_path: Path, iso_env):
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Reapply Idempotence                                                        │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-@pytest.mark.integration
+@pytest.mark.validation
 def test_env_loader_reapply_is_idempotent(tmp_path: Path, iso_env):
     """
     Ensure repeated calls to load_env(apply=True) are side effect free

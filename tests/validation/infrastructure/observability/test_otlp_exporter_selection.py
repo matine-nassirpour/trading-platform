@@ -76,7 +76,7 @@ def _assert_inactive_with_reason(
 # ╰─────────────────────────────────────────────────────────────────────────────╯
 
 
-@pytest.mark.integration
+@pytest.mark.validation
 @pytest.mark.usefixtures("no_rate_limit_no_sampling")
 class TestOTLPExporterSelection:
     def test_console_and_none_exporters_are_inactive(self, tmp_workspace, caplog):
