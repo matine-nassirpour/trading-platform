@@ -21,7 +21,7 @@ from quantum.infrastructure.observability.bootstrap.init_manager import (
 from tests.support.observability import get_gauge_value
 
 
-@pytest.mark.e2e
+@pytest.mark.system
 @pytest.mark.otlp
 def test_observability_otlp_http_exporter_e2e(tmp_workspace, free_port):
     """

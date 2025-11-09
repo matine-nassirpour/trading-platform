@@ -24,7 +24,7 @@ from quantum.infrastructure.observability.bootstrap.init_manager import (
 from tests.support.observability import get_gauge_value
 
 
-@pytest.mark.e2e
+@pytest.mark.system
 @pytest.mark.prometheus
 @pytest.mark.filesystem
 def test_observability_metrics_http_probe_e2e(tmp_workspace):

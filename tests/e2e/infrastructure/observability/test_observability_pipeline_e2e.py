@@ -50,7 +50,7 @@ from quantum.infrastructure.observability.tracing.propagation import (
 from tests.support.observability import get_gauge_value
 
 
-@pytest.mark.e2e
+@pytest.mark.system
 @pytest.mark.filesystem
 @pytest.mark.prometheus
 @pytest.mark.otlp

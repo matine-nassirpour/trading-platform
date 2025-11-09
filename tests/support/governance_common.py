@@ -13,7 +13,15 @@ TEST_DIR = PROJECT_ROOT / "tests"
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Classification Constants                                                   │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-VALID_MARKS = {"governance", "verification", "validation", "e2e"}
+VALID_MARKS = {
+    "governance",
+    "verification",
+    "validation",
+    "qualification",
+    "certification",
+    "performance",
+    "system",
+}
 IGNORED_MARKS = {
     "parametrize",
     "skip",
