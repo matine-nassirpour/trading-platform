@@ -53,48 +53,6 @@ build-backend = "poetry.core.masonry.api"
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Testing Configuration (pytest)                                             │
-# ╰────────────────────────────────────────────────────────────────────────────╯
-[tool.pytest.ini_options]
-testpaths = ["tests", "src/quantum"]
-
-addopts = """
-    -ra -q --strict-markers --tb=short
-    --rootdir=.
-    --import-mode=importlib
-    --cov=src/quantum
-    --cov-branch
-    --cov-report=term-missing
-    --cov-report=html:build/coverage/htmlcov
-    --cov-report=xml:build/coverage/coverage.xml
-    --cov-report=json:build/coverage/coverage.json
-    --junitxml=build/test-results/results.xml
-    --disable-warnings
-"""
-# --cov-fail-under=90
-
-markers = [
-    "governance: meta-level tests ensuring internal codebase governance, structure, naming, and fixture policy compliance (non-functional, QA governance layer)",
-    "verification: isolated unit-level verification of individual components or functions (pure unit tests; no external dependency or cross-layer interaction)",
-    "validation: cross-domain functional validation equivalent to integration tests; verifies interactions and data contracts between application layers and adapters",
-    "qualification: system robustness and fault-tolerance tests; validates recovery, failover, and operational stability under stress or fault conditions",
-    "certification: formal compliance, traceability, and audit verification; ensures conformity with regulatory, contractual, and documentation requirements",
-    "performance: performance and efficiency validation; measures latency, throughput, and resource usage under realistic operational load",
-    "system: full end-to-end (E2E) qualification of the complete trading platform; validates behavior across runtime boundaries and external integrations",
-]
-
-filterwarnings = [
-    "ignore::DeprecationWarning",
-    "ignore::PendingDeprecationWarning",
-]
-
-log_cli = true
-log_cli_level = "INFO"
-log_cli_format = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
-log_cli_date_format = "%Y-%m-%d %H:%M:%S"
-
-
-# ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Test Coverage                                                              │
 # ╰────────────────────────────────────────────────────────────────────────────╯
 [tool.coverage.run]

@@ -56,7 +56,7 @@ pre-commit: ## Run all pre-commit hooks
 # ╰────────────────────────────────────────────────────────────────────────────╯
 test: ## Run test suite with full coverage
 	@echo "Running tests with coverage..."
-	@poetry run pytest -v
+	@poetry run pytest -c assurance/quality/pytest.ini --rootdir=. -v
 
 verify-coverage: ## Run full coverage verification and enforce thresholds
 	@echo "Running full test suite with coverage..."
