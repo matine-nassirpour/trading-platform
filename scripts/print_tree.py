@@ -25,9 +25,8 @@ from functools import lru_cache
 from pathlib import Path
 
 try:
-    # Optional: high-quality .gitignore matching
-    import pathspec  # type: ignore
-except ImportError:  # pragma: no cover - absence tolerated
+    import pathspec
+except ImportError:
     pathspec = None
 
 
@@ -48,17 +47,17 @@ DEFAULT_EXCLUDES = (
     "venv",
     "env",
     ".DS_Store",
+    "build",
     "htmlcov",
     "test-results",
     "_logs",
     "_audit",
 )
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Configuration & Utilities                                                   │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
 
-
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Configuration & Utilities                                                  │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 @lru_cache(maxsize=1)
 def _get_file_attributes_w() -> Callable[[str], int]:
     k32 = ctypes.windll.kernel32
@@ -169,11 +168,9 @@ class ExcludeMatcher:
         return False
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Rendering the tree structure                                                │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
-
-
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Rendering the tree structure                                               │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 def _is_dir_follow(p: Path, follow: bool) -> bool:
     if follow:
         return p.is_dir()
@@ -317,11 +314,9 @@ def render_tree(
     _walk(root, prefix="", depth=1)
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ CLI                                                                         │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
-
-
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ CLI                                                                        │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="tree-exporter",

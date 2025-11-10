@@ -8,6 +8,19 @@ trading-platform/
 │   │   ├── __init__.py
 │   │   └── bootstrap.py
 │   └── __init__.py
+├── assurance/
+│   ├── architecture/
+│   │   └── .importlinter
+│   ├── quality/
+│   │   ├── .pre-commit-config.yaml
+│   │   ├── black.toml
+│   │   ├── coverage_thresholds.json
+│   │   ├── isort.cfg
+│   │   ├── mypy.ini
+│   │   └── ruff.toml
+│   └── security/
+│       ├── .secrets.baseline
+│       └── bandit.yaml
 ├── docs/
 │   ├── architecture/
 │   │   ├── decisions/
@@ -25,8 +38,10 @@ trading-platform/
 │   ├── __init__.py
 │   └── runtime_composer.py
 ├── scripts/
+│   ├── generate_assurance_report.py
 │   ├── generate_log_schema.py
-│   └── print_tree.py
+│   ├── print_tree.py
+│   └── verify_coverage.py
 ├── src/
 │   └── quantum/
 │       ├── application/
@@ -282,17 +297,6 @@ trading-platform/
 │       │   └── __init__.py
 │       └── __init__.py
 ├── tests/
-│   ├── e2e/
-│   │   ├── infrastructure/
-│   │   │   ├── observability/
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── test_observability_fsync_e2e.py
-│   │   │   │   ├── test_observability_metrics_http_e2e.py
-│   │   │   │   ├── test_observability_otlp_grpc_e2e.py
-│   │   │   │   ├── test_observability_otlp_http_e2e.py
-│   │   │   │   └── test_observability_pipeline_e2e.py
-│   │   │   └── __init__.py
-│   │   └── __init__.py
 │   ├── fixtures/
 │   │   ├── __init__.py
 │   │   ├── environment.py
@@ -306,7 +310,27 @@ trading-platform/
 │   │   ├── test_fixture_policy.py
 │   │   ├── test_naming_policy.py
 │   │   └── test_structure_policy.py
-│   ├── integration/
+│   ├── support/
+│   │   ├── __init__.py
+│   │   ├── factories.py
+│   │   ├── governance_common.py
+│   │   ├── logging_utils.py
+│   │   ├── observability.py
+│   │   ├── time_utils.py
+│   │   ├── types.py
+│   │   └── wait.py
+│   ├── system/
+│   │   ├── infrastructure/
+│   │   │   ├── observability/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── test_observability_fsync_e2e.py
+│   │   │   │   ├── test_observability_metrics_http_e2e.py
+│   │   │   │   ├── test_observability_otlp_grpc_e2e.py
+│   │   │   │   ├── test_observability_otlp_http_e2e.py
+│   │   │   │   └── test_observability_pipeline_e2e.py
+│   │   │   └── __init__.py
+│   │   └── __init__.py
+│   ├── validation/
 │   │   ├── infrastructure/
 │   │   │   ├── config/
 │   │   │   │   ├── __init__.py
@@ -327,22 +351,10 @@ trading-platform/
 │   │   │   │   └── test_pipeline_contract.py
 │   │   │   └── __init__.py
 │   │   └── __init__.py
-│   ├── support/
-│   │   ├── __init__.py
-│   │   ├── factories.py
-│   │   ├── governance_common.py
-│   │   ├── logging_utils.py
-│   │   ├── observability.py
-│   │   ├── time_utils.py
-│   │   ├── types.py
-│   │   └── wait.py
 │   ├── __init__.py
 │   └── conftest.py
 ├── .env.example
 ├── .gitignore
-├── .importlinter
-├── .pre-commit-config.yaml
-├── .secrets.baseline
 ├── Makefile
 ├── poetry.lock
 ├── pyproject.toml
