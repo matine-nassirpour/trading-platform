@@ -58,6 +58,17 @@ test: ## Run test suite with full coverage
 	@echo "Running tests with coverage..."
 	@poetry run pytest -v
 
+verify-coverage: ## Run full coverage verification and enforce thresholds
+	@echo "Running full test suite with coverage..."
+	@$(MAKE) test
+	@echo "Verifying coverage thresholds..."
+	@poetry run python scripts/verify_coverage.py || (echo "[WARNING] Coverage verification failed."; exit 1)
+	@echo "Coverage verification completed successfully."
+
+assurance-report: ## Generate unified HTML Assurance Report
+	@echo "Generating unified Assurance Report..."
+	@poetry run python scripts/generate_assurance_report.py
+
 audit: ## Dependency and vulnerability audit
 	@poetry check
 	@poetry run pip-audit -l || (echo "pip-audit found issues" & exit /b 1)
