@@ -1,11 +1,11 @@
 from typing import Protocol
 
-from quantum.shared.types.execution_request import (
+from quantum.application.contracts.execution_request import (
     CheckRequest,
     OrderRequest,
     QueryRequest,
 )
-from quantum.shared.types.execution_result import ExecutionResult
+from quantum.application.contracts.execution_result import ExecutionResult
 
 
 class ExecutionPort(Protocol):

@@ -1,10 +1,11 @@
 import threading
+
 from collections.abc import Callable, Iterator
 from concurrent.futures import Executor, Future
-from contextlib import contextmanager
+from contextlib import AbstractContextManager, contextmanager
 from contextvars import Token
 from dataclasses import dataclass
-from typing import TypeVar
+from typing import Any, TypeVar
 
 from opentelemetry import baggage
 from opentelemetry import context as otel_context
@@ -14,20 +15,22 @@ from opentelemetry.propagate import set_global_textmap
 from opentelemetry.propagators.composite import CompositePropagator
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 
+from quantum.infrastructure.observability.context.run_id import (
+    get_run_id,
+    run_id_context,
+)
 from quantum.infrastructure.observability.tracing.correlation.correlation_id import (
     correlation_context,
     get_correlation_id,
 )
-from quantum.shared.context.run_id import get_run_id, run_id_context
 
 _PROCESS_BAGGAGE_TOKEN: Token[OTelContext] | None = None
 T = TypeVar("T")
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Propagators (process-wide)                                                  │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
 
-
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Propagators (process-wide)                                                 │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 def setup_propagation() -> None:
     """
     Configures W3C propagators (traceparent + baggage).
@@ -90,7 +93,7 @@ def refresh_process_baggage(
 
 
 @contextmanager
-def baggage_context_from_ids():
+def baggage_context_from_ids() -> Iterator[None]:
     """
     Practical context for (re)injecting run_id / correlation_id into Baggage
     during a block (e.g., outgoing network call, ad-hoc job).
@@ -109,12 +112,10 @@ def baggage_context_from_ids():
         otel_context.detach(token)
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Explicit multi-thread context propagation                                   │
-# │ (No implicit inheritance across threads — contract made explicit)           │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
-
-
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Explicit multi-thread context propagation                                  │
+# │ (No implicit inheritance across threads — contract made explicit)          │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 @dataclass(frozen=True)
 class ContextSnapshot:
     """
@@ -141,6 +142,59 @@ def capture_context_snapshot() -> ContextSnapshot:
     )
 
 
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Internal Helpers                                                           │
+# ╰────────────────────────────────────────────────────────────────────────────╯
+def _enter_app_contexts(
+    snap: ContextSnapshot,
+) -> tuple[AbstractContextManager[None] | None, AbstractContextManager[None] | None]:
+    rid_cm = run_id_context(snap.run_id) if snap.run_id else None
+    cid_cm = correlation_context(snap.correlation_id) if snap.correlation_id else None
+
+    if rid_cm:
+        rid_cm.__enter__()
+    if cid_cm:
+        cid_cm.__enter__()
+
+    return rid_cm, cid_cm
+
+
+def _enter_otel_or_baggage(
+    snap: ContextSnapshot,
+    attach_otel: bool,
+    ensure_baggage_from_ids: bool,
+) -> tuple[Token[OTelContext] | None, AbstractContextManager[None] | None]:
+    otel_token: Token[OTelContext] | None = None
+    baggage_cm = None
+
+    if attach_otel and snap.otel is not None:
+        otel_token = otel_context.attach(snap.otel)
+    elif ensure_baggage_from_ids:
+        baggage_cm = baggage_context_from_ids()
+        baggage_cm.__enter__()
+
+    return otel_token, baggage_cm
+
+
+def _exit_all_contexts(
+    rid_cm: AbstractContextManager[None] | None,
+    cid_cm: AbstractContextManager[None] | None,
+    otel_token: Token[OTelContext] | None,
+    baggage_cm: AbstractContextManager[None] | None,
+) -> None:
+    if otel_token is not None:
+        otel_context.detach(otel_token)
+    if baggage_cm is not None:
+        baggage_cm.__exit__(None, None, None)
+    if cid_cm:
+        cid_cm.__exit__(None, None, None)
+    if rid_cm:
+        rid_cm.__exit__(None, None, None)
+
+
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Main ContextManager                                                        │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 @contextmanager
 def use_context_snapshot(
     snap: ContextSnapshot,
@@ -157,38 +211,19 @@ def use_context_snapshot(
 
     Also sets app ContextVars (run_id/correlation_id) for the duration.
     """
-    # App ContextVars (enter/exit via their own context managers)
-    rid_cm = run_id_context(snap.run_id) if snap.run_id else None
-    cid_cm = correlation_context(snap.correlation_id) if snap.correlation_id else None
-
-    otel_token: Token[OTelContext] | None = None
-    baggage_cm = None
-
+    rid_cm, cid_cm = _enter_app_contexts(snap)
+    otel_token, baggage_cm = _enter_otel_or_baggage(
+        snap, attach_otel, ensure_baggage_from_ids
+    )
     try:
-        if rid_cm:
-            rid_cm.__enter__()
-        if cid_cm:
-            cid_cm.__enter__()
-
-        if attach_otel and snap.otel is not None:
-            otel_token = otel_context.attach(snap.otel)
-        elif ensure_baggage_from_ids:
-            # Ensure baggage keys exist even without full OTel context attach.
-            baggage_cm = baggage_context_from_ids()
-            baggage_cm.__enter__()
-
         yield
     finally:
-        if otel_token is not None:
-            otel_context.detach(otel_token)
-        if baggage_cm is not None:
-            baggage_cm.__exit__(None, None, None)
-        if cid_cm:
-            cid_cm.__exit__(None, None, None)
-        if rid_cm:
-            rid_cm.__exit__(None, None, None)
+        _exit_all_contexts(rid_cm, cid_cm, otel_token, baggage_cm)
 
 
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Concurrency utilities                                                      │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 def run_in_context(snap: ContextSnapshot, fn: Callable[[], T]) -> T:
     """
     Run a no-arg callable under a given snapshot (helpers for thread entrypoints).
@@ -208,20 +243,15 @@ class ContextPropagatingThread(threading.Thread):
     """
 
     def __init__(
-        self,
-        *args,
-        snapshot: ContextSnapshot | None = None,
-        **kwargs,
-    ):
+        self, *args: Any, snapshot: ContextSnapshot | None = None, **kwargs: Any
+    ) -> None:
         super().__init__(*args, **kwargs)
-        # If no snapshot provided, capture at construction time (parent thread).
         self._snapshot = snapshot or capture_context_snapshot()
 
     def run(self) -> None:
         target = getattr(self, "_target", None)
         if target is None:
             return
-        # Re-bind context for the lifetime of this thread execution.
         with use_context_snapshot(self._snapshot):
             target(*getattr(self, "_args", ()), **getattr(self, "_kwargs", {}))
 
@@ -236,7 +266,7 @@ def wrap_callable_with_context(
     """
     snapshot = snap or capture_context_snapshot()
 
-    def _wrapped(*args, **kwargs) -> T:
+    def _wrapped(*args: Any, **kwargs: Any) -> T:
         with use_context_snapshot(snapshot):
             return fn(*args, **kwargs)
 
@@ -246,9 +276,9 @@ def wrap_callable_with_context(
 def submit_with_context(
     executor: Executor,
     fn: Callable[..., T],
-    *args,
+    *args: Any,
     snapshot: ContextSnapshot | None = None,
-    **kwargs,
+    **kwargs: Any,
 ) -> Future[T]:
     """
     Submit a task to a concurrent.futures.Executor while propagating context.

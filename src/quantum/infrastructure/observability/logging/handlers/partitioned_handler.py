@@ -5,25 +5,22 @@ import json
 import logging
 import os
 import sys
+
 from contextlib import suppress
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Final
 
-from quantum.core.config.models.core import CoreSettings
-from quantum.core.config.models.logging import LoggingSettings
+from quantum.infrastructure.config.models.core import CoreSettings
+from quantum.infrastructure.config.models.logging import LoggingSettings
 from quantum.infrastructure.observability.logging._io_utils import (
     fsync_dir,
     inc_disk_error_counter,
 )
-from quantum.shared.time.naming import partition_path_components
-
-try:
-    from quantum.infrastructure.observability.metrics.collectors.health_collector import (
-        logging_file_rotations_total,
-    )
-except (ModuleNotFoundError, ImportError):
-    logging_file_rotations_total = None
+from quantum.infrastructure.observability.metrics.collectors.health_collector import (
+    logging_file_rotations_total,
+)
+from quantum.infrastructure.time.naming import partition_path_components
 
 
 class PartitionedJSONLFileHandler(logging.Handler):
@@ -106,7 +103,7 @@ class PartitionedJSONLFileHandler(logging.Handler):
     def _resolve_partition(self, record: logging.LogRecord) -> tuple[Path, Path, Path]:
         """Determines the partition directory and file paths for the record."""
         try:
-            dt = datetime.fromtimestamp(record.created, tz=timezone.utc)
+            dt = datetime.fromtimestamp(record.created, tz=UTC)
             yyyy, mm, dd, hh = partition_path_components(dt)
             dir_path = (
                 self._base_dir
@@ -199,7 +196,7 @@ class PartitionedJSONLFileHandler(logging.Handler):
 
             if size >= self._max_bytes:
                 self._part_index += 1
-                dt = datetime.fromtimestamp(record.created, tz=timezone.utc)
+                dt = datetime.fromtimestamp(record.created, tz=UTC)
                 yyyy, mm, dd, hh = partition_path_components(dt)
                 dir_path = (
                     self._current_path.parent if self._current_path else self._base_dir

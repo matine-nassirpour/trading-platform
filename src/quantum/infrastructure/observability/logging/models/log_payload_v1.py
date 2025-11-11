@@ -1,5 +1,6 @@
 import re
 import uuid
+
 from typing import Any, Final, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -129,7 +130,7 @@ class LogPayloadV1(BaseModel):
         try:
             uuid.UUID(v)
         except Exception as e:
-            raise ValueError(f"Invalid UUID: {e}")
+            raise ValueError(f"Invalid UUID: {e}") from None
         return v
 
     # --------------------------------------------------------------------------

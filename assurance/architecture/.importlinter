@@ -1,0 +1,186 @@
+# ╔════════════════════════════════════════════════════════════════════════════╗
+# ║                              GOVERNANCE HEADER                             ║
+# ║                     Quantum Platform — Architecture Policy                 ║
+# ╚════════════════════════════════════════════════════════════════════════════╝
+#
+#  Purpose : Formal architectural governance contract for the Quantum Platform.
+#  Scope   : Applies to all Python packages within the 'quantum' namespace.
+#  Version : 2.1.0
+#  Updated : 2025-11-06
+#
+# ──────────────────────────────────────────────────────────────────────────────
+# 1. Mission
+#    This file defines *immutable structural invariants* that enforce the
+#    Certified Ports & Adapters model of the Quantum Platform.
+#    It guarantees traceability, modularity, testability, and long-term
+#    certifiability under DO-178C / ISO 26262 / NASA SWE-134.
+#
+# ──────────────────────────────────────────────────────────────────────────────
+# 2. Governance Rules
+#    • Any modification requires:
+#         - an approved Architecture Decision Record (ADR)
+#         - validation by the Architecture Review Board
+#         - version/date update of this header
+#    • Violations block protected-branch merges in CI/CD.
+#    • Deviations must be formally justified (ADR type: deviation).
+#
+# ──────────────────────────────────────────────────────────────────────────────
+# 3. Compliance Classification
+#    • Level 3 – Critical : Immutable architectural invariant
+#
+# ══════════════════════════════════════════════════════════════════════════════
+#                             End of Governance Header
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+[importlinter]
+root_package = quantum
+include_external_packages = True
+
+
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Contract 1 — Enforce Clean Architecture Layering                           │
+# │ -------------------------------------------------------------------------- │
+# │ Objective :                                                                │
+# │     Enforce a strict downward dependency flow (outer → inner layers).      │
+# │     Prevent cyclic or reversed imports across architectural tiers.         │
+# │                                                                            │
+# │ Assurance Rationale :                                                      │
+# │     Guarantees responsibility segregation and predictable build order.     │
+# │     Foundational to certifiable modularity (DO-178C §11.8, NASA-SWE-134).  │
+# │                                                                            │
+# │ Expected Result :                                                          │
+# │     Infrastructure → Interfaces → Application → Domain → Contracts         │
+# │     Each layer can import only those beneath it.                           │
+# ╰────────────────────────────────────────────────────────────────────────────╯
+
+[importlinter:contract:enforce-clean-architecture-layering]
+name = Enforce Clean Architecture Layering
+type = layers
+layers =
+    quantum.infrastructure
+    quantum.interfaces
+    quantum.application
+    quantum.domain
+    quantum.contracts
+
+
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Contract 2 — Maintain Domain Layer Purity                                  │
+# │ -------------------------------------------------------------------------- │
+# │ Objective :                                                                │
+# │     Preserve the functional and technological purity of the Domain layer.  │
+# │     Prohibit imports of frameworks, infrastructure, or I/O packages.       │
+# │                                                                            │
+# │ Assurance Rationale :                                                      │
+# │     Ensures deterministic logic, full unit-test independence, and          │
+# │     zero technological coupling (DO-178C §11.9, ISO 26262-6 §7).           │
+# │                                                                            │
+# │ Expected Result :                                                          │
+# │     quantum.domain contains only entities, value objects, and pure logic.  │
+# ╰────────────────────────────────────────────────────────────────────────────╯
+
+[importlinter:contract:maintain-domain-layer-purity]
+name = Maintain Domain Layer Purity
+type = forbidden
+source_modules = quantum.domain
+forbidden_modules =
+    quantum.infrastructure
+    quantum.interfaces
+    quantum.application
+;    logging
+;    threading
+;    asyncio
+;    requests
+;    numpy
+;    pandas
+
+
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Contract 3 — Isolate Interface Adapters from Infrastructure                │
+# │ -------------------------------------------------------------------------- │
+# │ Objective :                                                                │
+# │     Prevent user-facing adapters (UI/API) from directly accessing          │
+# │     infrastructure components (network, persistence, brokers).             │
+# │                                                                            │
+# │ Assurance Rationale :                                                      │
+# │     Ensures presentation components remain replaceable and framework-free. │
+# │     Supports ISO/IEC 25010 (Maintainability) and NASA-SWE-135.             │
+# │                                                                            │
+# │ Expected Result :                                                          │
+# │     quantum.interfaces interacts only with Application and Domain types.   │
+# ╰────────────────────────────────────────────────────────────────────────────╯
+
+[importlinter:contract:isolate-interface-adapters-from-infrastructure]
+name = Isolate Interface Adapters from Infrastructure
+type = forbidden
+source_modules = quantum.interfaces
+forbidden_modules = quantum.infrastructure
+
+
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Contract 4 — Prevent Domain-to-Infrastructure Dependencies                 │
+# │ -------------------------------------------------------------------------- │
+# │ Objective :                                                                │
+# │     Prevent the Domain (core logic) from any awareness of infrastructure.  │
+# │     Enforce full inversion of dependencies via abstract ports.             │
+# │                                                                            │
+# │ Assurance Rationale :                                                      │
+# │     Eliminates bidirectional coupling and technology leakage.              │
+# │     Ensures Domain remains deployable and verifiable standalone.           │
+# │     Complies with DO-178C Level A data coupling independence.              │
+# ╰────────────────────────────────────────────────────────────────────────────╯
+
+[importlinter:contract:prevent-domain-to-infrastructure-dependencies]
+name = Prevent Domain-to-Infrastructure Dependencies
+type = forbidden
+source_modules = quantum.domain
+forbidden_modules = quantum.infrastructure
+
+
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Contract 5 — Prevent Domain-to-Interface Dependencies                      │
+# │ -------------------------------------------------------------------------- │
+# │ Objective :                                                                │
+# │     Shield the Domain from presentation or adapter concerns.               │
+# │     Prohibit imports of UI, serialization, or API-layer code.              │
+# │                                                                            │
+# │ Assurance Rationale :                                                      │
+# │     Avoids reverse feedback paths and non-deterministic dependencies.      │
+# │     Supports software component isolation (ISO 26262 Part 6 §7.4.10).      │
+# │                                                                            │
+# │ Expected Result :                                                          │
+# │     Domain entities and services remain independent of any UI logic.       │
+# ╰────────────────────────────────────────────────────────────────────────────╯
+
+[importlinter:contract:prevent-domain-to-interface-dependencies]
+name = Prevent Domain-to-Interface Dependencies
+type = forbidden
+source_modules = quantum.domain
+forbidden_modules = quantum.interfaces
+
+
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Contract 6 — Enforce Application-to-Port Dependency Only                   │
+# │ -------------------------------------------------------------------------- │
+# │ Objective :                                                                │
+# │     Ensure Application layer logic depends only on abstract ports,         │
+# │     never on concrete infrastructure implementations.                      │
+# │                                                                            │
+# │ Assurance Rationale :                                                      │
+# │     Guarantees strict application of the Dependency Inversion Principle.   │
+# │     Enables isolated unit testing and runtime plug/replacement.            │
+# │     Aligned with DO-178C §6.3.4 / ISO 26262-6 §9.4 (Data coupling control).│
+# │                                                                            │
+# │ Expected Result :                                                          │
+# │     Application layer imports only domain abstractions and outbound ports. │
+# │     It must never import infrastructure or runtime modules directly.       │
+# ╰────────────────────────────────────────────────────────────────────────────╯
+
+[importlinter:contract:enforce-application-to-port-dependency-only]
+name = Enforce Application-to-Port Dependency Only
+type = forbidden
+source_modules = quantum.application
+forbidden_modules =
+    quantum.infrastructure
+    runtime

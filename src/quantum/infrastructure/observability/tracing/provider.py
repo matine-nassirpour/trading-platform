@@ -1,6 +1,7 @@
 import atexit
 import logging
 import socket
+
 from typing import Any, cast
 
 from opentelemetry import trace as _trace
@@ -14,30 +15,37 @@ from opentelemetry.sdk.resources import (
     SERVICE_VERSION,
     Resource,
 )
-from opentelemetry.sdk.trace import SpanLimits, SpanProcessor, TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
+from opentelemetry.sdk.trace import (
+    ReadableSpan,
+    SpanLimits,
+    SpanProcessor,
+    TracerProvider,
+)
+from opentelemetry.sdk.trace.export import (
+    BatchSpanProcessor,
+    ConsoleSpanExporter,
+    SpanExporter,
+)
 from opentelemetry.sdk.trace.id_generator import RandomIdGenerator
 from opentelemetry.sdk.trace.sampling import ParentBased, TraceIdRatioBased
-from opentelemetry.trace import Span
+from opentelemetry.trace import Span, Tracer
 from opentelemetry.trace import TracerProvider as TracerProviderInterface
 from opentelemetry.trace import get_tracer_provider, set_tracer_provider
 
-from quantum.core.config.models.core import CoreSettings
-from quantum.core.config.models.tracing import TracingSettings
+from quantum.infrastructure.config.models.core import CoreSettings
+from quantum.infrastructure.config.models.tracing import TracingSettings
+from quantum.infrastructure.observability.context.run_id import get_run_id
 from quantum.infrastructure.observability.tracing.correlation.correlation_id import (
     get_correlation_id,
 )
-from quantum.shared.context.run_id import get_run_id
 
 logger = logging.getLogger(__name__)
 _ATEXIT_REGISTERED: bool = False
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Lifecycle Management                                                        │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
-
-
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Lifecycle Management                                                       │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 def _shutdown_provider_safely() -> None:
     """Gracefully shutdown the current tracer provider (safe for multiple calls)."""
     try:
@@ -61,11 +69,9 @@ def _ensure_atexit_registered() -> None:
         logger.debug(f"Failed to register atexit tracer shutdown: {exc}")
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Context Processor                                                           │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
-
-
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Context Processor                                                          │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 class _ContextEnricherProcessor(SpanProcessor):
     """Injects run_id and correlation_id into every span at start time."""
 
@@ -80,7 +86,7 @@ class _ContextEnricherProcessor(SpanProcessor):
         except Exception as exc:
             logger.debug(f"Context enrichment failed: {exc}")
 
-    def on_end(self, span: Span) -> None:
+    def on_end(self, span: ReadableSpan) -> None:
         pass
 
     def shutdown(self) -> None:
@@ -92,9 +98,58 @@ class _ContextEnricherProcessor(SpanProcessor):
         return True
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ OTLP Exporter Builder                                                       │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ OTLP Exporter Builder                                                      │
+# ╰────────────────────────────────────────────────────────────────────────────╯
+def _parse_otlp_headers(headers_csv: str | None) -> dict[str, str]:
+    headers: dict[str, str] = {}
+    if not headers_csv:
+        return headers
+
+    for kv in headers_csv.split(","):
+        if "=" in kv:
+            k, v = kv.split("=", 1)
+            headers[k.strip()] = v.strip()
+
+    return headers
+
+
+def _create_http_exporter(
+    endpoint: str, headers: dict[str, str], timeout: float, compression: Any
+) -> SpanExporter:
+    from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
+        OTLPSpanExporter as OTLPHTTPExporter,
+    )
+
+    if not endpoint.endswith("/v1/traces"):
+        endpoint = endpoint.rstrip("/") + "/v1/traces"
+
+    return OTLPHTTPExporter(
+        endpoint=endpoint,
+        headers=headers or None,
+        timeout=timeout,
+        compression=compression,
+    )
+
+
+def _create_grpc_exporter(
+    endpoint: str,
+    headers: dict[str, str],
+    timeout: float,
+    insecure: bool,
+    compression: Any,
+) -> SpanExporter:
+    from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
+        OTLPSpanExporter as OTLPGRPCExporter,
+    )
+
+    return OTLPGRPCExporter(
+        endpoint=endpoint,
+        headers=headers or None,
+        timeout=timeout,
+        insecure=insecure,
+        compression=compression,
+    )
 
 
 def _build_otlp_exporter(
@@ -108,50 +163,24 @@ def _build_otlp_exporter(
     endpoint = tracing_settings.quantum_trace_otlp_endpoint
     timeout = tracing_settings.quantum_trace_otlp_timeout_ms / 1000.0
     insecure = tracing_settings.quantum_trace_otlp_insecure
-    headers_csv = tracing_settings.quantum_trace_otlp_headers
-    headers: dict[str, str] = {}
+    headers = _parse_otlp_headers(tracing_settings.quantum_trace_otlp_headers)
     compression = (
         None
         if tracing_settings.quantum_trace_otlp_compression == "none"
         else Compression.Gzip
     )
 
-    if headers_csv:
-        for kv in headers_csv.split(","):
-            if "=" in kv:
-                k, v = kv.split("=", 1)
-                headers[k.strip()] = v.strip()
-
     try:
         if protocol == "http":
-            from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
-                OTLPSpanExporter as OTLPHTTPExporter,
-            )
-
-            if not endpoint.endswith("/v1/traces"):
-                endpoint = endpoint.rstrip("/") + "/v1/traces"
-
-            exporter = OTLPHTTPExporter(
-                endpoint=endpoint,
-                headers=headers or None,
-                timeout=timeout,
-                compression=compression,
-            )
-            return exporter, None
+            return _create_http_exporter(endpoint, headers, timeout, compression), None
 
         if protocol == "grpc":
-            from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
-                OTLPSpanExporter as OTLPGRPCExporter,
+            return (
+                _create_grpc_exporter(
+                    endpoint, headers, timeout, insecure, compression
+                ),
+                None,
             )
-
-            exporter = OTLPGRPCExporter(
-                endpoint=endpoint,
-                headers=headers or None,
-                timeout=timeout,
-                insecure=insecure,
-                compression=compression,
-            )
-            return exporter, None
 
         return None, f"unsupported_protocol:{protocol}"
 
@@ -161,56 +190,41 @@ def _build_otlp_exporter(
         return None, f"otlp_exporter_error:{exc}"
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Main Initialization Logic                                                   │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
-
-
-def init_tracing(
-    core_settings: CoreSettings,
-    tracing_settings: TracingSettings,
-    replace_existing: bool = False,
-) -> TracerProviderInterface:
-    """Initialize the OpenTelemetry TracerProvider."""
-    existing = get_tracer_provider()
-    if isinstance(existing, TracerProvider) and not replace_existing:
-        _ensure_atexit_registered()
-        return cast(TracerProviderInterface, existing)
-
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ TracerProvider creation pipeline                                           │
+# ╰────────────────────────────────────────────────────────────────────────────╯
+def _create_tracer_provider(
+    core_settings: CoreSettings, tracing_settings: TracingSettings
+) -> TracerProvider:
     sample_ratio = max(0.0, min(1.0, float(tracing_settings.quantum_trace_sample)))
-
-    # ─── Build OTel resource
     resource = Resource.create(
         {
             SERVICE_NAME: core_settings.quantum_app_name,
             SERVICE_VERSION: core_settings.quantum_app_version,
             SERVICE_NAMESPACE: core_settings.quantum_ns,
             DEPLOYMENT_ENVIRONMENT: core_settings.quantum_env,
-            SERVICE_INSTANCE_ID: core_settings.quantum_instance_id
-            or socket.gethostname(),
+            SERVICE_INSTANCE_ID: (
+                core_settings.quantum_instance_id or socket.gethostname()
+            ),
         }
     )
-
-    tracer_provider = TracerProvider(
+    provider = TracerProvider(
         resource=resource,
         id_generator=RandomIdGenerator(),
         sampler=ParentBased(TraceIdRatioBased(sample_ratio)),
-        span_limits=SpanLimits(
-            max_attributes=128,
-            max_events=128,
-            max_links=32,
-        ),
+        span_limits=SpanLimits(max_attributes=128, max_events=128, max_links=32),
     )
+    provider.add_span_processor(_ContextEnricherProcessor())
+    return provider
 
-    tracer_provider.add_span_processor(_ContextEnricherProcessor())
 
-    # ─── Configure exporter
-    exporter_name = tracing_settings.quantum_trace_exporter
-    active_exporter = None
-    inactive_reason = None
-
-    if exporter_name == "console":
-        tracer_provider.add_span_processor(
+def _attach_exporter(
+    provider: TracerProvider, tracing_settings: TracingSettings
+) -> tuple[Any | None, str | None]:
+    """Attach the proper exporter (console, otlp, or none) to the provider."""
+    name = tracing_settings.quantum_trace_exporter
+    if name == "console":
+        provider.add_span_processor(
             BatchSpanProcessor(
                 ConsoleSpanExporter(),
                 max_export_batch_size=256,
@@ -218,11 +232,11 @@ def init_tracing(
                 max_queue_size=4096,
             )
         )
-
-    elif exporter_name == "otlp":
+        return None, "exporter=console"
+    if name == "otlp":
         exporter, reason = _build_otlp_exporter(tracing_settings)
         if exporter:
-            tracer_provider.add_span_processor(
+            provider.add_span_processor(
                 BatchSpanProcessor(
                     exporter,
                     max_export_batch_size=256,
@@ -230,23 +244,22 @@ def init_tracing(
                     max_queue_size=4096,
                 )
             )
-            active_exporter = exporter
-        else:
-            inactive_reason = reason
+        return exporter, reason
+    if name == "none":
+        return None, "exporter=none"
+    return None, f"unsupported_exporter:{name}"
 
-    elif exporter_name == "none":
-        inactive_reason = "exporter=none"
 
-    else:
-        inactive_reason = f"unsupported_exporter:{exporter_name}"
-
-    # ─── Install provider globally
-    set_tracer_provider(tracer_provider)
-
-    # ─── Emit status log
+def _finalize_provider(
+    provider: TracerProvider,
+    tracing_settings: TracingSettings,
+    active_exporter: Any | None,
+    inactive_reason: str | None,
+) -> None:
+    """Set provider globally, log exporter state, and update health metric."""
+    set_tracer_provider(provider)
     _log_exporter_status(active_exporter, tracing_settings, inactive_reason)
 
-    # ─── Health metric propagation (soft optional)
     try:
         from quantum.infrastructure.observability.metrics.collectors.health_collector import (
             tracing_exporter_status,
@@ -261,25 +274,38 @@ def init_tracing(
         except (ValueError, RuntimeError, AttributeError) as exc:
             logger.debug(f"Unable to update tracer exporter metric: {exc}")
 
-    # ─── Link provider reference for coordinated shutdown
     try:
         from quantum.infrastructure.observability.bootstrap.state import (
             set_tracer_provider as tp,
         )
 
-        tp(tracer_provider)
+        tp(provider)
     except Exception as exc:
         logger.debug(f"Failed to register tracer provider globally: {exc}")
 
     _ensure_atexit_registered()
-    return tracer_provider
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Logging Helpers                                                             │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+def init_tracing(
+    core_settings: CoreSettings,
+    tracing_settings: TracingSettings,
+    replace_existing: bool = False,
+) -> TracerProviderInterface:
+    """Initialize the OpenTelemetry TracerProvider."""
+    existing = get_tracer_provider()
+    if isinstance(existing, TracerProvider) and not replace_existing:
+        _ensure_atexit_registered()
+        return cast(TracerProviderInterface, existing)
+
+    provider = _create_tracer_provider(core_settings, tracing_settings)
+    exporter, reason = _attach_exporter(provider, tracing_settings)
+    _finalize_provider(provider, tracing_settings, exporter, reason)
+    return provider
 
 
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Logging Helpers                                                            │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 def _log_exporter_status(
     active_exporter: Any | None,
     tracing_settings: TracingSettings,
@@ -312,12 +338,10 @@ def _log_exporter_status(
         logger.warning("OTLP exporter inactive", extra={"attrs": attrs})
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Public API                                                                  │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
-
-
-def get_tracer(component: str, version: str = "1.0.0"):
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Public API                                                                 │
+# ╰────────────────────────────────────────────────────────────────────────────╯
+def get_tracer(component: str, version: str = "1.0.0") -> Tracer:
     """
     Return a canonical tracer for the given component.
     Example: get_tracer("infra.execution.mt5")

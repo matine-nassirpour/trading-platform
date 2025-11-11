@@ -1,0 +1,81 @@
+repos:
+  - repo: https://github.com/psf/black
+    rev: 25.9.0
+    hooks:
+      - id: black
+        args: ["--config", "assurance/quality/black.toml"]
+
+  - repo: https://github.com/pre-commit/mirrors-isort
+    rev: v5.10.1
+    hooks:
+      - id: isort
+        args: ["--settings-file", "assurance/quality/isort.cfg"]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.3
+    hooks:
+      - id: ruff
+        args: ["--fix", "--config", "assurance/quality/ruff.toml"]
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.18.2
+    hooks:
+      - id: mypy
+        language: system
+        pass_filenames: false
+        args: [
+          "--config-file", "assurance/quality/mypy.ini",
+          "src/quantum"
+        ]
+
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.8.6
+    hooks:
+      - id: bandit
+        pass_filenames: false
+        args: [
+          "-r", "src/quantum",
+          "-c", "assurance/security/bandit.yaml"
+        ]
+
+  - repo: https://github.com/pypa/pip-audit
+    rev: v2.9.0
+    hooks:
+      - id: pip-audit
+        args: ["--strict", "--ignore-vuln", "GHSA-4xh5-x5gv-qwph"]
+
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v3.21.0
+    hooks:
+      - id: pyupgrade
+        args: ["--py311-plus"]
+
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        args: ["--baseline", "assurance/security/.secrets.baseline"]
+        exclude: (^assurance/security/.secrets\.baseline$|docs/)
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-merge-conflict
+      - id: check-json
+      - id: check-yaml
+      - id: check-toml
+      - id: check-added-large-files
+
+  - repo: local
+    hooks:
+      - id: import-linter
+        name: import-linter (architecture contracts)
+        language: system
+        pass_filenames: false
+        entry: poetry run lint-imports
+        args: ["--config", "assurance/architecture/.importlinter"]
+
+default_language_version:
+  python: python3.11

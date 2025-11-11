@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import threading
+
 from typing import Final
 
 from prometheus_client import Gauge

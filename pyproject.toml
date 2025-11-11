@@ -1,6 +1,6 @@
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Project Metadata                                                            │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Project Metadata                                                           │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 [project]
 name = "quantum"
 version = "0.1.0"
@@ -8,29 +8,25 @@ description = ""
 authors = [
     { name = "Matine NASSIRPOUR", email = "matine@nassirpour.org" }
 ]
-license = "Proprietary"
+license = "LicenseRef-Proprietary"
 requires-python = ">=3.11,<3.12"
 readme = "README.md"
 packages = [{ include = "quantum", from = "src" }]
+dependencies = [
+    "pydantic>=2.11.9,<3.0.0",
+    "pydantic-settings>=2.11.0,<3.0.0",
+    "opentelemetry-sdk>=1.37.0,<2.0.0",
+    "opentelemetry-exporter-otlp>=1.37.0,<2.0.0",
+    "prometheus-client>=0.23.1,<1.0.0",
+    "streamlit>=1.50.0,<2.0.0",
+    "python-dotenv>=1.1.1,<2.0.0",
+    "metatrader5>=5.0.5328,<6.0.0",
+]
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Dependencies                                                                │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
-[tool.poetry.dependencies]
-pydantic = "^2.11.9"
-pydantic-settings = "^2.11.0"
-opentelemetry-sdk = "^1.37.0"
-opentelemetry-exporter-otlp = "^1.37.0"
-prometheus-client = "^0.23.1"
-streamlit = "^1.50.0"
-python-dotenv = "^1.1.1"
-metatrader5 = "^5.0.5328"
-
-
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Development Dependencies                                                    │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Dev toolchain (QA / security / lint / typing / tests)                      │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^4.3.0"
 detect-secrets = "^1.5.0"
@@ -42,64 +38,66 @@ black = "^25.9.0"
 bandit = "^1.8.6"
 pip-audit = "^2.9.0"
 import-linter = "^2.5"
+isort = "^7.0.0"
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Build System                                                                │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Build System                                                               │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Code Style Tools                                                            │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
-[tool.black]
-line-length = 88
-target-version = ["py311"]
-skip-string-normalization = false
-skip-magic-trailing-comma = false
-
-[tool.isort]
-profile = "black"
-line_length = 88
-combine_as_imports = false
-include_trailing_comma = true
-multi_line_output = 3
-force_grid_wrap = 0
-use_parentheses = true
-ensure_newline_before_comments = true
-known_first_party = ["quantum"]
-
-
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Testing Configuration (pytest)                                              │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Testing Configuration (pytest)                                             │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 [tool.pytest.ini_options]
-testpaths = ["tests"]
-addopts = "-ra -q --strict-markers --tb=short --cov=src/quantum --cov-report=term-missing"
+testpaths = ["tests", "src/quantum"]
+
+addopts = """
+    -ra -q --strict-markers --tb=short
+    --rootdir=.
+    --import-mode=importlib
+    --cov=src/quantum
+    --cov-branch
+    --cov-report=term-missing
+    --cov-report=html:build/coverage/htmlcov
+    --cov-report=xml:build/coverage/coverage.xml
+    --cov-report=json:build/coverage/coverage.json
+    --junitxml=build/test-results/results.xml
+    --disable-warnings
+"""
+# --cov-fail-under=90
+
 markers = [
-    "integration: mark tests that perform multi-layer or system integration checks",
-    "unit: mark fast, isolated unit tests",
-    "slow: mark slow tests that may take longer to execute"
+    "governance: meta-level tests ensuring internal codebase governance, structure, naming, and fixture policy compliance (non-functional, QA governance layer)",
+    "verification: isolated unit-level verification of individual components or functions (pure unit tests; no external dependency or cross-layer interaction)",
+    "validation: cross-domain functional validation equivalent to integration tests; verifies interactions and data contracts between application layers and adapters",
+    "qualification: system robustness and fault-tolerance tests; validates recovery, failover, and operational stability under stress or fault conditions",
+    "certification: formal compliance, traceability, and audit verification; ensures conformity with regulatory, contractual, and documentation requirements",
+    "performance: performance and efficiency validation; measures latency, throughput, and resource usage under realistic operational load",
+    "system: full end-to-end (E2E) qualification of the complete trading platform; validates behavior across runtime boundaries and external integrations",
 ]
+
 filterwarnings = [
     "ignore::DeprecationWarning",
-    "ignore::PendingDeprecationWarning"
+    "ignore::PendingDeprecationWarning",
 ]
+
 log_cli = true
 log_cli_level = "INFO"
-log_cli_format = "%(asctime)s [%(levelname)s] %(message)s"
-log_cli_date_format = "%H:%M:%S"
+log_cli_format = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+log_cli_date_format = "%Y-%m-%d %H:%M:%S"
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Test Coverage (coverage.py)                                                 │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Test Coverage                                                              │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 [tool.coverage.run]
 branch = true
 source = ["src/quantum"]
+data_file = "build/coverage/.coverage"
 omit = [
     "*/__init__.py",
     "*/tests/*",
@@ -113,11 +111,16 @@ exclude_lines = [
     "pragma: no cover",
     "if __name__ == .__main__.:",
     "raise NotImplementedError",
+    "pass",
 ]
 
 [tool.coverage.html]
-directory = "htmlcov"
+directory = "build/coverage/htmlcov"
 title = "Quantum Coverage Report"
 
 [tool.coverage.xml]
-output = "coverage.xml"
+output = "build/coverage/coverage.xml"
+
+[tool.coverage.json]
+output = "build/coverage/coverage.json"
+pretty_print = true

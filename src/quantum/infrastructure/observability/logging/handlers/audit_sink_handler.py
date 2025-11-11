@@ -1,16 +1,17 @@
 import json
 import logging
 import os
-from datetime import datetime, timezone
+
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Final
+from typing import Any, Final
 
 from quantum.infrastructure.observability.logging._io_utils import (
     fsync_dir,
     inc_disk_error_counter,
     safe_unlink,
 )
-from quantum.shared.time.naming import generate_audit_blob_name
+from quantum.infrastructure.time.naming import generate_audit_blob_name
 
 
 class AuditEventFileHandler(logging.Handler):
@@ -71,7 +72,7 @@ class AuditEventFileHandler(logging.Handler):
         Computes the target file path for the given record timestamp.
         Ensures that the parent directories exist.
         """
-        dt = datetime.fromtimestamp(record.created, tz=timezone.utc)
+        dt = datetime.fromtimestamp(record.created, tz=UTC)
         blob_name = generate_audit_blob_name(now=dt)
         path = (
             self._base_dir / self._environment / self._namespace / self._app / blob_name
@@ -80,7 +81,7 @@ class AuditEventFileHandler(logging.Handler):
         return path
 
     def _write_atomic_json(
-        self, event: dict, path: Path, record: logging.LogRecord
+        self, event: dict[str, Any], path: Path, record: logging.LogRecord
     ) -> None:
         """
         Writes the given event dictionary atomically to the specified path.
@@ -100,5 +101,6 @@ class AuditEventFileHandler(logging.Handler):
             fsync_dir(path.parent)
         except (OSError, TypeError, ValueError):
             inc_disk_error_counter()
-            safe_unlink(tmp_path)
+            if tmp_path is not None:
+                safe_unlink(tmp_path)
             self.handleError(record)

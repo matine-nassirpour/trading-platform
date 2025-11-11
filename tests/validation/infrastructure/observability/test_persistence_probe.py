@@ -1,0 +1,158 @@
+from __future__ import annotations
+
+import os
+
+from pathlib import Path
+
+import pytest
+
+
+def _init_then_assert_then_shutdown(assert_fn) -> None:
+    """Init → assert → shutdown (always cleanly, even on failure)."""
+    from quantum.infrastructure.observability.bootstrap.init_manager import (
+        init_observability,
+        shutdown_observability,
+    )
+
+    init_observability(force=True)
+    try:
+        assert_fn()
+    finally:
+        shutdown_observability(
+            close_logging=True,
+            shutdown_tracing=True,
+            reset_state=True,
+            set_gauges_down=True,
+        )
+
+
+@pytest.mark.validation
+@pytest.mark.usefixtures("no_rate_limit_no_sampling")
+class TestPersistenceProbe:
+    def test_no_persistent_sinks_sets_logging_sink_up_0(self, tmp_workspace):
+        """Without QUANTUM_LOG_DIR or QUANTUM_AUDIT_DIR → logging_sink_up == 0."""
+        from quantum.infrastructure.observability.bootstrap.health_registry import (
+            get_health_registry,
+        )
+
+        os.environ.pop("QUANTUM_LOG_DIR", None)
+        os.environ.pop("QUANTUM_AUDIT_DIR", None)
+
+        registry = get_health_registry()
+
+        def _assert():
+            assert registry.pipeline_logging_ok._value.get() in (
+                0.0,
+                1.0,
+            )  # init can succeed
+            assert registry.logging_sink_up._value.get() == 0.0
+
+        _init_then_assert_then_shutdown(_assert)
+
+    def test_log_dir_only_sets_logging_sink_up_1(self, tmp_workspace):
+        """With QUANTUM_LOG_DIR writable (alone) → logging_sink_up == 1."""
+        from quantum.infrastructure.observability.bootstrap.health_registry import (
+            get_health_registry,
+        )
+
+        os.environ["QUANTUM_LOG_DIR"] = str(tmp_workspace["logs"])
+        os.environ.pop("QUANTUM_AUDIT_DIR", None)
+
+        registry = get_health_registry()
+
+        def _assert():
+            assert registry.logging_sink_up._value.get() == 1.0
+
+        _init_then_assert_then_shutdown(_assert)
+
+    def test_audit_dir_only_sets_logging_sink_up_1(self, tmp_workspace):
+        """With QUANTUM_AUDIT_DIR writable (alone) → logging_sink_up == 1."""
+        from quantum.infrastructure.observability.bootstrap.health_registry import (
+            get_health_registry,
+        )
+
+        os.environ["QUANTUM_AUDIT_DIR"] = str(tmp_workspace["audit"])
+        os.environ.pop("QUANTUM_LOG_DIR", None)
+
+        registry = get_health_registry()
+
+        def _assert():
+            assert registry.logging_sink_up._value.get() == 1.0
+
+        _init_then_assert_then_shutdown(_assert)
+
+    def test_both_dirs_sets_logging_sink_up_1(self, tmp_workspace):
+        """With both directories valid → logging_sink_up == 1."""
+        from quantum.infrastructure.observability.bootstrap.health_registry import (
+            get_health_registry,
+        )
+
+        os.environ["QUANTUM_LOG_DIR"] = str(tmp_workspace["logs"])
+        os.environ["QUANTUM_AUDIT_DIR"] = str(tmp_workspace["audit"])
+
+        registry = get_health_registry()
+
+        def _assert():
+            assert registry.logging_sink_up._value.get() == 1.0
+
+        _init_then_assert_then_shutdown(_assert)
+
+    def test_invalid_log_dir_and_no_audit_sets_0(self, tmp_workspace, tmp_path):
+        """
+        QUANTUM_LOG_DIR points to a FILE (os.makedirs fails) and no auditing → logging_sink_up == 0.
+        This simulates a reliable cross-platform 'unwritable'.
+        """
+        from quantum.infrastructure.observability.bootstrap.health_registry import (
+            get_health_registry,
+        )
+
+        bogus = Path(tmp_path) / "not_a_dir.jsonl"
+        bogus.write_text("x", encoding="utf-8")
+        os.environ["QUANTUM_LOG_DIR"] = str(bogus)  # not a directory
+        os.environ.pop("QUANTUM_AUDIT_DIR", None)
+
+        registry = get_health_registry()
+
+        def _assert():
+            assert registry.logging_sink_up._value.get() == 0.0
+
+        _init_then_assert_then_shutdown(_assert)
+
+    def test_invalid_log_dir_but_valid_audit_sets_1(self, tmp_workspace, tmp_path):
+        """Invalid log dir but valid audit dir → at least one writable sink → logging_sink_up == 1."""
+        from quantum.infrastructure.observability.bootstrap.health_registry import (
+            get_health_registry,
+        )
+
+        bogus = Path(tmp_path) / "not_a_dir.jsonl"
+        bogus.write_text("x", encoding="utf-8")
+        os.environ["QUANTUM_LOG_DIR"] = str(bogus)
+        os.environ["QUANTUM_AUDIT_DIR"] = str(tmp_workspace["audit"])
+
+        registry = get_health_registry()
+
+        def _assert():
+            assert registry.logging_sink_up._value.get() == 1.0
+
+        _init_then_assert_then_shutdown(_assert)
+
+    def test_deep_probe_enabled_keeps_logging_sink_up_1(self, tmp_workspace):
+        """
+        With QUANTUM_LOG_DIR + QUANTUM_LOG_DEEP_PROBE=1 → the write/read/cleanup probe passes,
+        logging_sink_up == 1.
+        """
+        from quantum.infrastructure.observability.bootstrap.health_registry import (
+            get_health_registry,
+        )
+
+        os.environ["QUANTUM_LOG_DIR"] = str(tmp_workspace["logs"])
+        os.environ.pop("QUANTUM_AUDIT_DIR", None)
+        os.environ["QUANTUM_LOG_DEEP_PROBE"] = "1"
+
+        registry = get_health_registry()
+
+        def _assert():
+            assert registry.logging_sink_up._value.get() == 1.0
+
+        _init_then_assert_then_shutdown(_assert)
+        os.environ.pop("QUANTUM_LOG_DEEP_PROBE", None)

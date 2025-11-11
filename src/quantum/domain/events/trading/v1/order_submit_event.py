@@ -1,11 +1,9 @@
-from typing import ClassVar
+from typing import Any, ClassVar
 
-from pydantic import field_validator
-
-from quantum.shared.events.base import BaseEvent
-from quantum.shared.serialization.schema_registry import register_event
-from quantum.shared.types.enums import App
-from quantum.shared.types.value_objects import EpochMs, IntentId, Symbol
+from quantum.domain.events.base import BaseEvent
+from quantum.domain.serialization.schema_registry import register_event
+from quantum.domain.types.enums import App
+from quantum.domain.value_objects import EpochMs, IntentId, Symbol
 
 
 @register_event
@@ -17,12 +15,4 @@ class OrderSubmitEvent(BaseEvent):
     symbol: Symbol
     request_epoch_ms: EpochMs
     response_epoch_ms: EpochMs | None = None  # completed in the ACK
-    request: dict  # snapshot of the MqlTradeRequest
-
-    @field_validator("response_epoch_ms")
-    @classmethod
-    def _resp_after_req(cls, v, info):
-        req = info.data.get("request_epoch_ms")
-        if v is not None and req is not None and v < req:
-            raise ValueError("response_epoch_ms must be >= request_epoch_ms")
-        return v
+    request: dict[str, Any]  # snapshot of the MqlTradeRequest

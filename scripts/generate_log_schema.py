@@ -25,6 +25,7 @@ from __future__ import annotations
 import hashlib
 import json
 import sys
+
 from datetime import datetime
 from importlib import import_module
 from pathlib import Path
@@ -63,7 +64,7 @@ def main() -> None:
 
     try:
         module = import_module(MODEL_IMPORT_PATH)
-        model_cls = getattr(module, "LogPayloadV1")
+        model_cls = module.LogPayloadV1
     except Exception as e:
         print(f"[ERROR] Impossible de charger LogPayloadV1 : {e}", file=sys.stderr)
         sys.exit(1)
@@ -81,7 +82,9 @@ def main() -> None:
             "model": "LogPayloadV1",
             "schema_version": "1.0",
             "generator": "Quantum Observability Schema Generator",
-            "commit_instructions": "Commit this file under version control at docs/observability/log_schema_v1.json",
+            "commit_instructions": (
+                "Commit this file under version control at docs/observability/log_schema_v1.json"
+            ),
             "sha256": schema_hash,
         },
         **schema_dict,

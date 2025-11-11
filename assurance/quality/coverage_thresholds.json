@@ -1,0 +1,43 @@
+{
+  "metadata": {
+    "version": 1,
+    "owner": "Assurance Engineering",
+    "policy": "Coverage thresholds by architectural layer (Clean Architecture)",
+    "notes": [
+      "Domain: pure business logic, deterministic, highest criticality.",
+      "Application: orchestration/services, moderate logic.",
+      "Infrastructure: IO/adapters, partially mockable.",
+      "Interfaces: UI and external presentation."
+    ]
+  },
+  "tolerance": {
+    "absolute_delta": 0.2
+  },
+  "overall": {
+    "statement_min": 90.0
+  },
+  "layers": {
+    "domain": {
+      "paths": ["src/quantum/domain"],
+      "statement_min": 95.0,
+      "branch_min": 90.0
+    },
+    "application": {
+      "paths": ["src/quantum/application"],
+      "statement_min": 85.0
+    },
+    "infrastructure": {
+      "paths": ["src/quantum/infrastructure"],
+      "statement_min": 80.0
+    },
+    "interfaces": {
+      "paths": ["src/quantum/interfaces"],
+      "statement_min": 70.0
+    }
+  },
+  "overrides": {
+    "src/quantum/infrastructure/observability/*": {
+      "statement_min": 75.0
+    }
+  }
+}

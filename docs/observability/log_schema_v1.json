@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "_meta": {
     "commit_instructions": "Commit this file under version control at docs/observability/log_schema_v1.json",
-    "generated_at_utc": "2025-10-26T17:51:15.495172Z",
+    "generated_at_utc": "2025-11-10T20:09:09.020461Z",
     "generator": "Quantum Observability Schema Generator",
     "model": "LogPayloadV1",
     "schema_version": "1.0",

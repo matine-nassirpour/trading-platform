@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 
 def to_timestamp(dt: datetime) -> float:
@@ -10,7 +10,7 @@ def to_timestamp(dt: datetime) -> float:
     - Always returns a float representing seconds since the epoch (UTC).
     """
     if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
+        dt = dt.replace(tzinfo=UTC)
     else:
-        dt = dt.astimezone(timezone.utc)
+        dt = dt.astimezone(UTC)
     return dt.timestamp()

@@ -1,8 +1,9 @@
 import logging
 import re
+
 from typing import Final
 
-from quantum.core.config.runtime.manager import ConfigManager
+from quantum.infrastructure.config.runtime.manager import ConfigManager
 from quantum.infrastructure.observability.logging.constants import get_audit_allowlist
 
 # Matches version suffixes such as "_v1", "_v2", "_v10" (case-insensitive)

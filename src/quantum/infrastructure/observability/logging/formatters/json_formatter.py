@@ -1,13 +1,15 @@
 import json
 import logging
 import socket
+
 from contextlib import suppress
-from typing import Any, Final
+from typing import Any, Final, cast
 
 from opentelemetry.trace import get_current_span
 from pydantic import ValidationError
 
-from quantum.core.config.runtime.manager import ConfigManager
+from quantum.infrastructure.config.runtime.manager import ConfigManager
+from quantum.infrastructure.observability.context.run_id import get_run_id
 from quantum.infrastructure.observability.logging.models.factory import from_log_record
 from quantum.infrastructure.observability.logging.models.log_payload_v1 import (
     LogPayloadV1,
@@ -18,8 +20,7 @@ from quantum.infrastructure.observability.logging.models.severity_map import (
 from quantum.infrastructure.observability.tracing.correlation.correlation_id import (
     get_correlation_id,
 )
-from quantum.shared.context.run_id import get_run_id
-from quantum.shared.time.format import now_mono_ms, to_rfc3339_ms
+from quantum.infrastructure.time.format_utils import now_mono_ms, to_rfc3339_ms
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Constants                                                                  │
@@ -99,18 +100,14 @@ def _extract_trace_context() -> tuple[str | None, str | None, bool | None]:
     if not is_valid:
         return None, None, None
 
-    try:
+    with suppress(Exception):
         trace_id = f"{int(getattr(sc, 'trace_id', 0)):032x}"
         span_id = f"{int(getattr(sc, 'span_id', 0)):016x}"
-    except Exception:
-        trace_id = span_id = None
 
     # Sampling flag
     tf = getattr(sc, "trace_flags", None)
     sampled: bool | None = None
-    if tf is None:
-        sampled = None
-    else:
+    if tf is not None:
         attr = getattr(tf, "sampled", None)
         if isinstance(attr, bool):
             sampled = attr
@@ -137,7 +134,6 @@ class JsonFormatter(logging.Formatter):
 
     def format(self, record: logging.LogRecord) -> str:
         trace_id, span_id, is_sampled = _extract_trace_context()
-
         ts_unix_ms = int(record.created * 1000)
         ts_mono_ms = getattr(record, "ts_monotonic_ms", now_mono_ms())
 
@@ -184,31 +180,42 @@ class JsonFormatter(logging.Formatter):
             )
 
     # --------------------------------------------------------------------------
-    # Extractors
+    # Internal Helpers
     # --------------------------------------------------------------------------
     @staticmethod
-    def _extract_attrs(record: logging.LogRecord) -> dict[str, Any]:
-        """Extracts and sanitizes custom attributes from a LogRecord."""
+    def _filter_record_fields(record: logging.LogRecord) -> dict[str, Any]:
+        """Filter out excluded or reserved fields."""
+        return {
+            k: v
+            for k, v in record.__dict__.items()
+            if k not in _EXCLUDED_STD_FIELDS
+            and k not in {"service_name", "service_version", "service_namespace", "env"}
+        }
+
+    @staticmethod
+    def _normalize_field(key: str, value: Any, attrs: dict[str, Any]) -> None:
+        """Normalize special cases: exception blocks and embedded attrs."""
+        if key == "exception":
+            try:
+                if isinstance(value, dict):
+                    attrs["exception_obj"] = value
+                elif value is not None:
+                    attrs["exception_text"] = str(value)
+            except Exception:
+                logging.getLogger(__name__).debug(
+                    "Failed to normalize exception", exc_info=True
+                )
+        elif key == "attrs" and isinstance(value, dict):
+            attrs.update(value)
+        else:
+            attrs[key] = value
+
+    def _extract_attrs(self, record: logging.LogRecord) -> dict[str, Any]:
+        """Extract and sanitize custom attributes from a LogRecord."""
         attrs: dict[str, Any] = {}
-        for k, v in record.__dict__.items():
-            if k in _EXCLUDED_STD_FIELDS:
-                continue
-            if k == "exception":
-                try:
-                    if isinstance(v, dict):
-                        attrs["exception_obj"] = v
-                    elif v is not None:
-                        attrs["exception_text"] = str(v)
-                except Exception:
-                    pass
-                continue
-            if k in {"service_name", "service_version", "service_namespace", "env"}:
-                continue
-            if k == "attrs" and isinstance(v, dict):
-                attrs.update(v)
-                continue
-            attrs[k] = v
-        return _json_sanitize(attrs)
+        for k, v in self._filter_record_fields(record).items():
+            self._normalize_field(k, v, attrs)
+        return cast(dict[str, Any], _json_sanitize(attrs))
 
     def _extract_exception_block(self, record: logging.LogRecord) -> dict[str, Any]:
         """Builds a structured exception block from exc_info if present."""
@@ -232,9 +239,6 @@ class JsonFormatter(logging.Formatter):
             "exception_stacktrace": exception_stacktrace,
         }
 
-    # --------------------------------------------------------------------------
-    # Fallback payload
-    # --------------------------------------------------------------------------
     @staticmethod
     def _build_fallback_payload(
         record: logging.LogRecord,

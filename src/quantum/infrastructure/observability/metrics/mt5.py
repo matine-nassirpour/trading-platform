@@ -2,9 +2,9 @@ from typing import Final
 
 from prometheus_client import Counter, Gauge, Histogram
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ MT5 Metrics                                                                 │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ MT5 Metrics                                                                │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 _METRIC_PREFIX = "quantum_mt5_"
 _S: Final = (0.002, 0.005, 0.01, 0.025, 0.05, 0.1, 0.2, 0.4, 0.8, 1.6, 3.2, 6.4)
 
@@ -63,9 +63,9 @@ deals_total = Counter(f"{_METRIC_PREFIX}deals_total", "Total deals")
 positions_open = Gauge(f"{_METRIC_PREFIX}positions_open", "Open positions count")
 
 
-# ╭─────────────────────────────────────────────────────────────────────────────╮
-# │ Execution Channel (Infra-level health)                                      │
-# ╰─────────────────────────────────────────────────────────────────────────────╯
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Execution Channel (Infra-level health)                                     │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 exec_channel_total = Counter(
     f"{_METRIC_PREFIX}exec_channel_total",
     "Total MT5 execution channel calls by result code",

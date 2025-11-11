@@ -26,7 +26,6 @@ downloads/
 eggs/
 .eggs/
 lib/
-!apps/streamlit/lib/
 lib64/
 parts/
 sdist/

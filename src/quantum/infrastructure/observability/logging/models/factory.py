@@ -1,11 +1,11 @@
 from logging import LogRecord
-from typing import Any, cast
+from typing import Any
 
-from .log_payload_v1 import LogPayloadV1, SeverityText
+from .log_payload_v1 import LogPayloadV1
 from .severity_map import SEVERITY_MAP
 
 
-def from_log_record(record: LogRecord, **overrides) -> LogPayloadV1:
+def from_log_record(record: LogRecord, **overrides: Any) -> LogPayloadV1:
     """
     Transforms a Python LogRecord into a validated LogPayloadV1 instance.
 
@@ -27,13 +27,12 @@ def from_log_record(record: LogRecord, **overrides) -> LogPayloadV1:
         pydantic.ValidationError: If the payload fails schema validation.
     """
     sev_text, sev_num = SEVERITY_MAP.get(record.levelno, ("INFO", 9))
-    sev_text = cast(SeverityText, sev_text)
 
     extra_attrs: dict[str, Any] = dict(overrides.get("attrs", {}))
 
     return LogPayloadV1(
         # ─── Timestamps
-        timestamp=overrides.get("timestamp"),
+        timestamp=str(overrides.get("timestamp")),
         ts_unix_ms=overrides.get("ts_unix_ms"),
         ts_monotonic_ms=overrides.get("ts_monotonic_ms"),
         # ─── Severity

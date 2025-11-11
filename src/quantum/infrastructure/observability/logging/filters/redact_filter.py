@@ -1,6 +1,7 @@
 import json
 import logging
 import re
+
 from typing import Any, Final
 
 from quantum.infrastructure.observability.metrics.collectors.health_collector import (
@@ -77,7 +78,7 @@ class RedactFilter(logging.Filter):
         if isinstance(attrs, dict):
             before_len = len(json.dumps(attrs, ensure_ascii=False))
             record.attrs = self._redact_recursive(attrs)
-            after_len = len(json.dumps(record.attrs, ensure_ascii=False))
+            after_len = len(json.dumps(record.attrs, ensure_ascii=False))  # type: ignore[attr-defined]
             if after_len < before_len:
                 logging_redactions_total.inc()
 
