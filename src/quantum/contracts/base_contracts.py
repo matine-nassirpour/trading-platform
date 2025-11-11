@@ -24,9 +24,9 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from pathlib import Path
-from typing import Protocol, TypeVar, runtime_checkable
+from typing import Any, Protocol, TypeVar, runtime_checkable
 
-T = TypeVar("T")
+T = TypeVar("T", covariant=True)
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
@@ -76,7 +76,7 @@ class ConfigLoaderProtocol(Protocol[T]):
     dependency injection, testing, and custom loader substitution.
     """
 
-    def load(self, **kwargs) -> T:
+    def load(self, **kwargs: Any) -> T:
         """
         Load a validated configuration model instance.
 

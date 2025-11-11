@@ -29,14 +29,9 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Final
 
+from dotenv import dotenv_values, find_dotenv
+
 from quantum.infrastructure.config.runtime.state import ConfigState
-
-try:
-    from dotenv import dotenv_values, find_dotenv
-except ImportError:
-    dotenv_values = None
-    find_dotenv = None
-
 
 _LOGGER: Final = logging.getLogger("quantum.config.env_loader")
 

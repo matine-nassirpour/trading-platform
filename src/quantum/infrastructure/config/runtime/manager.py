@@ -29,7 +29,7 @@ import os
 from collections.abc import Mapping
 from functools import lru_cache
 from pathlib import Path
-from typing import Final
+from typing import Any, Final
 
 from quantum.infrastructure.config.models.core import CoreSettings
 from quantum.infrastructure.config.models.logging import LoggingSettings
@@ -53,7 +53,7 @@ class ConfigManager:
     # Internal helpers
     # --------------------------------------------------------------------------
     @staticmethod
-    def _normalize_env(env: Mapping[str, str] | None = None) -> dict[str, str]:
+    def _normalize_env(env: Mapping[str, str] | None = None) -> dict[str, Any]:
         """Normalize environment keys to lowercase for Pydantic model compatibility."""
         return {k.lower(): v for k, v in (env or os.environ).items()}
 
@@ -67,7 +67,7 @@ class ConfigManager:
         *,
         env_file: str | Path | None = None,
         override: bool = False,
-        env: Mapping[str, str] | None = None,
+        env: Mapping[str, Any] | None = None,
         apply: bool = False,
     ) -> CoreSettings:
         """
@@ -89,7 +89,7 @@ class ConfigManager:
             CoreSettings: validated and frozen settings model.
         """
         merged = load_env(root, env_file, override=override, apply=apply)
-        effective_env = {**merged, **os.environ, **(env or {})}
+        effective_env: dict[str, Any] = {**merged, **os.environ, **(env or {})}
         settings = CoreSettings(**effective_env)
 
         _LOGGER.info(

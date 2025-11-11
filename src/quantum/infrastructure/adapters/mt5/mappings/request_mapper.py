@@ -17,7 +17,7 @@ from __future__ import annotations
 import logging
 
 from decimal import Decimal
-from typing import Any
+from typing import Any, cast
 
 from quantum.application.contracts.execution_request import (
     CheckRequest,
@@ -49,7 +49,7 @@ def _map_trade_action(action: TradeAction) -> int:
         TradeAction.CLOSE_BY: mt5.TRADE_ACTION_CLOSE_BY,
     }
 
-    return mapping.get(action, mt5.TRADE_ACTION_DEAL)
+    return cast(int, mapping.get(action, mt5.TRADE_ACTION_DEAL))
 
 
 def _map_order_type(order_type: OrderType) -> int:
@@ -66,7 +66,7 @@ def _map_order_type(order_type: OrderType) -> int:
         OrderType.SELL_STOP_LIMIT: mt5.ORDER_TYPE_SELL_STOP_LIMIT,
         OrderType.CLOSE_BY: mt5.ORDER_TYPE_CLOSE_BY,
     }
-    return mapping.get(order_type, mt5.ORDER_TYPE_BUY)
+    return cast(int, mapping.get(order_type, mt5.ORDER_TYPE_BUY))
 
 
 def _map_time_in_force(tif: TimeInForce) -> int:
@@ -78,7 +78,7 @@ def _map_time_in_force(tif: TimeInForce) -> int:
         TimeInForce.SPECIFIED: mt5.ORDER_TIME_SPECIFIED,
         TimeInForce.SPECIFIED_DAY: mt5.ORDER_TIME_SPECIFIED_DAY,
     }
-    return mapping.get(tif, mt5.ORDER_TIME_GTC)
+    return cast(int, mapping.get(tif, mt5.ORDER_TIME_GTC))
 
 
 def _map_type_filling(filling: OrderFillingType) -> int:
@@ -89,7 +89,7 @@ def _map_type_filling(filling: OrderFillingType) -> int:
         OrderFillingType.IOC: mt5.ORDER_FILLING_IOC,
         OrderFillingType.RETURN: mt5.ORDER_FILLING_RETURN,
     }
-    return mapping.get(filling, mt5.ORDER_FILLING_FOK)
+    return cast(int, mapping.get(filling, mt5.ORDER_FILLING_FOK))
 
 
 def _decimal_to_float(value: Decimal | None) -> float | None:
@@ -114,7 +114,6 @@ def to_mt5_trade_request(req: OrderRequest) -> dict[str, Any]:
         "deviation": int(req.deviation or 10),
         "type_time": _map_time_in_force(req.time_in_force),
         "type_filling": _map_type_filling(req.filling),
-        "comment": f"{req.side.value}-{req.position_side.value}",
     }
 
     logger.debug(

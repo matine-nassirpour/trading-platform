@@ -28,7 +28,7 @@ class OrderRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
 
-class CheckRequest(BaseModel):
+class CheckRequest(OrderRequest):
     """Request to check an order's validity before execution."""
 
     symbol: Symbol

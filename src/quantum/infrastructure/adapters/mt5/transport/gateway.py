@@ -122,68 +122,21 @@ class Mt5ExecutionFunction(ExecutionFunctionProtocol):
     ) -> ExecutionResult:
         start_ms = time.time() * 1000.0
         timeout_s = ConfigManager.load().quantum_exec_timeout
-        result: Any | None = None
-        msg = ""
-        code: ExecutionCode = ExecutionCode.FAIL
 
         with tracer.start_as_current_span(f"exec.{call}") as span:
             # ─── Health gate
-            if channel and not is_gateway_healthy(channel):
-                msg = f"Execution channel {channel.name} unhealthy — call aborted."
-                logger.warning(msg)
-                span.set_status("ERROR")
-                return ExecutionResult(
-                    code=ExecutionCode.INTERNAL_FAIL, message=msg, payload=None
-                )
+            unhealthy_result = self._check_health(channel, span)
+            if unhealthy_result:
+                return unhealthy_result
 
-            try:
-                with timeout_guard(timeout_s, call):
-                    result = func(*args, **kwargs)
-                    res_code = getattr(result, "retcode", None)
-                    msg = getattr(result, "comment", "") or ""
-                    code = map_mt5_res_to_exec(int(res_code or -1))
-                    record_gateway_success(channel)
+            result, code, msg = self._execute(
+                func, call, channel, timeout_s, *args, **kwargs
+            )
 
-            except TimeoutError as e:
-                msg = str(e)
-                code = ExecutionCode.INTERNAL_FAIL_TIMEOUT
-                record_gateway_failure(channel)
-                logger.error(msg)
-
-            except Exception as e:
-                msg = f"{type(e).__name__}: {e}"
-                code = ExecutionCode.INTERNAL_FAIL
-                record_gateway_failure(channel)
-                logger.exception(
-                    f"MT5 call '{call}' crashed with exception", exc_info=e
-                )
-
-            # ─── Metrics & Observability
+            # ─── Observability
             dur_ms = int(time.time() * 1000.0 - start_ms)
-            try:
-                exec_channel_latency_ms.labels(call=call).observe(dur_ms)
-                exec_channel_total.labels(call=call, code=str(code)).inc()
-            except Exception as exc:
-                logger.debug(
-                    "Failed to record metrics for call '%s' (code=%s, duration=%dms): %s",
-                    call,
-                    code,
-                    dur_ms,
-                    exc,
-                    exc_info=True,
-                )
-
-            # ─── Tracing enrichment
-            span.set_attribute("exec.channel", str(channel or "unknown"))
-            span.set_attribute("exec.call", call)
-            span.set_attribute("exec.code", str(code))
-            span.set_attribute("exec.latency_ms", dur_ms)
-            span.set_attribute("exec.timeout_s", timeout_s)
-
-            if code != ExecutionCode.OK:
-                from opentelemetry.trace import Status, StatusCode
-
-                span.set_status(Status(StatusCode.ERROR, description=str(code)))
+            self._record_metrics(call, code, dur_ms)
+            self._enrich_trace(span, call, channel, code, dur_ms, timeout_s)
 
             # ─── Structured Log
             logger.info(
@@ -200,3 +153,88 @@ class Mt5ExecutionFunction(ExecutionFunctionProtocol):
             )
 
             return ExecutionResult(code=code, message=msg, payload=result)
+
+    # --------------------------------------------------------------------------
+    # Internal Helpers
+    # --------------------------------------------------------------------------
+    @staticmethod
+    def _check_health(
+        channel: ExecutionChannel | None, span: Any
+    ) -> ExecutionResult | None:
+        if channel and not is_gateway_healthy(channel):
+            msg = f"Execution channel {channel.name} unhealthy — call aborted."
+            logger.warning(msg)
+            from opentelemetry.trace import Status, StatusCode
+
+            span.set_status(Status(StatusCode.ERROR, description="unhealthy channel"))
+            return ExecutionResult(
+                code=ExecutionCode.INTERNAL_FAIL, message=msg, payload=None
+            )
+        return None
+
+    @staticmethod
+    def _execute(
+        func: Callable[..., Any],
+        call: str,
+        channel: ExecutionChannel | None,
+        timeout_s: float,
+        *args: Any,
+        **kwargs: Any,
+    ) -> tuple[Any | None, ExecutionCode, str]:
+        try:
+            with timeout_guard(timeout_s, call):
+                result = func(*args, **kwargs)
+                res_code = getattr(result, "retcode", None)
+                msg = getattr(result, "comment", "") or ""
+                code = map_mt5_res_to_exec(int(res_code or -1))
+                if channel is not None:
+                    record_gateway_success(channel)
+        except TimeoutError as e:
+            msg = str(e)
+            code = ExecutionCode.INTERNAL_FAIL_TIMEOUT
+            if channel is not None:
+                record_gateway_failure(channel)
+            logger.error(msg)
+        except Exception as e:
+            msg = f"{type(e).__name__}: {e}"
+            code = ExecutionCode.INTERNAL_FAIL
+            if channel is not None:
+                record_gateway_failure(channel)
+            logger.exception(f"MT5 call '{call}' crashed with exception", exc_info=e)
+
+        return result, code, msg
+
+    @staticmethod
+    def _record_metrics(call: str, code: ExecutionCode, dur_ms: int) -> None:
+        try:
+            exec_channel_latency_ms.labels(call=call).observe(dur_ms)
+            exec_channel_total.labels(call=call, code=str(code)).inc()
+        except Exception as exc:
+            logger.debug(
+                "Failed to record metrics for call '%s' (code=%s, duration=%dms): %s",
+                call,
+                code,
+                dur_ms,
+                exc,
+                exc_info=True,
+            )
+
+    @staticmethod
+    def _enrich_trace(
+        span: Any,
+        call: str,
+        channel: ExecutionChannel | None,
+        code: ExecutionCode,
+        dur_ms: int,
+        timeout_s: float,
+    ) -> None:
+        span.set_attribute("exec.channel", str(channel or "unknown"))
+        span.set_attribute("exec.call", call)
+        span.set_attribute("exec.code", str(code))
+        span.set_attribute("exec.latency_ms", dur_ms)
+        span.set_attribute("exec.timeout_s", timeout_s)
+
+        if code != ExecutionCode.OK:
+            from opentelemetry.trace import Status, StatusCode
+
+            span.set_status(Status(StatusCode.ERROR, description=str(code)))

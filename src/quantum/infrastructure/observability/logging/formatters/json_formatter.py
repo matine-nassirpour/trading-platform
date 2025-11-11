@@ -3,7 +3,7 @@ import logging
 import socket
 
 from contextlib import suppress
-from typing import Any, Final
+from typing import Any, Final, cast
 
 from opentelemetry.trace import get_current_span
 from pydantic import ValidationError
@@ -100,11 +100,9 @@ def _extract_trace_context() -> tuple[str | None, str | None, bool | None]:
     if not is_valid:
         return None, None, None
 
-    try:
+    with suppress(Exception):
         trace_id = f"{int(getattr(sc, 'trace_id', 0)):032x}"
         span_id = f"{int(getattr(sc, 'span_id', 0)):016x}"
-    except Exception:
-        trace_id = span_id = None
 
     # Sampling flag
     tf = getattr(sc, "trace_flags", None)
@@ -217,7 +215,7 @@ class JsonFormatter(logging.Formatter):
         attrs: dict[str, Any] = {}
         for k, v in self._filter_record_fields(record).items():
             self._normalize_field(k, v, attrs)
-        return _json_sanitize(attrs)
+        return cast(dict[str, Any], _json_sanitize(attrs))
 
     def _extract_exception_block(self, record: logging.LogRecord) -> dict[str, Any]:
         """Builds a structured exception block from exc_info if present."""

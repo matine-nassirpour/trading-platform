@@ -8,7 +8,7 @@ import time
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from functools import wraps
-from typing import Any, Generic, ParamSpec, TypeVar
+from typing import Any, Generic, ParamSpec, TypeVar, cast
 
 from quantum.application.policies.retry_policy import DefaultRetryPolicy, RetryPolicy
 from quantum.application.ports.outbound.timeout_runner_port import TimeoutRunnerPort
@@ -137,7 +137,7 @@ class BackoffStrategy:
         delay = self._base * (2 ** (attempt - 1))
         if self._jitter:
             delay *= self._rand(0.8, 1.3)
-        return min(delay, self._cap)
+        return float(min(delay, self._cap))
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
@@ -200,17 +200,21 @@ class ResilienceExecutor(Generic[P, R]):
         self, attempt: int, elapsed_total: float, result: Any, exc: Exception | None
     ) -> bool:
         """Determine if retries should stop based on policy or limits."""
+        timeout_reached = (
+            self.cfg.max_total_time is not None
+            and elapsed_total >= self.cfg.max_total_time
+        )
         return (
             attempt >= self.cfg.max_retries
             or not self.policy.should_retry(result, exc)
-            or (self.cfg.max_total_time and elapsed_total >= self.cfg.max_total_time)
+            or timeout_reached
         )
 
     def _handle_post_attempt(
         self,
         attempt: int,
         start_global: float,
-        result: Any,
+        result: object,
         last_exc: Exception | None,
     ) -> float:
         """
@@ -268,13 +272,12 @@ class ResilienceExecutor(Generic[P, R]):
     ) -> R:
         attempt = 0
         start_global = time.time()
-        result: Any | None = None
 
         while True:
             attempt += 1
             start = time.time()
             try:
-                result = await self.timeout_runner.run_with_timeout_async(
+                result: R = await self.timeout_runner.run_with_timeout_async(
                     func,
                     *args,
                     timeout_sec=self.cfg.timeout_sec,
@@ -309,7 +312,7 @@ def resilient_call(
     timeout_runner: TimeoutRunnerPort | None = None,
     policy: RetryPolicy | None = None,
     cfg: ResilienceConfig | None = None,
-) -> Callable[[Callable[P, R]], Callable[P, R]]:
+) -> Callable[[Callable[P, R]], Callable[P, R]] | Callable[P, R]:
     """Decorator for resilient synchronous operations."""
 
     def decorator(inner_func: Callable[P, R]) -> Callable[P, R]:
@@ -321,13 +324,14 @@ def resilient_call(
                 raise RuntimeError(
                     f"[{op_name}] resilient_call used without timeout_runner injection"
                 )
-            executor = ResilienceExecutor(
+            executor: ResilienceExecutor[P, R] = ResilienceExecutor(
                 operation=op_name, timeout_runner=timeout_runner, policy=policy, cfg=cfg
             )
             return executor.execute_sync(inner_func, *args, **kwargs)
 
-        wrapper._resilience_call_name = op_name
-        return wrapper
+        wrapped = cast(Callable[P, R], wrapper)
+        wrapped._resilience_call_name = op_name  # type: ignore[attr-defined]
+        return wrapped
 
     return decorator if func is None else decorator(func)
 
@@ -338,7 +342,10 @@ def resilient_async_call(
     timeout_runner: TimeoutRunnerPort | None,
     policy: RetryPolicy | None = None,
     cfg: ResilienceConfig | None = None,
-) -> Callable[[Callable[P, Awaitable[R]]], Callable[P, Awaitable[R]]]:
+) -> (
+    Callable[[Callable[P, Awaitable[R]]], Callable[P, Awaitable[R]]]
+    | Callable[P, Awaitable[R]]
+):
     """Decorator for resilient asynchronous operations."""
 
     def decorator(inner_func: Callable[P, Awaitable[R]]) -> Callable[P, Awaitable[R]]:
@@ -350,12 +357,13 @@ def resilient_async_call(
                 raise RuntimeError(
                     f"[{op_name}] resilient_async_call used without timeout_runner injection"
                 )
-            executor = ResilienceExecutor(
+            executor: ResilienceExecutor[P, R] = ResilienceExecutor(
                 operation=op_name, timeout_runner=timeout_runner, policy=policy, cfg=cfg
             )
             return await executor.execute_async(inner_func, *args, **kwargs)
 
-        wrapper._resilience_call_name = op_name
-        return wrapper
+        wrapped = cast(Callable[P, Awaitable[R]], wrapper)
+        wrapped._resilience_call_name = op_name  # type: ignore[attr-defined]
+        return wrapped
 
     return decorator if func is None else decorator(func)

@@ -20,7 +20,7 @@ import threading
 
 from collections.abc import Callable, Generator
 from contextlib import contextmanager
-from typing import TypeVar
+from typing import Any, TypeVar
 
 T = TypeVar("T")
 
@@ -53,7 +53,7 @@ def timeout_guard(seconds: float, call_name: str) -> Generator[None]:
     cancel_event = threading.Event()
     exc: BaseException | None = None
 
-    def _watchdog():
+    def _watchdog() -> None:
         # Wait and raise timeout if not cancelled
         if not cancel_event.wait(timeout=seconds):
             nonlocal exc
@@ -75,7 +75,7 @@ def timeout_guard(seconds: float, call_name: str) -> Generator[None]:
 # │ Function wrapper (optional utility)                                        │
 # ╰────────────────────────────────────────────────────────────────────────────╯
 def run_with_timeout(
-    func: Callable[..., T], *args, seconds: float, call_name: str, **kwargs
+    func: Callable[..., T], *args: Any, seconds: float, call_name: str, **kwargs: Any
 ) -> T:
     """
     Executes a callable in a thread pool with a hard timeout.

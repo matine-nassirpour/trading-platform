@@ -50,9 +50,9 @@ class ExecutionService:
         return self.port.check_order(request)
 
     @resilient_call
-    def get_positions(self, request: QueryRequest | None = None) -> ExecutionResult:
+    def get_positions(self, request: QueryRequest) -> ExecutionResult:
         return self.port.get_positions(request)
 
     @resilient_call
-    def get_orders(self, request: QueryRequest | None = None) -> ExecutionResult:
+    def get_orders(self, request: QueryRequest) -> ExecutionResult:
         return self.port.get_orders(request)

@@ -22,7 +22,7 @@ Design Principles
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -83,7 +83,7 @@ class TracingSettings(BaseModel):
     # --------------------------------------------------------------------------
     @field_validator("quantum_trace_otlp_protocol", mode="before")
     @classmethod
-    def validate_protocol(cls, v):
+    def validate_protocol(cls, v: Any) -> Any:
         # Rule: platform.tracing.otlp_protocol
         return validate_field(
             "platform.tracing.otlp_protocol",
@@ -94,7 +94,7 @@ class TracingSettings(BaseModel):
 
     @field_validator("quantum_trace_otlp_compression", mode="before")
     @classmethod
-    def validate_compression(cls, v):
+    def validate_compression(cls, v: Any) -> Any:
         # Rule: platform.tracing.compression
         return validate_field(
             "platform.tracing.compression",
@@ -105,7 +105,7 @@ class TracingSettings(BaseModel):
 
     @field_validator("quantum_trace_sample")
     @classmethod
-    def validate_sample(cls, v):
+    def validate_sample(cls, v: float) -> float:
         if not (0.0 <= v <= 1.0):
             raise ValueError("quantum_trace_sample must be in [0, 1]")
         return v

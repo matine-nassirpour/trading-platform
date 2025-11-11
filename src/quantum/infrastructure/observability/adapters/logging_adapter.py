@@ -70,7 +70,7 @@ class LoggingAdapter(LoggingPort):
     # --------------------------------------------------------------------------
     # Structured logging API
     # --------------------------------------------------------------------------
-    def emit_info(self, message: str, **attrs) -> None:
+    def emit_info(self, message: str, **attrs: object) -> None:
         """
         Emit an INFO-level structured log message deterministically,
         with proper redaction via each handler’s formatter chain.
@@ -122,7 +122,7 @@ class LoggingAdapter(LoggingPort):
         except Exception as exc:
             logging.getLogger(__name__).warning("emit_info failed: %s", exc)
 
-    def emit_event(self, payload: dict) -> None:
+    def emit_event(self, payload: dict[str, object]) -> None:
         """Emit an audit/telemetry event via the event emitter."""
         try:
             emit_event(payload)

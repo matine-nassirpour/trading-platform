@@ -22,6 +22,8 @@ Design Principles
 
 from __future__ import annotations
 
+from typing import Any
+
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -85,7 +87,7 @@ class CoreSettings(BaseSettings):
     # --------------------------------------------------------------------------
     @field_validator("quantum_env", mode="before")
     @classmethod
-    def validate_environment(cls, v):
+    def validate_environment(cls, v: Any) -> Any:
         return validate_field(
             "platform.runtime.environment",
             v,

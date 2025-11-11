@@ -21,11 +21,11 @@ repos:
     rev: v1.18.2
     hooks:
       - id: mypy
+        language: system
         pass_filenames: false
         args: [
           "--config-file", "assurance/quality/mypy.ini",
-          "--install-types",
-          "--non-interactive"
+          "src/quantum"
         ]
 
   - repo: https://github.com/PyCQA/bandit

@@ -1,10 +1,8 @@
 from decimal import Decimal
 from typing import ClassVar
 
-from pydantic import field_validator
-
 from quantum.domain.events.base import BaseEvent
-from quantum.domain.serialization import register_event
+from quantum.domain.serialization.schema_registry import register_event
 from quantum.domain.types.decimal_validators import PositiveDecimal
 from quantum.domain.types.enums import App
 from quantum.domain.value_objects import EpochMs, IntentId, PositionId, Symbol
@@ -24,10 +22,3 @@ class PositionUpdateEvent(BaseEvent):
     tp: Decimal | None = None
     profit: Decimal  # Current PnL (unrealized)
     update_epoch_ms: EpochMs
-
-    @field_validator("volume")
-    @classmethod
-    def _volume_non_negative(cls, v: Decimal):
-        if v < 0:
-            raise ValueError("volume must be >= 0")
-        return v

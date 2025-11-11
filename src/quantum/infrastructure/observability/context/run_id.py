@@ -1,6 +1,7 @@
 import contextvars
 import uuid
 
+from collections.abc import Generator
 from contextlib import contextmanager
 
 # Context thread-safe / async-safe
@@ -26,7 +27,7 @@ def set_run_id(value: str) -> None:
 
 
 @contextmanager
-def run_id_context(run_id: str | None = None):
+def run_id_context(run_id: str | None = None) -> Generator[None, None, None]:
     """
     Context manager for temporary scoping of a run_id.
     Automatically generates a new UUID if none is provided.

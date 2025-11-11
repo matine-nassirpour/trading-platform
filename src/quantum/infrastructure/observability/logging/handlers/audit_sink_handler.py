@@ -4,7 +4,7 @@ import os
 
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Final
+from typing import Any, Final
 
 from quantum.infrastructure.observability.logging._io_utils import (
     fsync_dir,
@@ -81,7 +81,7 @@ class AuditEventFileHandler(logging.Handler):
         return path
 
     def _write_atomic_json(
-        self, event: dict, path: Path, record: logging.LogRecord
+        self, event: dict[str, Any], path: Path, record: logging.LogRecord
     ) -> None:
         """
         Writes the given event dictionary atomically to the specified path.
@@ -101,5 +101,6 @@ class AuditEventFileHandler(logging.Handler):
             fsync_dir(path.parent)
         except (OSError, TypeError, ValueError):
             inc_disk_error_counter()
-            safe_unlink(tmp_path)
+            if tmp_path is not None:
+                safe_unlink(tmp_path)
             self.handleError(record)

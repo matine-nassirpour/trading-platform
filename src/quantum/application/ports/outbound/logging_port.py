@@ -17,10 +17,10 @@ class LoggingPort(Protocol):
         """Return recent log lines from JSONL files (complete lines only)."""
         ...
 
-    def emit_info(self, message: str, **attrs) -> None:
+    def emit_info(self, message: str, **attrs: object) -> None:
         """Emit a structured INFO-level log message."""
         ...
 
-    def emit_event(self, payload: dict) -> None:
+    def emit_event(self, payload: dict[str, object]) -> None:
         """Emit a structured audit event (schema-validated)."""
         ...

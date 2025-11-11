@@ -1,6 +1,7 @@
 import logging
 import threading
 
+from collections.abc import Iterator
 from contextlib import contextmanager, suppress
 
 from quantum.infrastructure.config.runtime.manager import ConfigManager
@@ -113,7 +114,7 @@ def shutdown_observability(
 
 
 @contextmanager
-def observability_session(*, force: bool = False):
+def observability_session(*, force: bool = False) -> Iterator[None]:
     """
     Context manager for automatic observability setup and teardown.
 

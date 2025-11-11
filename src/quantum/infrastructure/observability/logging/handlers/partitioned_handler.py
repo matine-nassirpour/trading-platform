@@ -17,14 +17,10 @@ from quantum.infrastructure.observability.logging._io_utils import (
     fsync_dir,
     inc_disk_error_counter,
 )
+from quantum.infrastructure.observability.metrics.collectors.health_collector import (
+    logging_file_rotations_total,
+)
 from quantum.infrastructure.time.naming import partition_path_components
-
-try:
-    from quantum.infrastructure.observability.metrics.collectors.health_collector import (
-        logging_file_rotations_total,
-    )
-except (ModuleNotFoundError, ImportError):
-    logging_file_rotations_total = None
 
 
 class PartitionedJSONLFileHandler(logging.Handler):

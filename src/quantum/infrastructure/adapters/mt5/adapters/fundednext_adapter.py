@@ -3,6 +3,6 @@ from quantum.infrastructure.adapters.mt5.adapters.base_adapter import BaseMt5Ada
 
 
 class FUNDEDNEXTAdapter(BaseMt5Adapter):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(ExecutionChannel.FUNDEDNEXT)
         # (future) apply FTMOExecutionPolicy (slippage, schedules, etc.)

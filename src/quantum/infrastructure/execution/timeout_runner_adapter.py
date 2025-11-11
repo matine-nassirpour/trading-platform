@@ -7,6 +7,7 @@ import threading
 
 from collections.abc import Awaitable, Callable
 from contextlib import AbstractContextManager
+from types import TracebackType
 from typing import Any, TypeVar
 
 from quantum.application.ports.outbound.timeout_runner_port import TimeoutRunnerPort
@@ -32,7 +33,10 @@ class TimeoutExecutionError(TimeoutError):
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Threaded/Async Timeout Runner Adapter                                      │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-class ThreadedTimeoutRunnerAdapter(TimeoutRunnerPort, AbstractContextManager):
+class ThreadedTimeoutRunnerAdapter(
+    TimeoutRunnerPort,
+    AbstractContextManager["ThreadedTimeoutRunnerAdapter"],
+):
     """ThreadPool + asyncio-based implementation of TimeoutRunnerPort."""
 
     def __init__(
@@ -130,6 +134,11 @@ class ThreadedTimeoutRunnerAdapter(TimeoutRunnerPort, AbstractContextManager):
             self._executor.shutdown(wait=wait, cancel_futures=cancel_futures)
             self._is_shutdown = True
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
         """Allow usage as a context manager for deterministic cleanup."""
         self.shutdown(wait=True)

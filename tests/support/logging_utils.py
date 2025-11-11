@@ -4,7 +4,7 @@ import logging
 import os
 import threading
 
-from collections.abc import Callable
+from collections.abc import Callable, Generator
 from contextlib import contextmanager, suppress
 from pathlib import Path
 from typing import Any, cast
@@ -15,7 +15,7 @@ from tests.support.types import NumberLike
 class ListHandler(logging.Handler):
     """In-memory handler capturing LogRecord instances for assertions."""
 
-    def __init__(self, level=logging.NOTSET):
+    def __init__(self, level: int = logging.NOTSET) -> None:
         super().__init__(level)
         self.records: list[logging.LogRecord] = []
 
@@ -24,7 +24,9 @@ class ListHandler(logging.Handler):
 
 
 @contextmanager
-def capture_logger(name: str, level: int = logging.DEBUG):
+def capture_logger(
+    name: str, level: int = logging.DEBUG
+) -> Generator[list[logging.LogRecord]]:
     """
     Temporarily attach a memory handler to `name`. Yields a list of LogRecords.
     """
@@ -64,7 +66,7 @@ def counter_value(c: Any) -> float:
 
 
 @contextmanager
-def propagate_logger(name: str):
+def propagate_logger(name: str) -> Generator[None]:
     """
     Temporarily set logger.propagate=True for caplog/root capture.
     """
@@ -96,7 +98,7 @@ def _iter_all_loggers() -> list[logging.Logger]:
     return loggers
 
 
-def close_all_handlers():
+def close_all_handlers() -> None:
     """
     Cleanly flush/close and detach all handlers of all known loggers.
 

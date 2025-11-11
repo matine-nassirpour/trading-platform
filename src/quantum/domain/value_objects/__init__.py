@@ -15,15 +15,19 @@ import re
 import uuid
 
 from datetime import UTC, datetime
-from typing import Any, ClassVar
+from typing import Any, ClassVar, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+
+class _HasValue(Protocol):
+    value: Any
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Base class                                                                 │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-class ValueObject(BaseModel):
+class ValueObject(BaseModel, _HasValue):
     """
     Canonical base for all Value Objects in the system.
 
@@ -45,14 +49,14 @@ class ValueObject(BaseModel):
     def __eq__(self, other: Any) -> bool:
         if self.__class__ is not other.__class__:
             return False
-        return self.model_dump() == other.model_dump()
+        return bool(self.model_dump() == other.model_dump())
 
     def __hash__(self) -> int:
         # Hash by sorted tuple of fields to ensure deterministic hashing
         return hash(tuple(sorted(self.model_dump().items())))
 
     # ─── String representations
-    def __str__(self) -> str:  # human-readable
+    def __str__(self) -> str:
         return str(self.value)
 
     def __repr__(self) -> str:
@@ -73,7 +77,7 @@ class IntentId(ValueObject):
 
     @field_validator("value", mode="before")
     @classmethod
-    def _coerce_uuid(cls, v):
+    def _coerce_uuid(cls, v: Any) -> uuid.UUID:
         if isinstance(v, uuid.UUID):
             return v
         return uuid.UUID(str(v))

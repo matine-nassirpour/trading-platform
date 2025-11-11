@@ -7,7 +7,7 @@ and exposing introspection and retrieval APIs.
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from typing import Any
 
 from quantum.infrastructure.config.validators import rules
@@ -53,7 +53,7 @@ class ValidatorRegistry:
     @classmethod
     def register_defaults(cls) -> None:
         """Register all default Quantum validators."""
-        defaults = {
+        defaults: dict[str, Callable[[], ValidationRule]] = {
             "platform.runtime.environment": rules.EnvironmentValidator,
             "platform.logging.log_level": rules.LogLevelValidator,
             "platform.logging.timezone": rules.TimezoneValidator,

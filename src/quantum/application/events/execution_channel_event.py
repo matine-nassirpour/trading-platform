@@ -2,7 +2,7 @@ from typing import ClassVar
 
 from quantum.application.contracts.execution_code import ExecutionCode
 from quantum.domain.events.base import BaseEvent
-from quantum.domain.serialization import register_event
+from quantum.domain.serialization.schema_registry import register_event
 from quantum.domain.types.enums import App
 from quantum.domain.types.execution_channel import ExecutionChannel
 from quantum.domain.value_objects import EpochMs

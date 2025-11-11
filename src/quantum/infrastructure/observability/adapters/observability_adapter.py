@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import logging
 
-from collections.abc import Mapping
+from collections.abc import Iterator, Mapping
 from typing import Any
 
-from prometheus_client import REGISTRY
+from prometheus_client import REGISTRY, Metric
 
 from quantum.application.ports.outbound.observability_port import ObservabilityPort
 from quantum.infrastructure.observability.bootstrap.init_manager import (
@@ -109,7 +109,7 @@ class ObservabilityAdapter(ObservabilityPort):
         return buckets, total_count
 
     @staticmethod
-    def _collect_histogram_samples(metric_name: str):
+    def _collect_histogram_samples(metric_name: str) -> Iterator[Metric]:
         """Return all metrics matching the given histogram name."""
         for metric in REGISTRY.collect():
             if getattr(metric, "name", None) == metric_name:

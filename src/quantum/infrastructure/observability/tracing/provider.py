@@ -15,11 +15,20 @@ from opentelemetry.sdk.resources import (
     SERVICE_VERSION,
     Resource,
 )
-from opentelemetry.sdk.trace import SpanLimits, SpanProcessor, TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
+from opentelemetry.sdk.trace import (
+    ReadableSpan,
+    SpanLimits,
+    SpanProcessor,
+    TracerProvider,
+)
+from opentelemetry.sdk.trace.export import (
+    BatchSpanProcessor,
+    ConsoleSpanExporter,
+    SpanExporter,
+)
 from opentelemetry.sdk.trace.id_generator import RandomIdGenerator
 from opentelemetry.sdk.trace.sampling import ParentBased, TraceIdRatioBased
-from opentelemetry.trace import Span
+from opentelemetry.trace import Span, Tracer
 from opentelemetry.trace import TracerProvider as TracerProviderInterface
 from opentelemetry.trace import get_tracer_provider, set_tracer_provider
 
@@ -77,7 +86,7 @@ class _ContextEnricherProcessor(SpanProcessor):
         except Exception as exc:
             logger.debug(f"Context enrichment failed: {exc}")
 
-    def on_end(self, span: Span) -> None:
+    def on_end(self, span: ReadableSpan) -> None:
         pass
 
     def shutdown(self) -> None:
@@ -107,7 +116,7 @@ def _parse_otlp_headers(headers_csv: str | None) -> dict[str, str]:
 
 def _create_http_exporter(
     endpoint: str, headers: dict[str, str], timeout: float, compression: Any
-):
+) -> SpanExporter:
     from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
         OTLPSpanExporter as OTLPHTTPExporter,
     )
@@ -129,7 +138,7 @@ def _create_grpc_exporter(
     timeout: float,
     insecure: bool,
     compression: Any,
-):
+) -> SpanExporter:
     from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
         OTLPSpanExporter as OTLPGRPCExporter,
     )
@@ -332,7 +341,7 @@ def _log_exporter_status(
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Public API                                                                 │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-def get_tracer(component: str, version: str = "1.0.0"):
+def get_tracer(component: str, version: str = "1.0.0") -> Tracer:
     """
     Return a canonical tracer for the given component.
     Example: get_tracer("infra.execution.mt5")

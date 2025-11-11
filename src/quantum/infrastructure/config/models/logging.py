@@ -22,6 +22,8 @@ Design Principles
 
 from __future__ import annotations
 
+from typing import Any
+
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from quantum.infrastructure.config.validators import validate_field
@@ -117,7 +119,7 @@ class LoggingSettings(BaseModel):
     # --------------------------------------------------------------------------
     @field_validator("quantum_log_level", mode="before")
     @classmethod
-    def validate_log_level(cls, v):
+    def validate_log_level(cls, v: Any) -> Any:
         return validate_field(
             "platform.logging.log_level",
             v,
@@ -127,7 +129,7 @@ class LoggingSettings(BaseModel):
 
     @field_validator("streamlit_log_tz", mode="before")
     @classmethod
-    def validate_tz(cls, v):
+    def validate_tz(cls, v: Any) -> Any:
         return validate_field(
             "platform.logging.timezone",
             v,
@@ -137,7 +139,7 @@ class LoggingSettings(BaseModel):
 
     @field_validator("streamlit_log_renderer", mode="before")
     @classmethod
-    def validate_renderer(cls, v):
+    def validate_renderer(cls, v: str) -> str:
         if not v:
             return "json"
         v = str(v).strip().lower()
@@ -147,10 +149,10 @@ class LoggingSettings(BaseModel):
 
     @field_validator("quantum_log_sample_info", mode="before")
     @classmethod
-    def normalize_sample_info(cls, v):
+    def normalize_sample_info(cls, v: Any) -> int:
         if v in ("", None):
             return 0
-        return v
+        return int(v)
 
     # --------------------------------------------------------------------------
     # Model configuration

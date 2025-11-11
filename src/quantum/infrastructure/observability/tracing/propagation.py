@@ -2,10 +2,10 @@ import threading
 
 from collections.abc import Callable, Iterator
 from concurrent.futures import Executor, Future
-from contextlib import contextmanager
+from contextlib import AbstractContextManager, contextmanager
 from contextvars import Token
 from dataclasses import dataclass
-from typing import TypeVar
+from typing import Any, TypeVar
 
 from opentelemetry import baggage
 from opentelemetry import context as otel_context
@@ -93,7 +93,7 @@ def refresh_process_baggage(
 
 
 @contextmanager
-def baggage_context_from_ids():
+def baggage_context_from_ids() -> Iterator[None]:
     """
     Practical context for (re)injecting run_id / correlation_id into Baggage
     during a block (e.g., outgoing network call, ad-hoc job).
@@ -145,7 +145,9 @@ def capture_context_snapshot() -> ContextSnapshot:
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Internal Helpers                                                           │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-def _enter_app_contexts(snap: ContextSnapshot):
+def _enter_app_contexts(
+    snap: ContextSnapshot,
+) -> tuple[AbstractContextManager[None] | None, AbstractContextManager[None] | None]:
     rid_cm = run_id_context(snap.run_id) if snap.run_id else None
     cid_cm = correlation_context(snap.correlation_id) if snap.correlation_id else None
 
@@ -161,7 +163,7 @@ def _enter_otel_or_baggage(
     snap: ContextSnapshot,
     attach_otel: bool,
     ensure_baggage_from_ids: bool,
-):
+) -> tuple[Token[OTelContext] | None, AbstractContextManager[None] | None]:
     otel_token: Token[OTelContext] | None = None
     baggage_cm = None
 
@@ -175,10 +177,10 @@ def _enter_otel_or_baggage(
 
 
 def _exit_all_contexts(
-    rid_cm,
-    cid_cm,
+    rid_cm: AbstractContextManager[None] | None,
+    cid_cm: AbstractContextManager[None] | None,
     otel_token: Token[OTelContext] | None,
-    baggage_cm,
+    baggage_cm: AbstractContextManager[None] | None,
 ) -> None:
     if otel_token is not None:
         otel_context.detach(otel_token)
@@ -240,7 +242,9 @@ class ContextPropagatingThread(threading.Thread):
         t.start(); t.join()
     """
 
-    def __init__(self, *args, snapshot: ContextSnapshot | None = None, **kwargs):
+    def __init__(
+        self, *args: Any, snapshot: ContextSnapshot | None = None, **kwargs: Any
+    ) -> None:
         super().__init__(*args, **kwargs)
         self._snapshot = snapshot or capture_context_snapshot()
 
@@ -262,7 +266,7 @@ def wrap_callable_with_context(
     """
     snapshot = snap or capture_context_snapshot()
 
-    def _wrapped(*args, **kwargs) -> T:
+    def _wrapped(*args: Any, **kwargs: Any) -> T:
         with use_context_snapshot(snapshot):
             return fn(*args, **kwargs)
 
@@ -272,9 +276,9 @@ def wrap_callable_with_context(
 def submit_with_context(
     executor: Executor,
     fn: Callable[..., T],
-    *args,
+    *args: Any,
     snapshot: ContextSnapshot | None = None,
-    **kwargs,
+    **kwargs: Any,
 ) -> Future[T]:
     """
     Submit a task to a concurrent.futures.Executor while propagating context.
