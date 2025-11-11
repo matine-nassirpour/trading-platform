@@ -16,9 +16,12 @@ SRC := src/$(PKG)
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Help                                                                       │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-help: ## Display available make targets
-	@Write-Host "Available targets:`n"
-	@Get-Content '$(MAKEFILE_LIST)' | Select-String '^\S+:.*?## ' | ForEach-Object { $$t = $$_.Line -replace ':.*',''; $$d = ($$_.Line -split '## ')[1]; Write-Host ("{0,-20} {1}" -f $$t, $$d) }
+help: ## Display structured list of available Make targets
+	@Write-Host "╭─────────────────────────────────────────────────────────────────────────────╮"
+	@Write-Host "│                  QUANTUM PLATFORM — MAKE COMMANDS OVERVIEW                  │"
+	@Write-Host "╰─────────────────────────────────────────────────────────────────────────────╯"
+	@(Get-Content '$(MAKEFILE_LIST)' | Select-String '^\S+:.*?## ' | ForEach-Object {$$t = ($$_.Line -replace ':.*',''); $$d = ($$_.Line -split '## ')[1]; Write-Host ("  {0,-20} {1}" -f $$t, $$d) -ForegroundColor Gray})
+	@Write-Host ""
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
@@ -44,7 +47,7 @@ typecheck: ## Strict static typing (Mypy)
 	@poetry run mypy --config-file assurance/quality/mypy.ini $(SRC)
 
 bandit: ## Static security analysis (Bandit)
-	@poetry run bandit -r src/quantum -c assurance/security/bandit.yaml
+	@poetry run bandit -r $(SRC) -c assurance/security/bandit.yaml
 
 pre-commit: ## Run all pre-commit hooks
 	@Write-Host "Running pre-commit hooks..."
@@ -75,7 +78,7 @@ audit: ## Dependency and vulnerability audit
 
 contracts: ## Enforce architectural boundaries (Import Linter)
 	@Write-Host "Checking architecture contracts..."
-	@$$env:PYTHONPATH = 'src;.'; poetry run lint-imports --config assurance/architecture/.importlinter
+	@poetry run lint-imports --config assurance/architecture/.importlinter
 
 check-ci: ## Run full CI-equivalent validation suite
 	@Write-Host "Running full CI-equivalent checks..."

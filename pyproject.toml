@@ -8,24 +8,20 @@ description = ""
 authors = [
     { name = "Matine NASSIRPOUR", email = "matine@nassirpour.org" }
 ]
-license = "Proprietary"
+license = "LicenseRef-Proprietary"
 requires-python = ">=3.11,<3.12"
 readme = "README.md"
 packages = [{ include = "quantum", from = "src" }]
-
-
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Python runtime policy                                                      │
-# ╰────────────────────────────────────────────────────────────────────────────╯
-[tool.poetry.dependencies]
-pydantic = "^2.11.9"
-pydantic-settings = "^2.11.0"
-opentelemetry-sdk = "^1.37.0"
-opentelemetry-exporter-otlp = "^1.37.0"
-prometheus-client = "^0.23.1"
-streamlit = "^1.50.0"
-python-dotenv = "^1.1.1"
-metatrader5 = "^5.0.5328"
+dependencies = [
+    "pydantic>=2.11.9,<3.0.0",
+    "pydantic-settings>=2.11.0,<3.0.0",
+    "opentelemetry-sdk>=1.37.0,<2.0.0",
+    "opentelemetry-exporter-otlp>=1.37.0,<2.0.0",
+    "prometheus-client>=0.23.1,<1.0.0",
+    "streamlit>=1.50.0,<2.0.0",
+    "python-dotenv>=1.1.1,<2.0.0",
+    "metatrader5>=5.0.5328,<6.0.0",
+]
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
@@ -42,6 +38,7 @@ black = "^25.9.0"
 bandit = "^1.8.6"
 pip-audit = "^2.9.0"
 import-linter = "^2.5"
+isort = "^7.0.0"
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
