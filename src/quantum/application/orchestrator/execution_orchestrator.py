@@ -22,8 +22,6 @@ import asyncio
 import logging
 import time
 
-from typing import Any
-
 from quantum.application.broadcast.broadcast_policy import BroadcastPolicy
 from quantum.application.broadcast.broadcast_result import BroadcastResult
 from quantum.application.broadcast.executor import BroadcastExecutor
@@ -34,6 +32,7 @@ from quantum.application.contracts.execution_request import (
     QueryRequest,
 )
 from quantum.application.contracts.execution_result import ExecutionResult
+from quantum.application.events.trading_event_emitter import TradingEventEmitter
 from quantum.application.orchestrator.policies.allocation_policy import AllocationPolicy
 from quantum.application.orchestrator.policies.health_policy import (
     ChannelHealth,
@@ -42,7 +41,6 @@ from quantum.application.orchestrator.policies.health_policy import (
 from quantum.application.orchestrator.ports.orchestrator_port import (
     ExecutionOrchestratorPort,
 )
-from quantum.application.ports.outbound.event_bus_port import EventBusPort
 from quantum.application.services.execution_service import ExecutionService
 from quantum.domain.events.trading.v1.order_fill_event import OrderFillEvent
 from quantum.domain.events.trading.v1.order_reject_event import OrderRejectEvent
@@ -52,9 +50,10 @@ from quantum.domain.types.execution_channel import ExecutionChannel
 logger = logging.getLogger(__name__)
 
 
-class ExecutionOrchestrator(ExecutionOrchestratorPort):
+class AsyncExecutionOrchestrator(ExecutionOrchestratorPort):
     """
-    Core application orchestrator coordinating multi-channel execution.
+    Fully asynchronous orchestrator coordinating multichannel execution.
+    Suitable for high-throughput desks running under a persistent event loop.
     """
 
     def __init__(
@@ -63,18 +62,20 @@ class ExecutionOrchestrator(ExecutionOrchestratorPort):
         services: dict[ExecutionChannel, ExecutionService],
         allocation_policy: AllocationPolicy,
         health_policy: HealthPolicy,
-        event_bus: EventBusPort | None = None,
+        event_emitter: TradingEventEmitter,
         broadcast_policy: BroadcastPolicy | None = None,
+        concurrency_limit: int = 8,
     ) -> None:
         self._services = services
         self._alloc = allocation_policy
         self._health = health_policy
-        self._event_bus = event_bus
+        self._emitter = event_emitter
         self._broadcast_policy = broadcast_policy
         self._broadcaster = BroadcastExecutor(services)
+        self._sem = asyncio.Semaphore(concurrency_limit)
 
     # --------------------------------------------------------------------------
-    # Helpers
+    # Internal Helpers
     # --------------------------------------------------------------------------
     def _select_channel(self) -> ExecutionChannel:
         """Select a healthy channel using the allocation policy."""
@@ -82,11 +83,7 @@ class ExecutionOrchestrator(ExecutionOrchestratorPort):
         healthy = self._health.get_healthy_channels(all_channels)
         candidates = healthy if healthy else all_channels
         channel = self._alloc.select_channel(candidates)
-        logger.debug(
-            "ExecutionOrchestrator selected channel=%s (healthy=%s)",
-            channel,
-            channel in healthy,
-        )
+        logger.debug("Selected channel=%s (healthy=%s)", channel, channel in healthy)
         return channel
 
     def _get_service(self, channel: ExecutionChannel) -> ExecutionService:
@@ -97,106 +94,105 @@ class ExecutionOrchestrator(ExecutionOrchestratorPort):
         self, channel: ExecutionChannel, result: ExecutionResult
     ) -> None:
         """Update channel health metrics based on last execution result."""
-        healthy = is_success(result.code)
         self._health.update_health(
             ChannelHealth(
                 channel=channel,
-                is_healthy=healthy,
+                is_healthy=is_success(result.code),
                 latency_ms=None,  # enriched later via observability integration
                 last_check_epoch_s=time.time(),
             )
         )
 
-    async def _publish_event(self, event: Any) -> None:
-        """Publish an event asynchronously if an EventBus is configured."""
-        if not self._event_bus:
-            return
-
-        try:
-            # Compatible with BaseEvent-based events
-            if hasattr(event, "event_name") and hasattr(event, "to_payload"):
-                await self._event_bus.publish(
-                    event.event_name,
-                    event.to_payload(),
+    # --------------------------------------------------------------------------
+    # Async orchestration API
+    # --------------------------------------------------------------------------
+    async def send_order(
+        self, request: OrderRequest
+    ) -> ExecutionResult | BroadcastResult:
+        """Asynchronously dispatch an order to one or more execution channels."""
+        async with self._sem:  # prevent overload under high concurrency
+            if self._broadcast_policy:
+                targets = self._broadcast_policy.select_targets(
+                    list(self._services.keys())
                 )
-            else:
-                # Fallback: raw dictionary or string event
-                event_name = getattr(event, "event_name", type(event).__name__)
-                payload = event if isinstance(event, dict) else {"value": str(event)}
-                await self._event_bus.publish(event_name, payload)
+                logger.info(
+                    "[Orchestrator] Broadcasting order to %d channels: %s",
+                    len(targets),
+                    [c.value for c in targets],
+                )
+                result = await self._broadcaster.broadcast_order_async(
+                    targets, "send_order", request
+                )
+                await self._emitter.emit(OrderSubmitEvent(symbol=request.symbol))
+                return result
 
-        except Exception as exc:
-            logger.warning(
-                "[Orchestrator] Failed to publish event %s: %s",
-                getattr(event, "event_name", type(event).__name__),
-                exc,
-            )
+            channel = self._select_channel()
+            service = self._get_service(channel)
+            loop = asyncio.get_running_loop()
+            result = await loop.run_in_executor(None, service.send_order, request)
+            self._update_health(channel, result)
 
-    # --------------------------------------------------------------------------
-    # Unified entrypoints (sync, optional broadcast)
-    # --------------------------------------------------------------------------
-    def send_order(self, request: OrderRequest) -> ExecutionResult | BroadcastResult:
-        """Dispatch an order request to a single or multiple execution channels."""
-        if self._broadcast_policy:
-            targets = self._broadcast_policy.select_targets(list(self._services.keys()))
-            logger.info(
-                "[Orchestrator] Broadcasting order to %d channels: %s",
-                len(targets),
-                [c.value for c in targets],
+            event = (
+                OrderFillEvent(symbol=request.symbol)
+                if result.succeeded()
+                else OrderRejectEvent(symbol=request.symbol, detail=result.message)
             )
-            result = asyncio.run(
-                self._broadcaster.broadcast_order_async(targets, "send_order", request)
-            )
-            asyncio.run(self._publish_event(OrderSubmitEvent(symbol=request.symbol)))
+            await self._emitter.emit(event)
             return result
 
-        channel = self._select_channel()
-        service = self._get_service(channel)
-        result = service.send_order(request)
-        self._update_health(channel, result)
+    async def check_order(
+        self, request: CheckRequest
+    ) -> ExecutionResult | BroadcastResult:
+        async with self._sem:
+            if self._broadcast_policy:
+                targets = self._broadcast_policy.select_targets(
+                    list(self._services.keys())
+                )
+                result = await self._broadcaster.broadcast_order_async(
+                    targets, "check_order", request
+                )
+                return result
 
-        # Publish appropriate lifecycle event
-        event = (
-            OrderFillEvent(symbol=request.symbol)
-            if result.succeeded()
-            else OrderRejectEvent(symbol=request.symbol, detail=result.message)
-        )
-        asyncio.run(self._publish_event(event))
-
-        return result
-
-    def check_order(self, request: CheckRequest) -> ExecutionResult | BroadcastResult:
-        """Verify order validity before execution."""
-        if self._broadcast_policy:
-            targets = self._broadcast_policy.select_targets(list(self._services.keys()))
-            logger.info(
-                "[Orchestrator] Broadcasting check to %d channels: %s",
-                len(targets),
-                [c.value for c in targets],
-            )
-            result = asyncio.run(
-                self._broadcaster.broadcast_order_async(targets, "check_order", request)
-            )
+            channel = self._select_channel()
+            service = self._get_service(channel)
+            loop = asyncio.get_running_loop()
+            result = await loop.run_in_executor(None, service.check_order, request)
+            self._update_health(channel, result)
             return result
 
-        channel = self._select_channel()
-        service = self._get_service(channel)
-        result = service.check_order(request)
-        self._update_health(channel, result)
-        return result
+    async def get_positions(self, request: QueryRequest) -> ExecutionResult:
+        async with self._sem:
+            channel = self._select_channel()
+            service = self._get_service(channel)
+            loop = asyncio.get_running_loop()
+            result = await loop.run_in_executor(None, service.get_positions, request)
+            self._update_health(channel, result)
+            return result
 
-    def get_positions(self, request: QueryRequest) -> ExecutionResult:
-        """Query open positions from the selected healthy channel."""
-        channel = self._select_channel()
-        service = self._get_service(channel)
-        result = service.get_positions(request)
-        self._update_health(channel, result)
-        return result
+    async def get_orders(self, request: QueryRequest) -> ExecutionResult:
+        async with self._sem:
+            channel = self._select_channel()
+            service = self._get_service(channel)
+            loop = asyncio.get_running_loop()
+            result = await loop.run_in_executor(None, service.get_orders, request)
+            self._update_health(channel, result)
+            return result
 
-    def get_orders(self, request: QueryRequest) -> ExecutionResult:
-        """Query open orders from the selected healthy channel."""
-        channel = self._select_channel()
-        service = self._get_service(channel)
-        result: ExecutionResult = service.get_orders(request)  # type: ignore[call-arg]
-        self._update_health(channel, result)
-        return result
+    # --------------------------------------------------------------------------
+    # Optional synchronous wrappers for legacy code
+    # --------------------------------------------------------------------------
+    def send_order_sync(
+        self, request: OrderRequest
+    ) -> ExecutionResult | BroadcastResult:
+        return asyncio.run(self.send_order(request))
+
+    def check_order_sync(
+        self, request: CheckRequest
+    ) -> ExecutionResult | BroadcastResult:
+        return asyncio.run(self.check_order(request))
+
+    def get_positions_sync(self, request: QueryRequest) -> ExecutionResult:
+        return asyncio.run(self.get_positions(request))
+
+    def get_orders_sync(self, request: QueryRequest) -> ExecutionResult:
+        return asyncio.run(self.get_orders(request))
