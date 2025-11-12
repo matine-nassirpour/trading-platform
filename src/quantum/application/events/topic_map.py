@@ -33,18 +33,12 @@ def map_topic(event_name: str) -> str:
     }:
         return "trading.events"
 
-    # Health/diagnostics that still needed on the bus
-    if event_name in {
-        "trading.v1.mt5_health",
-        "system.execution_channel",
-    }:
+    # Health / diagnostics that still needed on the bus
+    if event_name in {"trading.v1.mt5_health", "system.execution_channel"}:
         return "system.health"
 
-    # Low-level telemetry (publish only in debug/obs modes)
-    if event_name in {
-        "trading.v1.order_ack",
-        "trading.v1.latency_probe",
-    }:
+    # Low-level telemetry
+    if event_name in {"trading.v1.order_ack", "trading.v1.latency_probe"}:
         return "system.telemetry"
 
     # Default: conservative business topic

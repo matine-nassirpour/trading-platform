@@ -7,13 +7,13 @@ from quantum.application.contracts.execution_request import (
 )
 from quantum.application.contracts.execution_result import ExecutionResult
 from quantum.application.decorators.resilience_injection import bind_resilience
-from quantum.application.policies.resilience_policy import (
+from quantum.application.ports.outbound.execution_port import ExecutionPort
+from quantum.application.ports.outbound.timeout_runner_port import TimeoutRunnerPort
+from quantum.application.resilience.resilience_policy import (
     ResilienceConfig,
     resilient_call,
 )
-from quantum.application.policies.retry_policy import RetryPolicy
-from quantum.application.ports.outbound.execution_port import ExecutionPort
-from quantum.application.ports.outbound.timeout_runner_port import TimeoutRunnerPort
+from quantum.application.resilience.retry_policy import RetryPolicy
 from quantum.domain.types.execution_channel import ExecutionChannel
 
 logger = logging.getLogger(__name__)

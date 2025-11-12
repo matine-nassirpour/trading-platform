@@ -20,7 +20,11 @@ import time
 
 from dataclasses import dataclass
 
-from quantum.application.events.serialization import serialize_event
+from quantum.application.events.event_adapter import adapt_event_for_bus
+from quantum.application.events.event_retry_policy import (
+    EventRetryConfig,
+    EventRetryPolicy,
+)
 from quantum.application.events.topic_map import map_topic
 from quantum.application.ports.outbound.event_bus_port import EventBusPort
 
@@ -31,23 +35,28 @@ logger = logging.getLogger(__name__)
 class EmitterConfig:
     queue_maxsize: int = 2048
     concurrency: int = 4  # number of publisher workers
-    max_retries: int = 3
-    base_backoff_s: float = 0.2
-    backoff_cap_s: float = 2.0
     shutdown_grace_s: float = 5.0  # wait time for draining
 
 
 class TradingEventEmitter:
     """
-    Publish domain trading events to the EventBusPort with
-    bounded backpressure and robust retry semantics.
+    High-resilience asynchronous event emitter.
+
+    Guarantees:
+        - Non-blocking enqueue with bounded backpressure
+        - Structured retry via EventRetryPolicy
+        - Graceful shutdown under load
     """
 
     def __init__(
-        self, event_bus: EventBusPort, cfg: EmitterConfig | None = None
+        self,
+        event_bus: EventBusPort,
+        cfg: EmitterConfig | None = None,
+        retry_policy: EventRetryPolicy | None = None,
     ) -> None:
         self._bus = event_bus
         self._cfg = cfg or EmitterConfig()
+        self._retry_policy = retry_policy or EventRetryPolicy(EventRetryConfig())
         self._queue: asyncio.Queue[object] = asyncio.Queue(
             maxsize=self._cfg.queue_maxsize
         )
@@ -68,7 +77,7 @@ class TradingEventEmitter:
             )
             self._workers.append(task)
         logger.info(
-            "[Emitter] started with concurrency=%d queue_max=%d",
+            "[Emitter] started concurrency=%d queue_max=%d",
             self._cfg.concurrency,
             self._cfg.queue_maxsize,
         )
@@ -87,8 +96,8 @@ class TradingEventEmitter:
         while not self._queue.empty() and time.time() < deadline:
             await asyncio.sleep(0.05)
 
-        for t in self._workers:
-            t.cancel()
+        for task in self._workers:
+            task.cancel()
         await asyncio.gather(*self._workers, return_exceptions=True)
         self._workers.clear()
         logger.info("[Emitter] closed (remaining=%d)", self._queue.qsize())
@@ -103,7 +112,7 @@ class TradingEventEmitter:
         """
         if self._closing.is_set():
             logger.warning(
-                "[Emitter] emit called after closing; dropping event=%s", event
+                "[Emitter] emit called after closing — dropped event=%s", event
             )
             return
         await self._queue.put(event)
@@ -116,35 +125,19 @@ class TradingEventEmitter:
             while not self._closing.is_set():
                 event = await self._queue.get()
                 try:
-                    await self._publish_with_retry(event)
+                    await self._publish_with_resilience(event)
                 finally:
                     self._queue.task_done()
         except asyncio.CancelledError:
-            # drain on cancellation until queue is empty or closing
             logger.debug("[Emitter] worker-%d cancelled", worker_id)
 
-    async def _publish_with_retry(self, event: object) -> None:
-        name, payload = serialize_event(event)
+    async def _publish_with_resilience(self, event: object) -> None:
+        """Publish event with retry logic provided by EventRetryPolicy."""
+        name, payload = adapt_event_for_bus(event)
         topic = map_topic(name)
 
-        backoff = self._cfg.base_backoff_s
-        for attempt in range(1, self._cfg.max_retries + 1):
-            try:
-                await self._bus.publish(topic, payload)
-                logger.debug("[Emitter] published %s to %s", name, topic)
-                return
-            except Exception as exc:
-                logger.warning(
-                    "[Emitter] publish failed (attempt=%d/%d) event=%s exc=%s",
-                    attempt,
-                    self._cfg.max_retries,
-                    name,
-                    type(exc).__name__,
-                )
-                if attempt >= self._cfg.max_retries:
-                    logger.error(
-                        "[Emitter] giving up event=%s after %d attempts", name, attempt
-                    )
-                    return
-                await asyncio.sleep(min(backoff, self._cfg.backoff_cap_s))
-                backoff *= 2.0
+        async def publish_once() -> None:
+            await self._bus.publish(topic, payload)
+            logger.debug("[Emitter] published %s → %s", name, topic)
+
+        await self._retry_policy.execute_with_retry(name, publish_once)

@@ -1,12 +1,8 @@
 """
-Event Serialization Utilities
-─────────────────────────────
-Canonical serialization for domain trading events before publication.
-
-Rules:
-- Prefer `to_payload()` if provided by the event class (domain-friendly).
-- Otherwise, fallback to a dict built from __dict__ (excluding private attrs).
-- Always return (event_name: str, payload: dict[str, object]).
+Event Adapter
+─────────────
+Adapts domain event objects into transport-ready payloads for EventBusPort.
+This module performs no schema definition or validation.
 """
 
 from __future__ import annotations
@@ -31,14 +27,10 @@ def _payload_of(event: object) -> dict[str, Any]:
             raise TypeError(f"to_payload() must return a mapping, got={type(payload)}")
         return dict(payload)
 
-    # Fallback: best-effort public attribute dump
-    d: dict[str, Any] = {}
-    for k, v in vars(event).items():
-        if not k.startswith("_"):
-            d[k] = v
-    return d
+    # Fallback
+    return {k: v for k, v in vars(event).items() if not k.startswith("_")}
 
 
-def serialize_event(event: object) -> tuple[str, dict[str, Any]]:
+def adapt_event_for_bus(event: object) -> tuple[str, dict[str, Any]]:
     """Return `(event_name, payload)` for a given domain event."""
     return _event_name_of(event), _payload_of(event)

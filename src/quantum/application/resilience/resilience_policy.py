@@ -10,8 +10,8 @@ from dataclasses import dataclass
 from functools import wraps
 from typing import Any, Generic, ParamSpec, TypeVar, cast
 
-from quantum.application.policies.retry_policy import DefaultRetryPolicy, RetryPolicy
 from quantum.application.ports.outbound.timeout_runner_port import TimeoutRunnerPort
+from quantum.application.resilience.retry_policy import DefaultRetryPolicy, RetryPolicy
 
 P = ParamSpec("P")
 R = TypeVar("R")

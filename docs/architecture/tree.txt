@@ -64,7 +64,10 @@ trading-platform/
 │       │   ├── events/
 │       │   │   ├── __init__.py
 │       │   │   ├── execution_channel_event.py
-│       │   │   └── orchestration_events.py
+│       │   │   ├── orchestration_events.py
+│       │   │   ├── serialization.py
+│       │   │   ├── topic_map.py
+│       │   │   └── trading_event_emitter.py
 │       │   ├── orchestrator/
 │       │   │   ├── policies/
 │       │   │   │   ├── __init__.py
