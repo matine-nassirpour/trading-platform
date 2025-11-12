@@ -2,16 +2,15 @@ from __future__ import annotations
 
 import secrets
 
-from abc import ABC, abstractmethod
 from collections.abc import Sequence
+from typing import Protocol
 
 from quantum.domain.types.execution_channel import ExecutionChannel
 
 
-class AllocationPolicy(ABC):
+class AllocationPolicy(Protocol):
     """Abstract allocation policy for selecting execution channels."""
 
-    @abstractmethod
     def select_channel(
         self, available: Sequence[ExecutionChannel]
     ) -> ExecutionChannel: ...

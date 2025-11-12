@@ -1,17 +1,16 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
 from collections.abc import Sequence
+from typing import Protocol
 
 from quantum.domain.types.execution_channel import ExecutionChannel
 
 
-class BroadcastPolicy(ABC):
+class BroadcastPolicy(Protocol):
     """
     Defines how broadcast executions are performed across channels.
     """
 
-    @abstractmethod
     def select_targets(
         self, available: Sequence[ExecutionChannel]
     ) -> Sequence[ExecutionChannel]:
