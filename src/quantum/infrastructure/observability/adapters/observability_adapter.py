@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 
 from collections.abc import Iterator, Mapping
@@ -7,6 +8,7 @@ from typing import Any
 
 from prometheus_client import REGISTRY, Metric
 
+from quantum.application.ports.outbound.event_bus_port import EventBusPort
 from quantum.application.ports.outbound.observability_port import ObservabilityPort
 from quantum.infrastructure.observability.bootstrap.init_manager import (
     init_observability,
@@ -20,8 +22,9 @@ from quantum.infrastructure.observability.context.run_id import (
 class ObservabilityAdapter(ObservabilityPort):
     """Concrete adapter implementing observability access and telemetry control."""
 
-    def __init__(self) -> None:
+    def __init__(self, event_bus: EventBusPort | None = None) -> None:
         self._logger = logging.getLogger("quantum.observability.adapter")
+        self._event_bus = event_bus
 
     # --------------------------------------------------------------------------
     # Lifecycle
@@ -29,7 +32,32 @@ class ObservabilityAdapter(ObservabilityPort):
     def initialize_observability(self) -> None:
         """Initialize the observability stack (logging, metrics, tracing, etc.)."""
         init_observability()
+        if self._event_bus:
+            try:
+                asyncio.run(self._subscribe_to_events())
+            except RuntimeError:
+                # already inside an event loop (e.g. Streamlit)
+                asyncio.get_event_loop().create_task(self._subscribe_to_events())
 
+    async def _subscribe_to_events(self) -> None:
+        """Subscribe observability handlers to relevant application events."""
+        if not self._event_bus:
+            return
+
+        async def on_execution_event(payload: dict[str, Any]) -> None:
+            self.emit_event("system.execution_channel", payload)
+
+        async def on_order_submit(payload: dict[str, Any]) -> None:
+            self.emit_event("trading.order_submit", payload)
+
+        await self._event_bus.subscribe("system.execution_channel", on_execution_event)
+        await self._event_bus.subscribe("trading.order_submit", on_order_submit)
+
+        self._logger.info("[Observability] Subscribed to application event streams.")
+
+    # --------------------------------------------------------------------------
+    # Run ID and metrics access
+    # --------------------------------------------------------------------------
     def ensure_run_id(self) -> str:
         """Ensure a unique run_id is available for the current process."""
         rid = get_run_id()
@@ -37,9 +65,6 @@ class ObservabilityAdapter(ObservabilityPort):
             rid = generate_run_id()
         return rid
 
-    # --------------------------------------------------------------------------
-    # Metrics access (Prometheus REGISTRY)
-    # --------------------------------------------------------------------------
     def collect_metrics(self) -> list[Mapping[str, Any]]:
         """Return all currently registered metrics (as collected samples)."""
         try:
@@ -66,9 +91,6 @@ class ObservabilityAdapter(ObservabilityPort):
         """Alias to get_gauge_value (for counter metrics)."""
         return self.get_gauge_value(name)
 
-    # --------------------------------------------------------------------------
-    # Histogram quantiles
-    # --------------------------------------------------------------------------
     def get_histogram_quantiles(
         self,
         metric_name: str,
@@ -84,6 +106,9 @@ class ObservabilityAdapter(ObservabilityPort):
             self._logger.debug("Failed to compute histogram quantiles: %s", exc)
             return {f"p{int(q * 100)}": None for q in quantiles}
 
+    # --------------------------------------------------------------------------
+    # Internal Helpers
+    # --------------------------------------------------------------------------
     def _accumulate_histogram_buckets(
         self, metric_name: str
     ) -> tuple[dict[float, float], float]:
@@ -143,3 +168,13 @@ class ObservabilityAdapter(ObservabilityPort):
 
             result[f"p{int(q * 100)}"] = value
         return result
+
+    # --------------------------------------------------------------------------
+    # Event emission
+    # --------------------------------------------------------------------------
+    def emit_event(self, topic: str, payload: dict[str, Any]) -> None:
+        """Emit an event record to logs and metrics sinks."""
+        self._logger.info(
+            f"[Observability] Event received: {topic}",
+            extra={"attrs": payload},
+        )

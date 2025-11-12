@@ -1,3 +1,12 @@
+"""
+Application Orchestration Events
+────────────────────────────────
+Event definitions emitted by the application orchestrator and
+transported through the configured EventBusPort abstraction.
+
+These events are agnostic of the transport layer (asyncio, Kafka, etc.).
+"""
+
 from dataclasses import dataclass
 from typing import Any
 

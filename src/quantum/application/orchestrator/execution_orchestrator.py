@@ -34,7 +34,6 @@ from quantum.application.contracts.execution_request import (
     QueryRequest,
 )
 from quantum.application.contracts.execution_result import ExecutionResult
-from quantum.application.eventbus.event_bus_port import EventBusPort
 from quantum.application.orchestrator.policies.allocation_policy import AllocationPolicy
 from quantum.application.orchestrator.policies.health_policy import (
     ChannelHealth,
@@ -43,6 +42,7 @@ from quantum.application.orchestrator.policies.health_policy import (
 from quantum.application.orchestrator.ports.orchestrator_port import (
     ExecutionOrchestratorPort,
 )
+from quantum.application.ports.outbound.event_bus_port import EventBusPort
 from quantum.application.services.execution_service import ExecutionService
 from quantum.domain.events.trading.v1.order_fill_event import OrderFillEvent
 from quantum.domain.events.trading.v1.order_reject_event import OrderRejectEvent
