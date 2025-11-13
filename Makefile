@@ -100,8 +100,9 @@ ui: ## Launch Streamlit
 
 tree: ## Generate documentation of directory structure
 	@New-Item -ItemType Directory -Force -Path 'docs/architecture' | Out-Null
+	@Write-Host "▶ Generating architecture directory Tree ..." -ForegroundColor Cyan
 	@poetry run python scripts/print_tree.py . --output docs/architecture/tree.txt --respect-gitignore --max-depth 10
-	@Write-Host "Architecture tree generated: docs/architecture/tree.txt"
+	@Write-Host "✔ Architecture tree generated: docs/architecture/tree.txt"  -ForegroundColor Green
 
 log-schema: ## Generate canonical JSON schema for LogPayloadV1
 	@Write-Host "Generating LogPayloadV1 schema..."
