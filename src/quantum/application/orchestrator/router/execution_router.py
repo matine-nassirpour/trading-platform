@@ -42,13 +42,13 @@ class ExecutionRouter:
         services: dict[ExecutionChannel, ExecutionService],
         health: HealthService,
         allocation_policy: AllocationPolicy,
-        observability: TracingPort,
+        tracing: TracingPort,
         concurrency_limit: int = 8,
     ) -> None:
         self._services = services
         self._health = health
         self._alloc = allocation_policy
-        self._tracing = observability
+        self._tracing = tracing
         self._sem = asyncio.Semaphore(concurrency_limit)
 
     # --------------------------------------------------------------------------

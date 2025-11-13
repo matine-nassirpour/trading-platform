@@ -30,11 +30,11 @@ async def init_observability_with_bus(event_bus: EventBusPort) -> None:
     """
     Initialize observability and subscribe to EventBus for runtime events.
     """
-    from quantum.infrastructure.observability.adapters.observability_adapter import (
-        ObservabilityAdapter,
+    from quantum.infrastructure.observability.drivers.observability_driver import (
+        ObservabilityDriver,
     )
 
-    adapter = ObservabilityAdapter(event_bus)
+    adapter = ObservabilityDriver(event_bus)
     adapter.initialize_observability()
 
 

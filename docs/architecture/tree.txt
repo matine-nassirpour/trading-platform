@@ -5,6 +5,10 @@ trading-platform/
 │   │   ├── pages/
 │   │   │   ├── __init__.py
 │   │   │   └── observability_page.py
+│   │   ├── services/
+│   │   │   ├── __init__.py
+│   │   │   ├── log_reader.py
+│   │   │   └── metrics_reader.py
 │   │   ├── __init__.py
 │   │   └── bootstrap.py
 │   └── __init__.py
@@ -249,11 +253,6 @@ trading-platform/
 │       │   ├── messaging/
 │       │   │   └── __init__.py
 │       │   ├── observability/
-│       │   │   ├── adapters/
-│       │   │   │   ├── __init__.py
-│       │   │   │   ├── logging_adapter.py
-│       │   │   │   ├── observability_adapter.py
-│       │   │   │   └── observability_tracing_adapter.py
 │       │   │   ├── bootstrap/
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── diagnostics.py
@@ -264,6 +263,11 @@ trading-platform/
 │       │   │   ├── context/
 │       │   │   │   ├── __init__.py
 │       │   │   │   └── run_id.py
+│       │   │   ├── drivers/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── logging_driver.py
+│       │   │   │   ├── observability_driver.py
+│       │   │   │   └── tracing_driver.py
 │       │   │   ├── logging/
 │       │   │   │   ├── filters/
 │       │   │   │   │   ├── tests/

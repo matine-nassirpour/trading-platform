@@ -34,11 +34,11 @@ class ExecutionBroadcaster:
         *,
         services: dict[ExecutionChannel, ExecutionService],
         health: HealthService,
-        observability: TracingPort,
+        tracing: TracingPort,
     ) -> None:
         self._services = services
         self._health = health
-        self._tracing = observability
+        self._tracing = tracing
 
     # --------------------------------------------------------------------------
     # Internal Helpers

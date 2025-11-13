@@ -9,8 +9,8 @@ from typing import Any
 from opentelemetry.trace import Status, StatusCode
 
 from quantum.application.ports.outbound.tracing_port import TraceHandle, TracingPort
-from quantum.infrastructure.observability.adapters.observability_adapter import (
-    ObservabilityAdapter,
+from quantum.infrastructure.observability.drivers.observability_driver import (
+    ObservabilityDriver,
 )
 from quantum.infrastructure.observability.logging.event_emitter import emit_event
 from quantum.infrastructure.observability.tracing.provider import get_tracer
@@ -71,7 +71,7 @@ class _HybridTraceHandle(TraceHandle):
                 )
 
 
-class ObservabilityTracingAdapter(TracingPort):
+class TracingDriver(TracingPort):
     """
     Concrete hybrid tracing adapter.
 
@@ -83,7 +83,7 @@ class ObservabilityTracingAdapter(TracingPort):
       - Clean Architecture compliant (no infrastructure leakage)
     """
 
-    def __init__(self, obs: ObservabilityAdapter) -> None:
+    def __init__(self, obs: ObservabilityDriver) -> None:
         self._obs = obs
         self._logger = logging.getLogger("quantum.observability.trace")
 

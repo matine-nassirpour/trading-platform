@@ -17,9 +17,9 @@ SRC := src/$(PKG)
 # │ Help                                                                       │
 # ╰────────────────────────────────────────────────────────────────────────────╯
 help: ## Display structured list of available Make targets
-	@Write-Host "╭─────────────────────────────────────────────────────────────────────────────╮"
-	@Write-Host "│                  QUANTUM PLATFORM — MAKE COMMANDS OVERVIEW                  │"
-	@Write-Host "╰─────────────────────────────────────────────────────────────────────────────╯"
+	@Write-Host "╭──────────────────────────────────────────────────────────────────────────────╮"
+	@Write-Host "│                  QUANTUM PLATFORM — MAKE COMMANDS OVERVIEW                   │"
+	@Write-Host "╰──────────────────────────────────────────────────────────────────────────────╯"
 	@(Get-Content '$(MAKEFILE_LIST)' | Select-String '^\S+:.*?## ' | ForEach-Object {$$t = ($$_.Line -replace ':.*',''); $$d = ($$_.Line -split '## ')[1]; Write-Host ("  {0,-20} {1}" -f $$t, $$d) -ForegroundColor Gray})
 	@Write-Host ""
 
@@ -50,7 +50,7 @@ bandit: ## Static security analysis (Bandit)
 	@poetry run bandit -r $(SRC) -c assurance/security/bandit.yaml
 
 pre-commit: ## Run all pre-commit hooks
-	@Write-Host "Running pre-commit hooks..."
+	@Write-Host "`n▶ Running pre-commit hooks...`n" -ForegroundColor Cyan
 	@poetry run pre-commit run --all-files --show-diff-on-failure --config assurance/quality/.pre-commit-config.yaml
 
 
@@ -58,7 +58,7 @@ pre-commit: ## Run all pre-commit hooks
 # │ Tests & Quality Gates                                                      │
 # ╰────────────────────────────────────────────────────────────────────────────╯
 test: ## Run test suite with full coverage
-	@Write-Host "Running tests with coverage..."
+	@Write-Host "`n▶ Running tests with coverage...`n" -ForegroundColor Cyan
 	@poetry run pytest -v
 
 verify-coverage: ## Run full coverage verification and enforce thresholds
@@ -81,10 +81,12 @@ contracts: ## Enforce architectural boundaries (Import Linter)
 	@poetry run lint-imports --config assurance/architecture/.importlinter
 
 check-ci: ## Run full CI-equivalent validation suite
-	@Write-Host "Running full CI-equivalent checks..."
+	@Write-Host "`n╭──────────────────────────────────────────────────────────────────────────────╮" -ForegroundColor Cyan
+	@Write-Host "│ CI VALIDATION SUITE — FULL PIPELINE EXECUTION                                │ " -ForegroundColor Cyan
+	@Write-Host "╰──────────────────────────────────────────────────────────────────────────────╯`n" -ForegroundColor Cyan
 	@$(MAKE) pre-commit
 	@$(MAKE) test
-	@Write-Host "All CI checks passed successfully."
+	@Write-Host "`n✔ All CI checks passed successfully.`n" -ForegroundColor Green
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮

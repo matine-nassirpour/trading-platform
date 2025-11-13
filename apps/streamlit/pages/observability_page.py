@@ -18,6 +18,8 @@ from pathlib import Path
 import streamlit as st
 
 from apps.streamlit.bootstrap import get_runtime_context, init_streamlit
+from apps.streamlit.services.log_reader import tail_jsonl
+from apps.streamlit.services.metrics_reader import get_counter_value, get_gauge_value
 from opentelemetry import trace
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
@@ -53,22 +55,22 @@ st.title("🔭 Observability")
 def render_kpis() -> None:
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        v = obs_provider.get_gauge_value("quantum_pipeline_up")
+        v = get_gauge_value("quantum_pipeline_up")
         st.metric(
             "Pipeline up", "✅" if v == 1 else "❌", help="End-to-end bootstrap OK"
         )
     with col2:
-        v = obs_provider.get_gauge_value("quantum_tracing_exporter_status")
+        v = get_gauge_value("quantum_tracing_exporter_status")
         st.metric(
             "Tracer exporter",
             "ON" if v == 1 else "OFF",
             help="OTLP/console exporter attached",
         )
     with col3:
-        v = obs_provider.get_gauge_value("quantum_logging_sink_up")
+        v = get_gauge_value("quantum_logging_sink_up")
         st.metric("Logging sinks", "✅" if v == 1 else "❌")
     with col4:
-        v = obs_provider.get_gauge_value("quantum_pipeline_metrics_http_ok")
+        v = get_gauge_value("quantum_pipeline_metrics_http_ok")
         st.metric("/metrics HTTP", "ON" if v == 1 else "OFF")
     st.divider()
 
@@ -76,18 +78,13 @@ def render_kpis() -> None:
 def render_logging_counters() -> None:
     cc1, cc2, cc3 = st.columns(3)
     with cc1:
-        v = (
-            obs_provider.get_counter_value(
-                "quantum_logging_schema_validation_errors_total"
-            )
-            or 0
-        )
+        v = get_counter_value("quantum_logging_schema_validation_errors_total") or 0
         st.metric("Schema validation errors", int(v))
     with cc2:
-        v = obs_provider.get_counter_value("quantum_logging_redactions_total") or 0
+        v = get_counter_value("quantum_logging_redactions_total") or 0
         st.metric("Redactions", int(v))
     with cc3:
-        v = obs_provider.get_counter_value("quantum_logging_file_rotations_total") or 0
+        v = get_counter_value("quantum_logging_file_rotations_total") or 0
         st.metric("File rotations", int(v))
     st.divider()
 
@@ -160,9 +157,7 @@ def _read_recent_jsonl_lines(
     base_dir: Path, pattern: str, *, chunk_bytes: int, max_files: int = 2
 ) -> list[str]:
     return list(
-        log_provider.tail_jsonl(
-            base_dir, pattern, chunk_bytes=chunk_bytes, max_files=max_files
-        )
+        tail_jsonl(base_dir, pattern, chunk_bytes=chunk_bytes, max_files=max_files)
     )
 
 

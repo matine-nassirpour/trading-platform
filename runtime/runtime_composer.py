@@ -6,7 +6,7 @@ runtime dependency graph in a clean, explicit, and certifiable way.
 
 Responsibilities
 ----------------
-- Wire up application ports to their infrastructure adapters.
+- Wire up application ports to their infrastructure drivers.
 - Provide a unified entry point for Streamlit, CLI, or other interfaces.
 - Guarantee strict compliance with Clean Architecture (DIP).
 - Serve as a testable and auditable composition layer (no business logic).
@@ -34,9 +34,9 @@ from quantum.infrastructure.config.adapters.config_adapter import ConfigAdapter
 from quantum.infrastructure.eventbus.asyncio_event_bus_adapter import (
     AsyncioEventBusAdapter,
 )
-from quantum.infrastructure.observability.adapters.logging_adapter import LoggingAdapter
-from quantum.infrastructure.observability.adapters.observability_adapter import (
-    ObservabilityAdapter,
+from quantum.infrastructure.observability.drivers.logging_driver import LoggingDriver
+from quantum.infrastructure.observability.drivers.observability_driver import (
+    ObservabilityDriver,
 )
 
 
@@ -85,14 +85,14 @@ class RuntimeComposer:
 
         # ─── Core providers
         config_provider = ConfigAdapter()
-        logging_provider = LoggingAdapter()
+        logging_provider = LoggingDriver()
 
         # ─── Event bus (asyncio-based)
         event_bus = AsyncioEventBusAdapter()
         asyncio.run(event_bus.initialize())
 
         # ─── Observability adapter wired with event bus
-        observability_provider = ObservabilityAdapter(event_bus=event_bus)
+        observability_provider = ObservabilityDriver(event_bus=event_bus)
 
         cls._instance = QuantumRuntimeContext(
             config_provider=config_provider,
