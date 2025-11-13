@@ -17,6 +17,10 @@ from quantum.infrastructure.observability.context.run_id import (
     generate_run_id,
     get_run_id,
 )
+from quantum.infrastructure.observability.tracing.correlation.correlation_id import (
+    get_correlation_id,
+    new_correlation_id,
+)
 
 
 class ObservabilityAdapter(ObservabilityPort):
@@ -56,7 +60,7 @@ class ObservabilityAdapter(ObservabilityPort):
         self._logger.info("[Observability] Subscribed to application event streams.")
 
     # --------------------------------------------------------------------------
-    # Run ID and metrics access
+    # IDs and metrics access
     # --------------------------------------------------------------------------
     def ensure_run_id(self) -> str:
         """Ensure a unique run_id is available for the current process."""
@@ -64,6 +68,23 @@ class ObservabilityAdapter(ObservabilityPort):
         if not rid:
             rid = generate_run_id()
         return rid
+
+    def get_correlation_id(self) -> str | None:
+        """
+        Return the current correlation ID from context (if any).
+        """
+        return get_correlation_id()
+
+    def ensure_correlation_id(self) -> str:
+        """
+        Ensure a correlation ID exists for the current async context.
+        Generates a new one if missing.
+        """
+        cid = get_correlation_id()
+        if cid is not None:
+            return cid
+
+        return new_correlation_id()
 
     def collect_metrics(self) -> list[Mapping[str, Any]]:
         """Return all currently registered metrics (as collected samples)."""
