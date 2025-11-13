@@ -13,6 +13,17 @@ class ObservabilityPort(Protocol):
         """Generate or retrieve a unique runtime run_id."""
         ...
 
+    def get_correlation_id(self) -> str | None:
+        """Return current correlation ID from context, or None."""
+        ...
+
+    def ensure_correlation_id(self) -> str:
+        """
+        Ensure a correlation ID is present in the current context.
+        Returns the ID.
+        """
+        ...
+
     def collect_metrics(self) -> list[Mapping[str, Any]]:
         """Return all currently registered metrics as a serializable collection."""
         ...

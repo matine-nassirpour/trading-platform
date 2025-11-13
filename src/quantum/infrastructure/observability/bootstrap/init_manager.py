@@ -4,6 +4,7 @@ import threading
 from collections.abc import Iterator
 from contextlib import contextmanager, suppress
 
+from quantum.application.ports.outbound.event_bus_port import EventBusPort
 from quantum.infrastructure.config.runtime.manager import ConfigManager
 from quantum.infrastructure.observability.bootstrap.health_registry import (
     get_health_registry,
@@ -17,7 +18,6 @@ from quantum.infrastructure.observability.context.run_id import (
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Internal state                                                             │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-
 _initialized = False
 _init_lock = threading.Lock()
 _logger = logging.getLogger(__name__)
@@ -26,6 +26,18 @@ _logger = logging.getLogger(__name__)
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Core API                                                                   │
 # ╰────────────────────────────────────────────────────────────────────────────╯
+async def init_observability_with_bus(event_bus: EventBusPort) -> None:
+    """
+    Initialize observability and subscribe to EventBus for runtime events.
+    """
+    from quantum.infrastructure.observability.adapters.observability_adapter import (
+        ObservabilityAdapter,
+    )
+
+    adapter = ObservabilityAdapter(event_bus)
+    adapter.initialize_observability()
+
+
 def init_observability(*, force: bool = False) -> None:
     """
     Thread-safe, idempotent initialization of the observability stack.

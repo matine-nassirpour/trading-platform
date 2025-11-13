@@ -45,9 +45,15 @@ trading-platform/
 ├── src/
 │   └── quantum/
 │       ├── application/
+│       │   ├── broadcast/
+│       │   │   ├── __init__.py
+│       │   │   ├── broadcast_executor.py
+│       │   │   ├── broadcast_policy.py
+│       │   │   └── broadcast_result.py
 │       │   ├── contracts/
 │       │   │   ├── __init__.py
 │       │   │   ├── execution_code.py
+│       │   │   ├── execution_operation.py
 │       │   │   ├── execution_request.py
 │       │   │   └── execution_result.py
 │       │   ├── decorators/
@@ -58,26 +64,59 @@ trading-platform/
 │       │   │   └── config_bundle.py
 │       │   ├── events/
 │       │   │   ├── __init__.py
-│       │   │   └── execution_channel_event.py
-│       │   ├── policies/
+│       │   │   ├── event_adapter.py
+│       │   │   ├── event_retry_policy.py
+│       │   │   ├── execution_channel_event.py
+│       │   │   ├── orchestration_events.py
+│       │   │   ├── topic_map.py
+│       │   │   └── trading_event_emitter.py
+│       │   ├── orchestrator/
+│       │   │   ├── allocation/
+│       │   │   │   ├── __init__.py
+│       │   │   │   └── allocation_policy.py
+│       │   │   ├── broadcaster/
+│       │   │   │   ├── __init__.py
+│       │   │   │   └── execution_broadcaster.py
+│       │   │   ├── context/
+│       │   │   │   ├── __init__.py
+│       │   │   │   └── orchestration_context.py
+│       │   │   ├── health/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── circuit_breaker.py
+│       │   │   │   ├── health_model.py
+│       │   │   │   └── health_service.py
+│       │   │   ├── ports/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── broadcaster_port.py
+│       │   │   │   ├── orchestrator_port.py
+│       │   │   │   └── router_port.py
+│       │   │   ├── router/
+│       │   │   │   ├── __init__.py
+│       │   │   │   └── execution_router.py
 │       │   │   ├── __init__.py
-│       │   │   ├── resilience_policy.py
-│       │   │   └── retry_policy.py
+│       │   │   └── execution_orchestrator.py
 │       │   ├── ports/
 │       │   │   ├── inbound/
 │       │   │   │   └── __init__.py
 │       │   │   ├── outbound/
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── config_port.py
+│       │   │   │   ├── event_bus_port.py
 │       │   │   │   ├── execution_port.py
 │       │   │   │   ├── logging_port.py
 │       │   │   │   ├── observability_port.py
 │       │   │   │   ├── time_provider_port.py
-│       │   │   │   └── timeout_runner_port.py
+│       │   │   │   ├── timeout_runner_port.py
+│       │   │   │   └── tracing_port.py
 │       │   │   └── __init__.py
+│       │   ├── resilience/
+│       │   │   ├── __init__.py
+│       │   │   ├── resilience_policy.py
+│       │   │   └── retry_policy.py
 │       │   ├── services/
 │       │   │   ├── __init__.py
-│       │   │   └── execution_service.py
+│       │   │   ├── execution_service.py
+│       │   │   └── operation_registry.py
 │       │   ├── use_cases/
 │       │   │   └── __init__.py
 │       │   └── __init__.py
@@ -201,6 +240,9 @@ trading-platform/
 │       │   │   └── __init__.py
 │       │   ├── datafeeds/
 │       │   │   └── __init__.py
+│       │   ├── eventbus/
+│       │   │   ├── __init__.py
+│       │   │   └── asyncio_event_bus_adapter.py
 │       │   ├── execution/
 │       │   │   ├── __init__.py
 │       │   │   └── timeout_runner_adapter.py
@@ -210,7 +252,8 @@ trading-platform/
 │       │   │   ├── adapters/
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── logging_adapter.py
-│       │   │   │   └── observability_adapter.py
+│       │   │   │   ├── observability_adapter.py
+│       │   │   │   └── observability_tracing_adapter.py
 │       │   │   ├── bootstrap/
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── diagnostics.py

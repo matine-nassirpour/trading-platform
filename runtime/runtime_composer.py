@@ -21,14 +21,19 @@ Design Principles
 
 from __future__ import annotations
 
+import asyncio
 import logging
 
 from dataclasses import dataclass
 
 from quantum.application.ports.outbound.config_port import ConfigPort
+from quantum.application.ports.outbound.event_bus_port import EventBusPort
 from quantum.application.ports.outbound.logging_port import LoggingPort
 from quantum.application.ports.outbound.observability_port import ObservabilityPort
 from quantum.infrastructure.config.adapters.config_adapter import ConfigAdapter
+from quantum.infrastructure.eventbus.asyncio_event_bus_adapter import (
+    AsyncioEventBusAdapter,
+)
 from quantum.infrastructure.observability.adapters.logging_adapter import LoggingAdapter
 from quantum.infrastructure.observability.adapters.observability_adapter import (
     ObservabilityAdapter,
@@ -50,12 +55,14 @@ class QuantumRuntimeContext:
     config_provider: ConfigPort
     logging_provider: LoggingPort
     observability_provider: ObservabilityPort
+    event_bus: EventBusPort
 
     def describe(self) -> dict[str, str]:
         return {
             "config_provider": type(self.config_provider).__name__,
             "logging_provider": type(self.logging_provider).__name__,
             "observability_provider": type(self.observability_provider).__name__,
+            "event_bus": type(self.event_bus).__name__,
         }
 
 
@@ -63,38 +70,41 @@ class QuantumRuntimeContext:
 # │ Composer (factory for the runtime context)                                 │
 # ╰────────────────────────────────────────────────────────────────────────────╯
 class RuntimeComposer:
-    """
-    Responsible for assembling the full runtime dependency graph.
-    """
+    """Responsible for assembling the full runtime dependency graph."""
 
     _instance: QuantumRuntimeContext | None = None
 
     @classmethod
     def compose(cls) -> QuantumRuntimeContext:
-        """
-        Build and cache the Quantum runtime context.
-        """
+        """Build and cache the Quantum runtime context."""
         if cls._instance is not None:
             return cls._instance
 
         logger = logging.getLogger(__name__)
         logger.info("Assembling Quantum runtime context...")
 
+        # ─── Core providers
         config_provider = ConfigAdapter()
         logging_provider = LoggingAdapter()
-        observability_provider = ObservabilityAdapter()
+
+        # ─── Event bus (asyncio-based)
+        event_bus = AsyncioEventBusAdapter()
+        asyncio.run(event_bus.initialize())
+
+        # ─── Observability adapter wired with event bus
+        observability_provider = ObservabilityAdapter(event_bus=event_bus)
 
         cls._instance = QuantumRuntimeContext(
             config_provider=config_provider,
             logging_provider=logging_provider,
             observability_provider=observability_provider,
+            event_bus=event_bus,
         )
 
-        logging.getLogger(__name__).info(
+        logger.info(
             "Quantum runtime context assembled successfully: %s",
             cls._instance.describe(),
         )
-
         return cls._instance
 
 
@@ -102,7 +112,5 @@ class RuntimeComposer:
 # │ Global accessor                                                            │
 # ╰────────────────────────────────────────────────────────────────────────────╯
 def get_runtime() -> QuantumRuntimeContext:
-    """
-    Retrieve the active Quantum runtime context (singleton instance).
-    """
+    """Retrieve the active Quantum runtime context (singleton instance)."""
     return RuntimeComposer.compose()

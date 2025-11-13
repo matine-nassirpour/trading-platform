@@ -1,26 +1,43 @@
 from __future__ import annotations
 
 import inspect
+import logging
 
 from collections.abc import Callable
 from functools import wraps
 from typing import Any, Protocol, TypeVar, cast, overload
 
-from quantum.application.policies.resilience_policy import (
+from quantum.application.ports.outbound.timeout_runner_port import TimeoutRunnerPort
+from quantum.application.resilience.resilience_policy import (
     ResilienceConfig,
     resilient_async_call,
     resilient_call,
 )
-from quantum.application.policies.retry_policy import RetryPolicy
-from quantum.application.ports.outbound.timeout_runner_port import TimeoutRunnerPort
+from quantum.application.resilience.retry_policy import RetryPolicy
 
+logger = logging.getLogger(__name__)
 C = TypeVar("C", bound=object)
+
+
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Exception                                                                  │
+# ╰────────────────────────────────────────────────────────────────────────────╯
+class ResilienceBindingError(Exception):
+    """Raised when the @bind_resilience decorator cannot inject required components."""
+
+    def __init__(self, cls_name: str, missing: str) -> None:
+        msg = f"[{cls_name}] resilience binding failed — missing dependency: {missing}"
+        super().__init__(msg)
+        self.cls_name = cls_name
+        self.missing = missing
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Protocol: ResilientCallable                                                │
 # ╰────────────────────────────────────────────────────────────────────────────╯
 class ResilientCallable(Protocol):
+    """Marker protocol for methods decorated with resilient_call wrappers."""
+
     _resilience_call_name: str
     _resilience_bound: bool
     _resilience_operation: str
@@ -39,14 +56,15 @@ def _apply_resilient(
     policy: RetryPolicy | None,
     cfg: ResilienceConfig | None,
 ) -> ResilientCallable:
-    """Internal helper to apply the correct resilient decorator to a function."""
+    """
+    Internal helper to apply the appropriate resilient decorator
+    (sync or async) to a method dynamically.
+    """
     decorator: Callable[..., Any]
-
     if is_async:
         decorator = resilient_async_call(timeout_runner=runner, policy=policy, cfg=cfg)
     else:
         decorator = resilient_call(timeout_runner=runner, policy=policy, cfg=cfg)
-
     return cast(ResilientCallable, decorator(fn))
 
 
@@ -72,16 +90,18 @@ def bind_resilience(
     cfg: ResilienceConfig | None = None,
 ) -> type[C] | Callable[[type[C]], type[C]]:
     """
-    Class decorator that dynamically binds @resilient_call and @resilient_async_call
-    with the appropriate timeout_runner, retry policy and configuration.
+    Class decorator that dynamically binds all resilient_* decorators
+    (sync and async) with the injected timeout_runner, retry policy, and config.
 
-    Can be used either as:
+    Usage:
         @bind_resilience
         class MyService: ...
 
-    or with parameters:
-        @bind_resilience(timeout_runner=my_runner)
+        @bind_resilience(timeout_runner=my_runner, policy=my_policy)
         class MyService: ...
+
+    It searches for methods marked with `_resilience_call_name`
+    and rebinds them with the proper runtime parameters.
     """
 
     def class_decorator(inner_cls: type[C]) -> type[C]:
@@ -92,17 +112,15 @@ def bind_resilience(
             # Construct instance normally
             original_init(self, *args, **kwargs)
 
-            # Resolve dependencies
+            # Resolve injected dependencies
             runner = timeout_runner or getattr(self, "timeout_runner", None)
             retry_policy = policy or getattr(self, "policy", None)
             config = cfg or getattr(self, "cfg", None)
 
             if runner is None:
-                raise RuntimeError(
-                    f"[{inner_cls.__name__}] bind_resilience used without timeout_runner injection"
-                )
+                raise ResilienceBindingError(inner_cls.__name__, "timeout_runner")
 
-            # Bind all resilient methods dynamically
+            # Dynamically rebind resilient methods
             for name, method in inspect.getmembers(self, predicate=inspect.ismethod):
                 if not hasattr(method, "_resilience_call_name"):
                     continue
@@ -121,13 +139,15 @@ def bind_resilience(
                 decorated._resilience_bound = True
                 decorated._resilience_operation = op_name
                 setattr(self, name, decorated)
+                logger.debug(
+                    "[ResilienceInjection] Bound %s.%s → operation=%s",
+                    inner_cls.__name__,
+                    name,
+                    op_name,
+                )
 
         inner_cls.__init__ = __init__  # type: ignore[method-assign, assignment]
         return inner_cls
 
-    if cls is not None:
-        # Used as @bind_resilience (without parentheses)
-        return class_decorator(cls)
-
-    # Used as @bind_resilience(...)
-    return class_decorator
+    # Allow both @bind_resilience and @bind_resilience(...)
+    return class_decorator(cls) if cls is not None else class_decorator
