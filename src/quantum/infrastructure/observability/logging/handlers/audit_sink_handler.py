@@ -25,17 +25,17 @@ class AuditEventFileHandler(logging.Handler):
     def __init__(
         self,
         base_dir: str,
-        app: str,
-        environment: str,
+        env: str,
         namespace: str,
+        app: str,
         *,
         encoding: str = "utf-8",
     ) -> None:
         super().__init__()
         self._base_dir = Path(base_dir)
-        self._app = app
-        self._environment = environment
+        self._env = env
         self._namespace = namespace
+        self._app = app
         self._encoding = encoding
 
     @property
@@ -74,9 +74,7 @@ class AuditEventFileHandler(logging.Handler):
         """
         dt = datetime.fromtimestamp(record.created, tz=UTC)
         blob_name = generate_audit_blob_name(now=dt)
-        path = (
-            self._base_dir / self._environment / self._namespace / self._app / blob_name
-        )
+        path = self._base_dir / self._env / self._namespace / self._app / blob_name
         path.parent.mkdir(parents=True, exist_ok=True)
         return path
 

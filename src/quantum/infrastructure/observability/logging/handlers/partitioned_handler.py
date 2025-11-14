@@ -11,11 +11,12 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Final
 
-from quantum.infrastructure.config.models.core import CoreSettings
-from quantum.infrastructure.config.models.logging import LoggingSettings
 from quantum.infrastructure.observability.logging._io_utils import (
     fsync_dir,
     inc_disk_error_counter,
+)
+from quantum.infrastructure.observability.logging.config_bundle import (
+    LoggingRuntimeBundle,
 )
 from quantum.infrastructure.observability.metrics.collectors.health_collector import (
     logging_file_rotations_total,
@@ -46,28 +47,21 @@ class PartitionedJSONLFileHandler(logging.Handler):
     _EXT: Final[str] = ".jsonl"
 
     def __init__(
-        self,
-        settings: CoreSettings,
-        observability: LoggingSettings,
-        *,
-        encoding: str = "utf-8",
+        self, *, bundle: LoggingRuntimeBundle, encoding: str = "utf-8"
     ) -> None:
         super().__init__()
-        self._settings = settings
-        self._cfg = observability
+        self._bundle = bundle
         self._encoding = encoding
-
-        base_dir = observability.quantum_log_dir or "./logs"
-        self._base_dir = Path(base_dir)
+        self._base_dir = Path(bundle.log_dir)
 
         self._current_path: Path | None = None
         self._bad_path: Path | None = None
         self._fh: io.TextIOWrapper | None = None
         self._bad_fh: io.TextIOWrapper | None = None
 
-        self._fsync = observability.quantum_log_fsync
-        self._max_bytes = observability.quantum_log_max_bytes
-        self._warn_bytes = observability.quantum_log_warn_bytes or 0
+        self._fsync = self._bundle.log_fsync
+        self._max_bytes = self._bundle.log_max_bytes
+        self._warn_bytes = self._bundle.log_warn_bytes
 
         self._part_index = 0
         self._warned_this_part = False
@@ -107,9 +101,9 @@ class PartitionedJSONLFileHandler(logging.Handler):
             yyyy, mm, dd, hh = partition_path_components(dt)
             dir_path = (
                 self._base_dir
-                / self._settings.quantum_env
-                / self._settings.quantum_ns
-                / self._settings.quantum_app_name
+                / self._bundle.env
+                / self._bundle.namespace
+                / self._bundle.app_name
                 / yyyy
                 / mm
                 / dd

@@ -7,22 +7,21 @@ class StaticFieldsFilter(logging.Filter):
     """
 
     def __init__(
-        self, *, service_name: str, service_namespace: str, service_version: str
+        self, *, env: str, namespace: str, app_name: str, version: str
     ) -> None:
         super().__init__()
-        self.service_name = service_name
-        self.service_namespace = service_namespace
-        self.service_version = service_version
+        self.env = env
+        self.namespace = namespace
+        self.app_name = app_name
+        self.version = version
 
     def filter(self, record: logging.LogRecord) -> bool:
         """
         Ensures service metadata fields are present on each record.
         Does not overwrite fields already explicitly defined.
         """
-        if not hasattr(record, "service_name"):
-            record.service_name = self.service_name
-        if not hasattr(record, "service_namespace"):
-            record.service_namespace = self.service_namespace
-        if not hasattr(record, "service_version"):
-            record.service_version = self.service_version
+        record.env = getattr(record, "env", self.env)
+        record.service_namespace = getattr(record, "service_namespace", self.namespace)
+        record.service_name = getattr(record, "service_name", self.app_name)
+        record.service_version = getattr(record, "service_version", self.version)
         return True

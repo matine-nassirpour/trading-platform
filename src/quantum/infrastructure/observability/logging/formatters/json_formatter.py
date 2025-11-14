@@ -1,6 +1,5 @@
 import json
 import logging
-import socket
 
 from contextlib import suppress
 from typing import Any, Final, cast
@@ -26,7 +25,6 @@ from quantum.infrastructure.time.format_utils import now_mono_ms, to_rfc3339_ms
 # │ Constants                                                                  │
 # ╰────────────────────────────────────────────────────────────────────────────╯
 _CORE_SETTINGS: Final = ConfigManager.load()
-_INSTANCE_ID: Final[str] = _CORE_SETTINGS.quantum_instance_id or socket.gethostname()
 _EXCLUDED_STD_FIELDS: Final[set[str]] = {
     "args",
     "asctime",
@@ -132,8 +130,13 @@ class JsonFormatter(logging.Formatter):
     a health metric for schema validation failures.
     """
 
+    def __init__(self, instance_id: str) -> None:
+        super().__init__()
+        self._instance_id = instance_id
+
     def format(self, record: logging.LogRecord) -> str:
         trace_id, span_id, is_sampled = _extract_trace_context()
+
         ts_unix_ms = int(record.created * 1000)
         ts_mono_ms = getattr(record, "ts_monotonic_ms", now_mono_ms())
 
@@ -146,8 +149,8 @@ class JsonFormatter(logging.Formatter):
             "ts_unix_ms": ts_unix_ms,
             "ts_monotonic_ms": ts_mono_ms,
             # resource/env
-            "env": getattr(record, "env", "unknown"),
-            "instance": _INSTANCE_ID,
+            "env": getattr(record, "env", None),
+            "instance": self._instance_id,
             "service_name": getattr(record, "service_name", None),
             "service_version": getattr(record, "service_version", None),
             "service_namespace": getattr(record, "service_namespace", None),
@@ -239,8 +242,8 @@ class JsonFormatter(logging.Formatter):
             "exception_stacktrace": exception_stacktrace,
         }
 
-    @staticmethod
     def _build_fallback_payload(
+        self,
         record: logging.LogRecord,
         overrides: dict[str, Any],
         e: ValidationError,
@@ -263,7 +266,7 @@ class JsonFormatter(logging.Formatter):
             "logger": record.name,
             "message": record.getMessage(),
             "env": overrides["env"],
-            "instance": _INSTANCE_ID,
+            "instance": self._instance_id,
             "service_name": overrides["service_name"],
             "service_version": overrides["service_version"],
             "service_namespace": overrides["service_namespace"],

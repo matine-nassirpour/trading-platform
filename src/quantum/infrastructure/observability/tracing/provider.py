@@ -274,15 +274,6 @@ def _finalize_provider(
         except (ValueError, RuntimeError, AttributeError) as exc:
             logger.debug(f"Unable to update tracer exporter metric: {exc}")
 
-    try:
-        from quantum.infrastructure.observability.bootstrap.state import (
-            set_tracer_provider as tp,
-        )
-
-        tp(provider)
-    except Exception as exc:
-        logger.debug(f"Failed to register tracer provider globally: {exc}")
-
     _ensure_atexit_registered()
 
 

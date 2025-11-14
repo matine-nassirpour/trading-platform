@@ -1,0 +1,26 @@
+from __future__ import annotations
+
+from typing import Protocol
+
+from quantum.infrastructure.observability.bootstrap.lifecycle.configs.metrics_config import (
+    MetricsConfig,
+)
+
+
+class MetricsInitializer(Protocol):
+    """
+    Protocol for initializing the Prometheus metrics HTTP exporter.
+
+    The observability pipeline delegates all metrics-related setup to
+    implementations of this interface.
+    """
+
+    def initialize(self, config: MetricsConfig) -> bool:
+        """
+        Start the HTTP server if enabled.
+
+        Returns:
+            True if metrics were started or explicitly disabled.
+            False if startup failed.
+        """
+        ...
