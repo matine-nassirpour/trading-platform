@@ -17,16 +17,8 @@ def emit_event(
 ) -> None:
     """
     Emit a structured trading event to the observability logging system.
-
     Accepts either a Pydantic model (with `.model_dump`) or a raw dict.
-    Automatically injects contextual fields (`run_id`, `correlation_id`)
-    if missing, ensuring full traceability across the event pipeline.
-
-    Behavior:
-        - Converts model to a JSON-safe dict.
-        - Ensures event correlation consistency.
-        - Delegates to the `"quantum.trading"` logger.
-        - Never raises; logging failures are handled by downstream handlers.
+    Converts model to a JSON-safe dict.
     """
     # Convert to dict (support Pydantic models and plain dicts)
     if hasattr(event_model, "model_dump"):

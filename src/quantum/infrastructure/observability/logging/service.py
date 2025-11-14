@@ -24,7 +24,27 @@ from quantum.infrastructure.observability.logging.handlers.audit_sink_handler im
 from quantum.infrastructure.observability.logging.handlers.partitioned_handler import (
     PartitionedJSONLFileHandler,
 )
-from quantum.infrastructure.observability.logging.preprocessor import RecordPreprocessor
+from quantum.infrastructure.observability.logging.pipeline.pipeline import (
+    LoggingPipeline,
+)
+from quantum.infrastructure.observability.logging.pipeline.steps.attrs_merge import (
+    AttrsMergeStep,
+)
+from quantum.infrastructure.observability.logging.pipeline.steps.correlation import (
+    CorrelationStep,
+)
+from quantum.infrastructure.observability.logging.pipeline.steps.ignore_libraries import (
+    IgnoreLibrariesStep,
+)
+from quantum.infrastructure.observability.logging.pipeline.steps.redaction import (
+    RedactionStep,
+)
+from quantum.infrastructure.observability.logging.pipeline.steps.resource_metadata import (
+    ResourceMetadataStep,
+)
+from quantum.infrastructure.observability.logging.pipeline.steps.timestamps import (
+    TimestampStep,
+)
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
@@ -53,14 +73,22 @@ def close_and_remove_all_handlers(logger: logging.Logger) -> None:
 # ╰────────────────────────────────────────────────────────────────────────────╯
 def _apply_filters(handler: logging.Handler, bundle: LoggingRuntimeBundle) -> None:
     """Attach preprocessing filters."""
-    handler.addFilter(
-        RecordPreprocessor(
-            env=bundle.env,
-            namespace=bundle.namespace,
-            app_name=bundle.app_name,
-            version=bundle.app_version,
-        )
+    pipeline = LoggingPipeline(
+        steps=[
+            IgnoreLibrariesStep(),
+            TimestampStep(),
+            AttrsMergeStep(),
+            ResourceMetadataStep(
+                env=bundle.env,
+                namespace=bundle.namespace,
+                name=bundle.app_name,
+                version=bundle.app_version,
+            ),
+            CorrelationStep(),
+            RedactionStep(),
+        ]
     )
+    handler.addFilter(pipeline)
 
     if bundle.sample_info_every > 1:
         handler.addFilter(InfoSamplerFilter(sample_every=bundle.sample_info_every))

@@ -96,11 +96,6 @@ def is_audit_event(event_name: str, version: str | None = None) -> bool:
     -------
     >>> is_audit_event("order_submit_v2")
     True
-
-    Behavior
-    --------
-    - Strips version suffix before validation.
-    - Returns False if name syntax invalid or not in allowlist.
     """
     name = _strip_version_suffix(event_name)
     try:

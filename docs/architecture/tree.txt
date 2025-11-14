@@ -294,13 +294,10 @@ trading-platform/
 │       │   │   │   │   │   └── __init__.py
 │       │   │   │   │   ├── __init__.py
 │       │   │   │   │   ├── audit_event_filter.py
-│       │   │   │   │   ├── context_filter.py
 │       │   │   │   │   ├── ignore_libraries_filter.py
 │       │   │   │   │   ├── info_sampler_filter.py
-│       │   │   │   │   ├── monotonic_timestamp_filter.py
 │       │   │   │   │   ├── rate_limit_filter.py
-│       │   │   │   │   ├── redact_filter.py
-│       │   │   │   │   └── static_fields_filter.py
+│       │   │   │   │   └── redact_filter.py
 │       │   │   │   ├── formatters/
 │       │   │   │   │   ├── tests/
 │       │   │   │   │   │   └── __init__.py
@@ -326,6 +323,8 @@ trading-platform/
 │       │   │   │   ├── config_bundle.py
 │       │   │   │   ├── constants.py
 │       │   │   │   ├── event_emitter.py
+│       │   │   │   ├── exception_processor.py
+│       │   │   │   ├── preprocessor.py
 │       │   │   │   └── service.py
 │       │   │   ├── metrics/
 │       │   │   │   ├── collectors/
