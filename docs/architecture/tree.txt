@@ -294,10 +294,8 @@ trading-platform/
 │       │   │   │   │   │   └── __init__.py
 │       │   │   │   │   ├── __init__.py
 │       │   │   │   │   ├── audit_event_filter.py
-│       │   │   │   │   ├── ignore_libraries_filter.py
 │       │   │   │   │   ├── info_sampler_filter.py
-│       │   │   │   │   ├── rate_limit_filter.py
-│       │   │   │   │   └── redact_filter.py
+│       │   │   │   │   └── rate_limit_filter.py
 │       │   │   │   ├── formatters/
 │       │   │   │   │   ├── tests/
 │       │   │   │   │   │   └── __init__.py
@@ -316,6 +314,18 @@ trading-platform/
 │       │   │   │   │   ├── factory.py
 │       │   │   │   │   ├── log_payload_v1.py
 │       │   │   │   │   └── severity_map.py
+│       │   │   │   ├── pipeline/
+│       │   │   │   │   ├── steps/
+│       │   │   │   │   │   ├── __init__.py
+│       │   │   │   │   │   ├── attrs_merge.py
+│       │   │   │   │   │   ├── correlation.py
+│       │   │   │   │   │   ├── ignore_libraries.py
+│       │   │   │   │   │   ├── redaction.py
+│       │   │   │   │   │   ├── resource_metadata.py
+│       │   │   │   │   │   └── timestamps.py
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── base.py
+│       │   │   │   │   └── pipeline.py
 │       │   │   │   ├── tests/
 │       │   │   │   │   └── __init__.py
 │       │   │   │   ├── __init__.py
@@ -324,7 +334,6 @@ trading-platform/
 │       │   │   │   ├── constants.py
 │       │   │   │   ├── event_emitter.py
 │       │   │   │   ├── exception_processor.py
-│       │   │   │   ├── preprocessor.py
 │       │   │   │   └── service.py
 │       │   │   ├── metrics/
 │       │   │   │   ├── collectors/

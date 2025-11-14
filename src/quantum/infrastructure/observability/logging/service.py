@@ -24,26 +24,8 @@ from quantum.infrastructure.observability.logging.handlers.audit_sink_handler im
 from quantum.infrastructure.observability.logging.handlers.partitioned_handler import (
     PartitionedJSONLFileHandler,
 )
-from quantum.infrastructure.observability.logging.pipeline.pipeline import (
-    LoggingPipeline,
-)
-from quantum.infrastructure.observability.logging.pipeline.steps.attrs_merge import (
-    AttrsMergeStep,
-)
-from quantum.infrastructure.observability.logging.pipeline.steps.correlation import (
-    CorrelationStep,
-)
-from quantum.infrastructure.observability.logging.pipeline.steps.ignore_libraries import (
-    IgnoreLibrariesStep,
-)
-from quantum.infrastructure.observability.logging.pipeline.steps.redaction import (
-    RedactionStep,
-)
-from quantum.infrastructure.observability.logging.pipeline.steps.resource_metadata import (
-    ResourceMetadataStep,
-)
-from quantum.infrastructure.observability.logging.pipeline.steps.timestamps import (
-    TimestampStep,
+from quantum.infrastructure.observability.logging.pipeline.factory import (
+    LoggingPipelineFactory,
 )
 
 
@@ -73,21 +55,7 @@ def close_and_remove_all_handlers(logger: logging.Logger) -> None:
 # ╰────────────────────────────────────────────────────────────────────────────╯
 def _apply_filters(handler: logging.Handler, bundle: LoggingRuntimeBundle) -> None:
     """Attach preprocessing filters."""
-    pipeline = LoggingPipeline(
-        steps=[
-            IgnoreLibrariesStep(),
-            TimestampStep(),
-            AttrsMergeStep(),
-            ResourceMetadataStep(
-                env=bundle.env,
-                namespace=bundle.namespace,
-                name=bundle.app_name,
-                version=bundle.app_version,
-            ),
-            CorrelationStep(),
-            RedactionStep(),
-        ]
-    )
+    pipeline = LoggingPipelineFactory.build(bundle.pipeline_config, bundle)
     handler.addFilter(pipeline)
 
     if bundle.sample_info_every > 1:

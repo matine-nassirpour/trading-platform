@@ -11,10 +11,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Final
 
-from quantum.infrastructure.observability.logging._io_utils import (
-    fsync_dir,
-    inc_disk_error_counter,
-)
+from quantum.infrastructure.observability.logging._io_utils import fsync_dir
 from quantum.infrastructure.observability.logging.config_bundle import (
     LoggingRuntimeBundle,
 )
@@ -22,6 +19,7 @@ from quantum.infrastructure.observability.logging.exception_processor import (
     ExceptionProcessor,
 )
 from quantum.infrastructure.observability.metrics.collectors.health_collector import (
+    logging_disk_errors_total,
     logging_file_rotations_total,
 )
 from quantum.infrastructure.time.naming import partition_path_components
@@ -125,7 +123,7 @@ class PartitionedJSONLFileHandler(logging.Handler):
 
             return dir_path, file_path, bad_path
         except Exception:
-            inc_disk_error_counter()
+            logging_disk_errors_total.inc()
             self.handleError(record)
             raise
 
@@ -190,7 +188,7 @@ class PartitionedJSONLFileHandler(logging.Handler):
             self._flush(self._bad_fh)
 
         except Exception:
-            inc_disk_error_counter()
+            logging_disk_errors_total.inc()
             self.handleError(record)
 
     def _flush(self, fh: io.TextIOWrapper) -> None:
@@ -200,7 +198,7 @@ class PartitionedJSONLFileHandler(logging.Handler):
             try:
                 os.fsync(fh.fileno())
             except OSError:
-                inc_disk_error_counter()
+                logging_disk_errors_total.inc()
 
     def _check_rollover(self, record: logging.LogRecord) -> None:
         """Performs size-based rollover, emitting warnings and rotation metrics."""
@@ -239,7 +237,7 @@ class PartitionedJSONLFileHandler(logging.Handler):
                     with suppress(Exception):
                         logging_file_rotations_total.inc()
         except Exception:
-            inc_disk_error_counter()
+            logging_disk_errors_total.inc()
 
     def _reopen_partition(self, path: Path, bad_path: Path) -> None:
         """Reopens partition files safely, ensuring directories exist and flushing prior handles."""

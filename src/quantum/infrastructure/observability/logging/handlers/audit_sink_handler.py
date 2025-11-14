@@ -8,8 +8,10 @@ from typing import Any, Final
 
 from quantum.infrastructure.observability.logging._io_utils import (
     fsync_dir,
-    inc_disk_error_counter,
     safe_unlink,
+)
+from quantum.infrastructure.observability.metrics.collectors.health_collector import (
+    logging_disk_errors_total,
 )
 from quantum.infrastructure.time.naming import generate_audit_blob_name
 
@@ -58,7 +60,7 @@ class AuditEventFileHandler(logging.Handler):
         try:
             path = self._resolve_event_path(record)
         except OSError:
-            inc_disk_error_counter()
+            logging_disk_errors_total.inc()
             self.handleError(record)
             return
 
@@ -98,7 +100,7 @@ class AuditEventFileHandler(logging.Handler):
             os.replace(tmp_path, path)  # Atomic move
             fsync_dir(path.parent)
         except (OSError, TypeError, ValueError):
-            inc_disk_error_counter()
+            logging_disk_errors_total.inc()
             if tmp_path is not None:
                 safe_unlink(tmp_path)
             self.handleError(record)

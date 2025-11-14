@@ -7,6 +7,9 @@ from typing import Any, Final, cast
 from opentelemetry.trace import get_current_span
 from pydantic import ValidationError
 
+from quantum.infrastructure.observability.logging.diagnostics_logger import (
+    DIAGNOSTIC_LOGGER,
+)
 from quantum.infrastructure.observability.logging.exception_processor import (
     ExceptionProcessor,
 )
@@ -16,6 +19,9 @@ from quantum.infrastructure.observability.logging.models.log_payload_v1 import (
 )
 from quantum.infrastructure.observability.logging.models.severity_map import (
     SEVERITY_MAP,
+)
+from quantum.infrastructure.observability.metrics.collectors.health_collector import (
+    logging_schema_validation_errors_total,
 )
 from quantum.infrastructure.time.format_utils import now_mono_ms, to_rfc3339_ms
 
@@ -73,6 +79,7 @@ def _json_sanitize(obj: Any) -> Any:
     if isinstance(obj, bytes):
         return repr(obj[:64]) + ("… (truncated)" if len(obj) > 64 else "")
     s = str(obj)
+
     return s[:_MAX_STR_LEN] + ("…" if len(s) > _MAX_STR_LEN else "")
 
 
@@ -160,6 +167,9 @@ class JsonFormatter(logging.Formatter):
             model: LogPayloadV1 = from_log_record(record, **overrides)
             return model.to_clean_json()
         except ValidationError as e:
+            DIAGNOSTIC_LOGGER.error(
+                f"LogPayloadV1 validation failed: {e.__class__.__name__}"
+            )
             return self._build_fallback_payload(
                 record,
                 overrides,
@@ -253,11 +263,6 @@ class JsonFormatter(logging.Formatter):
             "attrs": attrs,
         }
 
-        with suppress(ModuleNotFoundError, AttributeError, ValueError, RuntimeError):
-            from quantum.infrastructure.observability.metrics.collectors.health_collector import (
-                logging_schema_validation_errors_total,
-            )
-
-            logging_schema_validation_errors_total.inc()
+        logging_schema_validation_errors_total.inc()
 
         return json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
