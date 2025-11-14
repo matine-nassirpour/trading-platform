@@ -2,7 +2,7 @@ from logging import LogRecord
 from typing import Any
 
 from ..exception_processor import EXCEPTION_FIELD_NAMES
-from .log_payload_v1 import LogPayloadV1
+from .log_payload_v1 import ExceptionBlock, LogPayloadV1
 from .severity_map import SEVERITY_MAP
 
 
@@ -11,6 +11,15 @@ def from_log_record(record: LogRecord, **overrides: Any) -> LogPayloadV1:
     sev_text, sev_num = SEVERITY_MAP.get(record.levelno, ("INFO", 9))
 
     extra_attrs: dict[str, Any] = dict(overrides.get("attrs", {}))
+
+    exc_dict = {name: overrides.get(name) for name in EXCEPTION_FIELD_NAMES}
+
+    exception_block = ExceptionBlock(
+        exception=exc_dict.get("exception"),
+        exception_type=exc_dict.get("exception_type"),
+        exception_message=exc_dict.get("exception_message"),
+        exception_stacktrace=exc_dict.get("exception_stacktrace"),
+    )
 
     payload_kwargs = {
         "timestamp": str(overrides["timestamp"]),
@@ -31,6 +40,7 @@ def from_log_record(record: LogRecord, **overrides: Any) -> LogPayloadV1:
         "correlation_id": overrides.get("correlation_id"),
         "run_id": overrides.get("run_id"),
         "attrs": extra_attrs,
+        "exception_block": exception_block,
     }
 
     for field in EXCEPTION_FIELD_NAMES:

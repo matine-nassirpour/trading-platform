@@ -1,33 +1,30 @@
-import json
 import logging
 
-from contextlib import suppress
 from typing import Any, Final, cast
 
-from opentelemetry.trace import get_current_span
 from pydantic import ValidationError
 
-from quantum.infrastructure.observability.logging.diagnostics_logger import (
-    DIAGNOSTIC_LOGGER,
+from quantum.infrastructure.observability.logging.assembler.fallback_builder import (
+    FallbackBuilder,
+)
+from quantum.infrastructure.observability.logging.assembler.payload_assembler import (
+    PayloadAssembler,
+)
+from quantum.infrastructure.observability.logging.core.diagnostics import (
+    get_diagnostic_logger,
+)
+from quantum.infrastructure.observability.logging.core.metrics import define_counter
+from quantum.infrastructure.observability.logging.core.trace_context import (
+    extract_trace_context,
 )
 from quantum.infrastructure.observability.logging.exception_processor import (
     ExceptionProcessor,
 )
-from quantum.infrastructure.observability.logging.models.factory import from_log_record
 from quantum.infrastructure.observability.logging.models.log_payload_v1 import (
     LogPayloadV1,
 )
-from quantum.infrastructure.observability.logging.models.severity_map import (
-    SEVERITY_MAP,
-)
-from quantum.infrastructure.observability.metrics.collectors.health_collector import (
-    logging_schema_validation_errors_total,
-)
 from quantum.infrastructure.time.format_utils import now_mono_ms, to_rfc3339_ms
 
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Constants                                                                  │
-# ╰────────────────────────────────────────────────────────────────────────────╯
 _EXCLUDED_STD_FIELDS: Final[set[str]] = {
     "args",
     "asctime",
@@ -52,6 +49,8 @@ _EXCLUDED_STD_FIELDS: Final[set[str]] = {
     "threadName",
     "env",
 }
+_SCHEMA_VALIDATION_ERRORS = define_counter("schema_validation_errors")
+_diag_logger = get_diagnostic_logger()
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
@@ -83,46 +82,6 @@ def _json_sanitize(obj: Any) -> Any:
     return s[:_MAX_STR_LEN] + ("…" if len(s) > _MAX_STR_LEN else "")
 
 
-def _extract_trace_context() -> tuple[str | None, str | None, bool | None]:
-    """
-    Extracts (trace_id, span_id, sampled) from the current OpenTelemetry span,
-    robust to cross-version API differences.
-    """
-    try:
-        span = get_current_span()
-        sc = span.get_span_context()
-    except (AttributeError, TypeError):
-        return None, None, None
-
-    try:
-        is_valid = bool(getattr(sc, "is_valid", False))
-    except Exception:
-        is_valid = False
-
-    if not is_valid:
-        return None, None, None
-
-    with suppress(Exception):
-        trace_id = f"{int(getattr(sc, 'trace_id', 0)):032x}"
-        span_id = f"{int(getattr(sc, 'span_id', 0)):016x}"
-
-    # Sampling flag
-    tf = getattr(sc, "trace_flags", None)
-    sampled: bool | None = None
-    if tf is not None:
-        attr = getattr(tf, "sampled", None)
-        if isinstance(attr, bool):
-            sampled = attr
-        elif callable(attr):
-            with suppress(Exception):
-                sampled = bool(attr())
-        else:
-            with suppress(Exception):
-                sampled = bool(int(tf) & 0x01)
-
-    return trace_id, span_id, sampled
-
-
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Formatter                                                                  │
 # ╰────────────────────────────────────────────────────────────────────────────╯
@@ -139,13 +98,13 @@ class JsonFormatter(logging.Formatter):
         self._instance_id = instance_id
 
     def format(self, record: logging.LogRecord) -> str:
-        trace_id, span_id, is_sampled = _extract_trace_context()
+        trace_id, span_id, is_sampled = extract_trace_context()
 
         ts_unix_ms = int(record.created * 1000)
         ts_mono_ms = getattr(record, "ts_monotonic_ms", now_mono_ms())
 
         attrs = self._extract_attrs(record)
-        exception_block = ExceptionProcessor.extract(record)
+        exception_fields = ExceptionProcessor.extract(record)
 
         overrides = {
             "timestamp": to_rfc3339_ms(record.created),
@@ -159,32 +118,36 @@ class JsonFormatter(logging.Formatter):
             "trace_id": trace_id,
             "span_id": span_id,
             "sampled": is_sampled,
+            "correlation_id": getattr(record, "correlation_id", None),
+            "run_id": getattr(record, "run_id", None),
             "attrs": attrs,
-            **exception_block,
+            **exception_fields,
         }
 
         try:
-            model: LogPayloadV1 = from_log_record(record, **overrides)
+            model: LogPayloadV1 = PayloadAssembler.build(record, self._instance_id)
             return model.to_clean_json()
+
         except ValidationError as e:
-            DIAGNOSTIC_LOGGER.error(
-                f"LogPayloadV1 validation failed: {e.__class__.__name__}"
+            _SCHEMA_VALIDATION_ERRORS.inc()
+            _diag_logger.error(
+                f"LogPayloadV1 validation failed: {e.__class__.__name__}",
             )
-            return self._build_fallback_payload(
-                record,
-                overrides,
-                e,
-                ts_unix_ms,
-                ts_mono_ms,
-                trace_id,
-                span_id,
-                is_sampled,
-                attrs,
-            )
+
+            return FallbackBuilder.build(record, overrides, e)
 
     # --------------------------------------------------------------------------
     # Internal Helpers
     # --------------------------------------------------------------------------
+    def _extract_attrs(self, record: logging.LogRecord) -> dict[str, Any]:
+        """Extract and sanitize custom attributes from a LogRecord."""
+        attrs: dict[str, Any] = {}
+
+        for k, v in self._filter_record_fields(record).items():
+            self._normalize_field(k, v, attrs)
+
+        return cast(dict[str, Any], _json_sanitize(attrs))
+
     @staticmethod
     def _filter_record_fields(record: logging.LogRecord) -> dict[str, Any]:
         """Filter out excluded or reserved fields."""
@@ -212,57 +175,3 @@ class JsonFormatter(logging.Formatter):
             attrs.update(value)
         else:
             attrs[key] = value
-
-    def _extract_attrs(self, record: logging.LogRecord) -> dict[str, Any]:
-        """Extract and sanitize custom attributes from a LogRecord."""
-        attrs: dict[str, Any] = {}
-        for k, v in self._filter_record_fields(record).items():
-            self._normalize_field(k, v, attrs)
-        return cast(dict[str, Any], _json_sanitize(attrs))
-
-    def _build_fallback_payload(
-        self,
-        record: logging.LogRecord,
-        overrides: dict[str, Any],
-        e: ValidationError,
-        ts_unix_ms: int,
-        ts_mono_ms: int,
-        trace_id: str | None,
-        span_id: str | None,
-        is_sampled: bool | None,
-        attrs: dict[str, Any],
-    ) -> str:
-        """Builds a simplified JSON payload when schema validation fails."""
-        sev_text, sev_num = SEVERITY_MAP.get(record.levelno, ("INFO", 9))
-
-        payload = {
-            "timestamp": overrides["timestamp"],
-            "ts_unix_ms": ts_unix_ms,
-            "ts_monotonic_ms": ts_mono_ms,
-            "level": sev_text,
-            "severity_number": sev_num,
-            "logger": record.name,
-            "message": record.getMessage(),
-            "env": overrides["env"],
-            "instance": self._instance_id,
-            "service_name": overrides["service_name"],
-            "service_version": overrides["service_version"],
-            "service_namespace": overrides["service_namespace"],
-            "trace_id": trace_id,
-            "span_id": span_id,
-            "sampled": is_sampled,
-            "correlation_id": overrides["correlation_id"],
-            "run_id": overrides["run_id"],
-            "schema": "quantum.log",
-            "log_schema_version": "fallback",
-            "validation_error": str(e),
-            "exception": overrides["exception"],
-            "exception_type": overrides["exception_type"],
-            "exception_message": overrides["exception_message"],
-            "exception_stacktrace": overrides["exception_stacktrace"],
-            "attrs": attrs,
-        }
-
-        logging_schema_validation_errors_total.inc()
-
-        return json.dumps(payload, ensure_ascii=False, separators=(",", ":"))

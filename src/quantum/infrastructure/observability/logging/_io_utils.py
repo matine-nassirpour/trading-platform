@@ -4,8 +4,8 @@ import os
 
 from pathlib import Path
 
-from quantum.infrastructure.observability.logging.diagnostics_logger import (
-    DIAGNOSTIC_LOGGER,
+from quantum.infrastructure.observability.logging.core.diagnostics import (
+    get_diagnostic_logger,
 )
 
 
@@ -26,7 +26,7 @@ def fsync_dir(path: Path) -> None:
             os.close(dir_fd)
 
     except Exception as exc:
-        DIAGNOSTIC_LOGGER.error(
+        get_diagnostic_logger().error(
             f"fsync_dir failed for path={path!s}: {exc.__class__.__name__}"
         )
 
@@ -39,6 +39,6 @@ def safe_unlink(path: Path) -> None:
         if path is not None:
             path.unlink(missing_ok=True)
     except Exception as exc:
-        DIAGNOSTIC_LOGGER.error(
+        get_diagnostic_logger().error(
             f"safe_unlink failed for path={path!s}: {exc.__class__.__name__}"
         )
