@@ -7,8 +7,9 @@ from typing import Any, Final, cast
 from opentelemetry.trace import get_current_span
 from pydantic import ValidationError
 
-from quantum.infrastructure.config.runtime.manager import ConfigManager
-from quantum.infrastructure.observability.context.run_id import get_run_id
+from quantum.infrastructure.observability.logging.exception_processor import (
+    ExceptionProcessor,
+)
 from quantum.infrastructure.observability.logging.models.factory import from_log_record
 from quantum.infrastructure.observability.logging.models.log_payload_v1 import (
     LogPayloadV1,
@@ -16,15 +17,11 @@ from quantum.infrastructure.observability.logging.models.log_payload_v1 import (
 from quantum.infrastructure.observability.logging.models.severity_map import (
     SEVERITY_MAP,
 )
-from quantum.infrastructure.observability.tracing.correlation.correlation_id import (
-    get_correlation_id,
-)
 from quantum.infrastructure.time.format_utils import now_mono_ms, to_rfc3339_ms
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Constants                                                                  │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-_CORE_SETTINGS: Final = ConfigManager.load()
 _EXCLUDED_STD_FIELDS: Final[set[str]] = {
     "args",
     "asctime",
@@ -141,28 +138,21 @@ class JsonFormatter(logging.Formatter):
         ts_mono_ms = getattr(record, "ts_monotonic_ms", now_mono_ms())
 
         attrs = self._extract_attrs(record)
-        exception_block = self._extract_exception_block(record)
+        exception_block = ExceptionProcessor.extract(record)
 
         overrides = {
-            # timestamps
             "timestamp": to_rfc3339_ms(record.created),
             "ts_unix_ms": ts_unix_ms,
             "ts_monotonic_ms": ts_mono_ms,
-            # resource/env
             "env": getattr(record, "env", None),
             "instance": self._instance_id,
             "service_name": getattr(record, "service_name", None),
             "service_version": getattr(record, "service_version", None),
             "service_namespace": getattr(record, "service_namespace", None),
-            # correlation
             "trace_id": trace_id,
             "span_id": span_id,
             "sampled": is_sampled,
-            "correlation_id": get_correlation_id(),
-            "run_id": get_run_id(),
-            # attrs
             "attrs": attrs,
-            # Exception data
             **exception_block,
         }
 
@@ -220,28 +210,6 @@ class JsonFormatter(logging.Formatter):
             self._normalize_field(k, v, attrs)
         return cast(dict[str, Any], _json_sanitize(attrs))
 
-    def _extract_exception_block(self, record: logging.LogRecord) -> dict[str, Any]:
-        """Builds a structured exception block from exc_info if present."""
-        exception_text = exception_type = exception_message = exception_stacktrace = (
-            None
-        )
-        if record.exc_info:
-            try:
-                etype, evalue, _tb = record.exc_info
-                exception_type = getattr(etype, "__name__", str(etype))
-                exception_message = str(evalue) if evalue is not None else None
-                exception_stacktrace = self.formatException(record.exc_info)
-                exception_text = exception_stacktrace
-            except Exception:
-                exception_text = "exception formatting failed"
-                exception_type = "Exception"
-        return {
-            "exception": exception_text,
-            "exception_type": exception_type,
-            "exception_message": exception_message,
-            "exception_stacktrace": exception_stacktrace,
-        }
-
     def _build_fallback_payload(
         self,
         record: logging.LogRecord,
@@ -278,11 +246,11 @@ class JsonFormatter(logging.Formatter):
             "schema": "quantum.log",
             "log_schema_version": "fallback",
             "validation_error": str(e),
-            "attrs": attrs,
             "exception": overrides["exception"],
             "exception_type": overrides["exception_type"],
             "exception_message": overrides["exception_message"],
             "exception_stacktrace": overrides["exception_stacktrace"],
+            "attrs": attrs,
         }
 
         with suppress(ModuleNotFoundError, AttributeError, ValueError, RuntimeError):

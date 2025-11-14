@@ -9,26 +9,11 @@ from quantum.infrastructure.observability.logging.config_bundle import (
 from quantum.infrastructure.observability.logging.filters.audit_event_filter import (
     AuditEventFilter,
 )
-from quantum.infrastructure.observability.logging.filters.context_filter import (
-    ContextFilter,
-)
-from quantum.infrastructure.observability.logging.filters.ignore_libraries_filter import (
-    IgnoreLibrariesFilter,
-)
 from quantum.infrastructure.observability.logging.filters.info_sampler_filter import (
     InfoSamplerFilter,
 )
-from quantum.infrastructure.observability.logging.filters.monotonic_timestamp_filter import (
-    MonotonicTimestampFilter,
-)
 from quantum.infrastructure.observability.logging.filters.rate_limit_filter import (
     RateLimitFilter,
-)
-from quantum.infrastructure.observability.logging.filters.redact_filter import (
-    RedactFilter,
-)
-from quantum.infrastructure.observability.logging.filters.static_fields_filter import (
-    StaticFieldsFilter,
 )
 from quantum.infrastructure.observability.logging.formatters.json_formatter import (
     JsonFormatter,
@@ -39,6 +24,7 @@ from quantum.infrastructure.observability.logging.handlers.audit_sink_handler im
 from quantum.infrastructure.observability.logging.handlers.partitioned_handler import (
     PartitionedJSONLFileHandler,
 )
+from quantum.infrastructure.observability.logging.preprocessor import RecordPreprocessor
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
@@ -66,13 +52,9 @@ def close_and_remove_all_handlers(logger: logging.Logger) -> None:
 # │ Internal Helpers                                                           │
 # ╰────────────────────────────────────────────────────────────────────────────╯
 def _apply_filters(handler: logging.Handler, bundle: LoggingRuntimeBundle) -> None:
-    """Attach context and static filters common to all handlers."""
-    handler.addFilter(ContextFilter(env=bundle.env))
-    handler.addFilter(IgnoreLibrariesFilter())
-    handler.addFilter(MonotonicTimestampFilter())
-    handler.addFilter(RedactFilter())
+    """Attach preprocessing filters."""
     handler.addFilter(
-        StaticFieldsFilter(
+        RecordPreprocessor(
             env=bundle.env,
             namespace=bundle.namespace,
             app_name=bundle.app_name,

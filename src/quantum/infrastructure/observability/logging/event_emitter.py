@@ -3,19 +3,6 @@ import logging
 from collections.abc import Mapping
 from typing import Any, Final
 
-from quantum.infrastructure.observability.context.run_id import get_run_id
-from quantum.infrastructure.observability.tracing.correlation.correlation_id import (
-    get_correlation_id,
-)
-
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Constants                                                                  │
-# ╰────────────────────────────────────────────────────────────────────────────╯
-DEFAULT_EVENT_LEVELS: Final[dict[str, int]] = {
-    "order_reject_v1": logging.WARNING,
-    "killswitch_trigger_v1": logging.ERROR,
-}
-
 _LOGGER: Final[logging.Logger] = logging.getLogger("quantum.trading")
 
 
@@ -35,21 +22,11 @@ def emit_event(
     Automatically injects contextual fields (`run_id`, `correlation_id`)
     if missing, ensuring full traceability across the event pipeline.
 
-    Args:
-        event_model: A Pydantic model or dict representing the event payload.
-        level: Optional explicit log level (int). If not provided, a default
-            severity is selected based on the event name or defaults to INFO.
-        extra: Optional extra fields to include in the log record's context.
-
-    Behavior
-    --------
-    - Converts model to a JSON-safe dict.
-    - Ensures event correlation consistency.
-    - Delegates to the `"quantum.trading"` logger.
-    - Never raises; logging failures are handled by downstream handlers.
-
-    Raises:
-        TypeError: if `event_model` is not a dict or Pydantic-compatible object.
+    Behavior:
+        - Converts model to a JSON-safe dict.
+        - Ensures event correlation consistency.
+        - Delegates to the `"quantum.trading"` logger.
+        - Never raises; logging failures are handled by downstream handlers.
     """
     # Convert to dict (support Pydantic models and plain dicts)
     if hasattr(event_model, "model_dump"):
@@ -59,14 +36,10 @@ def emit_event(
     else:
         raise TypeError("event_model must be a Pydantic model or a dict")
 
-    # Inject contextual IDs if absent
-    payload.setdefault("run_id", get_run_id())
-    payload.setdefault("correlation_id", get_correlation_id())
-
     event_name = payload.get("event_name") or "event"
-    log_level = level or DEFAULT_EVENT_LEVELS.get(event_name, logging.INFO)
+    log_level = level or logging.INFO
 
-    # Compose safe 'extra' field
+    # Compose `extra`
     safe_extra: dict[str, Any] = {"event": payload}
     if extra:
         for k, v in extra.items():

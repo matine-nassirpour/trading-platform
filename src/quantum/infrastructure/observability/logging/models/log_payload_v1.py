@@ -9,9 +9,28 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 # │ Constants                                                                  │
 # ╰────────────────────────────────────────────────────────────────────────────╯
 SeverityText = Literal["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"]
-
-_HEX_RE: Final[re.Pattern[str]] = re.compile(r"^[0-9a-f]+$")
 _ALLOWED_LEVELS: Final[set[str]] = {"TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"}
+_HEX_RE: Final[re.Pattern[str]] = re.compile(r"^[0-9a-f]+$")
+
+
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Exception structure                                                        │
+# ╰────────────────────────────────────────────────────────────────────────────╯
+class ExceptionBlock(BaseModel):
+    """
+    Unified, structured exception block.
+
+    This is the *single* place where exception-related fields are defined.
+    All upstream components (formatters, preprocessors, factories)
+    must populate this object, never individual fields.
+    """
+
+    exception: str | None = None
+    exception_type: str | None = None
+    exception_message: str | None = None
+    exception_stacktrace: str | None = None
+
+    model_config = ConfigDict(extra="forbid")
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
@@ -54,10 +73,10 @@ class LogPayloadV1(BaseModel):
     run_id: str | None
 
     # ─── Exceptions (structured)
-    exception: str | None = None
-    exception_type: str | None = None
-    exception_message: str | None = None
-    exception_stacktrace: str | None = None
+    exception_block: ExceptionBlock = Field(
+        default_factory=ExceptionBlock,
+        description="Normalized unified exception information",
+    )
 
     # ─── Schema metadata
     schema_name: str = Field(
@@ -137,10 +156,5 @@ class LogPayloadV1(BaseModel):
     # Serialization
     # --------------------------------------------------------------------------
     def to_clean_json(self) -> str:
-        """
-        Serializes this model to a compact, JSON-safe string.
-
-        Excludes `None` fields, respects field aliases,
-        and preserves stable field order for downstream parsing.
-        """
+        """Compact JSON serialization (UTF-8 safe, excludes None)."""
         return self.model_dump_json(exclude_none=True, by_alias=True)

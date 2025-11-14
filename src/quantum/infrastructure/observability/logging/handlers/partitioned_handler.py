@@ -18,6 +18,9 @@ from quantum.infrastructure.observability.logging._io_utils import (
 from quantum.infrastructure.observability.logging.config_bundle import (
     LoggingRuntimeBundle,
 )
+from quantum.infrastructure.observability.logging.exception_processor import (
+    ExceptionProcessor,
+)
 from quantum.infrastructure.observability.metrics.collectors.health_collector import (
     logging_file_rotations_total,
 )
@@ -143,22 +146,49 @@ class PartitionedJSONLFileHandler(logging.Handler):
             if not self._bad_fh:
                 raise OSError("Quarantine file not available")
 
+            # Unified exception block (etype/evalue/tb from *error*, not record)
+            try:
+                # Extract exception info from the failure that triggered quarantine
+                etype = type(error)
+                evalue = error
+                tb = error.__traceback__
+                exc_block = ExceptionProcessor.extract(
+                    type("DummyRecord", (), {"exc_info": (etype, evalue, tb)})
+                )
+            except Exception:
+                exc_block = {
+                    "exception": "quarantine exception extraction failed",
+                    "exception_type": "Exception",
+                    "exception_message": None,
+                    "exception_stacktrace": None,
+                }
+
+            # Build a forensic entry — no schema, no Pydantic, no strict formatting.
             safe_entry = {
-                "error": "formatting_failed",
+                "error": "log_record_formatting_failed",
                 "reason": str(error),
-                "logger": getattr(record, "name", "?"),
-                "level": getattr(record, "levelname", "?"),
-                "created": getattr(record, "created", 0),
+                "logger": getattr(record, "name", None),
+                "level": getattr(record, "levelname", None),
+                "created": getattr(record, "created", None),
+                # Stable unified exception block from the processor
+                "exception": exc_block.get("exception"),
+                "exception_type": exc_block.get("exception_type"),
+                "exception_message": exc_block.get("exception_message"),
+                "exception_stacktrace": exc_block.get("exception_stacktrace"),
+                # Always try to capture the raw message
                 "raw_message": None,
             }
 
-            with suppress(Exception):
+            try:
                 safe_entry["raw_message"] = record.getMessage()
+            except Exception:
+                safe_entry["raw_message"] = "<raw_message_unavailable>"
 
             self._bad_fh.write(
                 json.dumps(safe_entry, ensure_ascii=False, separators=(",", ":")) + "\n"
             )
             self._flush(self._bad_fh)
+
         except Exception:
             inc_disk_error_counter()
             self.handleError(record)

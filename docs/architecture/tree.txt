@@ -253,12 +253,33 @@ trading-platform/
 │       │   │   └── __init__.py
 │       │   ├── observability/
 │       │   │   ├── bootstrap/
+│       │   │   │   ├── lifecycle/
+│       │   │   │   │   ├── configs/
+│       │   │   │   │   │   ├── __init__.py
+│       │   │   │   │   │   ├── filesystem_probe_config.py
+│       │   │   │   │   │   ├── logging_config.py
+│       │   │   │   │   │   ├── metrics_config.py
+│       │   │   │   │   │   └── tracing_config.py
+│       │   │   │   │   ├── implementations/
+│       │   │   │   │   │   ├── __init__.py
+│       │   │   │   │   │   ├── filesystem_probe_impl.py
+│       │   │   │   │   │   ├── logging_initializer_impl.py
+│       │   │   │   │   │   ├── metrics_initializer_impl.py
+│       │   │   │   │   │   └── tracing_initializer_impl.py
+│       │   │   │   │   ├── protocols/
+│       │   │   │   │   │   ├── __init__.py
+│       │   │   │   │   │   ├── build_info_provider.py
+│       │   │   │   │   │   ├── filesystem_probe.py
+│       │   │   │   │   │   ├── logging_initializer.py
+│       │   │   │   │   │   ├── metrics_initializer.py
+│       │   │   │   │   │   └── tracing_initializer.py
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── dependencies.py
+│       │   │   │   │   └── lifecycle.py
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── diagnostics.py
 │       │   │   │   ├── health_registry.py
-│       │   │   │   ├── init_manager.py
-│       │   │   │   ├── lifecycle.py
-│       │   │   │   └── state.py
+│       │   │   │   └── init_manager.py
 │       │   │   ├── context/
 │       │   │   │   ├── __init__.py
 │       │   │   │   └── run_id.py
@@ -270,8 +291,7 @@ trading-platform/
 │       │   │   ├── logging/
 │       │   │   │   ├── filters/
 │       │   │   │   │   ├── tests/
-│       │   │   │   │   │   ├── __init__.py
-│       │   │   │   │   │   └── test_filters.py
+│       │   │   │   │   │   └── __init__.py
 │       │   │   │   │   ├── __init__.py
 │       │   │   │   │   ├── audit_event_filter.py
 │       │   │   │   │   ├── context_filter.py
@@ -283,32 +303,27 @@ trading-platform/
 │       │   │   │   │   └── static_fields_filter.py
 │       │   │   │   ├── formatters/
 │       │   │   │   │   ├── tests/
-│       │   │   │   │   │   ├── __init__.py
-│       │   │   │   │   │   └── test_json_formatter.py
+│       │   │   │   │   │   └── __init__.py
 │       │   │   │   │   ├── __init__.py
 │       │   │   │   │   └── json_formatter.py
 │       │   │   │   ├── handlers/
 │       │   │   │   │   ├── tests/
-│       │   │   │   │   │   ├── __init__.py
-│       │   │   │   │   │   ├── test_audit_sink_handler.py
-│       │   │   │   │   │   └── test_partitioned_handler.py
+│       │   │   │   │   │   └── __init__.py
 │       │   │   │   │   ├── __init__.py
 │       │   │   │   │   ├── audit_sink_handler.py
 │       │   │   │   │   └── partitioned_handler.py
 │       │   │   │   ├── models/
 │       │   │   │   │   ├── tests/
-│       │   │   │   │   │   ├── __init__.py
-│       │   │   │   │   │   └── test_factory.py
+│       │   │   │   │   │   └── __init__.py
 │       │   │   │   │   ├── __init__.py
 │       │   │   │   │   ├── factory.py
 │       │   │   │   │   ├── log_payload_v1.py
 │       │   │   │   │   └── severity_map.py
 │       │   │   │   ├── tests/
-│       │   │   │   │   ├── __init__.py
-│       │   │   │   │   ├── test_constants.py
-│       │   │   │   │   └── test_event_emitter.py
+│       │   │   │   │   └── __init__.py
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── _io_utils.py
+│       │   │   │   ├── config_bundle.py
 │       │   │   │   ├── constants.py
 │       │   │   │   ├── event_emitter.py
 │       │   │   │   └── service.py
@@ -323,8 +338,7 @@ trading-platform/
 │       │   │   │   │   ├── __init__.py
 │       │   │   │   │   └── correlation_id.py
 │       │   │   │   ├── tests/
-│       │   │   │   │   ├── __init__.py
-│       │   │   │   │   └── test_propagation.py
+│       │   │   │   │   └── __init__.py
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── propagation.py
 │       │   │   │   └── provider.py
@@ -368,12 +382,7 @@ trading-platform/
 │   ├── system/
 │   │   ├── infrastructure/
 │   │   │   ├── observability/
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── test_observability_fsync_e2e.py
-│   │   │   │   ├── test_observability_metrics_http_e2e.py
-│   │   │   │   ├── test_observability_otlp_grpc_e2e.py
-│   │   │   │   ├── test_observability_otlp_http_e2e.py
-│   │   │   │   └── test_observability_pipeline_e2e.py
+│   │   │   │   └── __init__.py
 │   │   │   └── __init__.py
 │   │   └── __init__.py
 │   ├── validation/
@@ -388,13 +397,7 @@ trading-platform/
 │   │   │   │   ├── test_state_runtime.py
 │   │   │   │   └── test_validator_registry.py
 │   │   │   ├── observability/
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── test_bootstrap_shutdown.py
-│   │   │   │   ├── test_context_propagation.py
-│   │   │   │   ├── test_metrics_http_endpoint.py
-│   │   │   │   ├── test_otlp_exporter_selection.py
-│   │   │   │   ├── test_persistence_probe.py
-│   │   │   │   └── test_pipeline_contract.py
+│   │   │   │   └── __init__.py
 │   │   │   └── __init__.py
 │   │   └── __init__.py
 │   ├── __init__.py
