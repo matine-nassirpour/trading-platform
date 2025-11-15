@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Final
 
-from quantum.infrastructure.observability.logging._io_utils import (
+from quantum.infrastructure.observability.logging.utils._io_utils import (
     fsync_dir,
     safe_unlink,
 )

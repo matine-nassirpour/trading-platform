@@ -7,6 +7,34 @@ from quantum.infrastructure.config.runtime.manager import ConfigManager
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Constants                                                                  │
 # ╰────────────────────────────────────────────────────────────────────────────╯
+EXCLUDED_STD_FIELDS: Final[set[str]] = {
+    "args",
+    "asctime",
+    "created",
+    "exc_info",
+    "exc_text",
+    "filename",
+    "funcName",
+    "levelno",
+    "lineno",
+    "module",
+    "msecs",
+    "message",
+    "msg",
+    "name",
+    "pathname",
+    "process",
+    "processName",
+    "relativeCreated",
+    "stack_info",
+    "thread",
+    "threadName",
+    "env",
+    "service_name",
+    "service_version",
+    "service_namespace",
+}
+
 _AUDIT_EVENT_BASELINE_V1: Final[frozenset[str]] = frozenset(
     {
         "order_submit",

@@ -4,46 +4,50 @@ import logging
 
 from pydantic import ValidationError
 
+from quantum.infrastructure.observability.logging.assembler.override_builder import (
+    OverrideBuilder,
+)
 from quantum.infrastructure.observability.logging.core.metrics import define_counter
 from quantum.infrastructure.observability.logging.core.trace_context import (
     extract_trace_context,
 )
 from quantum.infrastructure.observability.logging.models.factory import from_log_record
-from quantum.infrastructure.time.format_utils import now_mono_ms, to_rfc3339_ms
 
-_schema_validation_errors = define_counter("schema_validation_errors")
+_SCHEMA_VALIDATION_ERRORS = define_counter("schema_validation_errors")
 
 
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Payload Builder                                                            │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 class PayloadAssembler:
-    """Pure SRP: assemble a validated LogPayloadV1 instance for a LogRecord."""
+    """
+    Assemble a validated LogPayload model (LogPayloadV1).
+    This class performs *only* assembling and validation, no formatting.
+
+    - Extracts context (trace_id, span_id, sampled)
+    - Constructs a fully-populated override dict
+    - Hands the construction to `from_log_record` for schema binding
+    - On validation failure: increments metric and re-raises ValidationError
+    """
 
     @staticmethod
     def build(record: logging.LogRecord, instance_id: str):
-        trace_id, span_id, sampled = extract_trace_context()
+        trace_id, span_id, is_sampled = extract_trace_context()
 
-        ts_unix_ms = int(record.created * 1000)
-        ts_mono_ms = getattr(record, "ts_monotonic_ms", now_mono_ms())
+        overrides = OverrideBuilder.build(
+            record=record,
+            instance_id=instance_id,
+            trace_id=trace_id,
+            span_id=span_id,
+            sampled=is_sampled,
+        )
 
-        overrides = {
-            "timestamp": to_rfc3339_ms(record.created),
-            "ts_unix_ms": ts_unix_ms,
-            "ts_monotonic_ms": ts_mono_ms,
-            "env": getattr(record, "env", None),
-            "instance": instance_id,
-            "service_name": getattr(record, "service_name", None),
-            "service_version": getattr(record, "service_version", None),
-            "service_namespace": getattr(record, "service_namespace", None),
-            "trace_id": trace_id,
-            "span_id": span_id,
-            "sampled": sampled,
-            "correlation_id": getattr(record, "correlation_id", None),
-            "run_id": getattr(record, "run_id", None),
-            "attrs": getattr(record, "attrs", {}),
-        }
-
+        # Try constructing and validating the payload model
         try:
             model = from_log_record(record, **overrides)
             return model
+
         except ValidationError:
-            _schema_validation_errors.inc()
+            # Count internal schema failures
+            _SCHEMA_VALIDATION_ERRORS.inc()
             raise

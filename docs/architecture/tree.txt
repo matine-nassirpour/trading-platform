@@ -289,6 +289,16 @@ trading-platform/
 │       │   │   │   ├── observability_driver.py
 │       │   │   │   └── tracing_driver.py
 │       │   │   ├── logging/
+│       │   │   │   ├── assembler/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── fallback_builder.py
+│       │   │   │   │   └── payload_assembler.py
+│       │   │   │   ├── core/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── diagnostics.py
+│       │   │   │   │   ├── errors.py
+│       │   │   │   │   ├── metrics.py
+│       │   │   │   │   └── trace_context.py
 │       │   │   │   ├── filters/
 │       │   │   │   │   ├── tests/
 │       │   │   │   │   │   └── __init__.py
@@ -317,8 +327,10 @@ trading-platform/
 │       │   │   │   ├── pipeline/
 │       │   │   │   │   ├── steps/
 │       │   │   │   │   │   ├── __init__.py
+│       │   │   │   │   │   ├── attrs_extract.py
 │       │   │   │   │   │   ├── attrs_merge.py
 │       │   │   │   │   │   ├── correlation.py
+│       │   │   │   │   │   ├── exception_enrichment.py
 │       │   │   │   │   │   ├── ignore_libraries.py
 │       │   │   │   │   │   ├── redaction.py
 │       │   │   │   │   │   ├── resource_metadata.py
@@ -333,7 +345,6 @@ trading-platform/
 │       │   │   │   ├── _io_utils.py
 │       │   │   │   ├── config_bundle.py
 │       │   │   │   ├── constants.py
-│       │   │   │   ├── diagnostics_logger.py
 │       │   │   │   ├── event_emitter.py
 │       │   │   │   ├── exception_processor.py
 │       │   │   │   └── service.py
@@ -342,6 +353,7 @@ trading-platform/
 │       │   │   │   │   ├── __init__.py
 │       │   │   │   │   └── health_collector.py
 │       │   │   │   ├── __init__.py
+│       │   │   │   ├── metrics_exporter.py
 │       │   │   │   └── mt5.py
 │       │   │   ├── tracing/
 │       │   │   │   ├── correlation/
