@@ -19,14 +19,12 @@ _diag_logger = get_diagnostic_logger()
 
 class JsonFormatter(logging.Formatter):
     """
-    Production-grade structured JSON formatter.
-
     Responsibilities:
-      - Orchestrate the structured logging pipeline
-      - Convert LogRecord into domain LogPayloadV1
-      - Serialize via to_clean_json()
-      - On failure: delegate to FallbackBuilder (structured fallback)
-      - Never perform sanitation, overrides, or domain logic
+    - Coordinate the high-level structured logging pipeline:
+        LogRecord → DTO → Contract → Domain Payload → JSON
+    - Apply no enrichment and no sanitation (all upstream)
+    - Convert failures to structured fallback payloads
+    - NEVER raise under any circumstance
     """
 
     def __init__(self, instance_id: str) -> None:
@@ -35,30 +33,33 @@ class JsonFormatter(logging.Formatter):
 
     def format(self, record: logging.LogRecord) -> str:
         """
-        Main formatting entrypoint:
-            LogRecord → InternalEvent → LogPayloadV1 → JSON
-        On validation failure:
-            → FallbackPayloadV1 → JSON
+        High-level pipeline:
+            1. PayloadAssembler.build()  -> validated domain payload
+            2. Payload.to_clean_json()
+        On failure:
+            -> FallbackBuilder.build()  -> fallback JSON
+
+        This method must NEVER raise.
         """
+
         try:
             payload = PayloadAssembler.build(record, self._instance_id)
             return payload.to_clean_json()
 
-        except ValidationError as e:
+        except ValidationError as exc:
             _diag_logger.error(
-                f"[formatter] LogPayloadV1 validation failed: {e.__class__.__name__}"
+                f"[formatter] payload validation failed: {exc.__class__.__name__}"
             )
             fb = FallbackBuilder.build(
                 record=record,
                 instance_id=self._instance_id,
-                error=e,
+                error=exc,
             )
             return fb.to_json()
 
         except Exception as exc:
-            # Any unexpected error must degrade safely
             _diag_logger.error(
-                f"[formatter] unexpected error in JsonFormatter: {exc.__class__.__name__}"
+                f"[formatter] unexpected error: {exc.__class__.__name__}"
             )
             fb = FallbackBuilder.build(
                 record=record,
