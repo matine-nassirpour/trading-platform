@@ -6,9 +6,6 @@ from typing import Any, Final
 _LOGGER: Final[logging.Logger] = logging.getLogger("quantum.trading")
 
 
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Public API                                                                 │
-# ╰────────────────────────────────────────────────────────────────────────────╯
 def emit_event(
     event_model: Any,
     *,

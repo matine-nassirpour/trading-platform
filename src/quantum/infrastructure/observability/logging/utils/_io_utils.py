@@ -29,16 +29,3 @@ def fsync_dir(path: Path) -> None:
         get_diagnostic_logger().error(
             f"fsync_dir failed for path={path!s}: {exc.__class__.__name__}"
         )
-
-
-def safe_unlink(path: Path) -> None:
-    """
-    Delete a file safely with diagnostic logging.
-    """
-    try:
-        if path is not None:
-            path.unlink(missing_ok=True)
-    except Exception as exc:
-        get_diagnostic_logger().error(
-            f"safe_unlink failed for path={path!s}: {exc.__class__.__name__}"
-        )

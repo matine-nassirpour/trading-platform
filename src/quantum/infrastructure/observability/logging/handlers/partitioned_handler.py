@@ -14,6 +14,7 @@ from typing import Final
 from quantum.infrastructure.observability.logging.config_bundle import (
     LoggingRuntimeBundle,
 )
+from quantum.infrastructure.observability.logging.core.metrics import define_counter
 from quantum.infrastructure.observability.logging.exception_processor import (
     ExceptionProcessor,
 )
@@ -21,10 +22,9 @@ from quantum.infrastructure.observability.logging.utils._io_utils import fsync_d
 from quantum.infrastructure.observability.logging.utils.naming import (
     partition_path_components,
 )
-from quantum.infrastructure.observability.metrics.collectors.health_collector import (
-    logging_disk_errors_total,
-    logging_file_rotations_total,
-)
+
+_LOGGING_DISK_ERRORS: Final = define_counter("logging_disk_errors")
+_LOGGING_FILE_ROTATIONS: Final = define_counter("logging_file_rotations")
 
 
 class PartitionedJSONLFileHandler(logging.Handler):
@@ -125,7 +125,7 @@ class PartitionedJSONLFileHandler(logging.Handler):
 
             return dir_path, file_path, bad_path
         except Exception:
-            logging_disk_errors_total.inc()
+            _LOGGING_DISK_ERRORS.inc()
             self.handleError(record)
             raise
 
@@ -190,7 +190,7 @@ class PartitionedJSONLFileHandler(logging.Handler):
             self._flush(self._bad_fh)
 
         except Exception:
-            logging_disk_errors_total.inc()
+            _LOGGING_DISK_ERRORS.inc()
             self.handleError(record)
 
     def _flush(self, fh: io.TextIOWrapper) -> None:
@@ -200,7 +200,7 @@ class PartitionedJSONLFileHandler(logging.Handler):
             try:
                 os.fsync(fh.fileno())
             except OSError:
-                logging_disk_errors_total.inc()
+                _LOGGING_DISK_ERRORS.inc()
 
     def _check_rollover(self, record: logging.LogRecord) -> None:
         """Performs size-based rollover, emitting warnings and rotation metrics."""
@@ -235,11 +235,11 @@ class PartitionedJSONLFileHandler(logging.Handler):
                 self._reopen_partition(next_file, next_bad)
 
                 self._warned_this_part = False
-                if logging_file_rotations_total:
+                if _LOGGING_FILE_ROTATIONS:
                     with suppress(Exception):
-                        logging_file_rotations_total.inc()
+                        _LOGGING_FILE_ROTATIONS.inc()
         except Exception:
-            logging_disk_errors_total.inc()
+            _LOGGING_DISK_ERRORS.inc()
 
     def _reopen_partition(self, path: Path, bad_path: Path) -> None:
         """Reopens partition files safely, ensuring directories exist and flushing prior handles."""

@@ -35,8 +35,8 @@ tracing_exporter_status = Gauge(
 # ╭───────────────────────────────────────────────────────────────────────────╮
 # │ Logging subsystem metrics                                                 │
 # ╰───────────────────────────────────────────────────────────────────────────╯
-logging_file_rotations_total = Counter(
-    "quantum_logging_file_rotations_total",
+logging_file_rotations = Counter(
+    "quantum_logging_file_rotations",
     "Total number of JSONL handler rollovers performed.",
 )
 logging_redactions_total = Counter(
@@ -47,7 +47,7 @@ logging_schema_validation_errors_total = Counter(
     "quantum_logging_schema_validation_errors_total",
     "Total number of log schema validation errors encountered.",
 )
-logging_disk_errors_total = Counter(
-    "quantum_logging_disk_errors_total",
+logging_disk_errors = Counter(
+    "quantum_logging_disk_errors",
     "Total number of disk write or I/O errors in logging subsystem.",
 )

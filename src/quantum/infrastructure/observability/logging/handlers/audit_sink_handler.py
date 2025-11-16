@@ -6,25 +6,23 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Final
 
-from quantum.infrastructure.observability.logging.utils._io_utils import (
-    fsync_dir,
-    safe_unlink,
+from quantum.infrastructure.observability.logging.core.diagnostics import (
+    get_diagnostic_logger,
 )
+from quantum.infrastructure.observability.logging.core.metrics import define_counter
+from quantum.infrastructure.observability.logging.utils._io_utils import fsync_dir
 from quantum.infrastructure.observability.logging.utils.naming import (
     generate_audit_blob_name,
 )
-from quantum.infrastructure.observability.metrics.collectors.health_collector import (
-    logging_disk_errors_total,
-)
+
+_TMP_SUFFIX: Final[str] = ".json.tmp"
+_LOGGING_DISK_ERRORS: Final = define_counter("logging_disk_errors")
 
 
 class AuditEventFileHandler(logging.Handler):
     """
     Writes structured audit events as individual JSON files.
     """
-
-    _TMP_SUFFIX: Final[str] = ".json.tmp"
-    _FINAL_SUFFIX: Final[str] = ".json"
 
     def __init__(
         self,
@@ -62,7 +60,7 @@ class AuditEventFileHandler(logging.Handler):
         try:
             path = self._resolve_event_path(record)
         except OSError:
-            logging_disk_errors_total.inc()
+            _LOGGING_DISK_ERRORS.inc()
             self.handleError(record)
             return
 
@@ -91,7 +89,7 @@ class AuditEventFileHandler(logging.Handler):
         """
         tmp_path: Path | None = None
         try:
-            tmp_path = path.with_suffix(self._TMP_SUFFIX)
+            tmp_path = path.with_suffix(_TMP_SUFFIX)
             with open(tmp_path, "w", encoding=self._encoding, newline="\n") as f:
                 json.dump(
                     event, f, ensure_ascii=False, separators=(",", ":"), allow_nan=False
@@ -102,7 +100,20 @@ class AuditEventFileHandler(logging.Handler):
             os.replace(tmp_path, path)  # Atomic move
             fsync_dir(path.parent)
         except (OSError, TypeError, ValueError):
-            logging_disk_errors_total.inc()
+            _LOGGING_DISK_ERRORS.inc()
             if tmp_path is not None:
-                safe_unlink(tmp_path)
+                self._safe_unlink(tmp_path)
             self.handleError(record)
+
+    @staticmethod
+    def _safe_unlink(path: Path) -> None:
+        """
+        Delete a file safely with diagnostic logging.
+        """
+        try:
+            if path is not None:
+                path.unlink(missing_ok=True)
+        except Exception as exc:
+            get_diagnostic_logger().error(
+                f"safe_unlink failed for path={path!s}: {exc.__class__.__name__}"
+            )
