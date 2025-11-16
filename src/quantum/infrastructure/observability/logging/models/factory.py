@@ -1,54 +1,70 @@
-from logging import LogRecord
-from typing import Any
+from __future__ import annotations
 
-from ..exception_processor import EXCEPTION_FIELD_NAMES, ExceptionProcessor
-from .log_payload_v1 import ExceptionBlock, LogPayloadV1
-from .severity_map import canonical_severity
+from quantum.infrastructure.observability.logging.dto.internal_log_event import (
+    InternalLogEvent,
+)
+from quantum.infrastructure.observability.logging.models.log_payload_v1 import (
+    ExceptionBlock,
+    LogPayloadV1,
+)
 
 
-def from_log_record(record: LogRecord, **overrides: Any) -> LogPayloadV1:
-    """Transforms a Python LogRecord into a validated LogPayloadV1 instance."""
-    sev_text, sev_num = canonical_severity(record.levelno)
+class LogPayloadFactory:
+    """
+    Pure domain factory responsible for constructing a validated LogPayloadV1
+    from an InternalLogEvent DTO.
 
-    extra_attrs: dict[str, Any] = dict(overrides.get("attrs", {}))
+    This class:
+      - Has NO dependency on LogRecord or infrastructure
+      - Has NO responsibility for timestamp generation, tracing extraction,
+        sanitation, or override logic (handled upstream)
+      - Produces deterministic and schema-compliant payloads
+      - Enforces invariants required by LogPayloadV1
+      - Can be unit-tested in complete isolation
+    """
 
-    # ─── Exception extraction
-    extracted_exc = ExceptionProcessor.extract(record)
-    # Overrides may inject corrections (e.g., fallback builder)
-    final_exc = {
-        name: overrides.get(name, extracted_exc.get(name))
-        for name in EXCEPTION_FIELD_NAMES
-    }
-    exception_block = ExceptionBlock(**final_exc)
+    @staticmethod
+    def from_internal_event(event: InternalLogEvent) -> LogPayloadV1:
+        """
+        Bind the InternalLogEvent into a fully validated LogPayloadV1 model.
+        No mutation, no side effects.
+        """
 
-    payload_kwargs = {
-        # Timestamps
-        "timestamp": str(overrides["timestamp"]),
-        "ts_unix_ms": overrides.get("ts_unix_ms"),
-        "ts_monotonic_ms": overrides.get("ts_monotonic_ms"),
-        # Severity (normalized)
-        "level": sev_text,
-        "severity_number": sev_num,
-        # Logger + message
-        "logger": record.name,
-        "message": record.getMessage(),
-        # Environment / resource
-        "env": overrides.get("env"),
-        "instance": overrides.get("instance"),
-        "service_name": overrides.get("service_name"),
-        "service_version": overrides.get("service_version"),
-        "service_namespace": overrides.get("service_namespace"),
-        # Correlation / tracing
-        "trace_id": overrides.get("trace_id"),
-        "span_id": overrides.get("span_id"),
-        "sampled": overrides.get("sampled"),
-        "correlation_id": overrides.get("correlation_id"),
-        "run_id": overrides.get("run_id"),
-        "attrs": extra_attrs,
-        "exception_block": exception_block,
-        # Schema metadata
-        "schema_name": "quantum.log",
-        "log_schema_version": "v1",
-    }
+        exception_block = ExceptionBlock(
+            exception=event.exception_summary,
+            exception_type=event.exception_type,
+            exception_message=event.exception_message,
+            exception_stacktrace=event.exception_stacktrace,
+        )
 
-    return LogPayloadV1(**payload_kwargs)
+        return LogPayloadV1(
+            # timestamps
+            timestamp=event.timestamp_rfc3339,
+            ts_unix_ms=event.ts_unix_ms,
+            ts_monotonic_ms=event.ts_monotonic_ms,
+            # severity
+            level=event.level_text,
+            severity_number=event.severity_number,
+            # logger
+            logger=event.logger_name,
+            message=event.message,
+            # environment/resource
+            env=event.env,
+            instance=event.instance_id,
+            service_name=event.service_name,
+            service_version=event.service_version,
+            service_namespace=event.service_namespace,
+            # correlation / tracing
+            trace_id=event.trace_id,
+            span_id=event.span_id,
+            sampled=event.sampled,
+            correlation_id=event.correlation_id,
+            run_id=event.run_id,
+            # exceptions
+            exception_block=exception_block,
+            # schema metadata
+            schema_name="quantum.log",
+            log_schema_version="v1",
+            # flexible attributes
+            attrs=event.attrs,
+        )

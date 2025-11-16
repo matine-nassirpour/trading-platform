@@ -4,47 +4,47 @@ import logging
 
 from pydantic import ValidationError
 
-from quantum.infrastructure.observability.logging.assembler.override_builder import (
-    OverrideBuilder,
+from quantum.infrastructure.observability.logging.adapters.log_record_adapter import (
+    LogRecordAdapter,
 )
 from quantum.infrastructure.observability.logging.core.metrics import define_counter
-from quantum.infrastructure.observability.logging.core.trace_context import (
-    extract_trace_context,
+from quantum.infrastructure.observability.logging.models.factory import (
+    LogPayloadFactory,
 )
-from quantum.infrastructure.observability.logging.models.factory import from_log_record
 
 _SCHEMA_VALIDATION_ERRORS = define_counter("schema_validation_errors")
 
 
 class PayloadAssembler:
     """
-    Assemble a validated LogPayload model (LogPayloadV1).
-    This class performs *only* assembling and validation, no formatting.
+    High-level orchestrator responsible for assembling a validated LogPayload model.
 
-    - Extracts context (trace_id, span_id, sampled)
-    - Constructs a fully-populated override dict
-    - Hands the construction to `from_log_record` for schema binding
-    - On validation failure: increments metric and re-raises ValidationError
+    Responsibilities:
+      - Convert LogRecord → InternalLogEvent via LogRecordAdapter
+      - Bind DTO → LogPayloadV1 via LogPayloadFactory
+      - Count schema validation failures
+      - NEVER contain business logic (pure orchestration)
     """
 
     @staticmethod
     def build(record: logging.LogRecord, instance_id: str):
-        trace_id, span_id, is_sampled = extract_trace_context()
+        """
+        Construct a fully validated LogPayloadV1 model.
+        May raise ValidationError. Does NOT swallow domain errors.
+        """
 
-        overrides = OverrideBuilder.build(
+        # Extract domain-adjacent DTO (safe extraction)
+        internal_event = LogRecordAdapter.to_internal_event(
             record=record,
             instance_id=instance_id,
-            trace_id=trace_id,
-            span_id=span_id,
-            sampled=is_sampled,
         )
 
-        # Try constructing and validating the payload model
+        # Convert DTO → validated domain model
         try:
-            model = from_log_record(record, **overrides)
-            return model
+            payload = LogPayloadFactory.from_internal_event(internal_event)
+            return payload
 
         except ValidationError:
-            # Count internal schema failures
+            # Domain model validation failures must be observable
             _SCHEMA_VALIDATION_ERRORS.inc()
             raise
