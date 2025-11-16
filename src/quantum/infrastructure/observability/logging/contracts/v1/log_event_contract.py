@@ -1,3 +1,18 @@
+"""
+Versioned domain-level logging contract (V1).
+
+These blocks intentionally resemble the internal DTOs but define a stable,
+long-term interface that is:
+    - immutable,
+    - domain-facing,
+    - schema-governed,
+    - versioned and suitable for multi-year compatibility guarantees.
+
+The duplication with the DTO layer is intentional: the contract must remain
+independent of infrastructure concerns to support strict Clean Architecture,
+controlled schema evolution (V1 → V2 → ...), and formal auditability.
+"""
+
 from __future__ import annotations
 
 from collections.abc import Mapping

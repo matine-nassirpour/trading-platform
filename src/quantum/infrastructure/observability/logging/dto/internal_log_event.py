@@ -1,3 +1,18 @@
+"""
+Infrastructure-level DTOs extracted from LogRecord.
+
+These structures intentionally mirror the contract blocks but serve a
+different architectural layer:
+    - DTOs are transient, infra-facing, and reflect the technical shape
+      of data coming from the logging subsystem.
+    - They are free to evolve as the adapter changes.
+    - They carry no schema guarantees and no versioning constraints.
+
+This apparent duplication with the contract is deliberate: DTOs must remain
+decoupled from the versioned domain contract to preserve strict layering,
+testability, backward compatibility, and long-term schema stability.
+"""
+
 from __future__ import annotations
 
 from collections.abc import Mapping
