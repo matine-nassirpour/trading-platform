@@ -18,11 +18,13 @@ from quantum.infrastructure.observability.logging.exception_processor import (
     ExceptionProcessor,
 )
 from quantum.infrastructure.observability.logging.utils._io_utils import fsync_dir
+from quantum.infrastructure.observability.logging.utils.naming import (
+    partition_path_components,
+)
 from quantum.infrastructure.observability.metrics.collectors.health_collector import (
     logging_disk_errors_total,
     logging_file_rotations_total,
 )
-from quantum.infrastructure.time.naming import partition_path_components
 
 
 class PartitionedJSONLFileHandler(logging.Handler):

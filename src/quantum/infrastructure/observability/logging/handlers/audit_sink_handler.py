@@ -10,10 +10,12 @@ from quantum.infrastructure.observability.logging.utils._io_utils import (
     fsync_dir,
     safe_unlink,
 )
+from quantum.infrastructure.observability.logging.utils.naming import (
+    generate_audit_blob_name,
+)
 from quantum.infrastructure.observability.metrics.collectors.health_collector import (
     logging_disk_errors_total,
 )
-from quantum.infrastructure.time.naming import generate_audit_blob_name
 
 
 class AuditEventFileHandler(logging.Handler):

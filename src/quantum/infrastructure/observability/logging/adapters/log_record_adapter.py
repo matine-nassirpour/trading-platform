@@ -21,7 +21,10 @@ from quantum.infrastructure.observability.logging.models.severity_map import (
 from quantum.infrastructure.observability.logging.utils.json_sanitize import (
     json_sanitize,
 )
-from quantum.infrastructure.time.format_utils import now_mono_ms, to_rfc3339_ms
+from quantum.infrastructure.observability.logging.utils.time_format import (
+    now_mono_ms,
+    to_rfc3339_ms,
+)
 
 _ADAPTER_RECOVERABLE_ERRORS: Final = define_counter(
     "logging_adapter_recoverable_errors"
