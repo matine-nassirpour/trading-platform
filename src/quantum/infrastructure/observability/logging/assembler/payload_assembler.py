@@ -17,6 +17,9 @@ from quantum.infrastructure.observability.logging.core.diagnostics import (
     get_diagnostic_logger,
 )
 from quantum.infrastructure.observability.logging.core.metrics import define_counter
+from quantum.infrastructure.observability.logging.models.log_payload_v1 import (
+    LogPayloadV1,
+)
 
 # Counts schema validation failures (Pydantic)
 _SCHEMA_VALIDATION_ERRORS: Final = define_counter("schema_validation_errors")
@@ -43,7 +46,7 @@ class PayloadAssembler:
     """
 
     @staticmethod
-    def build(record: logging.LogRecord, instance_id: str):
+    def build(record: logging.LogRecord, instance_id: str) -> LogPayloadV1:
         """Construct a validated LogPayloadV1 model from a LogRecord."""
 
         # ----------------------------------------------------------------------
