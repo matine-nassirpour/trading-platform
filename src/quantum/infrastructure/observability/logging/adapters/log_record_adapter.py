@@ -3,7 +3,9 @@ from __future__ import annotations
 import logging
 
 from collections.abc import Mapping
+from typing import Final
 
+from quantum.infrastructure.observability.logging.core.metrics import define_counter
 from quantum.infrastructure.observability.logging.core.trace_context import (
     extract_trace_context,
 )
@@ -20,6 +22,10 @@ from quantum.infrastructure.observability.logging.utils.json_sanitize import (
     json_sanitize,
 )
 from quantum.infrastructure.time.format_utils import now_mono_ms, to_rfc3339_ms
+
+_ADAPTER_RECOVERABLE_ERRORS: Final = define_counter(
+    "logging_adapter_recoverable_errors"
+)
 
 
 class LogRecordAdapter:
@@ -57,6 +63,7 @@ class LogRecordAdapter:
             else:
                 ts_mono_ms = int(ts_mono_ms)
         except Exception:
+            _ADAPTER_RECOVERABLE_ERRORS.inc()
             ts_mono_ms = now_mono_ms()
 
         timestamp_rfc3339 = to_rfc3339_ms(created_ts)
@@ -74,10 +81,15 @@ class LogRecordAdapter:
         # ─── attributes
         attrs = getattr(record, "attrs", {})
         if not isinstance(attrs, Mapping):
+            _ADAPTER_RECOVERABLE_ERRORS.inc()
             attrs = {}
 
         # sanitization must not modify original record
-        attrs = json_sanitize(dict(attrs))
+        try:
+            attrs = json_sanitize(dict(attrs))
+        except Exception:
+            _ADAPTER_RECOVERABLE_ERRORS.inc()
+            attrs = {}
 
         return InternalLogEvent(
             # timestamps

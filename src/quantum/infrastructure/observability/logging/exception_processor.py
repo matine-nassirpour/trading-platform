@@ -5,12 +5,18 @@ import traceback
 from logging import LogRecord
 from typing import Any, Final
 
+from quantum.infrastructure.observability.logging.core.metrics import define_counter
+
 EXCEPTION_FIELD_NAMES: Final[set[str]] = {
     "exception",
     "exception_type",
     "exception_message",
     "exception_stacktrace",
 }
+
+_EXCEPTION_EXTRACTION_FAILURES: Final = define_counter(
+    "logging_exception_extraction_failures"
+)
 
 
 class ExceptionProcessor:
@@ -97,9 +103,11 @@ class ExceptionProcessor:
         except Exception:
             # Defensive fallback: even if extraction crashes,
             # never break the logging pipeline.
+            _EXCEPTION_EXTRACTION_FAILURES.inc()
+
             return {
                 "exception": "exception block extraction failed",
-                "exception_type": "Exception",
+                "exception_type": "ExtractionFailure",
                 "exception_message": None,
                 "exception_stacktrace": None,
             }

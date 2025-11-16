@@ -2,15 +2,20 @@ from __future__ import annotations
 
 import logging
 
+from typing import Final
+
 from quantum.infrastructure.observability.logging.adapters.log_record_adapter import (
     LogRecordAdapter,
 )
+from quantum.infrastructure.observability.logging.core.metrics import define_counter
 from quantum.infrastructure.observability.logging.models.fallback_payload_v1 import (
     FallbackPayloadV1,
 )
 from quantum.infrastructure.observability.logging.utils.json_sanitize import (
     json_sanitize,
 )
+
+_FALLBACK_BUILDER_FAILURES: Final = define_counter("logging_fallback_builder_failures")
 
 
 class FallbackBuilder:
@@ -68,7 +73,9 @@ class FallbackBuilder:
             )
 
         except Exception:
-            # Ultimate fallback — always valid, minimal JSON
+            # Ultimate fallback — always valid, minimal JSON.
+            _FALLBACK_BUILDER_FAILURES.inc()
+
             return FallbackPayloadV1(
                 message="logging failure inside FallbackBuilder",
                 fallback_reason="ultimate_fallback",
