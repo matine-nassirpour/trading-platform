@@ -10,11 +10,9 @@ from __future__ import annotations
 
 import logging
 
-from typing import Final
+from typing import Final, Literal
 
-from quantum.infrastructure.observability.logging.models.log_payload_v1 import (
-    SeverityText,
-)
+SeverityText = Literal["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"]
 
 SeverityMapType = dict[int, tuple[SeverityText, int]]
 
@@ -26,3 +24,11 @@ SEVERITY_MAP: Final[SeverityMapType] = {
     logging.ERROR: ("ERROR", 17),
     logging.CRITICAL: ("FATAL", 21),
 }
+
+
+def canonical_severity(levelno: int) -> tuple[SeverityText, int]:
+    """
+    Return the canonical (severity_text, severity_number) pair for a Python
+    logging level. Defaults to INFO if level is unknown.
+    """
+    return SEVERITY_MAP.get(levelno, ("INFO", 9))

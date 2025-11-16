@@ -16,9 +16,6 @@ from quantum.infrastructure.observability.logging.models.factory import from_log
 _SCHEMA_VALIDATION_ERRORS = define_counter("schema_validation_errors")
 
 
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Payload Builder                                                            │
-# ╰────────────────────────────────────────────────────────────────────────────╯
 class PayloadAssembler:
     """
     Assemble a validated LogPayload model (LogPayloadV1).

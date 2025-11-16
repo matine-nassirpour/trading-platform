@@ -1,16 +1,28 @@
+import datetime
 import re
 import uuid
 
-from typing import Any, Final, Literal
+from typing import Any, Final
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from quantum.infrastructure.observability.logging.models.severity_map import (
+    SEVERITY_MAP,
+    SeverityText,
+    canonical_severity,
+)
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Constants                                                                  │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-SeverityText = Literal["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"]
 _ALLOWED_LEVELS: Final[set[str]] = {"TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"}
 _HEX_RE: Final[re.Pattern[str]] = re.compile(r"^[0-9a-f]+$")
+
+# Accepts: 2023-10-08T14:05:33.123Z
+# Rejects: missing Z, missing ms, timezone offsets, lowercase z, invalid date, etc.
+_RFC3339_MS_UTC_RE: Final[re.Pattern[str]] = re.compile(
+    r"^(\d{4})-(\d{2})-(\d{2})T" r"(\d{2}):(\d{2}):(\d{2})\.(\d{3})Z$"
+)
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
@@ -102,6 +114,38 @@ class LogPayloadV1(BaseModel):
     # --------------------------------------------------------------------------
     # Validators
     # --------------------------------------------------------------------------
+    @field_validator("timestamp")
+    @classmethod
+    def _validate_timestamp_rfc3339(cls, v: str) -> str:
+        """
+        Validate the timestamp with strict RFC3339 requirements:
+            - UTC only (suffix 'Z')
+            - Mandatory milliseconds
+            - Zero tolerance on formatting deviations
+            - Rejects timezone offsets, missing ms, lowercase z, etc.
+
+        This ensures forensic-level consistency and safety-critical reliability.
+        """
+        if not isinstance(v, str):
+            raise ValueError("timestamp must be a string")
+
+        # Quick structural validation
+        match = _RFC3339_MS_UTC_RE.match(v)
+        if not match:
+            raise ValueError(
+                f"timestamp must be RFC3339 UTC with milliseconds (e.g. 2023-10-08T14:05:33.123Z). Got: {v!r}"
+            )
+
+        try:
+            ts = v.rstrip("Z") + "+00:00"
+            datetime.datetime.fromisoformat(ts)
+        except Exception:
+            raise ValueError(
+                f"timestamp is not a valid RFC3339 datetime: {v!r}"
+            ) from None
+
+        return v
+
     @field_validator("level", mode="before")
     @classmethod
     def _normalize_level(cls, v: str) -> str:
@@ -122,6 +166,38 @@ class LogPayloadV1(BaseModel):
         if not (1 <= v <= 24):
             raise ValueError("severity_number must be in range [1..24]")
         return v
+
+    @model_validator(mode="after")
+    def _validate_severity_pair(self):
+        """
+        Validate strict consistency between:
+            - level (SeverityText)
+            - severity_number (int)
+
+        Rules:
+            - If severity_number is provided → must match the canonical mapping.
+            - If severity_number is None → allow it (will be filled upstream).
+            - level ALWAYS controls the canonical value to ensure invariance.
+
+        This validator enforces schema integrity and guarantees that logs
+        cannot carry inconsistent severity semantics, which is essential
+        for forensic analysis, SIEM ingestion, and OTel alignment.
+        """
+        canonical_text, canonical_number = canonical_severity(
+            next(lvl for lvl, (txt, _) in SEVERITY_MAP.items() if txt == self.level)
+        )
+
+        # If severity_number is provided → strictly enforce consistency
+        if self.severity_number is not None:
+            if self.severity_number != canonical_number:
+                raise ValueError(
+                    f"Inconsistent severity: level={self.level!r} "
+                    f"implies severity_number={canonical_number}, "
+                    f"but got {self.severity_number}"
+                )
+
+        # Otherwise: accept severity_number=None (assembler will set it)
+        return self
 
     @field_validator("trace_id")
     @classmethod

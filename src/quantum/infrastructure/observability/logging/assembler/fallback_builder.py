@@ -4,7 +4,7 @@ import logging
 from typing import Any
 
 from quantum.infrastructure.observability.logging.models.severity_map import (
-    SEVERITY_MAP,
+    canonical_severity,
 )
 from quantum.infrastructure.observability.logging.utils.json_sanitize import (
     json_sanitize,
@@ -66,7 +66,9 @@ class FallbackBuilder:
         overrides: dict[str, Any],
         error: Exception,
     ) -> str:
-        sev_text, sev_num = FallbackBuilder._safe_severity(record)
+        sev_text, sev_num = canonical_severity(
+            int(getattr(record, "levelno", logging.INFO))
+        )
 
         payload = {
             "schema": "quantum.log",
@@ -106,16 +108,3 @@ class FallbackBuilder:
             ensure_ascii=False,
             separators=(",", ":"),
         )
-
-    @staticmethod
-    def _safe_severity(record: logging.LogRecord) -> tuple[str, int]:
-        """
-        Safe resolution of severity text/number.
-        Always returns a valid pair.
-        """
-        try:
-            level = int(getattr(record, "levelno", logging.INFO))
-        except Exception:
-            level = logging.INFO
-
-        return SEVERITY_MAP.get(level, ("INFO", 9))
