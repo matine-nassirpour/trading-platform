@@ -7,9 +7,8 @@ from typing import Any, Final
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from quantum.infrastructure.observability.logging.models.severity_map import (
-    SEVERITY_MAP,
     SeverityText,
-    canonical_severity,
+    severity_number_from_text,
 )
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
@@ -32,7 +31,6 @@ class ExceptionBlock(BaseModel):
     """
     Unified, structured exception block.
 
-    This is the *single* place where exception-related fields are defined.
     All upstream components (formatters, preprocessors, factories)
     must populate this object, never individual fields.
     """
@@ -183,9 +181,7 @@ class LogPayloadV1(BaseModel):
         cannot carry inconsistent severity semantics, which is essential
         for forensic analysis, SIEM ingestion, and OTel alignment.
         """
-        canonical_text, canonical_number = canonical_severity(
-            next(lvl for lvl, (txt, _) in SEVERITY_MAP.items() if txt == self.level)
-        )
+        canonical_number = severity_number_from_text(self.level)
 
         # If severity_number is provided → strictly enforce consistency
         if self.severity_number is not None:
