@@ -4,6 +4,9 @@ import logging
 
 from typing import Any
 
+from quantum.infrastructure.observability.logging.exception_processor import (
+    EXCEPTION_FIELD_NAMES,
+)
 from quantum.infrastructure.observability.logging.utils.json_sanitize import (
     json_sanitize,
 )
@@ -28,14 +31,15 @@ class OverrideBuilder:
         Build a complete, sanitized override dictionary aligned with the log schema.
         """
 
+        # ─── Unix timestamp
         try:
             created = getattr(record, "created", 0.0)
             ts_unix_ms = int(created * 1000) if created else 0
         except Exception:
-            ts_unix_ms = 0
             created = 0.0
+            ts_unix_ms = 0
 
-        # Monotonic timestamp
+        # ─── Monotonic timestamp
         try:
             ts_mono_ms = getattr(record, "ts_monotonic_ms", None)
             if ts_mono_ms is None:
@@ -45,12 +49,12 @@ class OverrideBuilder:
         except Exception:
             ts_mono_ms = now_mono_ms()
 
-        return {
+        overrides = {
             # Timestamps (OTel-aligned)
             "timestamp": to_rfc3339_ms(created),
             "ts_unix_ms": ts_unix_ms,
             "ts_monotonic_ms": ts_mono_ms,
-            # Service / Environment identification
+            # Environment / resource
             "env": getattr(record, "env", None),
             "instance": instance_id,
             "service_name": getattr(record, "service_name", None),
@@ -65,3 +69,5 @@ class OverrideBuilder:
             # Custom attributes (structured log fields)
             "attrs": json_sanitize(getattr(record, "attrs", {})),
         }
+
+        return {k: v for k, v in overrides.items() if k not in EXCEPTION_FIELD_NAMES}

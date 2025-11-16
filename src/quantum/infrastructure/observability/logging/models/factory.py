@@ -1,7 +1,7 @@
 from logging import LogRecord
 from typing import Any
 
-from ..exception_processor import EXCEPTION_FIELD_NAMES
+from ..exception_processor import EXCEPTION_FIELD_NAMES, ExceptionProcessor
 from .log_payload_v1 import ExceptionBlock, LogPayloadV1
 from .severity_map import canonical_severity
 
@@ -12,9 +12,14 @@ def from_log_record(record: LogRecord, **overrides: Any) -> LogPayloadV1:
 
     extra_attrs: dict[str, Any] = dict(overrides.get("attrs", {}))
 
-    exception_block = ExceptionBlock(
-        **{name: overrides.get(name) for name in EXCEPTION_FIELD_NAMES}
-    )
+    # ─── Exception extraction
+    extracted_exc = ExceptionProcessor.extract(record)
+    # Overrides may inject corrections (e.g., fallback builder)
+    final_exc = {
+        name: overrides.get(name, extracted_exc.get(name))
+        for name in EXCEPTION_FIELD_NAMES
+    }
+    exception_block = ExceptionBlock(**final_exc)
 
     payload_kwargs = {
         # Timestamps

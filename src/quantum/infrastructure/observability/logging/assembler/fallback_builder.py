@@ -3,6 +3,9 @@ import logging
 
 from typing import Any
 
+from quantum.infrastructure.observability.logging.exception_processor import (
+    EXCEPTION_FIELD_NAMES,
+)
 from quantum.infrastructure.observability.logging.models.severity_map import (
     canonical_severity,
 )
@@ -17,9 +20,7 @@ from quantum.infrastructure.observability.logging.utils.json_sanitize import (
 def _safe_record_field(
     record: logging.LogRecord, field: str, default: Any = None
 ) -> Any:
-    """
-    Safe extraction from LogRecord without risking attribute errors.
-    """
+    """Safe extraction from LogRecord without risking attribute errors."""
     return json_sanitize(getattr(record, field, default))
 
 
@@ -36,19 +37,19 @@ class FallbackBuilder:
 
     @staticmethod
     def build(
-        record: logging.LogRecord, overrides: dict[str, Any], error: Exception
+        record: logging.LogRecord,
+        overrides: dict[str, Any],
+        error: Exception,
     ) -> str:
-        """
-        Build a fully sanitized fallback JSON payload.
+        """Build a fully sanitized fallback JSON payload."""
 
-        Everything is protected by try/except to guarantee that:
-        - No exception can propagate
-        - The function always returns valid JSON
-        """
         try:
-            return FallbackBuilder._build_safe(record, overrides, error)
+            safe_overrides = {
+                k: v for k, v in overrides.items() if k not in EXCEPTION_FIELD_NAMES
+            }
+            return FallbackBuilder._build_safe(record, safe_overrides, error)
         except Exception:
-            # Absolute fail-safe fallback: a minimal schema that cannot fail
+            # Ultimate safety fallback
             return json.dumps(
                 {
                     "schema": "quantum.log",
@@ -99,7 +100,7 @@ class FallbackBuilder:
             "validation_error": json_sanitize(str(error)),
             "attrs": overrides.get("attrs", {}),
             # static safety marker
-            "fallback_reason": "schema_validation_failure",
+            "fallback_reason": "model_validation_failure",
         }
 
         # Final safe JSON encoding
