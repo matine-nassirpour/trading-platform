@@ -18,8 +18,8 @@ SeverityText = Literal["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"]
 
 SeverityPair = tuple[SeverityText, int]
 SeverityMapType = Mapping[int, SeverityPair]
-ReverseTextMapType = Mapping[SeverityText, int]
-ReverseLevelMapType = Mapping[SeverityText, int]
+ReverseTextMapType = Mapping[str, int]
+ReverseLevelMapType = Mapping[str, int]
 
 _CANONICAL_SEVERITY_MAP: Final[SeverityMapType] = MappingProxyType(
     {
