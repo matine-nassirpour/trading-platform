@@ -149,7 +149,7 @@ def map_contract_to_payload(contract: LogEventContractV1) -> LogPayloadV1:
         run_id=contract.correlation.run_id,
         # ─── exception
         exception_block=ExceptionBlock(
-            exception=exc.exc_summary,
+            exc_summary=exc.exc_summary,
             exception_type=exc.exc_type,
             exception_message=exc.exc_message,
             exception_stacktrace=exc.exc_stacktrace,
