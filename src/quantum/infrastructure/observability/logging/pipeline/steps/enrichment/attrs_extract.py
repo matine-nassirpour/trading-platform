@@ -3,17 +3,42 @@ from __future__ import annotations
 import logging
 
 from contextlib import suppress
-from typing import Any
+from typing import Any, Final
 
-from quantum.infrastructure.observability.logging.metadata.constants import (
-    EXCLUDED_STD_FIELDS,
-)
-from quantum.infrastructure.observability.logging.pipeline.engine.base import (
+from quantum.infrastructure.observability.logging.pipeline.engine.step import (
     PipelineStep,
 )
 from quantum.infrastructure.observability.logging.utils.json.json_sanitize import (
     json_sanitize,
 )
+
+EXCLUDED_STD_FIELDS: Final[set[str]] = {
+    "args",
+    "asctime",
+    "created",
+    "exc_info",
+    "exc_text",
+    "filename",
+    "funcName",
+    "levelno",
+    "lineno",
+    "module",
+    "msecs",
+    "message",
+    "msg",
+    "name",
+    "pathname",
+    "process",
+    "processName",
+    "relativeCreated",
+    "stack_info",
+    "thread",
+    "threadName",
+    "env",
+    "service_name",
+    "service_version",
+    "service_namespace",
+}
 
 
 class AttrsExtractStep(PipelineStep):

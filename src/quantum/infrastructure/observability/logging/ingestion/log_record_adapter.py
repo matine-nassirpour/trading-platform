@@ -175,7 +175,7 @@ class LogRecordAdapter:
             attrs = {}
 
         # ----------------------------------------------------------------------
-        # Final DTO assembly
+        # Final DTO orchestration
         # ----------------------------------------------------------------------
         return InternalLogEvent(
             timestamps=timestamps,

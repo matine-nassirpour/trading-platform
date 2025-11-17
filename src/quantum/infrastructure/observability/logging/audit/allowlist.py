@@ -7,34 +7,6 @@ from quantum.infrastructure.config.runtime.manager import ConfigManager
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Constants                                                                  │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-EXCLUDED_STD_FIELDS: Final[set[str]] = {
-    "args",
-    "asctime",
-    "created",
-    "exc_info",
-    "exc_text",
-    "filename",
-    "funcName",
-    "levelno",
-    "lineno",
-    "module",
-    "msecs",
-    "message",
-    "msg",
-    "name",
-    "pathname",
-    "process",
-    "processName",
-    "relativeCreated",
-    "stack_info",
-    "thread",
-    "threadName",
-    "env",
-    "service_name",
-    "service_version",
-    "service_namespace",
-}
-
 _AUDIT_EVENT_BASELINE_V1: Final[frozenset[str]] = frozenset(
     {
         "order_submit",
@@ -68,9 +40,6 @@ def _validate_name(name: str) -> None:
     """
     Validate that a given audit event name follows snake_case syntax
     and contains only lowercase alphanumerics or underscores.
-
-    Raises:
-        ValueError: if the name violates validation rules.
     """
     if not _SAFE_NAME_RE.match(name):
         raise ValueError(f"Invalid audit event name: {name!r}")
@@ -84,15 +53,11 @@ def get_audit_allowlist(version: str | None = None) -> set[str]:
     Compute the effective allowlist of audit event *base names*
     (without version suffixes) for the given environment.
 
-    Behavior
-    --------
-    - Starts from a stable, version-agnostic baseline (V1).
-    - Merges optional CSV entries from QUANTUM_AUDIT_EVENTS.
-    - Strips version suffixes and validates all entries.
-    - Returns a normalized `set[str]` of allowed event names.
-
-    Args:
-        version: Audit schema version (currently ignored for backward compatibility).
+    Behavior:
+        - Starts from a stable, version-agnostic baseline (V1).
+        - Merges optional CSV entries from QUANTUM_AUDIT_EVENTS.
+        - Strips version suffixes and validates all entries.
+        - Returns a normalized `set[str]` of allowed event names.
 
     Returns:
         A set of normalized event names allowed in the current environment.

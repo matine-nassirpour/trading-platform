@@ -4,7 +4,7 @@ import logging
 
 from typing import Any
 
-from quantum.infrastructure.observability.logging.pipeline.engine.base import (
+from quantum.infrastructure.observability.logging.pipeline.engine.step import (
     PipelineStep,
 )
 from quantum.infrastructure.observability.logging.runtime.exception_processor import (

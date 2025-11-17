@@ -2,8 +2,22 @@ import re
 import uuid
 
 from datetime import UTC, datetime
+from typing import Final
 
 _SAFE = re.compile(r"^[A-Za-z0-9\-]+$")
+_EVENTS_PREFIX: Final[str] = "events"
+_BAD_PREFIX: Final[str] = "bad-logs"
+_EXT: Final[str] = ".jsonl"
+
+
+def events_filename(yyyy: str, mm: str, dd: str, hh: str, part: int) -> str:
+    suffix = f".part{part}" if part > 0 else ""
+    return f"{_EVENTS_PREFIX}-{yyyy}{mm}{dd}-{hh}{suffix}{_EXT}"
+
+
+def bad_filename(yyyy: str, mm: str, dd: str, hh: str, part: int) -> str:
+    suffix = f".part{part}" if part > 0 else ""
+    return f"{_BAD_PREFIX}-{yyyy}{mm}{dd}-{hh}{suffix}{_EXT}"
 
 
 def generate_audit_blob_name(

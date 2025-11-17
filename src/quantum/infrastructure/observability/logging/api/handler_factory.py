@@ -9,7 +9,7 @@ from quantum.infrastructure.observability.logging.metadata.config_bundle import 
 from quantum.infrastructure.observability.logging.pipeline.engine.pipeline import (
     LoggingPipeline,
 )
-from quantum.infrastructure.observability.logging.sinks.files.partitioned_handler import (
+from quantum.infrastructure.observability.logging.sinks.filesystem.partitioned_handler import (
     PartitionedJSONLFileHandler,
 )
 

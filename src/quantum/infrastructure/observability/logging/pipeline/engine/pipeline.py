@@ -5,7 +5,7 @@ import logging
 from collections.abc import Iterable
 from typing import Final
 
-from quantum.infrastructure.observability.logging.pipeline.engine.base import (
+from quantum.infrastructure.observability.logging.pipeline.engine.step import (
     PipelineStep,
 )
 from quantum.infrastructure.observability.logging.runtime.metrics import define_counter

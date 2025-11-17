@@ -4,7 +4,7 @@ import logging
 import threading
 import time
 
-from quantum.infrastructure.observability.logging.pipeline.engine.base import (
+from quantum.infrastructure.observability.logging.pipeline.engine.step import (
     PipelineStep,
 )
 

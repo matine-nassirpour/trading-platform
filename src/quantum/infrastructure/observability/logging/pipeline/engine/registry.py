@@ -3,35 +3,35 @@ from __future__ import annotations
 from quantum.infrastructure.observability.logging.pipeline.engine.definitions import (
     StepDefinition,
 )
-from quantum.infrastructure.observability.logging.pipeline.steps.attrs_extract import (
-    AttrsExtractStep,
-)
-from quantum.infrastructure.observability.logging.pipeline.steps.attrs_merge import (
-    AttrsMergeStep,
-)
-from quantum.infrastructure.observability.logging.pipeline.steps.correlation import (
-    CorrelationStep,
-)
-from quantum.infrastructure.observability.logging.pipeline.steps.exception_enrichment import (
-    ExceptionEnrichmentStep,
-)
-from quantum.infrastructure.observability.logging.pipeline.steps.ignore_libraries import (
+from quantum.infrastructure.observability.logging.pipeline.steps.control.ignore_libraries import (
     IgnoreLibrariesStep,
 )
-from quantum.infrastructure.observability.logging.pipeline.steps.info_sampler import (
+from quantum.infrastructure.observability.logging.pipeline.steps.control.info_sampler import (
     InfoSamplerStep,
 )
-from quantum.infrastructure.observability.logging.pipeline.steps.rate_limit import (
+from quantum.infrastructure.observability.logging.pipeline.steps.control.rate_limit import (
     RateLimitStep,
 )
-from quantum.infrastructure.observability.logging.pipeline.steps.redaction import (
-    RedactionStep,
+from quantum.infrastructure.observability.logging.pipeline.steps.enrichment.attrs_extract import (
+    AttrsExtractStep,
 )
-from quantum.infrastructure.observability.logging.pipeline.steps.resource_metadata import (
+from quantum.infrastructure.observability.logging.pipeline.steps.enrichment.attrs_merge import (
+    AttrsMergeStep,
+)
+from quantum.infrastructure.observability.logging.pipeline.steps.enrichment.correlation import (
+    CorrelationStep,
+)
+from quantum.infrastructure.observability.logging.pipeline.steps.enrichment.exception_enrichment import (
+    ExceptionEnrichmentStep,
+)
+from quantum.infrastructure.observability.logging.pipeline.steps.enrichment.resource_metadata import (
     ResourceMetadataStep,
 )
-from quantum.infrastructure.observability.logging.pipeline.steps.timestamps import (
+from quantum.infrastructure.observability.logging.pipeline.steps.enrichment.timestamps import (
     TimestampStep,
+)
+from quantum.infrastructure.observability.logging.pipeline.steps.security.redaction import (
+    RedactionStep,
 )
 
 PIPELINE_STEP_REGISTRY: list[StepDefinition] = [

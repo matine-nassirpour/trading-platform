@@ -4,7 +4,7 @@ import logging
 
 from collections.abc import Mapping
 
-from quantum.infrastructure.observability.logging.pipeline.engine.base import (
+from quantum.infrastructure.observability.logging.pipeline.engine.step import (
     PipelineStep,
 )
 

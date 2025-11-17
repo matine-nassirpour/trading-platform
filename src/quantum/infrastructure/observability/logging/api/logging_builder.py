@@ -5,8 +5,9 @@ from contextlib import suppress
 from quantum.infrastructure.observability.logging.api.handler_factory import (
     HandlerFactory,
 )
-from quantum.infrastructure.observability.logging.filters.audit_event_filter import (
-    AuditEventFilter,
+from quantum.infrastructure.observability.logging.audit.filter import AuditEventFilter
+from quantum.infrastructure.observability.logging.audit.sink_handler import (
+    AuditEventFileHandler,
 )
 from quantum.infrastructure.observability.logging.formatters.json_formatter import (
     JsonFormatter,
@@ -16,9 +17,6 @@ from quantum.infrastructure.observability.logging.metadata.config_bundle import 
 )
 from quantum.infrastructure.observability.logging.pipeline.engine.factory import (
     LoggingPipelineFactory,
-)
-from quantum.infrastructure.observability.logging.sinks.audit.audit_sink_handler import (
-    AuditEventFileHandler,
 )
 
 

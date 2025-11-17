@@ -6,7 +6,7 @@ import re
 
 from typing import Any, Final
 
-from quantum.infrastructure.observability.logging.pipeline.engine.base import (
+from quantum.infrastructure.observability.logging.pipeline.engine.step import (
     PipelineStep,
 )
 from quantum.infrastructure.observability.metrics.collectors.health_collector import (

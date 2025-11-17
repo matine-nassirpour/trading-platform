@@ -18,8 +18,12 @@ from quantum.infrastructure.observability.logging.runtime.exception_processor im
     ExceptionProcessor,
 )
 from quantum.infrastructure.observability.logging.runtime.metrics import define_counter
-from quantum.infrastructure.observability.logging.utils.io.fsync_utils import fsync_dir
-from quantum.infrastructure.observability.logging.utils.naming.blob_naming import (
+from quantum.infrastructure.observability.logging.sinks.filesystem.fsync_utils import (
+    fsync_dir,
+)
+from quantum.infrastructure.observability.logging.sinks.filesystem.naming import (
+    bad_filename,
+    events_filename,
     partition_path_components,
 )
 
@@ -44,10 +48,6 @@ class PartitionedJSONLFileHandler(logging.Handler):
         - Thread-safe (Handler lock).
         - Fully decoupled from environment variables.
     """
-
-    _EVENTS_PREFIX: Final[str] = "events"
-    _BAD_PREFIX: Final[str] = "bad-logs"
-    _EXT: Final[str] = ".jsonl"
 
     def __init__(
         self, *, bundle: LoggingRuntimeBundle, encoding: str = "utf-8"
@@ -113,15 +113,13 @@ class PartitionedJSONLFileHandler(logging.Handler):
                 / hh
             )
 
-            file_path = dir_path / self._events_filename(
-                yyyy, mm, dd, hh, self._part_index
-            )
-            bad_path = dir_path / self._bad_filename(yyyy, mm, dd, hh, self._part_index)
+            file_path = dir_path / events_filename(yyyy, mm, dd, hh, self._part_index)
+            bad_path = dir_path / bad_filename(yyyy, mm, dd, hh, self._part_index)
 
             if self._current_path is None or self._current_path.parent != dir_path:
                 self._part_index = 0
-                file_path = dir_path / self._events_filename(yyyy, mm, dd, hh, 0)
-                bad_path = dir_path / self._bad_filename(yyyy, mm, dd, hh, 0)
+                file_path = dir_path / events_filename(yyyy, mm, dd, hh, 0)
+                bad_path = dir_path / bad_filename(yyyy, mm, dd, hh, 0)
 
             return dir_path, file_path, bad_path
         except Exception:
@@ -226,12 +224,10 @@ class PartitionedJSONLFileHandler(logging.Handler):
                     self._current_path.parent if self._current_path else self._base_dir
                 )
 
-                next_file = dir_path / self._events_filename(
+                next_file = dir_path / events_filename(
                     yyyy, mm, dd, hh, self._part_index
                 )
-                next_bad = dir_path / self._bad_filename(
-                    yyyy, mm, dd, hh, self._part_index
-                )
+                next_bad = dir_path / bad_filename(yyyy, mm, dd, hh, self._part_index)
                 self._reopen_partition(next_file, next_bad)
 
                 self._warned_this_part = False
@@ -274,16 +270,3 @@ class PartitionedJSONLFileHandler(logging.Handler):
         finally:
             self.release()
         super().close()
-
-    # --------------------------------------------------------------------------
-    # Naming utilities
-    # --------------------------------------------------------------------------
-    @staticmethod
-    def _events_filename(yyyy: str, mm: str, dd: str, hh: str, part: int) -> str:
-        suffix = f".part{part}" if part > 0 else ""
-        return f"{PartitionedJSONLFileHandler._EVENTS_PREFIX}-{yyyy}{mm}{dd}-{hh}{suffix}{PartitionedJSONLFileHandler._EXT}"
-
-    @staticmethod
-    def _bad_filename(yyyy: str, mm: str, dd: str, hh: str, part: int) -> str:
-        suffix = f".part{part}" if part > 0 else ""
-        return f"{PartitionedJSONLFileHandler._BAD_PREFIX}-{yyyy}{mm}{dd}-{hh}{suffix}{PartitionedJSONLFileHandler._EXT}"

@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import threading
 
-from quantum.infrastructure.observability.logging.pipeline.engine.base import (
+from quantum.infrastructure.observability.logging.pipeline.engine.step import (
     PipelineStep,
 )
 

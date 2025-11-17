@@ -2,7 +2,9 @@ import logging
 
 from contextlib import suppress
 
-from quantum.infrastructure.observability.logging.api.builder import LoggingBuilder
+from quantum.infrastructure.observability.logging.api.logging_builder import (
+    LoggingBuilder,
+)
 from quantum.infrastructure.observability.logging.metadata.config_bundle import (
     LoggingRuntimeBundle,
 )

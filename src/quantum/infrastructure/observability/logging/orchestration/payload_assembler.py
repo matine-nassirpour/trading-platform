@@ -13,12 +13,12 @@ from quantum.infrastructure.observability.logging.runtime.diagnostics import (
     get_diagnostic_logger,
 )
 from quantum.infrastructure.observability.logging.runtime.metrics import define_counter
-from quantum.infrastructure.observability.logging.schemas.v1.log_payload_v1 import (
-    LogPayloadV1,
-)
-from quantum.infrastructure.observability.logging.schemas.v1.mappers import (
+from quantum.infrastructure.observability.logging.schemas.log.v1.mapping import (
     map_contract_to_payload,
     map_dto_to_contract,
+)
+from quantum.infrastructure.observability.logging.schemas.log.v1.payload import (
+    LogPayloadV1,
 )
 
 # Counts schema validation failures (Pydantic)

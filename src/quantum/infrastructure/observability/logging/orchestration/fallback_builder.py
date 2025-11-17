@@ -9,11 +9,13 @@ from quantum.infrastructure.observability.logging.ingestion.log_record_adapter i
     LogRecordAdapter,
 )
 from quantum.infrastructure.observability.logging.runtime.metrics import define_counter
-from quantum.infrastructure.observability.logging.schemas.fallback.fallback_payload_v1 import (
+from quantum.infrastructure.observability.logging.schemas.fallback.v1.payload import (
     FallbackPayloadV1,
 )
-from quantum.infrastructure.observability.logging.schemas.v1 import (
+from quantum.infrastructure.observability.logging.schemas.log.v1.contract import (
     LogEventContractV1,
+)
+from quantum.infrastructure.observability.logging.schemas.log.v1.mapping import (
     map_dto_to_contract,
 )
 from quantum.infrastructure.observability.logging.utils.json.json_sanitize import (

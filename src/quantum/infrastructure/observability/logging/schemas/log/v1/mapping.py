@@ -12,12 +12,7 @@ from quantum.infrastructure.observability.logging.ingestion.internal_log_event i
     SeverityDTO,
     TimestampsDTO,
 )
-from quantum.infrastructure.observability.logging.schemas.v1.log_payload_v1 import (
-    ExceptionBlock,
-    LogPayloadV1,
-)
-
-from .log_event_contract import (
+from quantum.infrastructure.observability.logging.schemas.log.v1.contract import (
     CorrelationBlock,
     ExceptionBlockRaw,
     LogEventContractV1,
@@ -25,6 +20,10 @@ from .log_event_contract import (
     ResourceBlock,
     SeverityBlock,
     TimestampsBlock,
+)
+from quantum.infrastructure.observability.logging.schemas.log.v1.payload import (
+    ExceptionBlock,
+    LogPayloadV1,
 )
 
 
