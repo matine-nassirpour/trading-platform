@@ -2,6 +2,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from quantum.infrastructure.observability.logging.pipeline.engine.pipeline_config import (
+    PipelineConfig,
+)
+
 
 @dataclass(frozen=True)
 class LoggingRuntimeBundle:
@@ -26,3 +30,5 @@ class LoggingRuntimeBundle:
 
     enable_partition_handler: bool
     enable_console_handler: bool = True
+
+    pipeline_config: PipelineConfig = PipelineConfig()

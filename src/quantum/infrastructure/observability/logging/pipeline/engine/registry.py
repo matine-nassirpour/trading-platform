@@ -18,6 +18,12 @@ from quantum.infrastructure.observability.logging.pipeline.steps.exception_enric
 from quantum.infrastructure.observability.logging.pipeline.steps.ignore_libraries import (
     IgnoreLibrariesStep,
 )
+from quantum.infrastructure.observability.logging.pipeline.steps.info_sampler import (
+    InfoSamplerStep,
+)
+from quantum.infrastructure.observability.logging.pipeline.steps.rate_limit import (
+    RateLimitStep,
+)
 from quantum.infrastructure.observability.logging.pipeline.steps.redaction import (
     RedactionStep,
 )
@@ -68,6 +74,18 @@ PIPELINE_STEP_REGISTRY: list[StepDefinition] = [
         key="correlation",
         enabled_flag="enable_correlation",
         factory=lambda bundle=None: CorrelationStep(),
+    ),
+    StepDefinition(
+        key="info_sampler",
+        enabled_flag="enable_info_sampler",
+        factory=lambda bundle=None: InfoSamplerStep(
+            sample_every=bundle.sample_info_every
+        ),
+    ),
+    StepDefinition(
+        key="rate_limit",
+        enabled_flag="enable_rate_limit",
+        factory=lambda bundle=None: RateLimitStep(max_per_sec=bundle.ratelimit_rps),
     ),
     StepDefinition(
         key="redaction",

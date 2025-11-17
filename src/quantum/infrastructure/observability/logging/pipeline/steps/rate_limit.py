@@ -1,29 +1,32 @@
+from __future__ import annotations
+
 import logging
 import threading
 import time
 
+from quantum.infrastructure.observability.logging.pipeline.engine.base import (
+    PipelineStep,
+)
 
-class RateLimitFilter(logging.Filter):
+
+class RateLimitStep(PipelineStep):
     """
     Controls the rate of emitted log records using a token bucket algorithm.
     """
 
-    def __init__(self, max_per_sec: float = 100.0):
-        super().__init__()
+    __slots__ = ("_max_per_sec", "_available_tokens", "_last_refill", "_lock")
+
+    def __init__(self, max_per_sec: float = 100.0) -> None:
         self._max_per_sec = max(0.1, float(max_per_sec))
-        self._available_tokens = max_per_sec
-        self._last_refill_time = time.monotonic()
+        self._available_tokens = self._max_per_sec
+        self._last_refill = time.monotonic()
         self._lock = threading.Lock()
 
-    def filter(self, record: logging.LogRecord) -> bool:
-        """
-        Allows or suppresses a log record based on the token bucket fill rate.
-        Thread-safe.
-        """
+    def process(self, record: logging.LogRecord) -> bool:
         with self._lock:
             now = time.monotonic()
-            elapsed = now - self._last_refill_time
-            self._last_refill_time = now
+            elapsed = now - self._last_refill
+            self._last_refill = now
 
             self._available_tokens = min(
                 self._max_per_sec, self._available_tokens + elapsed * self._max_per_sec

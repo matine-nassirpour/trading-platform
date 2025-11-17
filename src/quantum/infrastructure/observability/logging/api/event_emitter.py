@@ -3,7 +3,7 @@ import logging
 from collections.abc import Mapping
 from typing import Any, Final
 
-_LOGGER: Final[logging.Logger] = logging.getLogger("quantum.trading")
+_LOGGER: Final[logging.Logger] = logging.getLogger("quantum.trading.audit")
 
 
 def emit_event(

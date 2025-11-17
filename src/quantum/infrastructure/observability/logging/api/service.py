@@ -6,12 +6,6 @@ from contextlib import suppress
 from quantum.infrastructure.observability.logging.filters.audit_event_filter import (
     AuditEventFilter,
 )
-from quantum.infrastructure.observability.logging.filters.info_sampler_filter import (
-    InfoSamplerFilter,
-)
-from quantum.infrastructure.observability.logging.filters.rate_limit_filter import (
-    RateLimitFilter,
-)
 from quantum.infrastructure.observability.logging.formatters.json_formatter import (
     JsonFormatter,
 )
@@ -54,15 +48,9 @@ def close_and_remove_all_handlers(logger: logging.Logger) -> None:
 # │ Internal Helpers                                                           │
 # ╰────────────────────────────────────────────────────────────────────────────╯
 def _apply_filters(handler: logging.Handler, bundle: LoggingRuntimeBundle) -> None:
-    """Attach preprocessing filters."""
+    """Attach the unified preprocessing pipeline."""
     pipeline = LoggingPipelineFactory.build(bundle.pipeline_config, bundle)
     handler.addFilter(pipeline)
-
-    if bundle.sample_info_every > 1:
-        handler.addFilter(InfoSamplerFilter(sample_every=bundle.sample_info_every))
-
-    if bundle.ratelimit_rps and bundle.ratelimit_rps > 0:
-        handler.addFilter(RateLimitFilter(max_per_sec=bundle.ratelimit_rps))
 
 
 def _build_console_handler(bundle: LoggingRuntimeBundle) -> logging.Handler:
@@ -95,17 +83,17 @@ def _configure_audit_sink(bundle: LoggingRuntimeBundle) -> None:
     if not bundle.audit_dir:
         return
 
-    audit_logger = logging.getLogger("quantum.trading")
+    audit_logger = logging.getLogger("quantum.trading.audit")
 
     # Remove preexisting audit handlers
     for h in list(audit_logger.handlers):
-        if isinstance(h, AuditEventFileHandler):
-            with suppress(Exception):
-                h.flush() if hasattr(h, "flush") else None
-            with suppress(Exception):
-                h.close()
-            with suppress(Exception):
-                audit_logger.removeHandler(h)
+        with suppress(Exception):
+            if hasattr(h, "flush"):
+                h.flush()
+        with suppress(Exception):
+            h.close()
+        with suppress(Exception):
+            audit_logger.removeHandler(h)
 
     # Create new handler
     handler = AuditEventFileHandler(
@@ -115,12 +103,14 @@ def _configure_audit_sink(bundle: LoggingRuntimeBundle) -> None:
         app=bundle.app_name,
     )
     handler.setLevel(logging.NOTSET)
-
     handler.addFilter(AuditEventFilter(allowlist=bundle.audit_allowlist))
-    _apply_filters(handler, bundle)
+    handler.setFormatter(JsonFormatter(bundle.instance_id))
 
     audit_logger.addHandler(handler)
     audit_logger.setLevel(logging.DEBUG)
+
+    # Do NOT propagate to root
+    audit_logger.propagate = False
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
