@@ -2,6 +2,9 @@ import logging
 
 from contextlib import suppress
 
+from quantum.infrastructure.observability.logging.api.app_logger import (
+    APPLICATION_LOGGER_NAME,
+)
 from quantum.infrastructure.observability.logging.api.logging_builder import (
     LoggingBuilder,
 )
@@ -11,7 +14,10 @@ from quantum.infrastructure.observability.logging.metadata.config_bundle import 
 
 
 def close_and_remove_all_handlers(logger: logging.Logger) -> None:
-    """Idempotent, safe reset of all handlers on a logger."""
+    """
+    Idempotent, safe reset of all handlers on a given logger.
+    Never touches parent loggers or the root logger.
+    """
     for handler in list(logger.handlers):
         with suppress(Exception):
             if hasattr(handler, "flush"):
@@ -22,23 +28,37 @@ def close_and_remove_all_handlers(logger: logging.Logger) -> None:
             logger.removeHandler(handler)
 
 
-def init_logging(bundle: LoggingRuntimeBundle) -> None:
-    """Public entrypoint for configuring the entire Quantum logging system."""
+def init_logging(bundle: LoggingRuntimeBundle) -> logging.Logger:
+    """
+    Public entrypoint for configuring the entire Quantum logging system.
 
-    # ─── Reset root handlers
-    root = logging.getLogger()
-    close_and_remove_all_handlers(root)
-    root.setLevel(bundle.log_level)
-    root.propagate = False
+    behavior:
+    - Never uses or modifies the root logger.
+    - All infrastructure logs go through a dedicated application logger.
+    - Audit channel fully isolated.
+    """
 
+    # ─── Create the dedicated application logger
+    # IMPORTANT: do NOT replace with get_app_logger() — init_logging runs BEFORE the logging system exists.
+    # At this stage we must use the raw system logger (no pipeline, no handlers, no propagation logic).
+    # Using get_app_logger() here would create circular initialization and silently drop logs.
+    app_logger = logging.getLogger(APPLICATION_LOGGER_NAME)
+    app_logger.propagate = False  # NEVER bubble to root
+    app_logger.setLevel(bundle.log_level)
+
+    # Reset any previous configuration
+    close_and_remove_all_handlers(app_logger)
+
+    # ─── Build handlers (partitioned + console)
     builder = LoggingBuilder(bundle)
 
-    # ─── Install all application handlers
     for handler in builder.build_handlers():
-        root.addHandler(handler)
+        app_logger.addHandler(handler)
 
     builder.configure_audit_sink()
 
-    # ─── Python warnings → logging redirection
+    # Disable Python warnings → root redirection unless explicitly enabled
     with suppress(Exception):
-        logging.captureWarnings(True)
+        logging.captureWarnings(False)
+
+    return app_logger
