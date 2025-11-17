@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from prometheus_client import Counter as PrometheusCounter
 
-from quantum.infrastructure.observability.logging.core.diagnostics import (
+from quantum.infrastructure.observability.logging.runtime.diagnostics import (
     get_diagnostic_logger,
 )
-from quantum.infrastructure.observability.logging.core.metrics import _internal_metrics
+from quantum.infrastructure.observability.logging.runtime.metrics import (
+    _internal_metrics,
+)
 
 _logger = get_diagnostic_logger()
 

@@ -6,18 +6,18 @@ from typing import Final
 
 from pydantic import ValidationError
 
-from quantum.infrastructure.observability.logging.adapters.log_record_adapter import (
+from quantum.infrastructure.observability.logging.ingestion.log_record_adapter import (
     LogRecordAdapter,
 )
-from quantum.infrastructure.observability.logging.contracts.v1.mappers import (
+from quantum.infrastructure.observability.logging.runtime.diagnostics import (
+    get_diagnostic_logger,
+)
+from quantum.infrastructure.observability.logging.runtime.metrics import define_counter
+from quantum.infrastructure.observability.logging.schemas.v1 import (
     map_contract_to_payload,
     map_dto_to_contract,
 )
-from quantum.infrastructure.observability.logging.core.diagnostics import (
-    get_diagnostic_logger,
-)
-from quantum.infrastructure.observability.logging.core.metrics import define_counter
-from quantum.infrastructure.observability.logging.models.log_payload_v1 import (
+from quantum.infrastructure.observability.logging.schemas.v1.log_payload_v1 import (
     LogPayloadV1,
 )
 

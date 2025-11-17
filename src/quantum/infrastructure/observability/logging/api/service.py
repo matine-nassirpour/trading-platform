@@ -3,9 +3,6 @@ import sys
 
 from contextlib import suppress
 
-from quantum.infrastructure.observability.logging.config_bundle import (
-    LoggingRuntimeBundle,
-)
 from quantum.infrastructure.observability.logging.filters.audit_event_filter import (
     AuditEventFilter,
 )
@@ -18,14 +15,17 @@ from quantum.infrastructure.observability.logging.filters.rate_limit_filter impo
 from quantum.infrastructure.observability.logging.formatters.json_formatter import (
     JsonFormatter,
 )
-from quantum.infrastructure.observability.logging.handlers.audit_sink_handler import (
+from quantum.infrastructure.observability.logging.metadata.config_bundle import (
+    LoggingRuntimeBundle,
+)
+from quantum.infrastructure.observability.logging.pipeline.engine.factory import (
+    LoggingPipelineFactory,
+)
+from quantum.infrastructure.observability.logging.sinks.audit.audit_sink_handler import (
     AuditEventFileHandler,
 )
-from quantum.infrastructure.observability.logging.handlers.partitioned_handler import (
+from quantum.infrastructure.observability.logging.sinks.files.partitioned_handler import (
     PartitionedJSONLFileHandler,
-)
-from quantum.infrastructure.observability.logging.pipeline.factory import (
-    LoggingPipelineFactory,
 )
 
 

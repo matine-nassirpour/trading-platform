@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from quantum.infrastructure.observability.logging.config_bundle import (
+from quantum.infrastructure.observability.logging.metadata.config_bundle import (
     LoggingRuntimeBundle,
 )
-from quantum.infrastructure.observability.logging.pipeline.pipeline import (
+from quantum.infrastructure.observability.logging.pipeline.engine.pipeline import (
     LoggingPipeline,
 )
-from quantum.infrastructure.observability.logging.pipeline.registry import (
+from quantum.infrastructure.observability.logging.pipeline.engine.registry import (
     PIPELINE_STEP_REGISTRY,
 )
 

@@ -5,7 +5,9 @@ import logging
 from collections.abc import Iterable
 from typing import Final
 
-from ..base import PipelineStep
+from quantum.infrastructure.observability.logging.pipeline.engine.base import (
+    PipelineStep,
+)
 
 _DEFAULT_PREFIXES: Final[set[str]] = {
     "urllib3.connectionpool",

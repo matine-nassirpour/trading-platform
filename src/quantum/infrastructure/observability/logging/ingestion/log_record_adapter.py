@@ -5,11 +5,7 @@ import logging
 from collections.abc import Mapping
 from typing import Final
 
-from quantum.infrastructure.observability.logging.core.metrics import define_counter
-from quantum.infrastructure.observability.logging.core.trace_context import (
-    extract_trace_context,
-)
-from quantum.infrastructure.observability.logging.dto.internal_log_event import (
+from quantum.infrastructure.observability.logging.ingestion.internal_log_event import (
     CorrelationDTO,
     ExceptionRawDTO,
     InternalLogEvent,
@@ -18,16 +14,20 @@ from quantum.infrastructure.observability.logging.dto.internal_log_event import 
     SeverityDTO,
     TimestampsDTO,
 )
-from quantum.infrastructure.observability.logging.exception_processor import (
-    ExceptionProcessor,
-)
-from quantum.infrastructure.observability.logging.models.severity_map import (
+from quantum.infrastructure.observability.logging.metadata.severity_map import (
     canonical_severity,
 )
-from quantum.infrastructure.observability.logging.utils.json_sanitize import (
+from quantum.infrastructure.observability.logging.runtime.exception_processor import (
+    ExceptionProcessor,
+)
+from quantum.infrastructure.observability.logging.runtime.metrics import define_counter
+from quantum.infrastructure.observability.logging.runtime.trace_context import (
+    extract_trace_context,
+)
+from quantum.infrastructure.observability.logging.utils.json.json_sanitize import (
     json_sanitize,
 )
-from quantum.infrastructure.observability.logging.utils.time_format import (
+from quantum.infrastructure.observability.logging.utils.time.time_format import (
     now_mono_ms,
     to_rfc3339_ms,
 )

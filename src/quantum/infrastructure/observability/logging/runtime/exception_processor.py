@@ -5,7 +5,7 @@ import traceback
 from logging import LogRecord
 from typing import Any, Final
 
-from quantum.infrastructure.observability.logging.core.metrics import define_counter
+from quantum.infrastructure.observability.logging.runtime.metrics import define_counter
 
 EXCEPTION_FIELD_NAMES: Final[set[str]] = {
     "exception",

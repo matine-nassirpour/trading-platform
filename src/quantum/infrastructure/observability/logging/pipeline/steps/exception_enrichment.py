@@ -4,10 +4,12 @@ import logging
 
 from typing import Any
 
-from quantum.infrastructure.observability.logging.exception_processor import (
+from quantum.infrastructure.observability.logging.pipeline.engine.base import (
+    PipelineStep,
+)
+from quantum.infrastructure.observability.logging.runtime.exception_processor import (
     ExceptionProcessor,
 )
-from quantum.infrastructure.observability.logging.pipeline.base import PipelineStep
 
 
 class ExceptionEnrichmentStep(PipelineStep):

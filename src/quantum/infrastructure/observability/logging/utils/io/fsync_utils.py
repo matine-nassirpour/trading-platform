@@ -4,7 +4,7 @@ import os
 
 from pathlib import Path
 
-from quantum.infrastructure.observability.logging.core.diagnostics import (
+from quantum.infrastructure.observability.logging.runtime.diagnostics import (
     get_diagnostic_logger,
 )
 

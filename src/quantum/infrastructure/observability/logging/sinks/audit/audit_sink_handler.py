@@ -6,11 +6,11 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Final
 
-from quantum.infrastructure.observability.logging.core.diagnostics import (
+from quantum.infrastructure.observability.logging.runtime.diagnostics import (
     get_diagnostic_logger,
 )
-from quantum.infrastructure.observability.logging.core.metrics import define_counter
-from quantum.infrastructure.observability.logging.utils._io_utils import fsync_dir
+from quantum.infrastructure.observability.logging.runtime.metrics import define_counter
+from quantum.infrastructure.observability.logging.utils.io.fsync_utils import fsync_dir
 from quantum.infrastructure.observability.logging.utils.naming import (
     generate_audit_blob_name,
 )

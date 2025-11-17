@@ -5,9 +5,13 @@ import logging
 from contextlib import suppress
 from typing import Any
 
-from quantum.infrastructure.observability.logging.constants import EXCLUDED_STD_FIELDS
-from quantum.infrastructure.observability.logging.pipeline.base import PipelineStep
-from quantum.infrastructure.observability.logging.utils.json_sanitize import (
+from quantum.infrastructure.observability.logging.metadata.constants import (
+    EXCLUDED_STD_FIELDS,
+)
+from quantum.infrastructure.observability.logging.pipeline.engine.base import (
+    PipelineStep,
+)
+from quantum.infrastructure.observability.logging.utils.json.json_sanitize import (
     json_sanitize,
 )
 

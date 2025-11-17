@@ -3,7 +3,9 @@ from __future__ import annotations
 from collections.abc import Callable
 from contextlib import suppress
 
-from .diagnostics import get_diagnostic_logger
+from quantum.infrastructure.observability.logging.runtime.diagnostics import (
+    get_diagnostic_logger,
+)
 
 _logger = get_diagnostic_logger()
 

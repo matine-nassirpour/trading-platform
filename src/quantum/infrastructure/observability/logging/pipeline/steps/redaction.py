@@ -6,11 +6,12 @@ import re
 
 from typing import Any, Final
 
+from quantum.infrastructure.observability.logging.pipeline.engine.base import (
+    PipelineStep,
+)
 from quantum.infrastructure.observability.metrics.collectors.health_collector import (
     logging_redactions_total,
 )
-
-from ..base import PipelineStep
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Constants                                                                  │

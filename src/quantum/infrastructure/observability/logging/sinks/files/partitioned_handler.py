@@ -11,14 +11,14 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Final
 
-from quantum.infrastructure.observability.logging.config_bundle import (
+from quantum.infrastructure.observability.logging.metadata.config_bundle import (
     LoggingRuntimeBundle,
 )
-from quantum.infrastructure.observability.logging.core.metrics import define_counter
-from quantum.infrastructure.observability.logging.exception_processor import (
+from quantum.infrastructure.observability.logging.runtime.exception_processor import (
     ExceptionProcessor,
 )
-from quantum.infrastructure.observability.logging.utils._io_utils import fsync_dir
+from quantum.infrastructure.observability.logging.runtime.metrics import define_counter
+from quantum.infrastructure.observability.logging.utils.io.fsync_utils import fsync_dir
 from quantum.infrastructure.observability.logging.utils.naming import (
     partition_path_components,
 )

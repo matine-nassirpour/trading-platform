@@ -12,7 +12,7 @@ from quantum.application.ports.outbound.tracing_port import TraceHandle, Tracing
 from quantum.infrastructure.observability.drivers.observability_driver import (
     ObservabilityDriver,
 )
-from quantum.infrastructure.observability.logging.event_emitter import emit_event
+from quantum.infrastructure.observability.logging.api.event_emitter import emit_event
 from quantum.infrastructure.observability.tracing.provider import get_tracer
 
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 
 from quantum.application.ports.outbound.logging_port import LoggingPort
-from quantum.infrastructure.observability.logging.event_emitter import emit_event
+from quantum.infrastructure.observability.logging.api.event_emitter import emit_event
 
 
 class LoggingDriver(LoggingPort):

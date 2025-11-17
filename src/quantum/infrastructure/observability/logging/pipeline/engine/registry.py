@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from quantum.infrastructure.observability.logging.pipeline.definitions import (
+from quantum.infrastructure.observability.logging.pipeline.engine.definitions import (
     StepDefinition,
 )
 from quantum.infrastructure.observability.logging.pipeline.steps.attrs_extract import (

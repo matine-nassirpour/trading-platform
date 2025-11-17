@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
-from quantum.infrastructure.observability.logging.dto.internal_log_event import (
+from quantum.infrastructure.observability.logging.ingestion.internal_log_event import (
     CorrelationDTO,
     ExceptionRawDTO,
     InternalLogEvent,
@@ -12,7 +12,7 @@ from quantum.infrastructure.observability.logging.dto.internal_log_event import 
     SeverityDTO,
     TimestampsDTO,
 )
-from quantum.infrastructure.observability.logging.models.log_payload_v1 import (
+from quantum.infrastructure.observability.logging.schemas.v1.log_payload_v1 import (
     ExceptionBlock,
     LogPayloadV1,
 )

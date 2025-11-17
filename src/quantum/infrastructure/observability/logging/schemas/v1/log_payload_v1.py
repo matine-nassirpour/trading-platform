@@ -6,7 +6,7 @@ from typing import Any, Final
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from quantum.infrastructure.observability.logging.models.severity_map import (
+from quantum.infrastructure.observability.logging.metadata.severity_map import (
     SeverityText,
     severity_number_from_text,
 )

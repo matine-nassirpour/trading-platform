@@ -4,7 +4,9 @@ import logging
 
 from collections.abc import Mapping
 
-from ..base import PipelineStep
+from quantum.infrastructure.observability.logging.pipeline.engine.base import (
+    PipelineStep,
+)
 
 
 class AttrsMergeStep(PipelineStep):

@@ -10,7 +10,7 @@ from quantum.infrastructure.observability.bootstrap.lifecycle.configs.logging_co
 from quantum.infrastructure.observability.bootstrap.lifecycle.protocols.logging_initializer import (
     LoggingInitializer,
 )
-from quantum.infrastructure.observability.logging.service import (
+from quantum.infrastructure.observability.logging.api.service import (
     close_and_remove_all_handlers,
     init_logging,
 )

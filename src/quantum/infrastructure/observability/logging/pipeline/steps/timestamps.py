@@ -3,7 +3,9 @@ from __future__ import annotations
 import logging
 import time
 
-from ..base import PipelineStep
+from quantum.infrastructure.observability.logging.pipeline.engine.base import (
+    PipelineStep,
+)
 
 
 class TimestampStep(PipelineStep):
