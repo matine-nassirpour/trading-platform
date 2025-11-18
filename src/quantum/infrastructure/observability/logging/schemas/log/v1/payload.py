@@ -38,7 +38,7 @@ class ExceptionBlock(BaseModel):
     exception_type: str | None = None
     exception_message: str | None = None
     exception_stacktrace: str | None = None
-    exc_summary: str | None = None
+    exception_summary: str | None = None
 
     model_config = ConfigDict(extra="forbid")
 
