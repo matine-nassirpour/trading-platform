@@ -23,10 +23,7 @@ from quantum.infrastructure.observability.logging.runtime.metrics import define_
 from quantum.infrastructure.observability.logging.runtime.trace_context import (
     extract_trace_context,
 )
-from quantum.infrastructure.observability.logging.utils.time.time_format import (
-    now_mono_ms,
-    to_rfc3339_ms,
-)
+from quantum.infrastructure.time.time_format import now_mono_ms, to_rfc3339_ms
 
 _ADAPTER_RECOVERABLE_ERRORS: Final = define_counter(
     "logging_adapter_recoverable_errors"

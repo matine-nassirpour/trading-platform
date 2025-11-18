@@ -18,7 +18,7 @@ from quantum.infrastructure.observability.logging.schemas.log.v1.contract import
 from quantum.infrastructure.observability.logging.schemas.log.v1.mapping import (
     map_dto_to_contract,
 )
-from quantum.infrastructure.observability.logging.utils.json.json_sanitize import (
+from quantum.infrastructure.observability.logging.utils.json_sanitize import (
     json_sanitize,
 )
 

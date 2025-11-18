@@ -9,7 +9,7 @@ from typing import Any, Final
 from quantum.infrastructure.observability.logging.pipeline.engine.step import (
     PipelineStep,
 )
-from quantum.infrastructure.observability.logging.utils.json.json_sanitize import (
+from quantum.infrastructure.observability.logging.utils.json_sanitize import (
     json_sanitize,
 )
 
