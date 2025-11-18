@@ -2,15 +2,14 @@ import logging
 
 from contextlib import suppress
 
-from quantum.infrastructure.observability.logging.api.app_logger import (
-    APPLICATION_LOGGER_NAME,
-)
 from quantum.infrastructure.observability.logging.api.logging_builder import (
     LoggingBuilder,
 )
 from quantum.infrastructure.observability.logging.metadata.config_bundle import (
     LoggingRuntimeBundle,
 )
+
+APPLICATION_LOGGER_NAME = "quantum.app"
 
 
 def close_and_remove_all_handlers(logger: logging.Logger) -> None:
@@ -39,9 +38,6 @@ def init_logging(bundle: LoggingRuntimeBundle) -> logging.Logger:
     """
 
     # ─── Create the dedicated application logger
-    # IMPORTANT: do NOT replace with get_app_logger() — init_logging runs BEFORE the logging system exists.
-    # At this stage we must use the raw system logger (no pipeline, no handlers, no propagation logic).
-    # Using get_app_logger() here would create circular initialization and silently drop logs.
     app_logger = logging.getLogger(APPLICATION_LOGGER_NAME)
     app_logger.propagate = False  # NEVER bubble to root
     app_logger.setLevel(bundle.log_level)
