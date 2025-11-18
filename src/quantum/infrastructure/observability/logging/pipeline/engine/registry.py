@@ -12,12 +12,6 @@ from quantum.infrastructure.observability.logging.pipeline.steps.control.info_sa
 from quantum.infrastructure.observability.logging.pipeline.steps.control.rate_limit import (
     RateLimitStep,
 )
-from quantum.infrastructure.observability.logging.pipeline.steps.enrichment.attrs_extract import (
-    AttrsExtractStep,
-)
-from quantum.infrastructure.observability.logging.pipeline.steps.enrichment.attrs_merge import (
-    AttrsMergeStep,
-)
 from quantum.infrastructure.observability.logging.pipeline.steps.enrichment.correlation import (
     CorrelationStep,
 )
@@ -27,8 +21,8 @@ from quantum.infrastructure.observability.logging.pipeline.steps.enrichment.exce
 from quantum.infrastructure.observability.logging.pipeline.steps.enrichment.resource_metadata import (
     ResourceMetadataStep,
 )
-from quantum.infrastructure.observability.logging.pipeline.steps.enrichment.timestamps import (
-    TimestampStep,
+from quantum.infrastructure.observability.logging.pipeline.steps.enrichment.unified_attrs import (
+    UnifiedAttrsStep,
 )
 from quantum.infrastructure.observability.logging.pipeline.steps.security.redaction import (
     RedactionStep,
@@ -41,24 +35,14 @@ PIPELINE_STEP_REGISTRY: list[StepDefinition] = [
         factory=lambda bundle=None: IgnoreLibrariesStep(),
     ),
     StepDefinition(
-        key="attrs_extract",
-        enabled_flag="enable_attrs_extract",
-        factory=lambda bundle=None: AttrsExtractStep(),
+        key="unified_attrs",
+        enabled_flag="enable_unified_attrs",
+        factory=lambda bundle=None: UnifiedAttrsStep(),
     ),
     StepDefinition(
         key="exception_enrichment",
         enabled_flag="enable_exception_enrichment",
         factory=lambda bundle=None: ExceptionEnrichmentStep(),
-    ),
-    StepDefinition(
-        key="timestamps",
-        enabled_flag="enable_timestamps",
-        factory=lambda bundle=None: TimestampStep(),
-    ),
-    StepDefinition(
-        key="attrs_merge",
-        enabled_flag="enable_attrs_merge",
-        factory=lambda bundle=None: AttrsMergeStep(),
     ),
     StepDefinition(
         key="resource_metadata",

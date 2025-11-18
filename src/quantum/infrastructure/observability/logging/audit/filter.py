@@ -1,17 +1,15 @@
 import logging
-import re
 
-from typing import Final
+from collections.abc import Mapping
 
-# Matches version suffixes such as "_v1", "_v2", "_v10" (case-insensitive)
-_SUFFIX_RE: Final[re.Pattern[str]] = re.compile(r"_v\d+$", re.IGNORECASE)
+from quantum.infrastructure.observability.logging.audit.allowlist import (
+    normalize_event_name,
+    validate_event_name,
+)
 
 
 class AuditEventFilter(logging.Filter):
-    """
-    Filters audit events based on an explicit allow-list.
-    Events must include an "event" dict with a non-empty "event_name" string.
-    """
+    """Filters audit events based on an explicit allow-list."""
 
     def __init__(self, *, allowlist: set[str]) -> None:
         super().__init__()
@@ -19,13 +17,19 @@ class AuditEventFilter(logging.Filter):
 
     def filter(self, record: logging.LogRecord) -> bool:
         """Return True if the record contains an allowed audit event."""
-        ev = getattr(record, "event", None)
-        if not isinstance(ev, dict):
+
+        event = getattr(record, "event", None)
+        if not isinstance(event, Mapping):
             return False
 
-        name = ev.get("event_name")
-        if not isinstance(name, str) or not name:
+        name = event.get("event_name")
+        if not isinstance(name, str) or not name.strip():
             return False
 
-        normalized = _SUFFIX_RE.sub("", name.strip().lower())
+        try:
+            normalized = normalize_event_name(name)
+            validate_event_name(normalized)
+        except Exception:
+            return False
+
         return normalized in self._allowlist

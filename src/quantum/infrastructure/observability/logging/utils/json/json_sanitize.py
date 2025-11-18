@@ -7,33 +7,6 @@ _MAX_BYTES_PREVIEW = 64
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Public API                                                                 │
-# ╰────────────────────────────────────────────────────────────────────────────╯
-def json_sanitize(obj: Any) -> Any:
-    """
-    Convert arbitrary Python objects into JSON-safe, deterministic structures.
-
-    Goals:
-    - Ensure json.dumps() NEVER fails due to unserializable types.
-    - Prevent uncontrolled memory explosion by truncating large strings/bytes.
-    - Recursively sanitize lists, sets, dicts, and custom objects.
-    - Preserve readability and deterministic output for logging pipelines.
-
-    Returns:
-        Sanitized object (primitive or structure fully compatible with JSON).
-    """
-    try:
-        return _sanitize(obj)
-    except Exception:
-        # Absolute fail-safe: fallback to safe stringification of the object.
-        try:
-            s = str(obj)
-            return s[:_MAX_STR_LEN] + ("…" if len(s) > _MAX_STR_LEN else "")
-        except Exception:
-            return "<unserializable>"
-
-
-# ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Internal Helpers                                                           │
 # ╰────────────────────────────────────────────────────────────────────────────╯
 def _sanitize(obj: Any) -> Any:
@@ -58,3 +31,30 @@ def _sanitize(obj: Any) -> Any:
     # Last resort: stable stringification
     s = str(obj)
     return s[:_MAX_STR_LEN] + ("…" if len(s) > _MAX_STR_LEN else "")
+
+
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Public API                                                                 │
+# ╰────────────────────────────────────────────────────────────────────────────╯
+def json_sanitize(obj: Any) -> Any:
+    """
+    Convert arbitrary Python objects into JSON-safe, deterministic structures.
+
+    Goals:
+    - Ensure json.dumps() NEVER fails due to unserializable types.
+    - Prevent uncontrolled memory explosion by truncating large strings/bytes.
+    - Recursively sanitize lists, sets, dicts, and custom objects.
+    - Preserve readability and deterministic output for logging pipelines.
+
+    Returns:
+        Sanitized object (primitive or structure fully compatible with JSON).
+    """
+    try:
+        return _sanitize(obj)
+    except Exception:
+        # Absolute fail-safe: fallback to safe stringification of the object.
+        try:
+            s = str(obj)
+            return s[:_MAX_STR_LEN] + ("…" if len(s) > _MAX_STR_LEN else "")
+        except Exception:
+            return "<unserializable>"

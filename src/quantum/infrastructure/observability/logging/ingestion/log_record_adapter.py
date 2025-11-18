@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 
-from collections.abc import Mapping
 from typing import Final
 
 from quantum.infrastructure.observability.logging.ingestion.internal_log_event import (
@@ -23,9 +22,6 @@ from quantum.infrastructure.observability.logging.runtime.exception_processor im
 from quantum.infrastructure.observability.logging.runtime.metrics import define_counter
 from quantum.infrastructure.observability.logging.runtime.trace_context import (
     extract_trace_context,
-)
-from quantum.infrastructure.observability.logging.utils.json.json_sanitize import (
-    json_sanitize,
 )
 from quantum.infrastructure.observability.logging.utils.time.time_format import (
     now_mono_ms,
@@ -67,24 +63,8 @@ class LogRecordAdapter:
         created_ts = getattr(record, "created", 0.0)
         ts_unix_ms = int(created_ts * 1000) if created_ts else 0
 
-        # ─── monotonic ms
-        try:
-            ts_mono_ms = getattr(record, "ts_monotonic_ms", None)
-            if ts_mono_ms is None:
-                ts_mono_ms = now_mono_ms()
-            else:
-                ts_mono_ms = int(ts_mono_ms)
-        except Exception:
-            _ADAPTER_RECOVERABLE_ERRORS.inc()
-            ts_mono_ms = now_mono_ms()
-
-        # ─── RFC3339
-        try:
-            timestamp_rfc3339 = to_rfc3339_ms(created_ts)
-        except Exception:
-            _ADAPTER_RECOVERABLE_ERRORS.inc()
-            # Should never fail, but fallback to epoch-based conversion
-            timestamp_rfc3339 = to_rfc3339_ms(0.0)
+        ts_mono_ms = now_mono_ms()
+        timestamp_rfc3339 = to_rfc3339_ms(created_ts)
 
         timestamps = TimestampsDTO(
             timestamp_rfc3339=timestamp_rfc3339,
@@ -96,11 +76,7 @@ class LogRecordAdapter:
         # Severity
         # ----------------------------------------------------------------------
         levelno = getattr(record, "levelno", logging.INFO)
-        try:
-            level_text, sev_num = canonical_severity(int(levelno))
-        except Exception:
-            _ADAPTER_RECOVERABLE_ERRORS.inc()
-            level_text, sev_num = "INFO", 9
+        level_text, sev_num = canonical_severity(int(levelno))
 
         severity = SeverityDTO(
             level_text=level_text,
@@ -158,23 +134,6 @@ class LogRecordAdapter:
         )
 
         # ----------------------------------------------------------------------
-        # Attributes block
-        # ----------------------------------------------------------------------
-        attrs = getattr(record, "attrs", {})
-
-        # ─── Ensure mapping
-        if not isinstance(attrs, Mapping):
-            _ADAPTER_RECOVERABLE_ERRORS.inc()
-            attrs = {}
-
-        # ─── Sanitize - fail-safe
-        try:
-            attrs = json_sanitize(dict(attrs))
-        except Exception:
-            _ADAPTER_RECOVERABLE_ERRORS.inc()
-            attrs = {}
-
-        # ----------------------------------------------------------------------
         # Final DTO orchestration
         # ----------------------------------------------------------------------
         return InternalLogEvent(
@@ -184,5 +143,5 @@ class LogRecordAdapter:
             resource=resource,
             correlation=correlation,
             exception=exception,
-            attrs=attrs,
+            attrs=record.attrs,
         )
