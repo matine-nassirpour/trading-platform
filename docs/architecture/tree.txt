@@ -277,8 +277,8 @@ trading-platform/
 │       │   │   │   │   ├── dependencies.py
 │       │   │   │   │   └── lifecycle.py
 │       │   │   │   ├── __init__.py
-│       │   │   │   ├── diagnostics.py
 │       │   │   │   ├── health_registry.py
+│       │   │   │   ├── init_diagnostics.py
 │       │   │   │   └── init_manager.py
 │       │   │   ├── context/
 │       │   │   │   ├── __init__.py

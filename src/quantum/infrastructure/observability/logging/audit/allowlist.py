@@ -8,9 +8,9 @@ _VERSION_SUFFIX_RE: Final[re.Pattern[str]] = re.compile(r"_v\d+$")
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Utilities                                                                  │
+# │ Internal Helpers                                                           │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-def normalize_event_name(name: str) -> str:
+def _normalize_event_name(name: str) -> str:
     """
     Normalize an audit event name:
     - strip whitespace
@@ -25,7 +25,7 @@ def normalize_event_name(name: str) -> str:
     return name
 
 
-def validate_event_name(name: str) -> None:
+def _validate_event_name(name: str) -> None:
     """
     Validate that an audit event name is syntactically correct:
     - snake_case
@@ -38,19 +38,19 @@ def validate_event_name(name: str) -> None:
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Public API                                                                 │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-def normalize_allowlist(events: Iterable[str]) -> set[str]:
+def normalize_allowlist(events: Iterable[str]) -> frozenset[str]:
     """Normalize & validate a set/list of event names before using them."""
     normalized: set[str] = set()
 
     for raw in events:
-        name = normalize_event_name(raw)
-        validate_event_name(name)
+        name = _normalize_event_name(raw)
+        _validate_event_name(name)
         normalized.add(name)
 
-    return normalized
+    return frozenset(normalized)
 
 
-def is_allowed_event(name: str, allowlist: set[str]) -> bool:
+def is_allowed_event(name: str, allowlist: frozenset[str]) -> bool:
     """
     Lightweight check to determine if an event name (with or without version suffix)
     belongs to a provided allowlist.
@@ -58,8 +58,8 @@ def is_allowed_event(name: str, allowlist: set[str]) -> bool:
     Used primarily by AuditEventFilter.
     """
     try:
-        name = normalize_event_name(name)
-        validate_event_name(name)
+        name = _normalize_event_name(name)
+        _validate_event_name(name)
     except Exception:
         return False
 

@@ -25,27 +25,28 @@ AUDIT_LOGGER: Final = logging.getLogger("quantum.audit")
 
 class LoggingBuilder:
     """
-    Responsible ONLY for assembling handlers and sinks.
+    Assembles handlers and audit sinks from immutable runtime configuration.
     No global state manipulation and no direct root logger access.
     """
 
-    def __init__(self, bundle: LoggingRuntimeBundle):
-        self.bundle = bundle
-        self.pipeline = LoggingPipelineFactory.build(bundle.pipeline_config, bundle)
-        self.formatter = JsonFormatter(bundle.instance_id)
-        self.factory = HandlerFactory(bundle, self.formatter, self.pipeline)
+    def __init__(self, bundle: LoggingRuntimeBundle) -> None:
+        self._bundle = bundle
+        self._pipeline = LoggingPipelineFactory.build(bundle.pipeline_config, bundle)
+        self._formatter = JsonFormatter(bundle.instance_id)
+        self._factory = HandlerFactory(bundle, self._formatter, self._pipeline)
 
     # --------------------------------------------------------------------------
     # Application handlers
     # --------------------------------------------------------------------------
-    def build_handlers(self):
-        handlers = []
+    def build_handlers(self) -> list[logging.Handler]:
+        """Build and return a list of fully configured handlers."""
+        handlers: list[logging.Handler] = []
 
-        if self.bundle.enable_console_handler:
-            handlers.append(self.factory.console())
+        if self._bundle.enable_console_handler:
+            handlers.append(self._factory.console())
 
-        if self.bundle.enable_partition_handler and self.bundle.log_dir:
-            handlers.append(self.factory.partitioned())
+        if self._bundle.enable_partition_handler and self._bundle.log_dir:
+            handlers.append(self._factory.partitioned())
 
         return handlers
 
@@ -53,10 +54,11 @@ class LoggingBuilder:
     # Audit sink
     # --------------------------------------------------------------------------
     def configure_audit_sink(self) -> None:
-        if not self.bundle.audit_dir:
+        """Reset and configure the dedicated audit logger sink."""
+        if not self._bundle.audit_dir:
             return
 
-        # wipe previous
+        # Reset existing handlers
         for h in list(AUDIT_LOGGER.handlers):
             with suppress(Exception):
                 if hasattr(h, "flush"):
@@ -67,14 +69,14 @@ class LoggingBuilder:
                 AUDIT_LOGGER.removeHandler(h)
 
         handler = AuditEventFileHandler(
-            base_dir=self.bundle.audit_dir,
-            env=self.bundle.env,
-            namespace=self.bundle.namespace,
-            app=self.bundle.app_name,
+            base_dir=self._bundle.audit_dir,
+            env=self._bundle.env,
+            namespace=self._bundle.namespace,
+            app=self._bundle.app_name,
         )
         handler.setLevel(logging.NOTSET)
-        handler.setFormatter(self.formatter)
-        handler.addFilter(AuditEventFilter(allowlist=self.bundle.audit_allowlist))
+        handler.setFormatter(self._formatter)
+        handler.addFilter(AuditEventFilter(allowlist=self._bundle.audit_allowlist))
 
         AUDIT_LOGGER.addHandler(handler)
         AUDIT_LOGGER.setLevel(logging.DEBUG)

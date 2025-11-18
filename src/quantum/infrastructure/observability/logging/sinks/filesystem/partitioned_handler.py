@@ -75,57 +75,16 @@ class PartitionedJSONLFileHandler(logging.Handler):
         return self._base_dir
 
     # --------------------------------------------------------------------------
-    # Core pipeline
-    # --------------------------------------------------------------------------
-    def emit(self, record: logging.LogRecord) -> None:
-        """
-        Appends a JSON log entry to the current partition file,
-        creating or rotating files as necessary.
-        """
-        self.acquire()
-        try:
-            dir_path, file_path, bad_path = self._resolve_partition(record)
-            if file_path != self._current_path:
-                self._reopen_partition(file_path, bad_path)
-
-            self._write_record(record)
-            if self._max_bytes > 0:
-                self._check_rollover(record)
-        finally:
-            self.release()
-
-    # --------------------------------------------------------------------------
     # Internal helpers
     # --------------------------------------------------------------------------
-    def _resolve_partition(self, record: logging.LogRecord) -> tuple[Path, Path, Path]:
-        """Determines the partition directory and file paths for the record."""
-        try:
-            dt = datetime.fromtimestamp(record.created, tz=UTC)
-            yyyy, mm, dd, hh = partition_path_components(dt)
-            dir_path = (
-                self._base_dir
-                / self._bundle.env
-                / self._bundle.namespace
-                / self._bundle.app_name
-                / yyyy
-                / mm
-                / dd
-                / hh
-            )
-
-            file_path = dir_path / events_filename(yyyy, mm, dd, hh, self._part_index)
-            bad_path = dir_path / bad_filename(yyyy, mm, dd, hh, self._part_index)
-
-            if self._current_path is None or self._current_path.parent != dir_path:
-                self._part_index = 0
-                file_path = dir_path / events_filename(yyyy, mm, dd, hh, 0)
-                bad_path = dir_path / bad_filename(yyyy, mm, dd, hh, 0)
-
-            return dir_path, file_path, bad_path
-        except Exception:
-            _LOGGING_DISK_ERRORS.inc()
-            self.handleError(record)
-            raise
+    def _flush(self, fh: io.TextIOWrapper) -> None:
+        """Flushes the provided file handle, optionally fsyncing to disk."""
+        fh.flush()
+        if self._fsync:
+            try:
+                os.fsync(fh.fileno())
+            except OSError:
+                _LOGGING_DISK_ERRORS.inc()
 
     def _write_record(self, record: logging.LogRecord) -> None:
         """Formats and writes a single log record to the main file, with quarantine fallback."""
@@ -191,15 +150,6 @@ class PartitionedJSONLFileHandler(logging.Handler):
             _LOGGING_DISK_ERRORS.inc()
             self.handleError(record)
 
-    def _flush(self, fh: io.TextIOWrapper) -> None:
-        """Flushes the provided file handle, optionally fsyncing to disk."""
-        fh.flush()
-        if self._fsync:
-            try:
-                os.fsync(fh.fileno())
-            except OSError:
-                _LOGGING_DISK_ERRORS.inc()
-
     def _check_rollover(self, record: logging.LogRecord) -> None:
         """Performs size-based rollover, emitting warnings and rotation metrics."""
         try:
@@ -254,6 +204,59 @@ class PartitionedJSONLFileHandler(logging.Handler):
         fsync_dir(path.parent)
         self._warned_this_part = False
 
+    def _resolve_partition(self, record: logging.LogRecord) -> tuple[Path, Path, Path]:
+        """Determines the partition directory and file paths for the record."""
+        try:
+            dt = datetime.fromtimestamp(record.created, tz=UTC)
+            yyyy, mm, dd, hh = partition_path_components(dt)
+            dir_path = (
+                self._base_dir
+                / self._bundle.env
+                / self._bundle.namespace
+                / self._bundle.app_name
+                / yyyy
+                / mm
+                / dd
+                / hh
+            )
+
+            file_path = dir_path / events_filename(yyyy, mm, dd, hh, self._part_index)
+            bad_path = dir_path / bad_filename(yyyy, mm, dd, hh, self._part_index)
+
+            if self._current_path is None or self._current_path.parent != dir_path:
+                self._part_index = 0
+                file_path = dir_path / events_filename(yyyy, mm, dd, hh, 0)
+                bad_path = dir_path / bad_filename(yyyy, mm, dd, hh, 0)
+
+            return dir_path, file_path, bad_path
+        except Exception:
+            _LOGGING_DISK_ERRORS.inc()
+            self.handleError(record)
+            raise
+
+    # --------------------------------------------------------------------------
+    # Core pipeline
+    # --------------------------------------------------------------------------
+    def emit(self, record: logging.LogRecord) -> None:
+        """
+        Appends a JSON log entry to the current partition file,
+        creating or rotating files as necessary.
+        """
+        self.acquire()
+        try:
+            dir_path, file_path, bad_path = self._resolve_partition(record)
+            if file_path != self._current_path:
+                self._reopen_partition(file_path, bad_path)
+
+            self._write_record(record)
+            if self._max_bytes > 0:
+                self._check_rollover(record)
+        finally:
+            self.release()
+
+    # --------------------------------------------------------------------------
+    # Lifecycle
+    # --------------------------------------------------------------------------
     def close(self) -> None:
         """Closes all open file handles safely."""
         self.acquire()

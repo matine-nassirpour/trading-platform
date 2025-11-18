@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from quantum.infrastructure.observability.logging.pipeline.engine.pipeline_config import (
     PipelineConfig,
@@ -15,7 +15,7 @@ class LoggingRuntimeBundle:
     app_version: str
     instance_id: str
 
-    audit_allowlist: set[str]
+    audit_allowlist: frozenset[str]
 
     log_dir: str | None
     audit_dir: str | None
@@ -31,4 +31,4 @@ class LoggingRuntimeBundle:
     enable_partition_handler: bool
     enable_console_handler: bool = True
 
-    pipeline_config: PipelineConfig = PipelineConfig()
+    pipeline_config: PipelineConfig = field(default_factory=PipelineConfig)
