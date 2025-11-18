@@ -13,6 +13,8 @@ from quantum.infrastructure.observability.metrics.collectors.health_collector im
     logging_redactions_total,
 )
 
+LOGGER: Final = logging.getLogger(__name__)
+
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Constants                                                                  │
 # ╰────────────────────────────────────────────────────────────────────────────╯
@@ -37,8 +39,6 @@ _JWT_RE: Final[re.Pattern[str]] = re.compile(
 _HEX32_RE: Final[re.Pattern[str]] = re.compile(r"\b[0-9a-fA-F]{32,}\b")
 
 _MAX_VALUE_LEN: Final[int] = 5_000
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class RedactionStep(PipelineStep):
@@ -116,7 +116,7 @@ class RedactionStep(PipelineStep):
             try:
                 logging_redactions_total.inc()
             except Exception as exc:
-                _LOGGER.debug(
+                LOGGER.debug(
                     "RedactionStep: failed to increment logging_redactions_total",
                     exc_info=exc,
                 )

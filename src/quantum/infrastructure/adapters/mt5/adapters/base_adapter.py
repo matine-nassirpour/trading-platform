@@ -2,6 +2,7 @@ import logging
 import threading
 
 from types import ModuleType
+from typing import Final
 
 from quantum.application.contracts.execution_request import (
     CheckRequest,
@@ -22,7 +23,7 @@ from quantum.infrastructure.adapters.mt5.transport.contracts import (
 )
 from quantum.infrastructure.observability.tracing.provider import get_tracer
 
-logger = logging.getLogger(__name__)
+LOGGER: Final = logging.getLogger(__name__)
 tracer = get_tracer("infra.adapters.mt5_exec")
 
 
@@ -48,9 +49,9 @@ def _get_mt5_module() -> ModuleType:
                     import MetaTrader5 as mt5
 
                     _MT5_MODULE = mt5
-                    logger.info("MetaTrader5 module imported successfully (lazy init).")
+                    LOGGER.info("MetaTrader5 module imported successfully (lazy init).")
                 except ImportError as e:
-                    logger.critical(
+                    LOGGER.critical(
                         "MetaTrader5 package not installed or not importable.",
                         extra={"attrs": {"error": str(e)}},
                     )

@@ -16,11 +16,11 @@ import time
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Final
 
 from prometheus_client import Counter, Histogram
 
-_logger = logging.getLogger(__name__)
+LOGGER: Final = logging.getLogger(__name__)
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
@@ -54,13 +54,13 @@ class BootstrapDiagnostics:
         self._metrics.latency_hist.labels(subsystem=subsystem).observe(duration)
         with self._lock:
             self._results[subsystem] = duration
-        _logger.debug(f"[Diagnostics] {subsystem} init in {duration:.3f}s")
+        LOGGER.debug(f"[Diagnostics] {subsystem} init in {duration:.3f}s")
 
     def record_failure(self, subsystem: str) -> None:
         self._metrics.failure_counter.labels(subsystem=subsystem).inc()
         with self._lock:
             self._failures.add(subsystem)
-        _logger.warning(f"[Diagnostics] {subsystem} initialization failed")
+        LOGGER.warning(f"[Diagnostics] {subsystem} initialization failed")
 
     def get_summary_report(self) -> dict[str, Any]:
         with self._lock:

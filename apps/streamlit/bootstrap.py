@@ -3,9 +3,13 @@ from __future__ import annotations
 import logging
 import threading
 
+from typing import Final
+
 from runtime.runtime_composer import get_runtime
 
 from quantum.application.ports.outbound.observability_port import ObservabilityPort
+
+LOGGER: Final = logging.getLogger("apps.streamlit.bootstrap")
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Global guards                                                              │
@@ -45,8 +49,7 @@ def init_streamlit() -> None:
             _perform_streamlit_init()
             _BOOTSTRAP_DONE = True
         except Exception as e:
-            logger = logging.getLogger("apps.streamlit.bootstrap")
-            logger.exception("Streamlit bootstrap failed: %s", e)
+            LOGGER.exception("Streamlit bootstrap failed: %s", e)
             raise
 
 
@@ -61,6 +64,5 @@ def _perform_streamlit_init() -> None:
     obs.ensure_run_id()
     obs.initialize_observability()
 
-    logger = logging.getLogger("apps.streamlit.bootstrap")
-    logger.info("Initializing Quantum Streamlit UI with observability stack...")
-    logger.info("Quantum Streamlit bootstrap completed successfully.")
+    LOGGER.info("Initializing Quantum Streamlit UI with observability stack...")
+    LOGGER.info("Quantum Streamlit bootstrap completed successfully.")

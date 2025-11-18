@@ -9,11 +9,15 @@ from __future__ import annotations
 
 import logging
 
+from typing import Final
+
 from quantum.infrastructure.config.validators.base import (
     ValidationContext,
     ValidationResult,
     ValidationRule,
 )
+
+LOGGER: Final = logging.getLogger(__name__)
 
 
 class EnvironmentValidator(ValidationRule):
@@ -89,9 +93,7 @@ class OtlpProtocolValidator(ValidationRule):
             return self.success("http")
         v = value.strip().lower()
         if v not in self._allowed:
-            logging.getLogger(__name__).warning(
-                f"Unsupported OTLP protocol '{v}', defaulting to 'http'"
-            )
+            LOGGER.warning(f"Unsupported OTLP protocol '{v}', defaulting to 'http'")
             v = "http"
         return self.success(v)
 

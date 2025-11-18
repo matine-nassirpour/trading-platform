@@ -33,7 +33,7 @@ from dotenv import dotenv_values, find_dotenv
 
 from quantum.infrastructure.config.runtime.state import ConfigState
 
-_LOGGER: Final = logging.getLogger("quantum.config.env_loader")
+LOGGER: Final = logging.getLogger("quantum.config.env_loader")
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
@@ -92,11 +92,11 @@ def _load_from_cache(
         return None
 
     cached = state.get_env_cache()
-    _LOGGER.debug("Reusing cached environment (pid=%s)", os.getpid())
+    LOGGER.debug("Reusing cached environment (pid=%s)", os.getpid())
 
     if apply:
         _apply_env_vars(cached, apply=True, override=override)
-        _LOGGER.debug("Applied cached environment to os.environ (from cache)")
+        LOGGER.debug("Applied cached environment to os.environ (from cache)")
 
     return cached
 
@@ -106,7 +106,7 @@ def _load_from_files(
 ) -> tuple[dict[str, str], Path]:
     """Load environment dictionaries from .env files."""
     if dotenv_values is None:
-        _LOGGER.warning("python-dotenv not installed; skipping .env loading")
+        LOGGER.warning("python-dotenv not installed; skipping .env loading")
         return dict(os.environ), Path.cwd()
 
     base_dir, explicit_file = _resolve_env_path(root, env_file)
@@ -181,7 +181,7 @@ def load_env(
         _apply_env_vars(merged, apply, override)
 
         state.update(base_dir=base_dir, loaded_pid=pid, env_cache=merged)
-        _LOGGER.info(
+        LOGGER.info(
             "Environment loaded",
             extra={
                 "attrs": {

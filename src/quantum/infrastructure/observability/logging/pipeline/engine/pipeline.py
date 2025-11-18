@@ -10,6 +10,7 @@ from quantum.infrastructure.observability.logging.pipeline.engine.step import (
 )
 from quantum.infrastructure.observability.logging.runtime.metrics import define_counter
 
+LOGGER: Final = logging.getLogger(__name__)
 _LOGGING_PIPELINE_STEP_FAILURES: Final = define_counter(
     "logging_pipeline_step_failures"
 )
@@ -37,7 +38,7 @@ class LoggingPipeline(logging.Filter):
             except Exception:
                 # Never break the chain
                 _LOGGING_PIPELINE_STEP_FAILURES.inc()
-                logging.getLogger(__name__).exception(
+                LOGGER.exception(
                     "Logging pipeline step failed",
                     extra={"step": step.__class__.__name__},
                 )

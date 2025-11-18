@@ -4,7 +4,7 @@ import logging
 import time
 
 from collections.abc import Callable
-from typing import Any
+from typing import Any, Final
 
 from quantum.application.contracts.execution_code import ExecutionCode
 from quantum.application.contracts.execution_result import ExecutionResult
@@ -26,8 +26,8 @@ from quantum.infrastructure.observability.metrics.mt5 import (
 )
 from quantum.infrastructure.observability.tracing.provider import get_tracer
 
-logger = logging.getLogger(__name__)
-tracer = get_tracer("infra.execution.mt5")
+LOGGER: Final = logging.getLogger(__name__)
+TRACER: Final = get_tracer("infra.execution.mt5")
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
@@ -45,7 +45,7 @@ def init_mt5_terminal(channel: ExecutionChannel, path: str | None = None) -> boo
 
         creds = ConfigManager.get_mt5_credentials(channel.name)
         if not creds["login"] or not creds["server"] or not creds["password"]:
-            logger.error(
+            LOGGER.error(
                 f"Missing MT5 credentials for channel {channel.name}",
                 extra={"attrs": {"channel": channel.name}},
             )
@@ -61,24 +61,24 @@ def init_mt5_terminal(channel: ExecutionChannel, path: str | None = None) -> boo
         if not ok:
             try:
                 code, msg = mt5.last_error()
-                logger.error(
+                LOGGER.error(
                     f"MT5 initialize failed for {channel.name}",
                     extra={"attrs": {"error_code": code, "error_msg": msg}},
                 )
             except Exception:
-                logger.error(
+                LOGGER.error(
                     f"MT5 initialize failed (no last_error) for {channel.name}",
                     extra={"attrs": {"path": path}},
                 )
         else:
-            logger.info(
+            LOGGER.info(
                 f"MT5 terminal initialized for {channel.name}",
                 extra={"attrs": {"server": creds["server"], "login": creds["login"]}},
             )
         return bool(ok)
 
     except Exception as e:
-        logger.exception(
+        LOGGER.exception(
             f"MT5 init error for {channel.name}: {type(e).__name__} {e}",
             extra={"attrs": {"path": path}},
         )
@@ -92,7 +92,7 @@ def shutdown_mt5_terminal() -> None:
 
         mt5.shutdown()
     except (ImportError, ModuleNotFoundError):
-        logger.debug("MetaTrader5 not installed — skipping shutdown.")
+        LOGGER.debug("MetaTrader5 not installed — skipping shutdown.")
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
@@ -123,7 +123,7 @@ class Mt5ExecutionFunction(ExecutionFunctionProtocol):
         start_ms = time.time() * 1000.0
         timeout_s = ConfigManager.load().quantum_exec_timeout
 
-        with tracer.start_as_current_span(f"exec.{call}") as span:
+        with TRACER.start_as_current_span(f"exec.{call}") as span:
             # ─── Health gate
             unhealthy_result = self._check_health(channel, span)
             if unhealthy_result:
@@ -139,7 +139,7 @@ class Mt5ExecutionFunction(ExecutionFunctionProtocol):
             self._enrich_trace(span, call, channel, code, dur_ms, timeout_s)
 
             # ─── Structured Log
-            logger.info(
+            LOGGER.info(
                 "MT5 exec",
                 extra={
                     "attrs": {
@@ -163,7 +163,7 @@ class Mt5ExecutionFunction(ExecutionFunctionProtocol):
     ) -> ExecutionResult | None:
         if channel and not is_gateway_healthy(channel):
             msg = f"Execution channel {channel.name} unhealthy — call aborted."
-            logger.warning(msg)
+            LOGGER.warning(msg)
             from opentelemetry.trace import Status, StatusCode
 
             span.set_status(Status(StatusCode.ERROR, description="unhealthy channel"))
@@ -194,13 +194,13 @@ class Mt5ExecutionFunction(ExecutionFunctionProtocol):
             code = ExecutionCode.INTERNAL_FAIL_TIMEOUT
             if channel is not None:
                 record_gateway_failure(channel)
-            logger.error(msg)
+            LOGGER.error(msg)
         except Exception as e:
             msg = f"{type(e).__name__}: {e}"
             code = ExecutionCode.INTERNAL_FAIL
             if channel is not None:
                 record_gateway_failure(channel)
-            logger.exception(f"MT5 call '{call}' crashed with exception", exc_info=e)
+            LOGGER.exception(f"MT5 call '{call}' crashed with exception", exc_info=e)
 
         return result, code, msg
 
@@ -210,7 +210,7 @@ class Mt5ExecutionFunction(ExecutionFunctionProtocol):
             exec_channel_latency_ms.labels(call=call).observe(dur_ms)
             exec_channel_total.labels(call=call, code=str(code)).inc()
         except Exception as exc:
-            logger.debug(
+            LOGGER.debug(
                 "Failed to record metrics for call '%s' (code=%s, duration=%dms): %s",
                 call,
                 code,

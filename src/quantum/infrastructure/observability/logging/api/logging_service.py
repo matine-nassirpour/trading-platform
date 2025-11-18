@@ -1,6 +1,7 @@
 import logging
 
 from contextlib import suppress
+from typing import Final
 
 from quantum.infrastructure.observability.logging.api.logging_builder import (
     LoggingBuilder,
@@ -9,7 +10,7 @@ from quantum.infrastructure.observability.logging.metadata.config_bundle import 
     LoggingRuntimeBundle,
 )
 
-APPLICATION_LOGGER_NAME = "quantum.app"
+APP_LOGGER: Final = logging.getLogger("quantum.app")
 
 
 def close_and_remove_all_handlers(logger: logging.Logger) -> None:
@@ -38,18 +39,17 @@ def init_logging(bundle: LoggingRuntimeBundle) -> logging.Logger:
     """
 
     # ─── Create the dedicated application logger
-    app_logger = logging.getLogger(APPLICATION_LOGGER_NAME)
-    app_logger.propagate = False  # NEVER bubble to root
-    app_logger.setLevel(bundle.log_level)
+    APP_LOGGER.propagate = False  # NEVER bubble to root
+    APP_LOGGER.setLevel(bundle.log_level)
 
     # Reset any previous configuration
-    close_and_remove_all_handlers(app_logger)
+    close_and_remove_all_handlers(APP_LOGGER)
 
     # ─── Build handlers (partitioned + console)
     builder = LoggingBuilder(bundle)
 
     for handler in builder.build_handlers():
-        app_logger.addHandler(handler)
+        APP_LOGGER.addHandler(handler)
 
     builder.configure_audit_sink()
 
@@ -57,4 +57,4 @@ def init_logging(bundle: LoggingRuntimeBundle) -> logging.Logger:
     with suppress(Exception):
         logging.captureWarnings(False)
 
-    return app_logger
+    return APP_LOGGER

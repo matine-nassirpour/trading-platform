@@ -1,5 +1,3 @@
-import logging
-
 from quantum.application.contracts.execution_request import (
     CheckRequest,
     OrderRequest,
@@ -15,8 +13,6 @@ from quantum.application.resilience.resilience_policy import (
 )
 from quantum.application.resilience.retry_policy import RetryPolicy
 from quantum.domain.types.execution_channel import ExecutionChannel
-
-logger = logging.getLogger(__name__)
 
 
 @bind_resilience

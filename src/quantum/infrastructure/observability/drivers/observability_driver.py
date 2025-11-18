@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import logging
 
-from typing import Any
+from typing import Any, Final
 
 from quantum.application.ports.outbound.event_bus_port import EventBusPort
 from quantum.application.ports.outbound.observability_port import ObservabilityPort
@@ -19,12 +19,14 @@ from quantum.infrastructure.observability.tracing.correlation.correlation_id imp
     new_correlation_id,
 )
 
+LOGGER: Final = logging.getLogger("quantum.observability.driver")
+
 
 class ObservabilityDriver(ObservabilityPort):
     """Concrete driver implementing observability access and telemetry control."""
 
     def __init__(self, event_bus: EventBusPort | None = None) -> None:
-        self._logger = logging.getLogger("quantum.observability.driver")
+        self._logger = LOGGER
         self._event_bus = event_bus
 
     def initialize_observability(self) -> None:

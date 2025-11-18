@@ -4,7 +4,9 @@ import logging
 import sys
 
 from contextlib import suppress
+from typing import Final
 
+LOGGER: Final = logging.getLogger("quantum.internal.diagnostics")
 _DIAGNOSTIC_LOGGER = None
 
 
@@ -14,9 +16,8 @@ def get_diagnostic_logger() -> logging.Logger:
     if _DIAGNOSTIC_LOGGER is not None:
         return _DIAGNOSTIC_LOGGER
 
-    logger = logging.getLogger("quantum.internal.diagnostics")
-    logger.setLevel(logging.ERROR)
-    logger.propagate = False
+    LOGGER.setLevel(logging.ERROR)
+    LOGGER.propagate = False
 
     try:
         handler = logging.StreamHandler(sys.stderr)
@@ -30,7 +31,7 @@ def get_diagnostic_logger() -> logging.Logger:
         datefmt="%Y-%m-%dT%H:%M:%S",
     )
     handler.setFormatter(formatter)
-    logger.addHandler(handler)
+    LOGGER.addHandler(handler)
 
-    _DIAGNOSTIC_LOGGER = logger
-    return logger
+    _DIAGNOSTIC_LOGGER = LOGGER
+    return LOGGER

@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 
 from contextlib import suppress
+from typing import Final
 
 from quantum.infrastructure.observability.bootstrap.lifecycle.configs.filesystem_probe_config import (
     FileSystemProbeConfig,
@@ -19,6 +20,8 @@ from quantum.infrastructure.observability.bootstrap.lifecycle.configs.tracing_co
 from quantum.infrastructure.observability.bootstrap.lifecycle.dependencies import (
     ObservabilityDependencies,
 )
+
+LOGGER: Final = logging.getLogger(__name__)
 
 
 class LifecycleService:
@@ -38,7 +41,7 @@ class LifecycleService:
 
     def __init__(self, deps: ObservabilityDependencies) -> None:
         self._deps = deps
-        self._logger = logging.getLogger(__name__)
+        self._logger = LOGGER
         self._initialized = False
 
         # Keep tracer provider instance here (no global reference).

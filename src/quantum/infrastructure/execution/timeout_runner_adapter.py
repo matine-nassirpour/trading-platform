@@ -8,9 +8,11 @@ import threading
 from collections.abc import Awaitable, Callable
 from contextlib import AbstractContextManager
 from types import TracebackType
-from typing import Any, TypeVar
+from typing import Any, Final, TypeVar
 
 from quantum.application.ports.outbound.timeout_runner_port import TimeoutRunnerPort
+
+LOGGER: Final = logging.getLogger(__name__)
 
 T = TypeVar("T")
 
@@ -50,7 +52,7 @@ class ThreadedTimeoutRunnerAdapter(
             max_workers=max_workers,
             thread_name_prefix=thread_name_prefix,
         )
-        self._logger = logger or logging.getLogger(__name__)
+        self._logger = logger or LOGGER
         self._shutdown_lock = threading.Lock()
         self._is_shutdown = False
 

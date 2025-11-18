@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import logging
 
+from typing import Final
+
 from quantum.infrastructure.config.models.core import CoreSettings
 from quantum.infrastructure.config.models.logging import LoggingSettings
 from quantum.infrastructure.observability.bootstrap.lifecycle.configs.logging_config import (
@@ -14,6 +16,8 @@ from quantum.infrastructure.observability.logging.api.logging_service import (
     close_and_remove_all_handlers,
     init_logging,
 )
+
+LOGGER: Final = logging.getLogger(__name__)
 
 
 class LoggingInitializerImpl(LoggingInitializer):
@@ -64,7 +68,7 @@ class LoggingInitializerImpl(LoggingInitializer):
         try:
             close_and_remove_all_handlers(logging.getLogger())
         except Exception as exc:
-            logging.getLogger(__name__).debug(
+            LOGGER.debug(
                 "Failed to close existing logging handlers during reinitialization: %s",
                 exc,
             )

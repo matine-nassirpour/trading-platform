@@ -5,7 +5,7 @@ import logging
 
 from collections.abc import Callable
 from functools import wraps
-from typing import Any, Protocol, TypeVar, cast, overload
+from typing import Any, Final, Protocol, TypeVar, cast, overload
 
 from quantum.application.ports.outbound.timeout_runner_port import TimeoutRunnerPort
 from quantum.application.resilience.resilience_policy import (
@@ -15,7 +15,7 @@ from quantum.application.resilience.resilience_policy import (
 )
 from quantum.application.resilience.retry_policy import RetryPolicy
 
-logger = logging.getLogger(__name__)
+LOGGER: Final = logging.getLogger(__name__)
 C = TypeVar("C", bound=object)
 
 
@@ -139,7 +139,7 @@ def bind_resilience(
                 decorated._resilience_bound = True
                 decorated._resilience_operation = op_name
                 setattr(self, name, decorated)
-                logger.debug(
+                LOGGER.debug(
                     "[ResilienceInjection] Bound %s.%s → operation=%s",
                     inner_cls.__name__,
                     name,

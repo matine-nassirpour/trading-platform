@@ -2,7 +2,7 @@ import atexit
 import logging
 import socket
 
-from typing import Any, cast
+from typing import Any, Final, cast
 
 from opentelemetry import trace as _trace
 from opentelemetry.context import Context
@@ -39,7 +39,7 @@ from quantum.infrastructure.observability.tracing.correlation.correlation_id imp
     get_correlation_id,
 )
 
-logger = logging.getLogger(__name__)
+LOGGER: Final = logging.getLogger(__name__)
 _ATEXIT_REGISTERED: bool = False
 
 
@@ -54,7 +54,7 @@ def _shutdown_provider_safely() -> None:
         if callable(shutdown):
             shutdown()
     except Exception as exc:
-        logger.debug(f"Tracer provider shutdown at exit failed: {exc}")
+        LOGGER.debug(f"Tracer provider shutdown at exit failed: {exc}")
 
 
 def _ensure_atexit_registered() -> None:
@@ -66,7 +66,7 @@ def _ensure_atexit_registered() -> None:
         atexit.register(_shutdown_provider_safely)
         _ATEXIT_REGISTERED = True
     except Exception as exc:
-        logger.debug(f"Failed to register atexit tracer shutdown: {exc}")
+        LOGGER.debug(f"Failed to register atexit tracer shutdown: {exc}")
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
@@ -84,7 +84,7 @@ class _ContextEnricherProcessor(SpanProcessor):
             if cid:
                 span.set_attribute("quantum.correlation_id", cid)
         except Exception as exc:
-            logger.debug(f"Context enrichment failed: {exc}")
+            LOGGER.debug(f"Context enrichment failed: {exc}")
 
     def on_end(self, span: ReadableSpan) -> None:
         pass
@@ -265,14 +265,14 @@ def _finalize_provider(
             tracing_exporter_status,
         )
     except ModuleNotFoundError:
-        logger.debug(
+        LOGGER.debug(
             "Health metrics module not found; skipping exporter activity metric."
         )
     else:
         try:
             tracing_exporter_status.set(1.0 if active_exporter else 0.0)
         except (ValueError, RuntimeError, AttributeError) as exc:
-            logger.debug(f"Unable to update tracer exporter metric: {exc}")
+            LOGGER.debug(f"Unable to update tracer exporter metric: {exc}")
 
     _ensure_atexit_registered()
 
@@ -322,11 +322,11 @@ def _log_exporter_status(
         base["header_keys"] = headers_preview
 
     if active_exporter:
-        logger.info("OTLP exporter active", extra={"attrs": base})
+        LOGGER.info("OTLP exporter active", extra={"attrs": base})
     else:
         attrs = dict(base)
         attrs["reason"] = inactive_reason or "unknown"
-        logger.warning("OTLP exporter inactive", extra={"attrs": attrs})
+        LOGGER.warning("OTLP exporter inactive", extra={"attrs": attrs})
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮

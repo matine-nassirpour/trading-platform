@@ -14,8 +14,9 @@ import logging
 import random
 
 from dataclasses import dataclass
+from typing import Final
 
-logger = logging.getLogger(__name__)
+LOGGER: Final = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True, slots=True)
@@ -45,7 +46,7 @@ class EventRetryPolicy:
             try:
                 await coro()
                 if attempt > 1:
-                    logger.debug(
+                    LOGGER.debug(
                         "[EventRetry] %s succeeded on attempt=%d",
                         operation_name,
                         attempt,
@@ -53,7 +54,7 @@ class EventRetryPolicy:
                 return
             except Exception as exc:
                 if attempt >= self._cfg.max_retries:
-                    logger.error(
+                    LOGGER.error(
                         "[EventRetry] %s aborted after %d attempts (exc=%s)",
                         operation_name,
                         attempt,
@@ -61,7 +62,7 @@ class EventRetryPolicy:
                     )
                     raise
                 delay = self._compute_delay(attempt)
-                logger.warning(
+                LOGGER.warning(
                     "[EventRetry] %s failed (attempt=%d) — retrying in %.2fs",
                     operation_name,
                     attempt,

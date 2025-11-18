@@ -5,6 +5,7 @@ import threading
 
 from collections.abc import Iterator
 from contextlib import contextmanager
+from typing import Final
 
 from quantum.infrastructure.observability.bootstrap.lifecycle.configs.filesystem_probe_config import (
     FileSystemProbeConfig,
@@ -29,7 +30,7 @@ from quantum.infrastructure.observability.context.run_id import (
     get_run_id,
 )
 
-_logger = logging.getLogger(__name__)
+LOGGER: Final = logging.getLogger(__name__)
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
@@ -67,7 +68,7 @@ def init_observability(
 
     with _init_lock:
         if _initialized and not force:
-            _logger.debug("[Observability] Already initialized — skipping.")
+            LOGGER.debug("[Observability] Already initialized — skipping.")
             return True
 
         # Ensure a run_id exists for correlation context
@@ -111,7 +112,7 @@ def shutdown_observability(
         )
 
     _initialized = False
-    _logger.info("[Observability] Stack shutdown complete.")
+    LOGGER.info("[Observability] Stack shutdown complete.")
 
 
 @contextmanager

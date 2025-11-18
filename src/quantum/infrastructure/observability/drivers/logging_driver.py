@@ -2,15 +2,19 @@ from __future__ import annotations
 
 import logging
 
+from typing import Final
+
 from quantum.application.ports.outbound.logging_port import LoggingPort
 from quantum.infrastructure.observability.logging.audit.emitter import emit_event
+
+LOGGER: Final = logging.getLogger("quantum.logging.driver")
 
 
 class LoggingDriver(LoggingPort):
     """Concrete implementation of LoggingPort using Quantum's observability stack."""
 
     def __init__(self) -> None:
-        self._logger = logging.getLogger("quantum.logging.driver")
+        self._logger = LOGGER
 
     def emit_info(self, message: str, **attrs: object) -> None:
         """
@@ -62,7 +66,7 @@ class LoggingDriver(LoggingPort):
                     h.release()
 
         except Exception as exc:
-            logging.getLogger(__name__).warning("emit_info failed: %s", exc)
+            LOGGER.warning("emit_info failed: %s", exc)
 
     def emit_event(self, payload: dict[str, object]) -> None:
         """Emit an audit/telemetry event via the event emitter."""

@@ -3,7 +3,7 @@ import logging
 from collections.abc import Mapping
 from typing import Any, Final
 
-_LOGGER: Final[logging.Logger] = logging.getLogger("quantum.trading.audit")
+LOGGER: Final = logging.getLogger("quantum.audit")
 
 
 def emit_event(
@@ -35,4 +35,4 @@ def emit_event(
             if k not in safe_extra:
                 safe_extra[k] = v
 
-    _LOGGER.log(log_level, event_name, extra=safe_extra)
+    LOGGER.log(log_level, event_name, extra=safe_extra)

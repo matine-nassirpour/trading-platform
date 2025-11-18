@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 
-from typing import Any
+from typing import Any, Final
 
 from quantum.infrastructure.observability.bootstrap.lifecycle.configs.tracing_config import (
     TracingConfig,
@@ -16,6 +16,8 @@ from quantum.infrastructure.observability.tracing.propagation import (
     setup_propagation,
 )
 from quantum.infrastructure.observability.tracing.provider import init_tracing
+
+LOGGER: Final = logging.getLogger(__name__)
 
 
 class TracingInitializerImpl(TracingInitializer):
@@ -56,7 +58,7 @@ class TracingInitializerImpl(TracingInitializer):
         try:
             detach_process_baggage_if_any()
         except Exception as exc:
-            logging.getLogger(__name__).debug(
+            LOGGER.debug(
                 "Failed to detach process baggage during tracing shutdown: %s",
                 exc,
             )
@@ -67,7 +69,7 @@ class TracingInitializerImpl(TracingInitializer):
                 try:
                     shutdown_fn(timeout=None)
                 except Exception as exc:
-                    logging.getLogger(__name__).debug(
+                    LOGGER.debug(
                         "Tracing shutdown function failed: %s",
                         exc,
                     )

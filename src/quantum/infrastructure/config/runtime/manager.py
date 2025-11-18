@@ -38,7 +38,7 @@ from quantum.infrastructure.config.models.tracing import TracingSettings
 from quantum.infrastructure.config.providers.env_loader import load_env
 from quantum.infrastructure.config.runtime.state import ConfigState
 
-_LOGGER: Final = logging.getLogger("quantum.config.manager")
+LOGGER: Final = logging.getLogger("quantum.config.manager")
 
 
 class ConfigManager:
@@ -92,7 +92,7 @@ class ConfigManager:
         effective_env: dict[str, Any] = {**merged, **os.environ, **(env or {})}
         settings = CoreSettings(**effective_env)
 
-        _LOGGER.info(
+        LOGGER.info(
             "Core settings loaded",
             extra={
                 "attrs": {"app": settings.quantum_app_name, "env": settings.quantum_env}
@@ -142,7 +142,7 @@ class ConfigManager:
                 cache_clear()
 
         ConfigState.instance().reset()
-        _LOGGER.info("ConfigManager caches cleared and ConfigState reset.")
+        LOGGER.info("ConfigManager caches cleared and ConfigState reset.")
 
     # --------------------------------------------------------------------------
     # Snapshot helpers

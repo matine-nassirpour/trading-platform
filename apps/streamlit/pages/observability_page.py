@@ -8,12 +8,12 @@ for the Quantum runtime environment.
 from __future__ import annotations
 
 import json
-import logging
 import time
 
 from collections.abc import Mapping
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Final
 
 import streamlit as st
 
@@ -42,8 +42,7 @@ obs_provider = runtime.observability_provider
 
 init_streamlit()
 
-logger = logging.getLogger("quantum.ui.observability")
-tracer = trace.get_tracer("quantum.ui.observability")
+TRACER: Final = trace.get_tracer("quantum.ui.observability")
 
 st.set_page_config(page_title=PAGE_TITLE, layout="wide")
 st.title("🔭 Observability")
@@ -210,9 +209,9 @@ def render_actions() -> None:
 
     with col_b:
         if st.button("Emit span + log"):
-            with tracer.start_as_current_span("ui.demo.parent"):
+            with TRACER.start_as_current_span("ui.demo.parent"):
                 log_provider.emit_info("log inside parent span", in_span=True)
-                with tracer.start_as_current_span("ui.demo.child"):
+                with TRACER.start_as_current_span("ui.demo.child"):
                     log_provider.emit_info("log inside child span", in_span_child=True)
             st.success("Span(s) + logs emitted ✔")
 

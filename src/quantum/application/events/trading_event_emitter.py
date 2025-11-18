@@ -19,6 +19,7 @@ import logging
 import time
 
 from dataclasses import dataclass
+from typing import Final
 
 from quantum.application.events.event_adapter import adapt_event_for_bus
 from quantum.application.events.event_retry_policy import (
@@ -28,7 +29,7 @@ from quantum.application.events.event_retry_policy import (
 from quantum.application.events.topic_map import map_topic
 from quantum.application.ports.outbound.event_bus_port import EventBusPort
 
-logger = logging.getLogger(__name__)
+LOGGER: Final = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -76,7 +77,7 @@ class TradingEventEmitter:
                 self._worker(i), name=f"trading-event-emitter-{i}"
             )
             self._workers.append(task)
-        logger.info(
+        LOGGER.info(
             "[Emitter] started concurrency=%d queue_max=%d",
             self._cfg.concurrency,
             self._cfg.queue_maxsize,
@@ -100,7 +101,7 @@ class TradingEventEmitter:
             task.cancel()
         await asyncio.gather(*self._workers, return_exceptions=True)
         self._workers.clear()
-        logger.info("[Emitter] closed (remaining=%d)", self._queue.qsize())
+        LOGGER.info("[Emitter] closed (remaining=%d)", self._queue.qsize())
 
     # --------------------------------------------------------------------------
     # Public API
@@ -111,7 +112,7 @@ class TradingEventEmitter:
         Backpressure: caller will await if queue is full.
         """
         if self._closing.is_set():
-            logger.warning(
+            LOGGER.warning(
                 "[Emitter] emit called after closing — dropped event=%s", event
             )
             return
@@ -129,7 +130,7 @@ class TradingEventEmitter:
                 finally:
                     self._queue.task_done()
         except asyncio.CancelledError:
-            logger.debug("[Emitter] worker-%d cancelled", worker_id)
+            LOGGER.debug("[Emitter] worker-%d cancelled", worker_id)
 
     async def _publish_with_resilience(self, event: object) -> None:
         """Publish event with retry logic provided by EventRetryPolicy."""
@@ -138,6 +139,6 @@ class TradingEventEmitter:
 
         async def publish_once() -> None:
             await self._bus.publish(topic, payload)
-            logger.debug("[Emitter] published %s → %s", name, topic)
+            LOGGER.debug("[Emitter] published %s → %s", name, topic)
 
         await self._retry_policy.execute_with_retry(name, publish_once)

@@ -1,8 +1,10 @@
 import logging
 
+from typing import Final
+
 from prometheus_client import REGISTRY
 
-_logger = logging.getLogger(__name__)
+LOGGER: Final = logging.getLogger(__name__)
 
 
 def get_gauge_value(name: str) -> float | None:
@@ -14,7 +16,7 @@ def get_gauge_value(name: str) -> float | None:
                     return float(s.value)
         return None
     except Exception as exc:
-        _logger.debug("gauge_value(%s) failed: %s", name, exc)
+        LOGGER.debug("gauge_value(%s) failed: %s", name, exc)
         return None
 
 

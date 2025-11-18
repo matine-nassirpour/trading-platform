@@ -8,10 +8,12 @@ import time
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from functools import wraps
-from typing import Any, Generic, ParamSpec, TypeVar, cast
+from typing import Any, Final, Generic, ParamSpec, TypeVar, cast
 
 from quantum.application.ports.outbound.timeout_runner_port import TimeoutRunnerPort
 from quantum.application.resilience.retry_policy import DefaultRetryPolicy, RetryPolicy
+
+LOGGER: Final = logging.getLogger(__name__)
 
 P = ParamSpec("P")
 R = TypeVar("R")
@@ -39,7 +41,7 @@ class ResilienceLogger:
     """Adapter for consistent structured logging across sync/async flows."""
 
     def __init__(self, logger: logging.Logger | None = None):
-        self._logger = logger or logging.getLogger(__name__)
+        self._logger = logger or LOGGER
 
     def log_success(self, operation: str, attempt: int, latency_ms: int) -> None:
         self._logger.debug(

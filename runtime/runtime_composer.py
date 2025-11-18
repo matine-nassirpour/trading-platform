@@ -25,6 +25,7 @@ import asyncio
 import logging
 
 from dataclasses import dataclass
+from typing import Final
 
 from quantum.application.ports.outbound.config_port import ConfigPort
 from quantum.application.ports.outbound.event_bus_port import EventBusPort
@@ -38,6 +39,8 @@ from quantum.infrastructure.observability.drivers.logging_driver import LoggingD
 from quantum.infrastructure.observability.drivers.observability_driver import (
     ObservabilityDriver,
 )
+
+LOGGER: Final = logging.getLogger(__name__)
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
@@ -80,8 +83,7 @@ class RuntimeComposer:
         if cls._instance is not None:
             return cls._instance
 
-        logger = logging.getLogger(__name__)
-        logger.info("Assembling Quantum runtime context...")
+        LOGGER.info("Assembling Quantum runtime context...")
 
         # ─── Core providers
         config_provider = ConfigAdapter()
@@ -101,7 +103,7 @@ class RuntimeComposer:
             event_bus=event_bus,
         )
 
-        logger.info(
+        LOGGER.info(
             "Quantum runtime context assembled successfully: %s",
             cls._instance.describe(),
         )

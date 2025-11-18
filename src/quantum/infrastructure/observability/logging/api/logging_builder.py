@@ -1,6 +1,7 @@
 import logging
 
 from contextlib import suppress
+from typing import Final
 
 from quantum.infrastructure.observability.logging.api.handler_factory import (
     HandlerFactory,
@@ -18,6 +19,8 @@ from quantum.infrastructure.observability.logging.metadata.config_bundle import 
 from quantum.infrastructure.observability.logging.pipeline.engine.factory import (
     LoggingPipelineFactory,
 )
+
+AUDIT_LOGGER: Final = logging.getLogger("quantum.audit")
 
 
 class LoggingBuilder:
@@ -53,17 +56,15 @@ class LoggingBuilder:
         if not self.bundle.audit_dir:
             return
 
-        audit_logger = logging.getLogger("quantum.trading.audit")
-
         # wipe previous
-        for h in list(audit_logger.handlers):
+        for h in list(AUDIT_LOGGER.handlers):
             with suppress(Exception):
                 if hasattr(h, "flush"):
                     h.flush()
             with suppress(Exception):
                 h.close()
             with suppress(Exception):
-                audit_logger.removeHandler(h)
+                AUDIT_LOGGER.removeHandler(h)
 
         handler = AuditEventFileHandler(
             base_dir=self.bundle.audit_dir,
@@ -75,6 +76,6 @@ class LoggingBuilder:
         handler.setFormatter(self.formatter)
         handler.addFilter(AuditEventFilter(allowlist=self.bundle.audit_allowlist))
 
-        audit_logger.addHandler(handler)
-        audit_logger.setLevel(logging.DEBUG)
-        audit_logger.propagate = False
+        AUDIT_LOGGER.addHandler(handler)
+        AUDIT_LOGGER.setLevel(logging.DEBUG)
+        AUDIT_LOGGER.propagate = False

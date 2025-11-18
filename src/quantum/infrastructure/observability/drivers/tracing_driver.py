@@ -4,7 +4,7 @@ import logging
 
 from collections.abc import Mapping
 from contextlib import asynccontextmanager
-from typing import Any
+from typing import Any, Final
 
 from opentelemetry.trace import Status, StatusCode
 
@@ -14,6 +14,8 @@ from quantum.infrastructure.observability.drivers.observability_driver import (
 )
 from quantum.infrastructure.observability.logging.audit.emitter import emit_event
 from quantum.infrastructure.observability.tracing.provider import get_tracer
+
+LOGGER: Final = logging.getLogger("quantum.observability.trace")
 
 
 class _HybridTraceHandle(TraceHandle):
@@ -85,7 +87,7 @@ class TracingDriver(TracingPort):
 
     def __init__(self, obs: ObservabilityDriver) -> None:
         self._obs = obs
-        self._logger = logging.getLogger("quantum.observability.trace")
+        self._logger = LOGGER
 
     # --------------------------------------------------------------------------
     # trace() — async context manager
