@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from quantum.infrastructure.observability.bootstrap.diagnostics import (
-    BootstrapDiagnostics,
-)
 from quantum.infrastructure.observability.bootstrap.health_registry import (
     HealthRegistry,
+)
+from quantum.infrastructure.observability.bootstrap.init_diagnostics import (
+    BootstrapDiagnostics,
 )
 from quantum.infrastructure.observability.bootstrap.lifecycle.implementations.filesystem_probe_impl import (
     FileSystemProbeImpl,
