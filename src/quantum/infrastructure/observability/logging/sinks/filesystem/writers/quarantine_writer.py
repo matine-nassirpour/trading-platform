@@ -50,8 +50,7 @@ class QuarantineWriter:
             try:
                 os.fsync(self._fh.fileno())
             except Exception:
-                # Do not raise, quarantine must NEVER break a handler
-                return
+                pass
 
     def close(self) -> None:
         if self._fh is None:
@@ -64,9 +63,7 @@ class QuarantineWriter:
                     try:
                         os.fsync(self._fh.fileno())
                     except Exception:
-                        # Closing must never raise in quarantine.
-                        # Failure to fsync on close does not affect safety guarantees.
-                        return
+                        pass
             finally:
                 self._fh.close()
         finally:

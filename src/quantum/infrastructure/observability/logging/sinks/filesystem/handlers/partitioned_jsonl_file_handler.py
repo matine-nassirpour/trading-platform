@@ -5,10 +5,10 @@ import logging
 from contextlib import suppress
 from typing import Final
 
-from quantum.infrastructure.observability.logging.runtime.metrics import define_counter
-from quantum.infrastructure.observability.logging.sinks.filesystem.formatters.jsonl_formatter import (
-    RecordFormatter,
+from quantum.infrastructure.observability.logging.formatters.jsonl_formatter import (
+    JSONLRecordFormatter,
 )
+from quantum.infrastructure.observability.logging.runtime.metrics import define_counter
 from quantum.infrastructure.observability.logging.sinks.filesystem.policies.partition_policy import (
     PartitionPolicy,
 )
@@ -37,7 +37,7 @@ class PartitionedJSONLFileHandler(logging.Handler):
     def __init__(
         self,
         *,
-        formatter: RecordFormatter,
+        formatter: JSONLRecordFormatter,
         policy: PartitionPolicy,
     ) -> None:
         super().__init__()

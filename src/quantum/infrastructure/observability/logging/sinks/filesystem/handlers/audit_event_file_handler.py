@@ -24,11 +24,10 @@ _AUDIT_DISK_ERRORS: Final = define_counter("audit_disk_errors")
 _AUDIT_WRITES: Final = define_counter("audit_events_written")
 
 
-class AuditFilePathResolver:
+class AuditQuarantinePathResolver:
     """
-    Pure utility responsible for constructing the target audit file path
-    based on the event timestamp, and ensuring the directory structure exists.
-    SRP: Naming + directory creation only.
+    Determines the quarantine file path for audit failures.
+    One file per day, deterministic, minimal, safety-grade.
     """
 
     def __init__(self, base_dir: Path, env: str, namespace: str, app: str) -> None:
@@ -37,12 +36,17 @@ class AuditFilePathResolver:
         self._ns = namespace
         self._app = app
 
-    def resolve(self, dt: datetime) -> Path:
-        """
-        Build a new file path for an audit event at timestamp dt.
-        """
-        blob_name = generate_audit_blob_name(now=dt)
-        path = self._base / self._env / self._ns / self._app / blob_name
+    def resolve(self, dt: datetime | None = None) -> Path:
+        dt = dt or datetime.now(UTC)
+        yyyy = dt.strftime("%Y")
+        mm = dt.strftime("%m")
+        dd = dt.strftime("%d")
+
+        # Name: quarantine-YYYYMMDD.jsonl
+        filename = f"quarantine-{yyyy}{mm}{dd}.jsonl"
+
+        path = self._base / self._env / self._ns / self._app / "quarantine" / filename
+
         path.parent.mkdir(parents=True, exist_ok=True)
         return path
 
@@ -51,12 +55,10 @@ class AuditEventFileHandler(logging.Handler):
     """
     Thread-safe, safety-grade audit event handler.
 
-    Responsibilities:
-    - Serialize a single audit event per file (1 event = 1 JSON file).
-    - Atomic write (via SafeFileWriter).
-    - Quarantine fallback on malformed payloads or serialization failures.
-    - Thread-safe emit() via lock.
-    - Deterministic file naming via AuditFilePathResolver.
+    Guarantees:
+    - 1 event = 1 file (atomic write)
+    - NEVER raise
+    - Dedicated quarantine channel with guaranteed durability
     """
 
     def __init__(
@@ -73,27 +75,39 @@ class AuditEventFileHandler(logging.Handler):
         self._encoding = encoding
         self._fsync = fsync
 
-        self._resolver = AuditFilePathResolver(
-            base_dir=Path(base_dir),
-            env=env,
-            namespace=namespace,
-            app=app,
+        base = Path(base_dir)
+
+        # Normal path resolver (1 event = 1 file)
+        self._target_base = base / env / namespace / app
+
+        # Quarantine path resolver (1 file per day)
+        self._quarantine_resolver = AuditQuarantinePathResolver(
+            base_dir=base, env=env, namespace=namespace, app=app
         )
 
         self._writer = SafeFileWriter(encoding=encoding, fsync=fsync)
         self._quarantine = QuarantineWriter(encoding=encoding, fsync=fsync)
 
-        self._lock = threading.Lock()
         self._diag = get_diagnostic_logger()
+        self._lock = threading.Lock()
+
+        try:
+            qpath = self._quarantine_resolver.resolve()
+            self._quarantine.open(qpath)
+        except Exception:
+            # Extremely degraded mode: quarantine itself failed
+            self._diag.error("[audit] failed to open quarantine file", exc_info=True)
 
     # --------------------------------------------------------------------------
     # Internal Helpers
     # --------------------------------------------------------------------------
-    def _safe_quarantine(self, record: logging.LogRecord, raw_payload: str) -> None:
+    def _write_quarantine(
+        self, record: logging.LogRecord, raw_payload: str, reason: str
+    ) -> None:
         try:
             self._quarantine.write_error(
                 {
-                    "error": "audit_write_failed",
+                    "error": reason,
                     "logger": record.name,
                     "level": record.levelname,
                     "created": record.created,
@@ -101,55 +115,51 @@ class AuditEventFileHandler(logging.Handler):
                 }
             )
         except Exception:
-            # final fallback: handlerError never throws
+            # final fallback: never raise
             self.handleError(record)
 
     # --------------------------------------------------------------------------
     # Core logic
     # --------------------------------------------------------------------------
     def emit(self, record: logging.LogRecord) -> None:
-        """
-        Thread-safe emit:
-        - Extract event dict
-        - Resolve target file path
-        - Atomic write with SafeFileWriter
-        - Quarantine on failures
-        """
         event = getattr(record, "event", None)
         if not isinstance(event, dict):
-            return  # ignore non-audit records
-
-        dt = datetime.fromtimestamp(record.created, tz=UTC)
-        target_path = self._resolver.resolve(dt)
+            return
 
         with self._lock:
+            # JSON serialization (forensic raw)
             try:
                 payload = json.dumps(
-                    event, ensure_ascii=False, separators=(",", ":"), allow_nan=False
+                    event,
+                    ensure_ascii=False,
+                    separators=(",", ":"),
+                    allow_nan=False,
                 )
-            except Exception as exc:
+            except Exception:
                 _AUDIT_DISK_ERRORS.inc()
-                self._quarantine.write_error(
-                    {
-                        "error": "audit_serialization_failed",
-                        "reason": str(exc),
-                        "event": "<unserializable>",
-                    }
+                self._write_quarantine(
+                    record, "<unserializable>", "audit_serialization_failed"
                 )
                 return
 
+            # Resolve atomic file path
+            dt = datetime.fromtimestamp(record.created, tz=UTC)
+            blob_name = generate_audit_blob_name(now=dt)
+            target_path = self._target_base / blob_name
+            target_path.parent.mkdir(parents=True, exist_ok=True)
+
+            # Atomic write
             try:
                 self._writer.open_atomic(target_path)
                 self._writer.write_line_raw(payload)
                 self._writer.close()
                 _AUDIT_WRITES.inc()
-
-            except Exception as exc:
+            except Exception:
                 _AUDIT_DISK_ERRORS.inc()
                 self._diag.error(
-                    f"[audit] write failed for {target_path}: {exc.__class__.__name__}"
+                    f"[audit] write failed for {target_path}", exc_info=True
                 )
-                self._safe_quarantine(record, payload)
+                self._write_quarantine(record, payload, "audit_atomic_write_failed")
 
     # ----------------------------------------------------------------------
     # Lifecycle
@@ -163,6 +173,7 @@ class AuditEventFileHandler(logging.Handler):
                     "AuditEventFileHandler: suppressed error during writer.close()",
                     exc_info=True,
                 )
+
             try:
                 self._quarantine.close()
             except Exception:
@@ -170,4 +181,5 @@ class AuditEventFileHandler(logging.Handler):
                     "AuditEventFileHandler: suppressed error during quarantine.close()",
                     exc_info=True,
                 )
+
         super().close()

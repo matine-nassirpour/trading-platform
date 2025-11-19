@@ -5,14 +5,14 @@ from pathlib import Path
 from quantum.infrastructure.observability.logging.formatters.json_formatter import (
     JsonFormatter,
 )
+from quantum.infrastructure.observability.logging.formatters.jsonl_formatter import (
+    JSONLRecordFormatter,
+)
 from quantum.infrastructure.observability.logging.metadata.config_bundle import (
     LoggingRuntimeBundle,
 )
 from quantum.infrastructure.observability.logging.pipeline.engine.pipeline import (
     LoggingPipeline,
-)
-from quantum.infrastructure.observability.logging.sinks.filesystem.formatters.jsonl_formatter import (
-    RecordFormatter,
 )
 from quantum.infrastructure.observability.logging.sinks.filesystem.handlers.partitioned_jsonl_file_handler import (
     PartitionedJSONLFileHandler,
@@ -62,8 +62,8 @@ class HandlerFactory:
             max_bytes=self._bundle.log_max_bytes,
         )
 
-        handler = PartitionedJSONLFileHandler(
-            formatter=RecordFormatter(), policy=policy
-        )
+        formatter = JSONLRecordFormatter(instance_id=self._bundle.instance_id)
+
+        handler = PartitionedJSONLFileHandler(formatter=formatter, policy=policy)
 
         return self._attach(handler)
