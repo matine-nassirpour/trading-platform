@@ -1,5 +1,7 @@
 import logging
 
+from pathlib import Path
+
 from quantum.infrastructure.observability.logging.formatters.json_formatter import (
     JsonFormatter,
 )
@@ -9,8 +11,14 @@ from quantum.infrastructure.observability.logging.metadata.config_bundle import 
 from quantum.infrastructure.observability.logging.pipeline.engine.pipeline import (
     LoggingPipeline,
 )
-from quantum.infrastructure.observability.logging.sinks.filesystem.partitioned_handler import (
+from quantum.infrastructure.observability.logging.sinks.filesystem.formatters.jsonl_formatter import (
+    RecordFormatter,
+)
+from quantum.infrastructure.observability.logging.sinks.filesystem.handlers.partitioned_handler import (
     PartitionedJSONLFileHandler,
+)
+from quantum.infrastructure.observability.logging.sinks.filesystem.policies.partition_policy import (
+    PartitionPolicy,
 )
 
 
@@ -41,10 +49,21 @@ class HandlerFactory:
 
     def console(self) -> logging.Handler:
         """Return a fully configured console handler."""
-        h = logging.StreamHandler()
-        return self._attach(h)
+        handler = logging.StreamHandler()
+        return self._attach(handler)
 
     def partitioned(self) -> logging.Handler:
         """Return a fully configured partitioned JSONL file handler."""
-        h = PartitionedJSONLFileHandler(bundle=self._bundle)
-        return self._attach(h)
+        policy = PartitionPolicy(
+            base_dir=Path(self._bundle.log_dir),
+            env=self._bundle.env,
+            namespace=self._bundle.namespace,
+            app=self._bundle.app_name,
+            max_bytes=self._bundle.log_max_bytes,
+        )
+
+        handler = PartitionedJSONLFileHandler(
+            formatter=RecordFormatter(), policy=policy
+        )
+
+        return self._attach(handler)
