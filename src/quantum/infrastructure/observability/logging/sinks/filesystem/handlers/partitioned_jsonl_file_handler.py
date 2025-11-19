@@ -66,7 +66,7 @@ class PartitionedJSONLFileHandler(logging.Handler):
                 with suppress(Exception):
                     self._writer.close()
                     self._quarantine.close()
-                self._writer.open(decision.events_path)
+                self._writer.open_append(decision.events_path)
                 self._quarantine.open(decision.bad_path)
                 self._current_part = (
                     0 if decision.rollover_required else self._current_part

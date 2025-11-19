@@ -14,7 +14,7 @@ from quantum.infrastructure.observability.logging.pipeline.engine.pipeline impor
 from quantum.infrastructure.observability.logging.sinks.filesystem.formatters.jsonl_formatter import (
     RecordFormatter,
 )
-from quantum.infrastructure.observability.logging.sinks.filesystem.handlers.partitioned_handler import (
+from quantum.infrastructure.observability.logging.sinks.filesystem.handlers.partitioned_jsonl_file_handler import (
     PartitionedJSONLFileHandler,
 )
 from quantum.infrastructure.observability.logging.sinks.filesystem.policies.partition_policy import (
