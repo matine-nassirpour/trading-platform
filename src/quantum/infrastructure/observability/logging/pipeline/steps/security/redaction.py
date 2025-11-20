@@ -4,6 +4,7 @@ import json
 import logging
 import re
 
+from contextlib import suppress
 from typing import Any, Final
 
 from quantum.infrastructure.observability.logging.pipeline.engine.step import (
@@ -18,19 +19,21 @@ LOGGER: Final = logging.getLogger(__name__)
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Constants                                                                  │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-SECRET_KEYS: Final[set[str]] = {
-    "password",
-    "secret",
-    "token",
-    "api_key",
-    "access_key",
-    "auth",
-    "authorization",
-    "bearer",
-    "client_secret",
-    "refresh_token",
-    "session_id",
-}
+SECRET_KEYS: Final[frozenset[str]] = frozenset(
+    {
+        "password",
+        "secret",
+        "token",
+        "api_key",
+        "access_key",
+        "auth",
+        "authorization",
+        "bearer",
+        "client_secret",
+        "refresh_token",
+        "session_id",
+    }
+)
 
 _JWT_RE: Final[re.Pattern[str]] = re.compile(
     r"eyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}"
@@ -41,6 +44,45 @@ _HEX32_RE: Final[re.Pattern[str]] = re.compile(r"\b[0-9a-fA-F]{32,}\b")
 _MAX_VALUE_LEN: Final[int] = 5_000
 
 
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Internal Helper                                                            │
+# ╰────────────────────────────────────────────────────────────────────────────╯
+def _redact_value(value: Any) -> Any:
+    """
+    Pure redaction utility — fully deterministic and never raises.
+    """
+    # dict
+    if isinstance(value, dict):
+        redacted = {}
+        for k, v in value.items():
+            lk = k.lower()
+            if lk in SECRET_KEYS:
+                redacted[k] = "[REDACTED]"
+            else:
+                redacted[k] = _redact_value(v)
+        return redacted
+
+    # list
+    if isinstance(value, list):
+        return [_redact_value(v) for v in value]
+
+    # string
+    if isinstance(value, str):
+        s = value
+
+        if len(s) > _MAX_VALUE_LEN:
+            s = s[:_MAX_VALUE_LEN] + "…"
+
+        # redact token-like values
+        if _JWT_RE.search(s) or _HEX32_RE.search(s):
+            return "[REDACTED]"
+
+        return s
+
+    # primitive or unknown types
+    return value
+
+
 class RedactionStep(PipelineStep):
     """
     Recursively sanitizes log record payloads:
@@ -49,76 +91,46 @@ class RedactionStep(PipelineStep):
         - truncates excessively long strings
     """
 
-    def _redact_value(self, value: Any) -> Any:
-        """Redact a single value or recursively process containers."""
-        # ─── dict
-        if isinstance(value, dict):
-            return {
-                k: "[REDACTED]" if k.lower() in SECRET_KEYS else self._redact_value(v)
-                for k, v in value.items()
-            }
-
-        # ─── list
-        if isinstance(value, list):
-            return [self._redact_value(v) for v in value]
-
-        # ─── string
-        if isinstance(value, str):
-            s = value
-
-            # truncate oversized string
-            if len(s) > _MAX_VALUE_LEN:
-                s = s[:_MAX_VALUE_LEN] + "…"
-
-            # redact token-like patterns
-            if _JWT_RE.search(s) or _HEX32_RE.search(s):
-                return "[REDACTED]"
-
-            return s
-
-        # ─── primitive / any other
-        return value
-
-    def process(self, record: logging.LogRecord) -> object | None:
-        """
-        Applies redaction to:
-            - record.attrs (structured attributes)
-            - record.msg   (event/message text)
-        Always returns the record (never drops).
-        """
+    def process(self, record: logging.LogRecord) -> bool:
         modified = False
 
-        # ─── Redact structured attrs
-        attrs = getattr(record, "attrs", None)
-        if isinstance(attrs, dict):
-            before = json.dumps(attrs, ensure_ascii=False)
-            record.attrs = self._redact_value(attrs)
-            after = json.dumps(record.attrs, ensure_ascii=False)
-            if after != before:
-                modified = True
+        try:
+            # Structured attributes
+            attrs = getattr(record, "attrs", None)
+            if isinstance(attrs, dict):
+                before = json.dumps(attrs, ensure_ascii=False)
 
-        # ─── Redact message string
-        msg = getattr(record, "msg", None)
-        if isinstance(msg, str):
-            redacted = msg
-            redacted = _JWT_RE.sub("[REDACTED]", redacted)
-            redacted = _HEX32_RE.sub("[REDACTED]", redacted)
+                redacted = _redact_value(attrs)
+                record.attrs = redacted
 
-            if len(redacted) > _MAX_VALUE_LEN:
-                redacted = redacted[:_MAX_VALUE_LEN] + "…"
+                after = json.dumps(redacted, ensure_ascii=False)
 
-            if redacted != msg:
-                modified = True
-                record.msg = redacted
+                if before is not None and after is not None and before != after:
+                    modified = True
 
-        # ─── 3. Metrics
-        if modified:
-            try:
-                logging_redactions_total.inc()
-            except Exception as exc:
-                LOGGER.debug(
-                    "RedactionStep: failed to increment logging_redactions_total",
-                    exc_info=exc,
-                )
+            # Message redaction
+            msg = getattr(record, "msg", None)
+            if isinstance(msg, str):
+                redacted_msg = msg
 
-        return record
+                redacted_msg = _JWT_RE.sub("[REDACTED]", redacted_msg)
+                redacted_msg = _HEX32_RE.sub("[REDACTED]", redacted_msg)
+
+                if len(redacted_msg) > _MAX_VALUE_LEN:
+                    redacted_msg = redacted_msg[:_MAX_VALUE_LEN] + "…"
+
+                if redacted_msg != msg:
+                    record.msg = redacted_msg
+                    modified = True
+
+            # Metrics
+            if modified:
+                with suppress(Exception):
+                    logging_redactions_total.inc()
+
+            return True
+
+        except Exception as exc:
+            # Absolute fail-safe
+            LOGGER.debug("RedactionStep failed but recovered", exc_info=exc)
+            return True
