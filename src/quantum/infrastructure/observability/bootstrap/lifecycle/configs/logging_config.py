@@ -20,17 +20,21 @@ class LoggingConfig:
       • Certification-ready design (DO-178C / IEC 62304 / ISO 26262)
     """
 
-    level: int
-    log_directory: Path | None
-    audit_directory: Path | None
-
-    rate_limit_per_sec: int
-    sample_info_every: int
-
-    deep_probe: bool
-
-    service_name: str
-    service_namespace: str
-    service_version: str
     environment: str
+    service_namespace: str
+    service_name: str
+    service_version: str
     instance_id: str
+
+    log_dir: Path | None
+    audit_dir: Path | None
+
+    audit_allowlist: frozenset[str]
+
+    log_level: int
+    sample_info_every: int
+    ratelimit_rps: float
+
+    log_fsync: bool
+    log_max_bytes: int
+    log_warn_bytes: int

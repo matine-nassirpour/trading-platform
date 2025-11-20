@@ -8,9 +8,6 @@ from quantum.infrastructure.observability.bootstrap.health_registry import (
 from quantum.infrastructure.observability.bootstrap.init_diagnostics import (
     BootstrapDiagnostics,
 )
-from quantum.infrastructure.observability.bootstrap.lifecycle.implementations.filesystem_probe_impl import (
-    FileSystemProbeImpl,
-)
 from quantum.infrastructure.observability.bootstrap.lifecycle.implementations.logging_initializer_impl import (
     LoggingInitializerImpl,
 )
@@ -22,9 +19,6 @@ from quantum.infrastructure.observability.bootstrap.lifecycle.implementations.tr
 )
 from quantum.infrastructure.observability.bootstrap.lifecycle.protocols.build_info_provider import (
     BuildInfoProvider,
-)
-from quantum.infrastructure.observability.bootstrap.lifecycle.protocols.filesystem_probe import (
-    FileSystemProbe,
 )
 from quantum.infrastructure.observability.bootstrap.lifecycle.protocols.logging_initializer import (
     LoggingInitializer,
@@ -65,7 +59,6 @@ class ObservabilityDependencies:
     logging_initializer: LoggingInitializer
     tracing_initializer: TracingInitializer
     metrics_initializer: MetricsInitializer
-    filesystem_probe: FileSystemProbe
     health_registry: HealthRegistry
     diagnostics: BootstrapDiagnostics
     build_info_provider: BuildInfoProvider
@@ -90,7 +83,6 @@ def create_observability_dependencies() -> ObservabilityDependencies:
         logging_initializer=LoggingInitializerImpl(),
         tracing_initializer=TracingInitializerImpl(),
         metrics_initializer=MetricsInitializerImpl(),
-        filesystem_probe=FileSystemProbeImpl(),
         health_registry=HealthRegistry.get_instance(),
         diagnostics=BootstrapDiagnostics.get_instance(),
         build_info_provider=_BuildInfoProviderImpl(),

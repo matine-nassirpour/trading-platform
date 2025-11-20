@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import Path
 
 from quantum.infrastructure.observability.logging.pipeline.engine.pipeline_config import (
     PipelineConfig,
@@ -15,10 +16,10 @@ class LoggingRuntimeBundle:
     app_version: str
     instance_id: str
 
-    audit_allowlist: frozenset[str]
+    log_dir: Path | None
+    audit_dir: Path | None
 
-    log_dir: str | None
-    audit_dir: str | None
+    audit_allowlist: frozenset[str]
 
     log_level: int
     sample_info_every: int

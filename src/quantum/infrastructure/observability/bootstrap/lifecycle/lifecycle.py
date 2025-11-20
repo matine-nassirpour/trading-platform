@@ -5,9 +5,6 @@ import logging
 from contextlib import suppress
 from typing import Final
 
-from quantum.infrastructure.observability.bootstrap.lifecycle.configs.filesystem_probe_config import (
-    FileSystemProbeConfig,
-)
 from quantum.infrastructure.observability.bootstrap.lifecycle.configs.logging_config import (
     LoggingConfig,
 )
@@ -67,7 +64,6 @@ class LifecycleService:
         logging_config: LoggingConfig,
         tracing_config: TracingConfig,
         metrics_config: MetricsConfig,
-        probe_config: FileSystemProbeConfig,
         force: bool = False,
     ) -> bool:
         """
@@ -117,21 +113,6 @@ class LifecycleService:
         except Exception as exc:
             self._logger.exception(f"[Observability] Logging init failed: {exc}")
             registry.mark_logging_ok(False)
-            registry.mark_logging_sink_up(False)
-
-        # ----------------------------------------------------------------------
-        # Sink probing
-        # ----------------------------------------------------------------------
-        try:
-            # Only probe if directories exist
-            if logging_config.log_directory:
-                is_ok = self._deps.filesystem_probe.is_writable(
-                    logging_config.log_directory,
-                    probe_config,
-                )
-                registry.mark_logging_sink_up(is_ok)
-        except Exception as exc:
-            self._logger.warning(f"[Observability] Sink probe failed: {exc}")
             registry.mark_logging_sink_up(False)
 
         # ----------------------------------------------------------------------

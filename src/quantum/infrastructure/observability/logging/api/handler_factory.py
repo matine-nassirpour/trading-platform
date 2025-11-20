@@ -1,7 +1,5 @@
 import logging
 
-from pathlib import Path
-
 from quantum.infrastructure.observability.logging.formatters.json_formatter import (
     JsonFormatter,
 )
@@ -60,7 +58,7 @@ class HandlerFactory:
     def partitioned(self) -> logging.Handler:
         """Return a fully configured partitioned JSONL file handler."""
         policy = PartitionPolicy(
-            base_dir=Path(self._bundle.log_dir),
+            base_dir=self._bundle.log_dir,
             env=self._bundle.env,
             namespace=self._bundle.namespace,
             app=self._bundle.app_name,

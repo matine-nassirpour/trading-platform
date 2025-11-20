@@ -7,9 +7,6 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from typing import Final
 
-from quantum.infrastructure.observability.bootstrap.lifecycle.configs.filesystem_probe_config import (
-    FileSystemProbeConfig,
-)
 from quantum.infrastructure.observability.bootstrap.lifecycle.configs.logging_config import (
     LoggingConfig,
 )
@@ -51,7 +48,6 @@ def init_observability(
     logging_config: LoggingConfig,
     tracing_config: TracingConfig,
     metrics_config: MetricsConfig,
-    probe_config: FileSystemProbeConfig,
     force: bool = False,
 ) -> bool:
     """
@@ -82,7 +78,6 @@ def init_observability(
             logging_config=logging_config,
             tracing_config=tracing_config,
             metrics_config=metrics_config,
-            probe_config=probe_config,
             force=force,
         )
 
@@ -121,7 +116,6 @@ def observability_session(
     logging_config: LoggingConfig,
     tracing_config: TracingConfig,
     metrics_config: MetricsConfig,
-    probe_config: FileSystemProbeConfig,
     force: bool = False,
 ) -> Iterator[None]:
     """Context manager for deterministic init/shutdown."""
@@ -129,7 +123,6 @@ def observability_session(
         logging_config=logging_config,
         tracing_config=tracing_config,
         metrics_config=metrics_config,
-        probe_config=probe_config,
         force=force,
     )
     try:

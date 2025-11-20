@@ -64,7 +64,7 @@ class AuditEventFileHandler(logging.Handler):
     def __init__(
         self,
         *,
-        base_dir: str,
+        base_dir: Path,
         env: str,
         namespace: str,
         app: str,
@@ -75,14 +75,12 @@ class AuditEventFileHandler(logging.Handler):
         self._encoding = encoding
         self._fsync = fsync
 
-        base = Path(base_dir)
-
         # Normal path resolver (1 event = 1 file)
-        self._target_base = base / env / namespace / app
+        self._target_base = base_dir / env / namespace / app
 
         # Quarantine path resolver (1 file per day)
         self._quarantine_resolver = AuditQuarantinePathResolver(
-            base_dir=base, env=env, namespace=namespace, app=app
+            base_dir=base_dir, env=env, namespace=namespace, app=app
         )
 
         self._writer = SafeFileWriter(encoding=encoding, fsync=fsync)
