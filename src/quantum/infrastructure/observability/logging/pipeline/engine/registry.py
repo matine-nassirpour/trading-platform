@@ -62,14 +62,12 @@ PIPELINE_STEP_REGISTRY: list[StepDefinition] = [
     StepDefinition(
         key="info_sampler",
         enabled_flag="enable_info_sampler",
-        factory=lambda bundle=None: InfoSamplerStep(
-            sample_every=bundle.sample_info_every
-        ),
+        factory=lambda state: InfoSamplerStep(state),
     ),
     StepDefinition(
         key="rate_limit",
         enabled_flag="enable_rate_limit",
-        factory=lambda bundle=None: RateLimitStep(max_per_sec=bundle.ratelimit_rps),
+        factory=lambda state: RateLimitStep(state),
     ),
     StepDefinition(
         key="redaction",

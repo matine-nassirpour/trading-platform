@@ -1,27 +1,24 @@
 from __future__ import annotations
 
 import logging
-import threading
 
 from quantum.infrastructure.observability.logging.pipeline.engine.step import (
     PipelineStep,
+)
+from quantum.infrastructure.observability.logging.pipeline.state.info_sampler_state import (
+    InfoSamplerState,
 )
 
 
 class InfoSamplerStep(PipelineStep):
     """Samples INFO-level log records at a fixed interval."""
 
-    __slots__ = ("_sample_every", "_counter", "_lock")
+    __slots__ = "_state"
 
-    def __init__(self, sample_every: int = 10) -> None:
-        self._sample_every = max(1, int(sample_every))
-        self._counter = 0
-        self._lock = threading.Lock()
+    def __init__(self, state: InfoSamplerState) -> None:
+        self._state = state
 
     def process(self, record: logging.LogRecord) -> bool:
-        if record.levelno != logging.INFO or self._sample_every <= 1:
+        if record.levelno != logging.INFO:
             return True
-
-        with self._lock:
-            self._counter = (self._counter + 1) % self._sample_every
-            return self._counter == 0
+        return self._state.increment_and_check()
