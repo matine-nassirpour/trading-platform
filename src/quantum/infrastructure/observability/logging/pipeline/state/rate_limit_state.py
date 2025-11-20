@@ -14,7 +14,12 @@ class RateLimitState:
     max_per_sec: float
     available_tokens: float = field(init=False)
     last_refill: float = field(init=False)
-    _lock: threading.Lock = threading.Lock()
+    _lock: threading.Lock = field(
+        default_factory=threading.Lock,
+        init=False,
+        repr=False,
+        compare=False,
+    )
 
     def __post_init__(self) -> None:
         self.available_tokens = self.max_per_sec

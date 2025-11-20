@@ -1,6 +1,6 @@
 import threading
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass(slots=True)
@@ -16,7 +16,12 @@ class InfoSamplerState:
 
     sample_every: int
     counter: int = 0
-    _lock: threading.Lock = threading.Lock()
+    _lock: threading.Lock = field(
+        default_factory=threading.Lock,
+        init=False,
+        repr=False,
+        compare=False,
+    )
 
     def increment_and_check(self) -> bool:
         """
