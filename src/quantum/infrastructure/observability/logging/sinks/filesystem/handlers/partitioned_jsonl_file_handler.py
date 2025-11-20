@@ -61,19 +61,21 @@ class PartitionedJSONLFileHandler(logging.Handler):
                 current_size=size,
             )
 
-            # rotation if needed
+            # Rotation required OR new partition path detected
             if decision.rollover_required or self._writer.path != decision.events_path:
                 with suppress(Exception):
                     self._writer.close()
                     self._quarantine.close()
+
+                # Open new files
                 self._writer.open_append(decision.events_path)
                 self._quarantine.open(decision.bad_path)
-                self._current_part = (
-                    0 if decision.rollover_required else self._current_part
-                )
+
+                self._current_part = decision.next_part_index
+
                 _LOGGING_FILE_ROTATIONS.inc()
 
-            # try writing
+            # Try writing the record
             line = self._formatter.format(record)
             try:
                 self._writer.write_line(line)

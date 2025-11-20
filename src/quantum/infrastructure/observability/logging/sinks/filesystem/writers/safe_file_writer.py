@@ -117,7 +117,7 @@ class SafeFileWriter:
                 try:
                     os.fsync(self._fh.fileno())
                 except Exception:
-                    return
+                    pass
             self._fh.close()
 
             if self._mode_atomic:
