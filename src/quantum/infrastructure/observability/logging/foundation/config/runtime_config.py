@@ -10,10 +10,10 @@ from quantum.infrastructure.observability.logging.pipeline.engine.pipeline_confi
 
 @dataclass(frozen=True)
 class LoggingRuntimeBundle:
-    env: str
-    namespace: str
-    app_name: str
-    app_version: str
+    environment: str
+    service_namespace: str
+    service_name: str
+    service_version: str
     instance_id: str
 
     log_dir: Path | None

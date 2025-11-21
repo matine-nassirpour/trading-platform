@@ -59,9 +59,9 @@ class HandlerFactory:
         """Return a fully configured partitioned JSONL file handler."""
         policy = PartitionPolicy(
             base_dir=self._bundle.log_dir,
-            env=self._bundle.env,
-            namespace=self._bundle.namespace,
-            app=self._bundle.app_name,
+            env=self._bundle.environment,
+            namespace=self._bundle.service_namespace,
+            app=self._bundle.service_name,
             max_bytes=self._bundle.log_max_bytes,
         )
 

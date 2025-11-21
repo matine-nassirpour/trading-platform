@@ -70,9 +70,9 @@ class LoggingBuilder:
 
         handler = AuditEventFileHandler(
             base_dir=self._bundle.audit_dir,
-            env=self._bundle.env,
-            namespace=self._bundle.namespace,
-            app=self._bundle.app_name,
+            env=self._bundle.environment,
+            namespace=self._bundle.service_namespace,
+            app=self._bundle.service_name,
         )
         handler.setLevel(logging.NOTSET)
         handler.setFormatter(self._formatter)
