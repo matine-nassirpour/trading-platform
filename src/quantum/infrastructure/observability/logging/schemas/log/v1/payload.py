@@ -35,10 +35,10 @@ class ExceptionBlock(BaseModel):
     must populate this object, never individual fields.
     """
 
+    exception_summary: str | None = None
     exception_type: str | None = None
     exception_message: str | None = None
     exception_stacktrace: str | None = None
-    exception_summary: str | None = None
 
     model_config = ConfigDict(extra="forbid")
 
@@ -70,7 +70,7 @@ class LogPayloadV1(BaseModel):
 
     # ─── Environment / resource
     env: str
-    instance: str
+    instance_id: str
     service_name: str | None = None
     service_version: str | None = None
     service_namespace: str | None = None

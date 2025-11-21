@@ -45,7 +45,7 @@ def map_dto_to_contract(event: InternalLogEvent) -> LogEventContractV1:
     # ─── timestamps
     ts: TimestampsDTO = event.timestamps
     timestamps_block = TimestampsBlock(
-        timestamp_rfc3339=ts.timestamp_rfc3339,
+        timestamp=ts.timestamp,
         ts_unix_ms=ts.ts_unix_ms,
         ts_monotonic_ms=ts.ts_monotonic_ms,
     )
@@ -53,14 +53,14 @@ def map_dto_to_contract(event: InternalLogEvent) -> LogEventContractV1:
     # ─── severity
     sev: SeverityDTO = event.severity
     severity_block = SeverityBlock(
-        level_text=sev.level_text,
+        level=sev.level,
         severity_number=sev.severity_number,
     )
 
     # ─── message
     msg: MessageDTO = event.message
     message_block = MessageBlock(
-        logger_name=msg.logger_name,
+        logger=msg.logger,
         message=msg.message,
     )
 
@@ -87,10 +87,10 @@ def map_dto_to_contract(event: InternalLogEvent) -> LogEventContractV1:
     # ─── exception
     exc: ExceptionRawDTO = event.exception
     exception_block = ExceptionBlockRaw(
-        exc_type=exc.exc_type,
-        exc_message=exc.exc_message,
-        exc_stacktrace=exc.exc_stacktrace,
-        exc_summary=exc.exc_summary,
+        exception_summary=exc.exception_summary,
+        exception_type=exc.exception_type,
+        exception_message=exc.exception_message,
+        exception_stacktrace=exc.exception_stacktrace,
     )
 
     # ─── attributes
@@ -125,18 +125,18 @@ def map_contract_to_payload(contract: LogEventContractV1) -> LogPayloadV1:
 
     return LogPayloadV1(
         # ─── timestamps
-        timestamp=contract.timestamps.timestamp_rfc3339,
+        timestamp=contract.timestamps.timestamp,
         ts_unix_ms=contract.timestamps.ts_unix_ms,
         ts_monotonic_ms=contract.timestamps.ts_monotonic_ms,
         # ─── severity
-        level=contract.severity.level_text,
+        level=contract.severity.level,
         severity_number=contract.severity.severity_number,
         # ─── message
-        logger=contract.message.logger_name,
+        logger=contract.message.logger,
         message=contract.message.message,
         # ─── resource
         env=contract.resource.env,
-        instance=contract.resource.instance_id,
+        instance_id=contract.resource.instance_id,
         service_name=contract.resource.service_name,
         service_version=contract.resource.service_version,
         service_namespace=contract.resource.service_namespace,
@@ -148,10 +148,10 @@ def map_contract_to_payload(contract: LogEventContractV1) -> LogPayloadV1:
         run_id=contract.correlation.run_id,
         # ─── exception
         exception_block=ExceptionBlock(
-            exception_type=exc.exc_type,
-            exception_message=exc.exc_message,
-            exception_stacktrace=exc.exc_stacktrace,
-            exception_summary=exc.exc_summary,
+            exception_summary=exc.exception_summary,
+            exception_type=exc.exception_type,
+            exception_message=exc.exception_message,
+            exception_stacktrace=exc.exception_stacktrace,
         ),
         # ─── schema metadata
         schema_name="quantum.log",

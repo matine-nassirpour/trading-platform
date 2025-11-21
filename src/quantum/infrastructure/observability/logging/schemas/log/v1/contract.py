@@ -24,7 +24,7 @@ from typing import Any, Final
 class TimestampsBlock:
     """Contractual timestamp block (domain-level)."""
 
-    timestamp_rfc3339: str
+    timestamp: str
     ts_unix_ms: int
     ts_monotonic_ms: int
 
@@ -33,7 +33,7 @@ class TimestampsBlock:
 class SeverityBlock:
     """Contractual severity block (OTel-aligned)."""
 
-    level_text: str
+    level: str
     severity_number: int
 
 
@@ -41,7 +41,7 @@ class SeverityBlock:
 class MessageBlock:
     """Contract for source logger + message."""
 
-    logger_name: str
+    logger: str
     message: str
 
 
@@ -71,10 +71,10 @@ class CorrelationBlock:
 class ExceptionBlockRaw:
     """Raw exception details before normalization."""
 
-    exc_type: str | None = None
-    exc_message: str | None = None
-    exc_stacktrace: str | None = None
-    exc_summary: str | None = None
+    exception_summary: str | None = None
+    exception_type: str | None = None
+    exception_message: str | None = None
+    exception_stacktrace: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

@@ -7,13 +7,6 @@ from typing import Any, Final
 
 from quantum.infrastructure.observability.logging.runtime.metrics import define_counter
 
-EXCEPTION_FIELD_NAMES: Final[set[str]] = {
-    "exception",
-    "exception_type",
-    "exception_message",
-    "exception_stacktrace",
-}
-
 _EXCEPTION_EXTRACTION_FAILURES: Final = define_counter(
     "logging_exception_extraction_failures"
 )
@@ -82,7 +75,7 @@ class ExceptionProcessor:
         # Fast path: no exception information attached to the record
         if not exc_info:
             return {
-                "exception": None,
+                "exception_summary": None,
                 "exception_type": None,
                 "exception_message": None,
                 "exception_stacktrace": None,
@@ -94,7 +87,7 @@ class ExceptionProcessor:
             summary = ExceptionProcessor._build_summary(exc_type, exc_message)
 
             return {
-                "exception": summary,
+                "exception_summary": summary,
                 "exception_type": exc_type,
                 "exception_message": exc_message,
                 "exception_stacktrace": stack,
@@ -106,7 +99,7 @@ class ExceptionProcessor:
             _EXCEPTION_EXTRACTION_FAILURES.inc()
 
             return {
-                "exception": "exception block extraction failed",
+                "exception_summary": "exception block extraction failed",
                 "exception_type": "ExtractionFailure",
                 "exception_message": None,
                 "exception_stacktrace": None,

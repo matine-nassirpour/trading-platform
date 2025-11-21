@@ -61,10 +61,10 @@ class LogRecordAdapter:
         ts_unix_ms = int(created_ts * 1000) if created_ts else 0
 
         ts_mono_ms = now_mono_ms()
-        timestamp_rfc3339 = to_rfc3339_ms(created_ts)
+        timestamp = to_rfc3339_ms(created_ts)
 
         timestamps = TimestampsDTO(
-            timestamp_rfc3339=timestamp_rfc3339,
+            timestamp=timestamp,
             ts_unix_ms=ts_unix_ms,
             ts_monotonic_ms=ts_mono_ms,
         )
@@ -73,10 +73,10 @@ class LogRecordAdapter:
         # Severity
         # ----------------------------------------------------------------------
         levelno = getattr(record, "levelno", logging.INFO)
-        level_text, sev_num = canonical_severity(int(levelno))
+        level, sev_num = canonical_severity(int(levelno))
 
         severity = SeverityDTO(
-            level_text=level_text,
+            level=level,
             severity_number=sev_num,
         )
 
@@ -90,7 +90,7 @@ class LogRecordAdapter:
             message_text = "<unrenderable log message>"
 
         message = MessageDTO(
-            logger_name=getattr(record, "name", "unknown_logger"),
+            logger=getattr(record, "name", "unknown_logger"),
             message=message_text,
         )
 
@@ -124,10 +124,10 @@ class LogRecordAdapter:
         exc_raw = ExceptionProcessor.extract(record)
 
         exception = ExceptionRawDTO(
-            exc_type=exc_raw.get("exception_type"),
-            exc_message=exc_raw.get("exception_message"),
-            exc_stacktrace=exc_raw.get("exception_stacktrace"),
-            exc_summary=exc_raw.get("exception"),
+            exception_summary=exc_raw.get("exception"),
+            exception_type=exc_raw.get("exception_type"),
+            exception_message=exc_raw.get("exception_message"),
+            exception_stacktrace=exc_raw.get("exception_stacktrace"),
         )
 
         # ----------------------------------------------------------------------
