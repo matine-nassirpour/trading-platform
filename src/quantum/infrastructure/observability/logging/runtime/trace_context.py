@@ -7,9 +7,6 @@ from opentelemetry.trace import get_current_span
 
 def extract_trace_context() -> tuple[str | None, str | None, bool | None]:
     """Extracts (trace_id, span_id, sampled) from the current OpenTelemetry span"""
-    if get_current_span is None:
-        return None, None, None
-
     try:
         span = get_current_span()
         sc = span.get_span_context()
