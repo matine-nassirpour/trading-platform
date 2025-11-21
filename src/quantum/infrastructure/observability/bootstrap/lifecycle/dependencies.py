@@ -17,9 +17,6 @@ from quantum.infrastructure.observability.bootstrap.lifecycle.implementations.me
 from quantum.infrastructure.observability.bootstrap.lifecycle.implementations.tracing_initializer_impl import (
     TracingInitializerImpl,
 )
-from quantum.infrastructure.observability.bootstrap.lifecycle.protocols.build_info_provider import (
-    BuildInfoProvider,
-)
 from quantum.infrastructure.observability.bootstrap.lifecycle.protocols.logging_initializer import (
     LoggingInitializer,
 )
@@ -29,16 +26,6 @@ from quantum.infrastructure.observability.bootstrap.lifecycle.protocols.metrics_
 from quantum.infrastructure.observability.bootstrap.lifecycle.protocols.tracing_initializer import (
     TracingInitializer,
 )
-from quantum.infrastructure.observability.metrics.collectors.health_collector import (
-    refresh_build_info_from_env,
-)
-
-
-class _BuildInfoProviderImpl(BuildInfoProvider):
-    """Simple adapter around the env-based build info refresher."""
-
-    def refresh(self) -> None:
-        refresh_build_info_from_env()
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
@@ -61,7 +48,6 @@ class ObservabilityDependencies:
     metrics_initializer: MetricsInitializer
     health_registry: HealthRegistry
     diagnostics: BootstrapDiagnostics
-    build_info_provider: BuildInfoProvider
 
 
 # ---------------------------------------------------------------------------
@@ -85,5 +71,4 @@ def create_observability_dependencies() -> ObservabilityDependencies:
         metrics_initializer=MetricsInitializerImpl(),
         health_registry=HealthRegistry.get_instance(),
         diagnostics=BootstrapDiagnostics.get_instance(),
-        build_info_provider=_BuildInfoProviderImpl(),
     )

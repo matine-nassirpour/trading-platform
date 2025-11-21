@@ -87,7 +87,6 @@ class LifecycleService:
 
         # Reset health state
         registry.reset_all()
-        self._deps.build_info_provider.refresh()
 
         # ----------------------------------------------------------------------
         # Tracing

@@ -1,28 +1,4 @@
-from prometheus_client import Counter, Gauge, Info
-
-from quantum.infrastructure.config.runtime.manager import ConfigManager
-
-# ╭───────────────────────────────────────────────────────────────────────────╮
-# │ Service / Build metadata                                                  │
-# ╰───────────────────────────────────────────────────────────────────────────╯
-build_info = Info("quantum_build", "Build/Service info")
-
-
-def refresh_build_info_from_env() -> None:
-    """Refresh build and environment info (static Prometheus labels)."""
-    core_settings = ConfigManager.load()
-    build_info.info(
-        {
-            "service_name": core_settings.quantum_app_name,
-            "service_version": core_settings.quantum_app_version,
-            "service_namespace": core_settings.quantum_ns,
-            "env": core_settings.quantum_env,
-        }
-    )
-
-
-refresh_build_info_from_env()
-
+from prometheus_client import Counter, Gauge
 
 # ╭───────────────────────────────────────────────────────────────────────────╮
 # │ Tracing subsystem metrics                                                 │
