@@ -67,10 +67,6 @@ class LoggingSettings(BaseModel):
         description="Optional warning threshold for log file size (0 = disabled).",
         ge=0,
     )
-    quantum_log_deep_probe: bool = Field(
-        default=False,
-        description="Enable deep internal logging for diagnostic inspection.",
-    )
     quantum_log_dir: str | None = Field(
         default=None, description="Base directory for partitioned JSONL logs."
     )

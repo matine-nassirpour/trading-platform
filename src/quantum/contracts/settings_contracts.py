@@ -81,7 +81,6 @@ class LoggingSettingsContract(BaseSettingsContract, Protocol):
     quantum_log_fsync: bool
     quantum_log_max_bytes: int
     quantum_log_warn_bytes: int
-    quantum_log_deep_probe: bool
     quantum_log_dir: str | None
     quantum_audit_dir: str | None
     quantum_audit_events: str | None

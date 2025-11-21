@@ -32,11 +32,12 @@ from opentelemetry.trace import Span, Tracer
 from opentelemetry.trace import TracerProvider as TracerProviderInterface
 from opentelemetry.trace import get_tracer_provider, set_tracer_provider
 
-from quantum.infrastructure.config.models.core import CoreSettings
-from quantum.infrastructure.config.models.tracing import TracingSettings
 from quantum.infrastructure.observability.context.run_id import get_run_id
 from quantum.infrastructure.observability.tracing.correlation.correlation_id import (
     get_correlation_id,
+)
+from quantum.infrastructure.observability.tracing.foundation.runtime_config import (
+    TracingRuntimeBundle,
 )
 
 LOGGER: Final = logging.getLogger(__name__)
@@ -153,22 +154,18 @@ def _create_grpc_exporter(
 
 
 def _build_otlp_exporter(
-    tracing_settings: TracingSettings,
+    bundle: TracingRuntimeBundle,
 ) -> tuple[Any | None, str | None]:
     """
     Build an OTLP exporter based on TelemetrySettings.
     Returns (exporter, reason) where reason is present if inactive.
     """
-    protocol = tracing_settings.quantum_trace_otlp_protocol
-    endpoint = tracing_settings.quantum_trace_otlp_endpoint
-    timeout = tracing_settings.quantum_trace_otlp_timeout_ms / 1000.0
-    insecure = tracing_settings.quantum_trace_otlp_insecure
-    headers = _parse_otlp_headers(tracing_settings.quantum_trace_otlp_headers)
-    compression = (
-        None
-        if tracing_settings.quantum_trace_otlp_compression == "none"
-        else Compression.Gzip
-    )
+    protocol = bundle.trace_otlp_protocol
+    endpoint = bundle.trace_otlp_endpoint
+    timeout = bundle.trace_otlp_timeout_ms / 1000.0
+    insecure = bundle.trace_otlp_insecure
+    headers = _parse_otlp_headers(bundle.trace_otlp_headers)
+    compression = None if bundle.trace_otlp_compression == "none" else Compression.Gzip
 
     try:
         if protocol == "http":
@@ -193,19 +190,15 @@ def _build_otlp_exporter(
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ TracerProvider creation pipeline                                           │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-def _create_tracer_provider(
-    core_settings: CoreSettings, tracing_settings: TracingSettings
-) -> TracerProvider:
-    sample_ratio = max(0.0, min(1.0, float(tracing_settings.quantum_trace_sample)))
+def _create_tracer_provider(bundle: TracingRuntimeBundle) -> TracerProvider:
+    sample_ratio = max(0.0, min(1.0, float(bundle.trace_sample)))
     resource = Resource.create(
         {
-            SERVICE_NAME: core_settings.quantum_app_name,
-            SERVICE_VERSION: core_settings.quantum_app_version,
-            SERVICE_NAMESPACE: core_settings.quantum_ns,
-            DEPLOYMENT_ENVIRONMENT: core_settings.quantum_env,
-            SERVICE_INSTANCE_ID: (
-                core_settings.quantum_instance_id or socket.gethostname()
-            ),
+            SERVICE_NAME: bundle.service_name,
+            SERVICE_VERSION: bundle.service_version,
+            SERVICE_NAMESPACE: bundle.service_namespace,
+            DEPLOYMENT_ENVIRONMENT: bundle.environment,
+            SERVICE_INSTANCE_ID: bundle.instance_id or socket.gethostname(),
         }
     )
     provider = TracerProvider(
@@ -219,10 +212,10 @@ def _create_tracer_provider(
 
 
 def _attach_exporter(
-    provider: TracerProvider, tracing_settings: TracingSettings
+    provider: TracerProvider, bundle: TracingRuntimeBundle
 ) -> tuple[Any | None, str | None]:
     """Attach the proper exporter (console, otlp, or none) to the provider."""
-    name = tracing_settings.quantum_trace_exporter
+    name = bundle.trace_exporter
     if name == "console":
         provider.add_span_processor(
             BatchSpanProcessor(
@@ -234,7 +227,7 @@ def _attach_exporter(
         )
         return None, "exporter=console"
     if name == "otlp":
-        exporter, reason = _build_otlp_exporter(tracing_settings)
+        exporter, reason = _build_otlp_exporter(bundle)
         if exporter:
             provider.add_span_processor(
                 BatchSpanProcessor(
@@ -252,13 +245,13 @@ def _attach_exporter(
 
 def _finalize_provider(
     provider: TracerProvider,
-    tracing_settings: TracingSettings,
+    bundle: TracingRuntimeBundle,
     active_exporter: Any | None,
     inactive_reason: str | None,
 ) -> None:
     """Set provider globally, log exporter state, and update health metric."""
     set_tracer_provider(provider)
-    _log_exporter_status(active_exporter, tracing_settings, inactive_reason)
+    _log_exporter_status(active_exporter, bundle, inactive_reason)
 
     try:
         from quantum.infrastructure.observability.metrics.collectors.health_collector import (
@@ -278,8 +271,7 @@ def _finalize_provider(
 
 
 def init_tracing(
-    core_settings: CoreSettings,
-    tracing_settings: TracingSettings,
+    bundle: TracingRuntimeBundle,
     replace_existing: bool = False,
 ) -> TracerProviderInterface:
     """Initialize the OpenTelemetry TracerProvider."""
@@ -288,9 +280,9 @@ def init_tracing(
         _ensure_atexit_registered()
         return cast(TracerProviderInterface, existing)
 
-    provider = _create_tracer_provider(core_settings, tracing_settings)
-    exporter, reason = _attach_exporter(provider, tracing_settings)
-    _finalize_provider(provider, tracing_settings, exporter, reason)
+    provider = _create_tracer_provider(bundle)
+    exporter, reason = _attach_exporter(provider, bundle)
+    _finalize_provider(provider, bundle, exporter, reason)
     return provider
 
 
@@ -299,7 +291,7 @@ def init_tracing(
 # ╰────────────────────────────────────────────────────────────────────────────╯
 def _log_exporter_status(
     active_exporter: Any | None,
-    tracing_settings: TracingSettings,
+    bundle: TracingRuntimeBundle,
     inactive_reason: str | None,
 ) -> None:
     """
@@ -307,14 +299,14 @@ def _log_exporter_status(
     No sensitive data is logged — only structural metadata.
     """
     base: dict[str, Any] = {
-        "protocol": tracing_settings.quantum_trace_otlp_protocol,
-        "compression": tracing_settings.quantum_trace_otlp_compression,
-        "insecure": tracing_settings.quantum_trace_otlp_insecure,
+        "protocol": bundle.trace_otlp_protocol,
+        "compression": bundle.trace_otlp_compression,
+        "insecure": bundle.trace_otlp_insecure,
     }
 
     headers_preview: list[str] = []
-    if tracing_settings.quantum_trace_otlp_headers:
-        for kv in tracing_settings.quantum_trace_otlp_headers.split(","):
+    if bundle.trace_otlp_headers:
+        for kv in bundle.trace_otlp_headers.split(","):
             if "=" in kv:
                 k, _ = kv.split("=", 1)
                 headers_preview.append(k.strip())

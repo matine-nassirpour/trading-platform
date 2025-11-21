@@ -3,19 +3,16 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from quantum.infrastructure.observability.foundation.runtime_config import (
+    ObservabilityRuntimeBundle,
+)
 from quantum.infrastructure.observability.logging.pipeline.engine.pipeline_config import (
     PipelineConfig,
 )
 
 
 @dataclass(frozen=True)
-class LoggingRuntimeBundle:
-    environment: str
-    service_namespace: str
-    service_name: str
-    service_version: str
-    instance_id: str
-
+class LoggingRuntimeBundle(ObservabilityRuntimeBundle):
     log_dir: Path | None
     audit_dir: Path | None
 
