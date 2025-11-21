@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 from quantum.infrastructure.observability.bootstrap.lifecycle.configs.metrics_config import (
     MetricsConfig,
 )
 
 
+@runtime_checkable
 class MetricsInitializer(Protocol):
     """
     Protocol for initializing the Prometheus metrics HTTP exporter.

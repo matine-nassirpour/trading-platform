@@ -7,9 +7,6 @@ from typing import Final
 from quantum.infrastructure.observability.bootstrap.lifecycle.configs.logging_config import (
     LoggingConfig,
 )
-from quantum.infrastructure.observability.bootstrap.lifecycle.protocols.logging_initializer import (
-    LoggingInitializer,
-)
 from quantum.infrastructure.observability.logging.api.logging_service import (
     close_and_remove_all_handlers,
     init_logging,
@@ -21,7 +18,7 @@ from quantum.infrastructure.observability.logging.foundation.config.runtime_conf
 LOGGER: Final = logging.getLogger(__name__)
 
 
-class LoggingInitializerImpl(LoggingInitializer):
+class LoggingInitializerImpl:
     """
     Clean-Architecture adapter converting a high-level LoggingConfig
     (application-facing VO) into a LoggingRuntimeBundle (logging-internal VO).
@@ -41,8 +38,8 @@ class LoggingInitializerImpl(LoggingInitializer):
                 app_name=config.service_name,
                 app_version=config.service_version,
                 instance_id=config.instance_id,
-                log_dir=str(config.log_dir) if config.log_dir else None,
-                audit_dir=(str(config.audit_dir) if config.audit_dir else None),
+                log_dir=config.log_dir,
+                audit_dir=config.audit_dir,
                 audit_allowlist=config.audit_allowlist,
                 log_level=config.log_level,
                 sample_info_every=config.sample_info_every,

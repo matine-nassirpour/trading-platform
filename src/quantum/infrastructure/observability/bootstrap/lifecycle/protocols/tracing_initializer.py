@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from typing import Any, Protocol
+from typing import Any, Protocol, runtime_checkable
 
 from quantum.infrastructure.observability.bootstrap.lifecycle.configs.tracing_config import (
     TracingConfig,
 )
 
 
+@runtime_checkable
 class TracingInitializer(Protocol):
     """
     Defines how the OpenTelemetry tracing subsystem must be initialized

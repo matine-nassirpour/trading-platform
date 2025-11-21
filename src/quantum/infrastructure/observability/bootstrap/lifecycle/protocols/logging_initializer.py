@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 from quantum.infrastructure.observability.bootstrap.lifecycle.configs.logging_config import (
     LoggingConfig,
 )
 
 
+@runtime_checkable
 class LoggingInitializer(Protocol):
     """
     Abstraction defining the contract for initializing and shutting down

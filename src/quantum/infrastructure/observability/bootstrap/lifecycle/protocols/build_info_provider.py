@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 
+@runtime_checkable
 class BuildInfoProvider(Protocol):
     """
     Abstraction for refreshing build metadata from environment variables.

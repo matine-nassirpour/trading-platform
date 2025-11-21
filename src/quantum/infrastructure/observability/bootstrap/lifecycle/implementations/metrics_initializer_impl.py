@@ -5,12 +5,9 @@ from prometheus_client import start_http_server
 from quantum.infrastructure.observability.bootstrap.lifecycle.configs.metrics_config import (
     MetricsConfig,
 )
-from quantum.infrastructure.observability.bootstrap.lifecycle.protocols.metrics_initializer import (
-    MetricsInitializer,
-)
 
 
-class MetricsInitializerImpl(MetricsInitializer):
+class MetricsInitializerImpl:
     """
     Concrete implementation of MetricsInitializer that starts the Prometheus
     HTTP exporter if configured.
@@ -21,7 +18,7 @@ class MetricsInitializerImpl(MetricsInitializer):
 
     def initialize(self, config: MetricsConfig) -> bool:
         if not config.enabled:
-            return False
+            return True
 
         try:
             start_http_server(port=config.port, addr=config.host)

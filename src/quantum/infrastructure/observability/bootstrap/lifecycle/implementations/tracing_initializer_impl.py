@@ -7,9 +7,6 @@ from typing import Any, Final
 from quantum.infrastructure.observability.bootstrap.lifecycle.configs.tracing_config import (
     TracingConfig,
 )
-from quantum.infrastructure.observability.bootstrap.lifecycle.protocols.tracing_initializer import (
-    TracingInitializer,
-)
 from quantum.infrastructure.observability.tracing.propagation import (
     detach_process_baggage_if_any,
     install_process_baggage,
@@ -20,7 +17,7 @@ from quantum.infrastructure.observability.tracing.provider import init_tracing
 LOGGER: Final = logging.getLogger(__name__)
 
 
-class TracingInitializerImpl(TracingInitializer):
+class TracingInitializerImpl:
     """
     Concrete implementation of TracingInitializer for OpenTelemetry.
 
