@@ -2,6 +2,7 @@ import json
 import logging
 import threading
 
+from contextlib import suppress
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Final
@@ -149,8 +150,14 @@ class AuditEventFileHandler(logging.Handler):
             # Atomic write
             try:
                 self._writer.open_atomic(target_path)
-                self._writer.write_line_raw(payload)
-                self._writer.close()
+
+                try:
+                    self._writer.write_line_raw(payload)
+                finally:
+                    # ALWAYS close to avoid tmp file leaks
+                    with suppress(Exception):
+                        self._writer.close()
+
                 _AUDIT_WRITES.inc()
             except Exception:
                 _AUDIT_DISK_ERRORS.inc()

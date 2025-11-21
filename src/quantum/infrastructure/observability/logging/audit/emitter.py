@@ -25,7 +25,11 @@ def emit_event(
     else:
         raise TypeError("event_model must be a Pydantic model or a dict")
 
-    event_name = payload.get("event_name") or "event"
+    # Enforce valid audit event_name
+    event_name = payload.get("event_name")
+    if not isinstance(event_name, str) or not event_name.strip():
+        raise ValueError("Audit event missing required field event_name")
+
     log_level = level or logging.INFO
 
     # Compose `extra`

@@ -121,8 +121,17 @@ class SafeFileWriter:
             self._fh.close()
 
             if self._mode_atomic:
-                # do the atomic replace
-                os.replace(self._tmp_path, self._path)
+                try:
+                    os.replace(self._tmp_path, self._path)
+                except Exception:
+                    # degraded mode: remove temp file if possible
+                    try:
+                        self._tmp_path.unlink(missing_ok=True)
+                    except Exception:
+                        pass
+
+                    # atomicity failure is critical but NEVER raise
+                    return
 
                 if self._fsync:
                     fsync_dir(self._path.parent)
