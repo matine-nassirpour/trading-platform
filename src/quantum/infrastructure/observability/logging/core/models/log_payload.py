@@ -6,7 +6,7 @@ from typing import Any, Final
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from quantum.infrastructure.observability.logging.metadata.severity_map import (
+from quantum.infrastructure.observability.logging.foundation.constants.severity_map import (
     SeverityText,
     severity_number_from_text,
 )
@@ -31,7 +31,7 @@ class ExceptionBlock(BaseModel):
     """
     Unified, structured exception block.
 
-    All upstream components (formatters, preprocessors, factories)
+    All upstream components (formatting, preprocessors, factories)
     must populate this object, never individual fields.
     """
 
@@ -46,7 +46,7 @@ class ExceptionBlock(BaseModel):
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Model Definition                                                           │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-class LogPayloadV1(BaseModel):
+class LogPayload(BaseModel):
     """
     Canonical structured log payload (version 1).
 

@@ -5,7 +5,7 @@ import logging
 from contextlib import suppress
 from typing import Final
 
-from quantum.infrastructure.observability.logging.formatters.jsonl_formatter import (
+from quantum.infrastructure.observability.logging.formatting.jsonl_formatter import (
     JSONLFormatter,
 )
 from quantum.infrastructure.observability.logging.runtime.metrics import define_counter

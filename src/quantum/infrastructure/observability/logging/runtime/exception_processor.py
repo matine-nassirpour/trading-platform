@@ -18,7 +18,7 @@ class ExceptionProcessor:
 
     This processor centralizes all exception extraction logic used by
     the structured logging system. It is the single source of truth for
-    generating exception blocks consumed by LogPayloadV1 and fallback
+    generating exception blocks consumed by LogPayload and fallback
     JSON payloads.
 
     Guarantees:

@@ -5,19 +5,19 @@ import logging
 from collections.abc import Mapping
 from typing import Any, Final
 
+from quantum.infrastructure.observability.logging.core.contracts.log_contract_v1 import (
+    LogEventContractV1,
+)
+from quantum.infrastructure.observability.logging.core.mapping.to_contract import (
+    map_dto_to_contract,
+)
+from quantum.infrastructure.observability.logging.core.models.fallback_payload import (
+    FallbackPayload,
+)
 from quantum.infrastructure.observability.logging.ingestion.log_record_adapter import (
     LogRecordAdapter,
 )
 from quantum.infrastructure.observability.logging.runtime.metrics import define_counter
-from quantum.infrastructure.observability.logging.schemas.fallback.v1.payload import (
-    FallbackPayloadV1,
-)
-from quantum.infrastructure.observability.logging.schemas.log.v1.contract import (
-    LogEventContractV1,
-)
-from quantum.infrastructure.observability.logging.schemas.log.v1.mapping import (
-    map_dto_to_contract,
-)
 from quantum.infrastructure.observability.logging.utils.json_sanitize import (
     json_sanitize,
 )
@@ -44,7 +44,7 @@ class FallbackBuilder:
         record: logging.LogRecord,
         instance_id: str,
         error: Exception,
-    ) -> FallbackPayloadV1:
+    ) -> FallbackPayload:
         """
         Attempt to produce a structured fallback payload.
 
@@ -58,7 +58,7 @@ class FallbackBuilder:
             dto = LogRecordAdapter.to_internal_event(record, instance_id)
         except Exception:
             _FALLBACK_BUILDER_FAILURES.inc()
-            return FallbackPayloadV1(
+            return FallbackPayload(
                 message="fatal: adapter failed in fallback path",
                 fallback_reason="adapter_failure",
                 validation_error=str(error),
@@ -74,7 +74,7 @@ class FallbackBuilder:
             return FallbackBuilder._fallback_from_dto(dto, error)
 
         # ----------------------------------------------------------------------
-        # Convert Contract V1 → FallbackPayloadV1
+        # Convert Contract → FallbackPayload
         # ----------------------------------------------------------------------
         try:
             return FallbackBuilder._fallback_from_contract(contract, error)
@@ -89,7 +89,7 @@ class FallbackBuilder:
     def _fallback_from_contract(
         contract: LogEventContractV1,
         error: Exception,
-    ) -> FallbackPayloadV1:
+    ) -> FallbackPayload:
         """
         Convert a valid contract to a safe fallback payload.
         Never raises.
@@ -101,7 +101,7 @@ class FallbackBuilder:
         except Exception:
             safe_attrs = {}
 
-        return FallbackPayloadV1(
+        return FallbackPayload(
             # Timestamps
             timestamp=contract.timestamps.timestamp,
             ts_unix_ms=contract.timestamps.ts_unix_ms,
@@ -134,7 +134,7 @@ class FallbackBuilder:
     def _fallback_from_dto(
         dto,
         error: Exception,
-    ) -> FallbackPayloadV1:
+    ) -> FallbackPayload:
         """
         Last-chance fallback using only the DTO.
         Must NEVER raise.
@@ -145,7 +145,7 @@ class FallbackBuilder:
         except Exception:
             safe_attrs = {}
 
-        return FallbackPayloadV1(
+        return FallbackPayload(
             # Timestamps
             timestamp=dto.timestamps.timestamp_rfc3339,
             ts_unix_ms=dto.timestamps.ts_unix_ms,

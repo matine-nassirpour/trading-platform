@@ -4,6 +4,9 @@ import logging
 
 from typing import Final
 
+from quantum.infrastructure.observability.logging.foundation.constants.severity_map import (
+    canonical_severity,
+)
 from quantum.infrastructure.observability.logging.ingestion.internal_log_event import (
     CorrelationDTO,
     ExceptionRawDTO,
@@ -12,9 +15,6 @@ from quantum.infrastructure.observability.logging.ingestion.internal_log_event i
     ResourceDTO,
     SeverityDTO,
     TimestampsDTO,
-)
-from quantum.infrastructure.observability.logging.metadata.severity_map import (
-    canonical_severity,
 )
 from quantum.infrastructure.observability.logging.runtime.exception_processor import (
     ExceptionProcessor,

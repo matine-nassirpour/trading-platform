@@ -6,6 +6,15 @@ from typing import Final
 
 from pydantic import ValidationError
 
+from quantum.infrastructure.observability.logging.core.mapping.to_contract import (
+    map_dto_to_contract,
+)
+from quantum.infrastructure.observability.logging.core.mapping.to_payload import (
+    map_contract_to_payload,
+)
+from quantum.infrastructure.observability.logging.core.models.log_payload import (
+    LogPayload,
+)
 from quantum.infrastructure.observability.logging.ingestion.log_record_adapter import (
     LogRecordAdapter,
 )
@@ -13,13 +22,6 @@ from quantum.infrastructure.observability.logging.runtime.diagnostics import (
     get_diagnostic_logger,
 )
 from quantum.infrastructure.observability.logging.runtime.metrics import define_counter
-from quantum.infrastructure.observability.logging.schemas.log.v1.mapping import (
-    map_contract_to_payload,
-    map_dto_to_contract,
-)
-from quantum.infrastructure.observability.logging.schemas.log.v1.payload import (
-    LogPayloadV1,
-)
 
 # Counts schema validation failures (Pydantic)
 _SCHEMA_VALIDATION_ERRORS: Final = define_counter("schema_validation_errors")
@@ -39,15 +41,15 @@ class PayloadAssembler:
         - Act as a *pure* orchestration layer (SRP).
         - Convert LogRecord → InternalLogEvent (via LogRecordAdapter).
         - Convert InternalLogEvent → LogEventContractV1 (strict domain contract).
-        - Convert LogEventContractV1 → LogPayloadV1 (Pydantic validation).
+        - Convert LogEventContractV1 → LogPayload (Pydantic validation).
         - Count validation failures.
         - Never swallow domain ValidationError (caller must handle).
         - Degrade safely and observably on unexpected assembler-level exceptions.
     """
 
     @staticmethod
-    def build(record: logging.LogRecord, instance_id: str) -> LogPayloadV1:
-        """Construct a validated LogPayloadV1 model from a LogRecord."""
+    def build(record: logging.LogRecord, instance_id: str) -> LogPayload:
+        """Construct a validated LogPayload model from a LogRecord."""
 
         # ----------------------------------------------------------------------
         # Convert LogRecord → DTO (safe adapter)

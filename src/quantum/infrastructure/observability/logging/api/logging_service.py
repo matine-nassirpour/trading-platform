@@ -6,7 +6,7 @@ from typing import Final
 from quantum.infrastructure.observability.logging.api.logging_builder import (
     LoggingBuilder,
 )
-from quantum.infrastructure.observability.logging.metadata.config_bundle import (
+from quantum.infrastructure.observability.logging.foundation.config.runtime_config import (
     LoggingRuntimeBundle,
 )
 

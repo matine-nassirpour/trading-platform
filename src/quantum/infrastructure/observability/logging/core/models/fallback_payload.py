@@ -5,7 +5,7 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field
 
 
-class FallbackPayloadV1(BaseModel):
+class FallbackPayload(BaseModel):
     """
     Contractual structured fallback schema for logging.
 
@@ -32,7 +32,7 @@ class FallbackPayloadV1(BaseModel):
 
     # Core message
     logger: str = "fallback_logger"
-    message: str = "failed to construct LogPayloadV1"
+    message: str = "failed to construct LogPayload"
 
     # Context
     env: str | None = None

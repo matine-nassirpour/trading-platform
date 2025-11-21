@@ -3,7 +3,7 @@ from __future__ import annotations
 from quantum.infrastructure.observability.logging.pipeline.engine.argument_kind import (
     StepArgumentKind,
 )
-from quantum.infrastructure.observability.logging.pipeline.engine.definitions import (
+from quantum.infrastructure.observability.logging.pipeline.engine.step_definition import (
     StepDefinition,
 )
 from quantum.infrastructure.observability.logging.pipeline.steps.control.ignore_libraries import (

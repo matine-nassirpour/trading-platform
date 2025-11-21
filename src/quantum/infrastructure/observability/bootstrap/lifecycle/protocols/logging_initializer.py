@@ -16,7 +16,7 @@ class LoggingInitializer(Protocol):
       • Configure JSON logging
       • Install handlers
       • Configure audit sinks
-      • Install filters / formatters
+      • Install filters / formatting
       • Ensure durability (fsync)
       • Support rotation, sharding, partitioning
 

@@ -1,12 +1,12 @@
 import logging
 
-from quantum.infrastructure.observability.logging.formatters.json_formatter import (
+from quantum.infrastructure.observability.logging.formatting.json_formatter import (
     JsonFormatter,
 )
-from quantum.infrastructure.observability.logging.formatters.jsonl_formatter import (
+from quantum.infrastructure.observability.logging.formatting.jsonl_formatter import (
     JSONLFormatter,
 )
-from quantum.infrastructure.observability.logging.metadata.config_bundle import (
+from quantum.infrastructure.observability.logging.foundation.config.runtime_config import (
     LoggingRuntimeBundle,
 )
 from quantum.infrastructure.observability.logging.pipeline.engine.pipeline import (
