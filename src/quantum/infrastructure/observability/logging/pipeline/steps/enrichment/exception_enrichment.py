@@ -21,8 +21,14 @@ class ExceptionEnrichmentStep(PipelineStep):
         structured_exc: dict[str, Any] = ExceptionProcessor.extract(record)
 
         if structured_exc:
-            attrs = record.attrs if isinstance(record.attrs, dict) else {}
-            attrs.update(structured_exc)
-            record.attrs = attrs
+            base = getattr(record, "attrs", None)
+
+            if isinstance(base, dict):
+                merged = base
+            else:
+                merged = {}
+
+            merged.update(structured_exc)
+            record.attrs = merged
 
         return True

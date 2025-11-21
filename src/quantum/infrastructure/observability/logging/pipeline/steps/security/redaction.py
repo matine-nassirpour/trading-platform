@@ -101,7 +101,7 @@ class RedactionStep(PipelineStep):
                 before = json.dumps(attrs, ensure_ascii=False)
 
                 redacted = _redact_value(attrs)
-                record.attrs = redacted
+                record.attrs = redacted if isinstance(redacted, dict) else {}
 
                 after = json.dumps(redacted, ensure_ascii=False)
 

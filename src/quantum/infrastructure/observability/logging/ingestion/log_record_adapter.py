@@ -133,6 +133,10 @@ class LogRecordAdapter:
         # ----------------------------------------------------------------------
         # Final DTO orchestration
         # ----------------------------------------------------------------------
+        attrs = getattr(record, "attrs", None)
+        if not isinstance(attrs, dict):
+            attrs = {}
+
         return InternalLogEvent(
             timestamps=timestamps,
             severity=severity,
@@ -140,5 +144,5 @@ class LogRecordAdapter:
             resource=resource,
             correlation=correlation,
             exception=exception,
-            attrs=record.attrs,
+            attrs=attrs,
         )

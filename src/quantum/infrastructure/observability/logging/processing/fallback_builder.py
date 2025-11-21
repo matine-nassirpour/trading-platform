@@ -147,14 +147,14 @@ class FallbackBuilder:
 
         return FallbackPayload(
             # Timestamps
-            timestamp=dto.timestamps.timestamp_rfc3339,
+            timestamp=dto.timestamps.timestamp,
             ts_unix_ms=dto.timestamps.ts_unix_ms,
             ts_monotonic_ms=dto.timestamps.ts_monotonic_ms,
             # Severity
-            level=dto.severity.level_text,
+            level=dto.severity.level,
             severity_number=dto.severity.severity_number,
             # Message
-            logger=dto.message.logger_name,
+            logger=dto.message.logger,
             message=dto.message.message,
             # Resource
             env=dto.resource.env,
