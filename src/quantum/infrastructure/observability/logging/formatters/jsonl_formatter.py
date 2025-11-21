@@ -10,7 +10,7 @@ from quantum.infrastructure.observability.logging.utils.json_sanitize import (
 )
 
 
-class JSONLRecordFormatter:
+class JSONLFormatter:
     """
     Safety-grade JSONL formatter.
     Guarantees:

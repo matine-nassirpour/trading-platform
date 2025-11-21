@@ -4,7 +4,7 @@ from quantum.infrastructure.observability.logging.formatters.json_formatter impo
     JsonFormatter,
 )
 from quantum.infrastructure.observability.logging.formatters.jsonl_formatter import (
-    JSONLRecordFormatter,
+    JSONLFormatter,
 )
 from quantum.infrastructure.observability.logging.metadata.config_bundle import (
     LoggingRuntimeBundle,
@@ -65,7 +65,7 @@ class HandlerFactory:
             max_bytes=self._bundle.log_max_bytes,
         )
 
-        formatter = JSONLRecordFormatter(instance_id=self._bundle.instance_id)
+        formatter = JSONLFormatter(instance_id=self._bundle.instance_id)
 
         handler = PartitionedJSONLFileHandler(formatter=formatter, policy=policy)
 

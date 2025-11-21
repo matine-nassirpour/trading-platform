@@ -6,7 +6,7 @@ from contextlib import suppress
 from typing import Final
 
 from quantum.infrastructure.observability.logging.formatters.jsonl_formatter import (
-    JSONLRecordFormatter,
+    JSONLFormatter,
 )
 from quantum.infrastructure.observability.logging.runtime.metrics import define_counter
 from quantum.infrastructure.observability.logging.sinks.filesystem.policies.partition_policy import (
@@ -37,7 +37,7 @@ class PartitionedJSONLFileHandler(logging.Handler):
     def __init__(
         self,
         *,
-        formatter: JSONLRecordFormatter,
+        formatter: JSONLFormatter,
         policy: PartitionPolicy,
     ) -> None:
         super().__init__()
