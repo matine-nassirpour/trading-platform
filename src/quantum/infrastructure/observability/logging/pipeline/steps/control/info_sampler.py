@@ -13,7 +13,7 @@ from quantum.infrastructure.observability.logging.pipeline.state.info_sampler_st
 class InfoSamplerStep(PipelineStep):
     """Samples INFO-level log records at a fixed interval."""
 
-    __slots__ = "_state"
+    __slots__ = ("_state",)
 
     def __init__(self, state: InfoSamplerState) -> None:
         self._state = state
