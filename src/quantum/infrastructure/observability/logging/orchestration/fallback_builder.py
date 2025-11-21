@@ -103,14 +103,14 @@ class FallbackBuilder:
 
         return FallbackPayloadV1(
             # Timestamps
-            timestamp=contract.timestamps.timestamp_rfc3339,
+            timestamp=contract.timestamps.timestamp,
             ts_unix_ms=contract.timestamps.ts_unix_ms,
             ts_monotonic_ms=contract.timestamps.ts_monotonic_ms,
             # Severity
-            level=contract.severity.level_text,
+            level=contract.severity.level,
             severity_number=contract.severity.severity_number,
             # Message
-            logger=contract.message.logger_name,
+            logger=contract.message.logger,
             message=contract.message.message,
             # Resource
             env=contract.resource.env,

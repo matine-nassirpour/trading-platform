@@ -124,7 +124,7 @@ class LogRecordAdapter:
         exc_raw = ExceptionProcessor.extract(record)
 
         exception = ExceptionRawDTO(
-            exception_summary=exc_raw.get("exception"),
+            exception_summary=exc_raw.get("exception_summary"),
             exception_type=exc_raw.get("exception_type"),
             exception_message=exc_raw.get("exception_message"),
             exception_stacktrace=exc_raw.get("exception_stacktrace"),
