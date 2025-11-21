@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from quantum.infrastructure.observability.foundation.runtime_config import (
+from quantum.infrastructure.observability.foundation.config.observability_runtime_bundle import (
     ObservabilityRuntimeBundle,
 )
 

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from quantum.infrastructure.observability.logging.foundation.config.runtime_config import (
+from quantum.infrastructure.observability.foundation.config.logging_runtime_bundle import (
     LoggingRuntimeBundle,
 )
 from quantum.infrastructure.observability.logging.pipeline.engine.argument_kind import (

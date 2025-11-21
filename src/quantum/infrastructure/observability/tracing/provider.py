@@ -33,11 +33,11 @@ from opentelemetry.trace import TracerProvider as TracerProviderInterface
 from opentelemetry.trace import get_tracer_provider, set_tracer_provider
 
 from quantum.infrastructure.observability.context.run_id import get_run_id
+from quantum.infrastructure.observability.foundation.config.tracing_runtime_bundle import (
+    TracingRuntimeBundle,
+)
 from quantum.infrastructure.observability.tracing.correlation.correlation_id import (
     get_correlation_id,
-)
-from quantum.infrastructure.observability.tracing.foundation.runtime_config import (
-    TracingRuntimeBundle,
 )
 
 LOGGER: Final = logging.getLogger(__name__)

@@ -7,12 +7,12 @@ from typing import Final
 from quantum.infrastructure.observability.bootstrap.lifecycle.configs.logging_config import (
     LoggingConfig,
 )
+from quantum.infrastructure.observability.foundation.config.logging_runtime_bundle import (
+    LoggingRuntimeBundle,
+)
 from quantum.infrastructure.observability.logging.api.logging_service import (
     close_and_remove_all_handlers,
     init_logging,
-)
-from quantum.infrastructure.observability.logging.foundation.config.runtime_config import (
-    LoggingRuntimeBundle,
 )
 
 LOGGER: Final = logging.getLogger(__name__)

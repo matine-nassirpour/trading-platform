@@ -256,6 +256,7 @@ trading-platform/
 │       │   │   │   ├── lifecycle/
 │       │   │   │   │   ├── configs/
 │       │   │   │   │   │   ├── __init__.py
+│       │   │   │   │   │   ├── core_config.py
 │       │   │   │   │   │   ├── logging_config.py
 │       │   │   │   │   │   ├── metrics_config.py
 │       │   │   │   │   │   └── tracing_config.py
@@ -266,7 +267,6 @@ trading-platform/
 │       │   │   │   │   │   └── tracing_initializer_impl.py
 │       │   │   │   │   ├── protocols/
 │       │   │   │   │   │   ├── __init__.py
-│       │   │   │   │   │   ├── build_info_provider.py
 │       │   │   │   │   │   ├── logging_initializer.py
 │       │   │   │   │   │   ├── metrics_initializer.py
 │       │   │   │   │   │   └── tracing_initializer.py
@@ -285,6 +285,13 @@ trading-platform/
 │       │   │   │   ├── logging_driver.py
 │       │   │   │   ├── observability_driver.py
 │       │   │   │   └── tracing_driver.py
+│       │   │   ├── foundation/
+│       │   │   │   ├── config/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── logging_runtime_bundle.py
+│       │   │   │   │   ├── observability_runtime_bundle.py
+│       │   │   │   │   └── tracing_runtime_bundle.py
+│       │   │   │   └── __init__.py
 │       │   │   ├── logging/
 │       │   │   │   ├── api/
 │       │   │   │   │   ├── __init__.py
@@ -316,9 +323,6 @@ trading-platform/
 │       │   │   │   │   ├── json_formatter.py
 │       │   │   │   │   └── jsonl_formatter.py
 │       │   │   │   ├── foundation/
-│       │   │   │   │   ├── config/
-│       │   │   │   │   │   ├── __init__.py
-│       │   │   │   │   │   └── runtime_config.py
 │       │   │   │   │   ├── constants/
 │       │   │   │   │   │   ├── __init__.py
 │       │   │   │   │   │   └── severity_map.py

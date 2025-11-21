@@ -3,15 +3,15 @@ import logging
 from contextlib import suppress
 from typing import Final
 
+from quantum.infrastructure.observability.foundation.config.logging_runtime_bundle import (
+    LoggingRuntimeBundle,
+)
 from quantum.infrastructure.observability.logging.api.handler_factory import (
     HandlerFactory,
 )
 from quantum.infrastructure.observability.logging.audit.filter import AuditEventFilter
 from quantum.infrastructure.observability.logging.formatting.json_formatter import (
     JsonFormatter,
-)
-from quantum.infrastructure.observability.logging.foundation.config.runtime_config import (
-    LoggingRuntimeBundle,
 )
 from quantum.infrastructure.observability.logging.pipeline.engine.factory import (
     LoggingPipelineFactory,

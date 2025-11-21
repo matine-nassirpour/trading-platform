@@ -3,11 +3,11 @@ import logging
 from contextlib import suppress
 from typing import Final
 
+from quantum.infrastructure.observability.foundation.config.logging_runtime_bundle import (
+    LoggingRuntimeBundle,
+)
 from quantum.infrastructure.observability.logging.api.logging_builder import (
     LoggingBuilder,
-)
-from quantum.infrastructure.observability.logging.foundation.config.runtime_config import (
-    LoggingRuntimeBundle,
 )
 
 APP_LOGGER: Final = logging.getLogger("quantum.app")

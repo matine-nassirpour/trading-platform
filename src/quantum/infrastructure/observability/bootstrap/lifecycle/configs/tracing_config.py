@@ -2,9 +2,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from quantum.infrastructure.observability.bootstrap.lifecycle.configs.core_config import (
+    CoreConfig,
+)
+
 
 @dataclass(frozen=True)
-class TracingConfig:
+class TracingConfig(CoreConfig):
     """
     Immutable value object defining all necessary settings for initializing
     the OpenTelemetry tracing subsystem.
@@ -13,15 +17,13 @@ class TracingConfig:
     in a Clean Architecture context.
     """
 
-    exporter_type: str  # "otlp", "console", "none", ...
-    exporter_endpoint: str | None
+    trace_exporter: str
 
-    sample_ratio: float  # 0.0 → disabled, 1.0 → full sampling
+    trace_otlp_endpoint: str
+    trace_otlp_protocol: str
+    trace_otlp_headers: str
+    trace_otlp_timeout_ms: int
+    trace_otlp_compression: str
+    trace_otlp_insecure: bool
 
-    shutdown_timeout_sec: float  # graceful shutdown duration
-
-    service_name: str
-    service_namespace: str
-    service_version: str
-    environment: str
-    instance_id: str
+    trace_sample: float

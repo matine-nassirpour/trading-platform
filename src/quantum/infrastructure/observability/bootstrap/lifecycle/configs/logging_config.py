@@ -3,9 +3,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+from quantum.infrastructure.observability.bootstrap.lifecycle.configs.core_config import (
+    CoreConfig,
+)
+
 
 @dataclass(frozen=True)
-class LoggingConfig:
+class LoggingConfig(CoreConfig):
     """
     Immutable value object describing all runtime configuration required
     for initializing the logging pipeline.
@@ -19,12 +23,6 @@ class LoggingConfig:
       • Full testability and predictability
       • Certification-ready design (DO-178C / IEC 62304 / ISO 26262)
     """
-
-    environment: str
-    service_namespace: str
-    service_name: str
-    service_version: str
-    instance_id: str
 
     log_dir: Path | None
     audit_dir: Path | None

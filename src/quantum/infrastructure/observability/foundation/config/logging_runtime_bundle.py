@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from quantum.infrastructure.observability.foundation.runtime_config import (
+from quantum.infrastructure.observability.foundation.config.observability_runtime_bundle import (
     ObservabilityRuntimeBundle,
 )
 from quantum.infrastructure.observability.logging.pipeline.engine.pipeline_config import (

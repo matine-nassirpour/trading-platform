@@ -7,6 +7,9 @@ from typing import Any, Final
 from quantum.infrastructure.observability.bootstrap.lifecycle.configs.tracing_config import (
     TracingConfig,
 )
+from quantum.infrastructure.observability.foundation.config.tracing_runtime_bundle import (
+    TracingRuntimeBundle,
+)
 from quantum.infrastructure.observability.tracing.propagation import (
     detach_process_baggage_if_any,
     install_process_baggage,
@@ -28,22 +31,23 @@ class TracingInitializerImpl:
         self._provider: Any | None = None
 
     def initialize(self, config: TracingConfig) -> Any:
-        # TracerProvider Creation
-        provider = init_tracing(
-            core_settings=dict(
-                quantum_env=config.environment,
-                quantum_ns=config.service_namespace,
-                quantum_app_name=config.service_name,
-                quantum_app_version=config.service_version,
-                quantum_instance_id=config.instance_id,
-            ),
-            tracing_settings=dict(
-                quantum_trace_exporter=config.exporter_type,
-                quantum_trace_endpoint=config.exporter_endpoint,
-                quantum_trace_sample=config.sample_ratio,
-            ),
-            force=True,
+        bundle = TracingRuntimeBundle(
+            environment=config.environment,
+            service_namespace=config.service_namespace,
+            service_name=config.service_name,
+            service_version=config.service_version,
+            instance_id=config.instance_id,
+            trace_exporter=config.trace_exporter,
+            trace_otlp_endpoint=config.trace_otlp_endpoint,
+            trace_otlp_protocol=config.trace_otlp_protocol,
+            trace_otlp_headers=config.trace_otlp_headers,
+            trace_otlp_timeout_ms=config.trace_otlp_timeout_ms,
+            trace_otlp_compression=config.trace_otlp_compression,
+            trace_otlp_insecure=config.trace_otlp_insecure,
+            trace_sample=config.trace_sample,
         )
+
+        provider = init_tracing(bundle, replace_existing=True)
 
         setup_propagation()
         install_process_baggage()
