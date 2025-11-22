@@ -22,7 +22,7 @@ from quantum.infrastructure.observability.logging.sinks.filesystem.writers.safe_
 )
 
 _AUDIT_DISK_ERRORS: Final = define_counter("audit_disk_errors")
-_AUDIT_WRITES: Final = define_counter("audit_events_written")
+_AUDIT_EVENTS_WRITTEN: Final = define_counter("audit_events_written")
 
 
 class AuditQuarantinePathResolver:
@@ -158,7 +158,7 @@ class AuditEventFileHandler(logging.Handler):
                     with suppress(Exception):
                         self._writer.close()
 
-                _AUDIT_WRITES.inc()
+                _AUDIT_EVENTS_WRITTEN.inc()
             except Exception:
                 _AUDIT_DISK_ERRORS.inc()
                 self._diag.error(

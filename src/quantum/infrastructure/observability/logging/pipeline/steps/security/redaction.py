@@ -10,11 +10,11 @@ from typing import Any, Final
 from quantum.infrastructure.observability.logging.pipeline.engine.step import (
     PipelineStep,
 )
-from quantum.infrastructure.observability.metrics.collectors.health_collector import (
-    logging_redactions_total,
-)
+from quantum.infrastructure.observability.logging.runtime.metrics import define_counter
 
 LOGGER: Final = logging.getLogger(__name__)
+
+_LOGGING_REDACTIONS_TOTAL: Final = define_counter("logging_redactions_total")
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Constants                                                                  │
@@ -126,7 +126,7 @@ class RedactionStep(PipelineStep):
             # Metrics
             if modified:
                 with suppress(Exception):
-                    logging_redactions_total.inc()
+                    _LOGGING_REDACTIONS_TOTAL.inc()
 
             return True
 

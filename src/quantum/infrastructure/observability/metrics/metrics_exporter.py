@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from contextlib import suppress
+
 from prometheus_client import Counter as PrometheusCounter
 
 from quantum.infrastructure.observability.logging.runtime.diagnostics import (
@@ -53,47 +55,76 @@ class MetricsExporter:
 
             prom_counter = self._prom_counters[prom_name]
 
-            # Bind: each internal counter's _inc becomes the Prometheus `.inc`
-            def prom_inc(amount: int = 1) -> None:
+            # Chain previous behavior
+            prev_inc = internal_counter._inc
+
+            def chained_inc(amount: int = 1) -> None:
                 try:
                     prom_counter.inc(amount)
                 except Exception as exc:
                     _logger.error(
                         f"[metrics-exporter] Prometheus increment failed for '{prom_name}': {exc.__class__.__name__}"
                     )
+                finally:
+                    # preserve original internal behavior (diagnostics)
+                    with suppress(Exception):
+                        prev_inc(amount)
 
-            internal_counter._inc = prom_inc
+            internal_counter._inc = chained_inc
 
         except Exception as exc:
             _logger.error(
                 f"[metrics-exporter] attach_prometheus_counter failed: {exc.__class__.__name__}"
             )
 
-    # --------------------------------------------------------------------------
-    # Helpers
-    # --------------------------------------------------------------------------
     def bind_default_logging_metrics(self) -> None:
         """
-        Convenient helper: binds the most common logging-related internal counters
-        to Prometheus metrics using canonical names.
+        Bind ALL defined C0 logging counters to Prometheus metrics.
+        This guarantees:
+        - full coverage
+        - deterministic naming
+        - certifiable mapping table
+        - future-safe extensibility
         """
-        self.attach_prometheus_counter(
-            "schema_validation_errors",
-            "logging_schema_validation_errors_total",
-            "Number of schema validation errors in the structured logging pipeline",
-        )
 
-        self.attach_prometheus_counter(
-            "redactions",
-            "logging_redactions_total",
-            "Number of log redactions performed",
-        )
+        mapping = {
+            # Logging pipeline
+            "logging_pipeline_step_failures": (
+                "logging_pipeline_step_failures_total",
+                "Number of failures inside logging pipeline steps",
+            ),
+            # Redactions
+            "logging_redactions_total": (
+                "logging_redactions_total",
+                "Number of redactions performed in structured logging",
+            ),
+            # Disk errors (partitioned logs)
+            "logging_disk_errors": (
+                "logging_disk_errors_total",
+                "Number of disk errors in partitioned log handler",
+            ),
+            # File rotations
+            "logging_file_rotations": (
+                "logging_file_rotations_total",
+                "Number of log file rotations for partitioned JSONL handler",
+            ),
+            # Audit channel
+            "audit_disk_errors": (
+                "audit_disk_errors_total",
+                "Number of disk errors during audit event writes",
+            ),
+            "audit_events_written": (
+                "audit_events_written_total",
+                "Number of audit events written successfully",
+            ),
+        }
 
-        self.attach_prometheus_counter(
-            "disk_errors",
-            "logging_disk_errors_total",
-            "Number of disk-related errors for log handlers",
-        )
+        for internal_name, (prom_name, help_text) in mapping.items():
+            self.attach_prometheus_counter(
+                internal_name=internal_name,
+                prom_name=prom_name,
+                help_text=help_text,
+            )
 
 
 # Singleton instance — optional but convenient

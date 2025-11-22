@@ -52,23 +52,16 @@ st.title("🔭 Observability")
 # │ KPI and Metrics Sections                                                   │
 # ╰────────────────────────────────────────────────────────────────────────────╯
 def render_kpis() -> None:
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3 = st.columns(3)
     with col1:
         v = get_gauge_value("quantum_pipeline_up")
         st.metric(
             "Pipeline up", "✅" if v == 1 else "❌", help="End-to-end bootstrap OK"
         )
     with col2:
-        v = get_gauge_value("quantum_tracing_exporter_status")
-        st.metric(
-            "Tracer exporter",
-            "ON" if v == 1 else "OFF",
-            help="OTLP/console exporter attached",
-        )
-    with col3:
         v = get_gauge_value("quantum_logging_sink_up")
         st.metric("Logging sinks", "✅" if v == 1 else "❌")
-    with col4:
+    with col3:
         v = get_gauge_value("quantum_pipeline_metrics_http_ok")
         st.metric("/metrics HTTP", "ON" if v == 1 else "OFF")
     st.divider()

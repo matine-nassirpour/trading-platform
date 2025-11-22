@@ -32,12 +32,11 @@ from opentelemetry.trace import Span, Tracer
 from opentelemetry.trace import TracerProvider as TracerProviderInterface
 from opentelemetry.trace import get_tracer_provider, set_tracer_provider
 
-from quantum.infrastructure.observability.context.run_id import get_run_id
+from quantum.infrastructure.observability.context.context_attributes_provider import (
+    ContextAttributesProvider,
+)
 from quantum.infrastructure.observability.foundation.config.tracing_runtime_bundle import (
     TracingRuntimeBundle,
-)
-from quantum.infrastructure.observability.tracing.correlation.correlation_id import (
-    get_correlation_id,
 )
 
 LOGGER: Final = logging.getLogger(__name__)
@@ -77,15 +76,10 @@ class _ContextEnricherProcessor(SpanProcessor):
     """Injects run_id and correlation_id into every span at start time."""
 
     def on_start(self, span: Span, parent_context: Context | None = None) -> None:
-        try:
-            rid = get_run_id()
-            cid = get_correlation_id()
-            if rid:
-                span.set_attribute("quantum.run_id", rid)
-            if cid:
-                span.set_attribute("quantum.correlation_id", cid)
-        except Exception as exc:
-            LOGGER.debug(f"Context enrichment failed: {exc}")
+        ctx = ContextAttributesProvider.get()
+
+        for k, v in ctx.as_dict().items():
+            span.set_attribute(f"quantum.{k}", v)
 
     def on_end(self, span: ReadableSpan) -> None:
         pass
@@ -155,10 +149,12 @@ def _create_grpc_exporter(
 
 def _build_otlp_exporter(
     bundle: TracingRuntimeBundle,
-) -> tuple[Any | None, str | None]:
+) -> Any | None:
     """
-    Build an OTLP exporter based on TelemetrySettings.
-    Returns (exporter, reason) where reason is present if inactive.
+    Build an OTLP exporter based on telemetry settings.
+    Returns:
+        - A configured SpanExporter instance, OR
+        - None if exporter cannot be constructed.
     """
     protocol = bundle.trace_otlp_protocol
     endpoint = bundle.trace_otlp_endpoint
@@ -169,22 +165,17 @@ def _build_otlp_exporter(
 
     try:
         if protocol == "http":
-            return _create_http_exporter(endpoint, headers, timeout, compression), None
+            return _create_http_exporter(endpoint, headers, timeout, compression)
 
         if protocol == "grpc":
-            return (
-                _create_grpc_exporter(
-                    endpoint, headers, timeout, insecure, compression
-                ),
-                None,
+            return _create_grpc_exporter(
+                endpoint, headers, timeout, insecure, compression
             )
 
-        return None, f"unsupported_protocol:{protocol}"
+        return None
 
-    except ImportError as exc:
-        return None, f"otlp_package_missing:{exc.__class__.__name__}"
-    except Exception as exc:
-        return None, f"otlp_exporter_error:{exc}"
+    except Exception:
+        return None
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
@@ -211,63 +202,36 @@ def _create_tracer_provider(bundle: TracingRuntimeBundle) -> TracerProvider:
     return provider
 
 
-def _attach_exporter(
-    provider: TracerProvider, bundle: TracingRuntimeBundle
-) -> tuple[Any | None, str | None]:
+def _attach_exporter(provider: TracerProvider, bundle: TracingRuntimeBundle) -> None:
     """Attach the proper exporter (console, otlp, or none) to the provider."""
     name = bundle.trace_exporter
+
     if name == "console":
-        provider.add_span_processor(
-            BatchSpanProcessor(
-                ConsoleSpanExporter(),
+        processor = BatchSpanProcessor(
+            ConsoleSpanExporter(),
+            max_export_batch_size=256,
+            schedule_delay_millis=500,
+            max_queue_size=4096,
+        )
+        provider.add_span_processor(processor)
+        return
+
+    if name == "otlp":
+        exporter = _build_otlp_exporter(bundle)
+        if exporter is not None:
+            processor = BatchSpanProcessor(
+                exporter,
                 max_export_batch_size=256,
                 schedule_delay_millis=500,
                 max_queue_size=4096,
             )
-        )
-        return None, "exporter=console"
-    if name == "otlp":
-        exporter, reason = _build_otlp_exporter(bundle)
-        if exporter:
-            provider.add_span_processor(
-                BatchSpanProcessor(
-                    exporter,
-                    max_export_batch_size=256,
-                    schedule_delay_millis=500,
-                    max_queue_size=4096,
-                )
-            )
-        return exporter, reason
+            provider.add_span_processor(processor)
+        return
+
     if name == "none":
-        return None, "exporter=none"
-    return None, f"unsupported_exporter:{name}"
+        return
 
-
-def _finalize_provider(
-    provider: TracerProvider,
-    bundle: TracingRuntimeBundle,
-    active_exporter: Any | None,
-    inactive_reason: str | None,
-) -> None:
-    """Set provider globally, log exporter state, and update health metric."""
-    set_tracer_provider(provider)
-    _log_exporter_status(active_exporter, bundle, inactive_reason)
-
-    try:
-        from quantum.infrastructure.observability.metrics.collectors.health_collector import (
-            tracing_exporter_status,
-        )
-    except ModuleNotFoundError:
-        LOGGER.debug(
-            "Health metrics module not found; skipping exporter activity metric."
-        )
-    else:
-        try:
-            tracing_exporter_status.set(1.0 if active_exporter else 0.0)
-        except (ValueError, RuntimeError, AttributeError) as exc:
-            LOGGER.debug(f"Unable to update tracer exporter metric: {exc}")
-
-    _ensure_atexit_registered()
+    return
 
 
 def init_tracing(
@@ -281,44 +245,12 @@ def init_tracing(
         return cast(TracerProviderInterface, existing)
 
     provider = _create_tracer_provider(bundle)
-    exporter, reason = _attach_exporter(provider, bundle)
-    _finalize_provider(provider, bundle, exporter, reason)
+    _attach_exporter(provider, bundle)
+
+    set_tracer_provider(provider)
+    _ensure_atexit_registered()
+
     return provider
-
-
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Logging Helpers                                                            │
-# ╰────────────────────────────────────────────────────────────────────────────╯
-def _log_exporter_status(
-    active_exporter: Any | None,
-    bundle: TracingRuntimeBundle,
-    inactive_reason: str | None,
-) -> None:
-    """
-    Report the status of the OTLP/Console exporter.
-    No sensitive data is logged — only structural metadata.
-    """
-    base: dict[str, Any] = {
-        "protocol": bundle.trace_otlp_protocol,
-        "compression": bundle.trace_otlp_compression,
-        "insecure": bundle.trace_otlp_insecure,
-    }
-
-    headers_preview: list[str] = []
-    if bundle.trace_otlp_headers:
-        for kv in bundle.trace_otlp_headers.split(","):
-            if "=" in kv:
-                k, _ = kv.split("=", 1)
-                headers_preview.append(k.strip())
-    if headers_preview:
-        base["header_keys"] = headers_preview
-
-    if active_exporter:
-        LOGGER.info("OTLP exporter active", extra={"attrs": base})
-    else:
-        attrs = dict(base)
-        attrs["reason"] = inactive_reason or "unknown"
-        LOGGER.warning("OTLP exporter inactive", extra={"attrs": attrs})
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
