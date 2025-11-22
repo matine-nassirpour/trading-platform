@@ -11,6 +11,5 @@ class MetricsConfig:
     Defines the behavior of the Prometheus HTTP endpoint.
     """
 
-    host: str  # ex: "0.0.0.0"
-    port: int  # ex: 9090
-    enabled: bool  # port <= 0 → disabled
+    host: str
+    port: int

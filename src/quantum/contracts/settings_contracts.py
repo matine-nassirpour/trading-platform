@@ -59,7 +59,7 @@ class CoreSettingsContract(BaseSettingsContract, Protocol):
     quantum_env: str
     quantum_ns: str
     quantum_instance_id: str | None
-    quantum_metrics_addr: str
+    quantum_metrics_host: str
     quantum_metrics_port: int
     quantum_exec_timeout: float
     quantum_exec_retries: int
