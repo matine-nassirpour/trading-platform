@@ -12,11 +12,11 @@ from quantum.infrastructure.observability.foundation.metrics.c0_metric_registry 
 from quantum.infrastructure.observability.foundation.system_diagnostics.c0_diagnostic_logger import (
     get_diagnostic_logger,
 )
-from quantum.infrastructure.observability.logging.core.mapping.to_contract import (
-    map_dto_to_contract,
-)
-from quantum.infrastructure.observability.logging.core.mapping.to_payload import (
+from quantum.infrastructure.observability.logging.core.mapping.contract_to_payload import (
     map_contract_to_payload,
+)
+from quantum.infrastructure.observability.logging.core.mapping.dto_to_contract import (
+    map_dto_to_contract,
 )
 from quantum.infrastructure.observability.logging.core.models.log_payload import (
     LogPayload,

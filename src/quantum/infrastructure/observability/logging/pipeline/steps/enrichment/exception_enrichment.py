@@ -4,11 +4,11 @@ import logging
 
 from typing import Any
 
+from quantum.infrastructure.observability.logging.ingestion.exception_extractor import (
+    ExceptionExtractor,
+)
 from quantum.infrastructure.observability.logging.pipeline.engine.step import (
     PipelineStep,
-)
-from quantum.infrastructure.observability.logging.runtime.exception_processor import (
-    ExceptionProcessor,
 )
 
 
@@ -18,7 +18,7 @@ class ExceptionEnrichmentStep(PipelineStep):
     """
 
     def process(self, record: logging.LogRecord) -> bool:
-        structured_exc: dict[str, Any] = ExceptionProcessor.extract(record)
+        structured_exc: dict[str, Any] = ExceptionExtractor.extract(record)
 
         if structured_exc:
             base = getattr(record, "attrs", None)

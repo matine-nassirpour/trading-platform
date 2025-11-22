@@ -279,6 +279,7 @@ trading-platform/
 │       │   │   │   └── init_manager.py
 │       │   │   ├── context/
 │       │   │   │   ├── __init__.py
+│       │   │   │   ├── context_attributes_provider.py
 │       │   │   │   └── run_id.py
 │       │   │   ├── drivers/
 │       │   │   │   ├── __init__.py
@@ -291,6 +292,12 @@ trading-platform/
 │       │   │   │   │   ├── logging_runtime_bundle.py
 │       │   │   │   │   ├── observability_runtime_bundle.py
 │       │   │   │   │   └── tracing_runtime_bundle.py
+│       │   │   │   ├── metrics/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   └── c0_metric_registry.py
+│       │   │   │   ├── system_diagnostics/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   └── c0_diagnostic_logger.py
 │       │   │   │   └── __init__.py
 │       │   │   ├── logging/
 │       │   │   │   ├── api/
@@ -309,8 +316,8 @@ trading-platform/
 │       │   │   │   │   │   └── log_contract_v1.py
 │       │   │   │   │   ├── mapping/
 │       │   │   │   │   │   ├── __init__.py
-│       │   │   │   │   │   ├── to_contract.py
-│       │   │   │   │   │   └── to_payload.py
+│       │   │   │   │   │   ├── contract_to_payload.py
+│       │   │   │   │   │   └── dto_to_contract.py
 │       │   │   │   │   ├── models/
 │       │   │   │   │   │   ├── __init__.py
 │       │   │   │   │   │   ├── fallback_payload.py
@@ -329,6 +336,7 @@ trading-platform/
 │       │   │   │   │   └── __init__.py
 │       │   │   │   ├── ingestion/
 │       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── exception_extractor.py
 │       │   │   │   │   ├── internal_log_event.py
 │       │   │   │   │   └── log_record_adapter.py
 │       │   │   │   ├── pipeline/
@@ -366,12 +374,6 @@ trading-platform/
 │       │   │   │   │   ├── __init__.py
 │       │   │   │   │   ├── fallback_builder.py
 │       │   │   │   │   └── payload_assembler.py
-│       │   │   │   ├── runtime/
-│       │   │   │   │   ├── __init__.py
-│       │   │   │   │   ├── diagnostics.py
-│       │   │   │   │   ├── exception_processor.py
-│       │   │   │   │   ├── metrics.py
-│       │   │   │   │   └── trace_context.py
 │       │   │   │   ├── sinks/
 │       │   │   │   │   ├── filesystem/
 │       │   │   │   │   │   ├── handlers/
@@ -389,16 +391,11 @@ trading-platform/
 │       │   │   │   │   │   ├── fsync_utils.py
 │       │   │   │   │   │   └── naming.py
 │       │   │   │   │   └── __init__.py
-│       │   │   │   ├── tests/
-│       │   │   │   │   └── __init__.py
 │       │   │   │   ├── utils/
 │       │   │   │   │   ├── __init__.py
 │       │   │   │   │   └── json_sanitize.py
 │       │   │   │   └── __init__.py
 │       │   │   ├── metrics/
-│       │   │   │   ├── collectors/
-│       │   │   │   │   ├── __init__.py
-│       │   │   │   │   └── health_collector.py
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── metrics_exporter.py
 │       │   │   │   └── mt5.py
@@ -410,7 +407,8 @@ trading-platform/
 │       │   │   │   │   └── __init__.py
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── propagation.py
-│       │   │   │   └── provider.py
+│       │   │   │   ├── provider.py
+│       │   │   │   └── trace_context.py
 │       │   │   └── __init__.py
 │       │   ├── storage/
 │       │   │   └── __init__.py

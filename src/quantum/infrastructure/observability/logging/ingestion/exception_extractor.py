@@ -14,7 +14,7 @@ _EXCEPTION_EXTRACTION_FAILURES: Final = define_counter(
 )
 
 
-class ExceptionProcessor:
+class ExceptionExtractor:
     """
     Unified, deterministic and schema-safe exception block builder.
 
@@ -84,9 +84,9 @@ class ExceptionProcessor:
             }
 
         try:
-            exc_type, exc_message = ExceptionProcessor._extract_basic_info(exc_info)
-            stack = ExceptionProcessor._extract_stacktrace(exc_info)
-            summary = ExceptionProcessor._build_summary(exc_type, exc_message)
+            exc_type, exc_message = ExceptionExtractor._extract_basic_info(exc_info)
+            stack = ExceptionExtractor._extract_stacktrace(exc_info)
+            summary = ExceptionExtractor._build_summary(exc_type, exc_message)
 
             return {
                 "exception_summary": summary,

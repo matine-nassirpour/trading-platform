@@ -10,6 +10,9 @@ from quantum.infrastructure.observability.foundation.metrics.c0_metric_registry 
 from quantum.infrastructure.observability.logging.foundation.constants.severity_map import (
     canonical_severity,
 )
+from quantum.infrastructure.observability.logging.ingestion.exception_extractor import (
+    ExceptionExtractor,
+)
 from quantum.infrastructure.observability.logging.ingestion.internal_log_event import (
     CorrelationDTO,
     ExceptionRawDTO,
@@ -18,9 +21,6 @@ from quantum.infrastructure.observability.logging.ingestion.internal_log_event i
     ResourceDTO,
     SeverityDTO,
     TimestampsDTO,
-)
-from quantum.infrastructure.observability.logging.runtime.exception_processor import (
-    ExceptionProcessor,
 )
 from quantum.infrastructure.observability.tracing.trace_context import (
     extract_trace_context,
@@ -123,7 +123,7 @@ class LogRecordAdapter:
         # ----------------------------------------------------------------------
         # Exception block (raw)
         # ----------------------------------------------------------------------
-        exc_raw = ExceptionProcessor.extract(record)
+        exc_raw = ExceptionExtractor.extract(record)
 
         exception = ExceptionRawDTO(
             exception_summary=exc_raw.get("exception_summary"),
