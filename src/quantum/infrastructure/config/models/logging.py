@@ -77,12 +77,9 @@ class LoggingSettings(BaseModel):
     quantum_audit_dir: str | None = Field(
         default=None, description="Directory for audit event JSONL files."
     )
-    quantum_audit_events: str | None = Field(
+    quantum_audit_allowlist: str | None = Field(
         default=None,
         description="Comma-separated list of event types to audit.",
-    )
-    quantum_audit_events_version: str = Field(
-        default="v1", description="Version of audit event schema."
     )
 
     # --------------------------------------------------------------------------

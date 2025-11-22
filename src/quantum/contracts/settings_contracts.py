@@ -83,8 +83,7 @@ class LoggingSettingsContract(BaseSettingsContract, Protocol):
     quantum_log_warn_bytes: int
     quantum_log_dir: str | None
     quantum_audit_dir: str | None
-    quantum_audit_events: str | None
-    quantum_audit_events_version: str
+    quantum_audit_allowlist: str | None
     streamlit_log_tz: str
     streamlit_log_renderer: str
     streamlit_log_expanded: bool
