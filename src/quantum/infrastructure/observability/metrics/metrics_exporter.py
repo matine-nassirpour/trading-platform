@@ -4,11 +4,11 @@ from contextlib import suppress
 
 from prometheus_client import Counter as PrometheusCounter
 
-from quantum.infrastructure.observability.logging.runtime.diagnostics import (
-    get_diagnostic_logger,
-)
-from quantum.infrastructure.observability.logging.runtime.metrics import (
+from quantum.infrastructure.observability.foundation.metrics.c0_metric_registry import (
     _internal_metrics,
+)
+from quantum.infrastructure.observability.foundation.system_diagnostics.c0_diagnostic_logger import (
+    get_diagnostic_logger,
 )
 
 _logger = get_diagnostic_logger()

@@ -4,14 +4,14 @@ import logging
 
 from pydantic import ValidationError
 
+from quantum.infrastructure.observability.foundation.system_diagnostics.c0_diagnostic_logger import (
+    get_diagnostic_logger,
+)
 from quantum.infrastructure.observability.logging.processing.fallback_builder import (
     FallbackBuilder,
 )
 from quantum.infrastructure.observability.logging.processing.payload_assembler import (
     PayloadAssembler,
-)
-from quantum.infrastructure.observability.logging.runtime.diagnostics import (
-    get_diagnostic_logger,
 )
 
 _diag_logger = get_diagnostic_logger()

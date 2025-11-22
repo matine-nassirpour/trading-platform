@@ -5,10 +5,12 @@ import logging
 from contextlib import suppress
 from typing import Final
 
+from quantum.infrastructure.observability.foundation.metrics.c0_metric_registry import (
+    define_counter,
+)
 from quantum.infrastructure.observability.logging.formatting.jsonl_formatter import (
     JSONLFormatter,
 )
-from quantum.infrastructure.observability.logging.runtime.metrics import define_counter
 from quantum.infrastructure.observability.logging.sinks.filesystem.policies.partition_policy import (
     PartitionPolicy,
 )

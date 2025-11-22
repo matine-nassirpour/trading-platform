@@ -5,6 +5,9 @@ import logging
 from collections.abc import Mapping
 from typing import Any, Final
 
+from quantum.infrastructure.observability.foundation.metrics.c0_metric_registry import (
+    define_counter,
+)
 from quantum.infrastructure.observability.logging.core.contracts.log_contract_v1 import (
     LogEventContractV1,
 )
@@ -17,7 +20,6 @@ from quantum.infrastructure.observability.logging.core.models.fallback_payload i
 from quantum.infrastructure.observability.logging.ingestion.log_record_adapter import (
     LogRecordAdapter,
 )
-from quantum.infrastructure.observability.logging.runtime.metrics import define_counter
 from quantum.infrastructure.observability.logging.utils.json_sanitize import (
     json_sanitize,
 )

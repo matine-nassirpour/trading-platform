@@ -5,7 +5,9 @@ import traceback
 from logging import LogRecord
 from typing import Any, Final
 
-from quantum.infrastructure.observability.logging.runtime.metrics import define_counter
+from quantum.infrastructure.observability.foundation.metrics.c0_metric_registry import (
+    define_counter,
+)
 
 _EXCEPTION_EXTRACTION_FAILURES: Final = define_counter(
     "logging_exception_extraction_failures"

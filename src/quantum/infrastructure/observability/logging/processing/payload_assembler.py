@@ -6,6 +6,12 @@ from typing import Final
 
 from pydantic import ValidationError
 
+from quantum.infrastructure.observability.foundation.metrics.c0_metric_registry import (
+    define_counter,
+)
+from quantum.infrastructure.observability.foundation.system_diagnostics.c0_diagnostic_logger import (
+    get_diagnostic_logger,
+)
 from quantum.infrastructure.observability.logging.core.mapping.to_contract import (
     map_dto_to_contract,
 )
@@ -18,10 +24,6 @@ from quantum.infrastructure.observability.logging.core.models.log_payload import
 from quantum.infrastructure.observability.logging.ingestion.log_record_adapter import (
     LogRecordAdapter,
 )
-from quantum.infrastructure.observability.logging.runtime.diagnostics import (
-    get_diagnostic_logger,
-)
-from quantum.infrastructure.observability.logging.runtime.metrics import define_counter
 
 # Counts schema validation failures (Pydantic)
 _SCHEMA_VALIDATION_ERRORS: Final = define_counter("schema_validation_errors")

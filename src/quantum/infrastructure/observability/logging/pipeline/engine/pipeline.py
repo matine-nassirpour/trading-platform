@@ -5,10 +5,12 @@ import logging
 from collections.abc import Iterable
 from typing import Final
 
+from quantum.infrastructure.observability.foundation.metrics.c0_metric_registry import (
+    define_counter,
+)
 from quantum.infrastructure.observability.logging.pipeline.engine.step import (
     PipelineStep,
 )
-from quantum.infrastructure.observability.logging.runtime.metrics import define_counter
 
 LOGGER: Final = logging.getLogger(__name__)
 _LOGGING_PIPELINE_STEP_FAILURES: Final = define_counter(

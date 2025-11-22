@@ -4,6 +4,9 @@ import logging
 
 from typing import Final
 
+from quantum.infrastructure.observability.foundation.metrics.c0_metric_registry import (
+    define_counter,
+)
 from quantum.infrastructure.observability.logging.foundation.constants.severity_map import (
     canonical_severity,
 )
@@ -19,8 +22,7 @@ from quantum.infrastructure.observability.logging.ingestion.internal_log_event i
 from quantum.infrastructure.observability.logging.runtime.exception_processor import (
     ExceptionProcessor,
 )
-from quantum.infrastructure.observability.logging.runtime.metrics import define_counter
-from quantum.infrastructure.observability.logging.runtime.trace_context import (
+from quantum.infrastructure.observability.tracing.trace_context import (
     extract_trace_context,
 )
 from quantum.infrastructure.time.time_format import now_mono_ms, to_rfc3339_ms

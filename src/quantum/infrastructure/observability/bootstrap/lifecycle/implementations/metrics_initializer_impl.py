@@ -5,7 +5,7 @@ from prometheus_client import start_http_server
 from quantum.infrastructure.observability.bootstrap.lifecycle.configs.metrics_config import (
     MetricsConfig,
 )
-from quantum.infrastructure.observability.logging.runtime.diagnostics import (
+from quantum.infrastructure.observability.foundation.system_diagnostics.c0_diagnostic_logger import (
     get_diagnostic_logger,
 )
 from quantum.infrastructure.observability.metrics.metrics_exporter import (

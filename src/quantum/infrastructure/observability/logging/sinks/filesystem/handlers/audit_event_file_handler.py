@@ -7,10 +7,12 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Final
 
-from quantum.infrastructure.observability.logging.runtime.diagnostics import (
+from quantum.infrastructure.observability.foundation.metrics.c0_metric_registry import (
+    define_counter,
+)
+from quantum.infrastructure.observability.foundation.system_diagnostics.c0_diagnostic_logger import (
     get_diagnostic_logger,
 )
-from quantum.infrastructure.observability.logging.runtime.metrics import define_counter
 from quantum.infrastructure.observability.logging.sinks.filesystem.naming import (
     generate_audit_blob_name,
 )
