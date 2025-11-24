@@ -3,10 +3,10 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass
 
-from quantum.infrastructure.observability.context.run_id import get_run_id
-from quantum.infrastructure.observability.tracing.correlation.correlation_id import (
+from quantum.infrastructure.observability.context.correlation_id import (
     get_correlation_id,
 )
+from quantum.infrastructure.observability.context.run_id import get_run_id
 
 
 @dataclass(frozen=True)

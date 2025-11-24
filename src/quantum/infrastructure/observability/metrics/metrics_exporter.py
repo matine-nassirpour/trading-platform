@@ -1,11 +1,9 @@
 from __future__ import annotations
 
-from contextlib import suppress
-
 from prometheus_client import Counter as PrometheusCounter
 
 from quantum.infrastructure.observability.foundation.metrics.c0_metric_registry import (
-    _internal_metrics,
+    get_internal_counter,
 )
 from quantum.infrastructure.observability.foundation.system_diagnostics.c0_diagnostic_logger import (
     get_diagnostic_logger,
@@ -24,6 +22,7 @@ class MetricsExporter:
     """
 
     def __init__(self) -> None:
+        # Cache of Prometheus counters to ensure idempotence
         self._prom_counters: dict[str, PrometheusCounter] = {}
 
     # --------------------------------------------------------------------------
@@ -42,35 +41,31 @@ class MetricsExporter:
             help_text: Prometheus metric description
         """
         try:
-            internal_counter = _internal_metrics.get(internal_name)
+            internal_counter = get_internal_counter(internal_name)
             if internal_counter is None:
                 _logger.error(
                     f"[metrics-exporter] Unknown internal counter '{internal_name}'"
                 )
                 return
 
-            # Create or reuse Prometheus metric
+            # Create or reuse the Prometheus counter
             if prom_name not in self._prom_counters:
                 self._prom_counters[prom_name] = PrometheusCounter(prom_name, help_text)
 
             prom_counter = self._prom_counters[prom_name]
 
-            # Chain previous behavior
-            prev_inc = internal_counter._inc
-
-            def chained_inc(amount: int = 1) -> None:
+            # Hook executed on each increment from C0
+            def prom_inc(amount: int = 1) -> None:
                 try:
                     prom_counter.inc(amount)
                 except Exception as exc:
                     _logger.error(
-                        f"[metrics-exporter] Prometheus increment failed for '{prom_name}': {exc.__class__.__name__}"
+                        f"[metrics-exporter] Prometheus increment failed "
+                        f"for '{prom_name}': {exc.__class__.__name__}"
                     )
-                finally:
-                    # preserve original internal behavior (diagnostics)
-                    with suppress(Exception):
-                        prev_inc(amount)
 
-            internal_counter._inc = chained_inc
+            # Register this hook with the internal C0 counter
+            internal_counter.bind_increment_hook(prom_inc)
 
         except Exception as exc:
             _logger.error(

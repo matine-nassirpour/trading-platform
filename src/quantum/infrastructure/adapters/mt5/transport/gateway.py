@@ -9,6 +9,10 @@ from typing import Any, Final
 from quantum.application.contracts.execution_code import ExecutionCode
 from quantum.application.contracts.execution_result import ExecutionResult
 from quantum.domain.types.execution_channel import ExecutionChannel
+from quantum.infrastructure.adapters.mt5.execution_metrics import (
+    exec_channel_latency_ms,
+    exec_channel_total,
+)
 from quantum.infrastructure.adapters.mt5.mappings.retcode_map import map_mt5_res_to_exec
 from quantum.infrastructure.adapters.mt5.runtime.gateway_registry import (
     is_gateway_healthy,
@@ -20,10 +24,6 @@ from quantum.infrastructure.adapters.mt5.transport.contracts import (
 )
 from quantum.infrastructure.adapters.mt5.transport.timeout_utils import timeout_guard
 from quantum.infrastructure.config.runtime.manager import ConfigManager
-from quantum.infrastructure.observability.metrics.mt5 import (
-    exec_channel_latency_ms,
-    exec_channel_total,
-)
 from quantum.infrastructure.observability.tracing.provider import get_tracer
 
 LOGGER: Final = logging.getLogger(__name__)

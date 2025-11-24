@@ -18,6 +18,9 @@ from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapProp
 from quantum.infrastructure.observability.context.context_attributes_provider import (
     ContextAttributesProvider,
 )
+from quantum.infrastructure.observability.context.correlation_id import (
+    correlation_context,
+)
 from quantum.infrastructure.observability.context.run_id import run_id_context
 
 T = TypeVar("T")
@@ -153,7 +156,7 @@ def _enter_app_contexts(
     Enter run_id and correlation_id contexts locally.
     """
     rid_cm = run_id_context(snap.run_id) if snap.run_id else None
-    cid_cm = run_id_context(snap.correlation_id) if snap.correlation_id else None
+    cid_cm = correlation_context(snap.correlation_id) if snap.correlation_id else None
 
     if rid_cm:
         rid_cm.__enter__()
