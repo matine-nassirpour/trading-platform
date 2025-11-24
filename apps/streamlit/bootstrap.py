@@ -5,23 +5,21 @@ import threading
 
 from typing import Final
 
-from runtime.runtime_composer import get_runtime
-
-from quantum.application.ports.outbound.observability_port import ObservabilityPort
+# from runtime.runtime_composer import get_runtime
 
 LOGGER: Final = logging.getLogger("apps.streamlit.bootstrap")
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Global guards                                                              │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-_RUNTIME = get_runtime()
+# _RUNTIME = get_runtime()
 _BOOTSTRAP_LOCK = threading.Lock()
 _BOOTSTRAP_DONE = False
 
 
 def get_runtime_context():
     """Return the globally composed Quantum runtime context."""
-    return _RUNTIME
+    # return _RUNTIME
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
@@ -60,9 +58,9 @@ def _perform_streamlit_init() -> None:
     """
     Encapsulates the actual initialization logic (observability, run_id, etc.).
     """
-    obs: ObservabilityPort = _RUNTIME.observability_provider
-    obs.ensure_run_id()
-    obs.initialize_observability()
+    # obs = _RUNTIME.observability_provider
+    # obs.ensure_run_id()
+    # obs.initialize_observability()
 
     LOGGER.info("Initializing Quantum Streamlit UI with observability stack...")
     LOGGER.info("Quantum Streamlit bootstrap completed successfully.")

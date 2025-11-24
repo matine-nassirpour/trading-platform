@@ -34,7 +34,7 @@ def set_correlation_id(value: str | None) -> None:
     correlation_id_ctx.set(value)
 
 
-def new_correlation_id() -> str:
+def generate_correlation_id() -> str:
     """
     Generate and set a new correlation ID for the current context.
     """

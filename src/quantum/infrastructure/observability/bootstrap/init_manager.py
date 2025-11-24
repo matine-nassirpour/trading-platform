@@ -22,10 +22,10 @@ from quantum.infrastructure.observability.bootstrap.lifecycle.dependencies impor
 from quantum.infrastructure.observability.bootstrap.lifecycle.lifecycle import (
     LifecycleService,
 )
-from quantum.infrastructure.observability.context.run_id import (
-    generate_run_id,
-    get_run_id,
+from quantum.infrastructure.observability.context.context_attributes_provider import (
+    ContextAttributesProvider,
 )
+from quantum.infrastructure.observability.context.run_id import generate_run_id
 
 LOGGER: Final = logging.getLogger(__name__)
 
@@ -68,7 +68,8 @@ def init_observability(
             return True
 
         # Ensure a run_id exists for correlation context
-        if not get_run_id():
+        ctx = ContextAttributesProvider.get()
+        if ctx.run_id is None:
             generate_run_id()
 
         if _lifecycle is None:
