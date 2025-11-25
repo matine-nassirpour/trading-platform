@@ -85,8 +85,21 @@ class FallbackBuilder:
             return FallbackBuilder._fallback_from_dto(dto, error)
 
     # --------------------------------------------------------------------------
-    # INTERNAL HELPERS
+    # Internal Helpers
     # --------------------------------------------------------------------------
+    @staticmethod
+    def _safe_attrs(attrs: Any) -> dict[str, Any]:
+        """
+        Safely sanitize arbitrary attrs to JSON-safe structure.
+        MUST NEVER RAISE.
+        """
+        try:
+            if isinstance(attrs, Mapping):
+                return json_sanitize(dict(attrs))
+        except Exception:
+            pass
+        return {}
+
     @staticmethod
     def _fallback_from_contract(
         contract: LogEventContractV1,
@@ -97,11 +110,7 @@ class FallbackBuilder:
         Never raises.
         """
 
-        try:
-            attrs: Mapping[str, Any] = contract.attrs
-            safe_attrs = json_sanitize(dict(attrs))
-        except Exception:
-            safe_attrs = {}
+        attrs = FallbackBuilder._safe_attrs(contract.attrs)
 
         return FallbackPayload(
             # Timestamps
@@ -116,7 +125,7 @@ class FallbackBuilder:
             message=contract.message.message,
             # Resource
             env=contract.resource.env,
-            instance=contract.resource.instance_id,
+            instance_id=contract.resource.instance_id,
             service_name=contract.resource.service_name,
             service_version=contract.resource.service_version,
             service_namespace=contract.resource.service_namespace,
@@ -128,7 +137,7 @@ class FallbackBuilder:
             run_id=contract.correlation.run_id,
             # Diagnostic
             validation_error=str(error),
-            attrs=safe_attrs,
+            attrs=attrs,
             fallback_reason="model_validation_failure",
         )
 
@@ -142,10 +151,7 @@ class FallbackBuilder:
         Must NEVER raise.
         """
 
-        try:
-            safe_attrs = json_sanitize(dict(dto.attrs))
-        except Exception:
-            safe_attrs = {}
+        attrs = FallbackBuilder._safe_attrs(dto.attrs)
 
         return FallbackPayload(
             # Timestamps
@@ -160,7 +166,7 @@ class FallbackBuilder:
             message=dto.message.message,
             # Resource
             env=dto.resource.env,
-            instance=dto.resource.instance_id,
+            instance_id=dto.resource.instance_id,
             service_name=dto.resource.service_name,
             service_version=dto.resource.service_version,
             service_namespace=dto.resource.service_namespace,
@@ -172,6 +178,6 @@ class FallbackBuilder:
             run_id=dto.correlation.run_id,
             # Diagnostic
             validation_error=str(error),
-            attrs=safe_attrs,
+            attrs=attrs,
             fallback_reason="contract_mapping_failure",
         )

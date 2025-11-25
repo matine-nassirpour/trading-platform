@@ -3,12 +3,6 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable
 from contextlib import suppress
 
-from quantum.infrastructure.observability.foundation.system_diagnostics.c0_diagnostic_logger import (
-    get_diagnostic_logger,
-)
-
-_logger = get_diagnostic_logger()
-
 
 class Counter:
     """

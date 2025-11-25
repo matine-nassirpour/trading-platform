@@ -36,7 +36,7 @@ class FallbackPayload(BaseModel):
 
     # Context
     env: str | None = None
-    instance: str | None = None
+    instance_id: str | None = None
     service_name: str | None = None
     service_version: str | None = None
     service_namespace: str | None = None
