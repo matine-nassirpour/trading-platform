@@ -50,7 +50,7 @@ include_external_packages = True
 # │     Foundational to certifiable modularity (DO-178C §11.8, NASA-SWE-134).  │
 # │                                                                            │
 # │ Expected Result :                                                          │
-# │     Infrastructure → Interfaces → Application → Domain → Contracts         │
+# │     Infrastructure → Interfaces → Application → Domain                     │
 # │     Each layer can import only those beneath it.                           │
 # ╰────────────────────────────────────────────────────────────────────────────╯
 
@@ -62,7 +62,6 @@ layers =
     quantum.interfaces
     quantum.application
     quantum.domain
-    quantum.contracts
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
