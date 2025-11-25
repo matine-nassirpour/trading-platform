@@ -71,6 +71,36 @@ class BootstrapDiagnostics:
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Factory function                                                           │
+# ╰────────────────────────────────────────────────────────────────────────────╯
+def build_bootstrap_diagnostics(prefix: str = "quantum") -> BootstrapDiagnostics:
+    """
+    Deterministic, industry-grade factory for BootstrapDiagnostics.
+
+    Creates:
+        - a Histogram for subsystem init latencies
+        - a Counter for subsystem init failures
+
+    No singleton, no hidden global state — fully compatible with Clean Architecture.
+    """
+
+    metrics = DiagnosticsMetrics(
+        latency_hist=Histogram(
+            f"{prefix}_observability_init_latency_seconds",
+            "Subsystem initialization latency (seconds)",
+            labelnames=("subsystem",),
+        ),
+        failure_counter=Counter(
+            f"{prefix}_observability_init_failures_total",
+            "Subsystem initialization failure count",
+            labelnames=("subsystem",),
+        ),
+    )
+
+    return BootstrapDiagnostics(metrics)
+
+
+# ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Decorator factory                                                          │
 # ╰────────────────────────────────────────────────────────────────────────────╯
 def make_latency_decorator(

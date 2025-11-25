@@ -126,8 +126,8 @@ class LifecycleService:
 
         # Aggregate global pipeline status
         pipeline_ok = (
-            registry.pipeline_logging_ok._value.get() == 1.0
-            and registry.pipeline_tracing_ok._value.get() == 1.0
+            registry.logging_ok._value.get() == 1.0
+            and registry.tracing_ok._value.get() == 1.0
         )
         registry.mark_pipeline_up(pipeline_ok)
 

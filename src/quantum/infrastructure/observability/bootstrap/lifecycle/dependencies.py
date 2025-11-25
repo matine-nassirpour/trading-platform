@@ -4,9 +4,11 @@ from dataclasses import dataclass
 
 from quantum.infrastructure.observability.bootstrap.health_registry import (
     HealthRegistry,
+    build_health_registry,
 )
 from quantum.infrastructure.observability.bootstrap.init_diagnostics import (
     BootstrapDiagnostics,
+    build_bootstrap_diagnostics,
 )
 from quantum.infrastructure.observability.bootstrap.lifecycle.implementations.logging_initializer_impl import (
     LoggingInitializerImpl,
@@ -50,9 +52,9 @@ class ObservabilityDependencies:
     diagnostics: BootstrapDiagnostics
 
 
-# ---------------------------------------------------------------------------
-# Factory — used by LifecycleService during instantiation
-# ---------------------------------------------------------------------------
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Factory — used by LifecycleService during instantiation                    │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 def create_observability_dependencies() -> ObservabilityDependencies:
     """
     Composition Root for all Observability dependencies.
@@ -65,10 +67,13 @@ def create_observability_dependencies() -> ObservabilityDependencies:
     Pure dependency construction.
     """
 
+    health_registry = build_health_registry(prefix="quantum")
+    diagnostics = build_bootstrap_diagnostics(prefix="quantum")
+
     return ObservabilityDependencies(
         logging_initializer=LoggingInitializerImpl(),
         tracing_initializer=TracingInitializerImpl(),
         metrics_initializer=MetricsInitializerImpl(),
-        health_registry=HealthRegistry.get_instance(),
-        diagnostics=BootstrapDiagnostics.get_instance(),
+        health_registry=health_registry,
+        diagnostics=diagnostics,
     )

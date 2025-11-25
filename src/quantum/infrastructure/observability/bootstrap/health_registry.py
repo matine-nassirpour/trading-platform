@@ -75,3 +75,47 @@ class HealthRegistry:
         self._m.logging_ok.set(0)
         self._m.tracing_ok.set(0)
         self._m.metrics_http_ok.set(0)
+
+
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Factory function                                                           │
+# ╰────────────────────────────────────────────────────────────────────────────╯
+def build_health_registry(prefix: str = "quantum") -> HealthRegistry:
+    """
+    Deterministic, factory for HealthRegistry + Gauges.
+
+    This replaces all implicit singletons. It produces:
+        - well-defined Prometheus gauge set
+        - explicit namespacing (default: 'quantum')
+        - fully isolated HealthRegistry instance
+        - safe to call during composition
+    """
+
+    metrics = HealthMetrics(
+        pipeline_up=Gauge(
+            f"{prefix}_pipeline_up",
+            "Indicates global observability pipeline health (1=up, 0=down)",
+        ),
+        tracing_up=Gauge(
+            f"{prefix}_tracing_up",
+            "Indicates tracing subsystem reachability (1=up, 0=down)",
+        ),
+        logging_sink_up=Gauge(
+            f"{prefix}_logging_sink_up",
+            "Indicates logging sink availability (1=up, 0=down)",
+        ),
+        logging_ok=Gauge(
+            f"{prefix}_logging_ok",
+            "Indicates successful logging initialization (1=ok, 0=failed)",
+        ),
+        tracing_ok=Gauge(
+            f"{prefix}_tracing_ok",
+            "Indicates successful tracing initialization (1=ok, 0=failed)",
+        ),
+        metrics_http_ok=Gauge(
+            f"{prefix}_metrics_http_ok",
+            "Indicates Prometheus exporter health (1=ok, 0=failed)",
+        ),
+    )
+
+    return HealthRegistry(metrics)
