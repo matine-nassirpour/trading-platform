@@ -35,31 +35,66 @@ class HealthMonitor(Protocol):
 
 
 class HealthRegistry:
-    """Pure health status manager using an injected set of Prometheus Gauges."""
+    """Pure health status manager using Prometheus Gauges + internal canonical state."""
 
     def __init__(self, metrics: HealthMetrics) -> None:
         self._m = metrics
+
+        # Canonical internal state (source of truth)
+        self._pipeline_up: bool = False
+        self._tracing_up: bool = False
+        self._logging_sink_up: bool = False
+        self._logging_ok: bool = False
+        self._tracing_ok: bool = False
+        self._metrics_http_ok: bool = False
 
     # --------------------------------------------------------------------------
     # Public API - High level setters
     # --------------------------------------------------------------------------
     def mark_pipeline_up(self, ok: bool) -> None:
+        self._pipeline_up = ok
         self._m.pipeline_up.set(1 if ok else 0)
 
     def mark_tracing_up(self, ok: bool) -> None:
+        self._tracing_up = ok
         self._m.tracing_up.set(1 if ok else 0)
 
     def mark_logging_sink_up(self, ok: bool) -> None:
+        self._logging_sink_up = ok
         self._m.logging_sink_up.set(1 if ok else 0)
 
     def mark_logging_ok(self, ok: bool) -> None:
+        self._logging_ok = ok
         self._m.logging_ok.set(1 if ok else 0)
 
     def mark_tracing_ok(self, ok: bool) -> None:
+        self._tracing_ok = ok
         self._m.tracing_ok.set(1 if ok else 0)
 
     def mark_metrics_http_ok(self, ok: bool) -> None:
+        self._metrics_http_ok = ok
         self._m.metrics_http_ok.set(1 if ok else 0)
+
+    # --------------------------------------------------------------------------
+    # Public API — Getters (read from canonical state, never from Gauge)
+    # --------------------------------------------------------------------------
+    def is_pipeline_up(self) -> bool:
+        return self._pipeline_up
+
+    def is_tracing_up(self) -> bool:
+        return self._tracing_up
+
+    def is_logging_sink_up(self) -> bool:
+        return self._logging_sink_up
+
+    def is_logging_ok(self) -> bool:
+        return self._logging_ok
+
+    def is_tracing_ok(self) -> bool:
+        return self._tracing_ok
+
+    def is_metrics_http_ok(self) -> bool:
+        return self._metrics_http_ok
 
     # --------------------------------------------------------------------------
     # Utilities
@@ -69,12 +104,12 @@ class HealthRegistry:
         Reset all gauges to zero.
         Caller must ensure this is only invoked in a controlled lifecycle phase.
         """
-        self._m.pipeline_up.set(0)
-        self._m.tracing_up.set(0)
-        self._m.logging_sink_up.set(0)
-        self._m.logging_ok.set(0)
-        self._m.tracing_ok.set(0)
-        self._m.metrics_http_ok.set(0)
+        self.mark_pipeline_up(False)
+        self.mark_tracing_up(False)
+        self.mark_logging_sink_up(False)
+        self.mark_logging_ok(False)
+        self.mark_tracing_ok(False)
+        self.mark_metrics_http_ok(False)
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮

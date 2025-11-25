@@ -124,11 +124,7 @@ class LifecycleService:
             self._logger.warning(f"[Observability] Metrics init failed: {exc}")
             registry.mark_metrics_http_ok(False)
 
-        # Aggregate global pipeline status
-        pipeline_ok = (
-            registry.logging_ok._value.get() == 1.0
-            and registry.tracing_ok._value.get() == 1.0
-        )
+        pipeline_ok = registry.is_logging_ok() and registry.is_tracing_ok()
         registry.mark_pipeline_up(pipeline_ok)
 
         self._initialized = pipeline_ok
