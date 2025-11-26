@@ -96,7 +96,7 @@ clean: ## Remove build/test artifacts and caches
 	-@Remove-Item -Recurse -Force -ErrorAction SilentlyContinue .pytest_cache,.mypy_cache,.ruff_cache,.isort_cache,htmlcov,dist,build,*.egg-info,.coverage,coverage.xml,test-results,build/coverage
 
 ui: ## Launch Streamlit
-	@$$env:PYTHONPATH = 'src;.'; poetry run streamlit run apps/streamlit/pages/observability_page.py --server.headless true
+	@$$env:PYTHONPATH = 'src;.'; poetry run streamlit run apps/streamlit/app.py --server.headless true
 
 tree: ## Generate documentation of directory structure
 	@New-Item -ItemType Directory -Force -Path 'docs/architecture' | Out-Null
