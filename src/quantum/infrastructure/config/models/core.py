@@ -27,10 +27,11 @@ from typing import Any
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from quantum.infrastructure.config.models._mixins import PublicSettingsMixin
 from quantum.infrastructure.config.validators import validate_field
 
 
-class CoreSettings(BaseSettings):
+class CoreSettings(BaseSettings, PublicSettingsMixin):
     """
     Structured and validated configuration for the Quantum platform runtime.
 
@@ -103,4 +104,5 @@ class CoreSettings(BaseSettings):
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
+        frozen=True,
     )

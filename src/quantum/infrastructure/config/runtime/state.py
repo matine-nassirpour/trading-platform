@@ -1,127 +1,49 @@
-"""
-Quantum Core Configuration Runtime State
-────────────────────────────────────────
-Encapsulates the in-process configuration state, ensuring atomicity,
-thread safety, and consistency across concurrent threads.
-
-Responsibilities
-----------------
-- Maintain a per-process snapshot of the active configuration environment.
-- Provide atomic read/write operations through an internal lock.
-- Expose immutable snapshots for inspection and debugging.
-- Serve as the foundation for ConfigManager caching and environment layering.
-
-Design Principles
------------------
-- **Single Responsibility** : isolates state management logic.
-- **Encapsulation** : no global variables or uncontrolled mutations.
-- **Thread Safety** : internal RLock ensures serialized access.
-- **Transparency** : exposes safe snapshot methods for observability.
-- **Immutability Contract** : always returns copies, never references.
-"""
-
 from __future__ import annotations
 
 import os
 import threading
 
-from collections.abc import Callable
 from pathlib import Path
-from typing import Any, ClassVar, Final, TypeVar
-
-T = TypeVar("T")
+from typing import Any, ClassVar, Final
 
 
 class ConfigState:
     """
     Thread-safe singleton encapsulating configuration state.
 
-    This object holds runtime information about:
-        - base_dir:   root directory from which .env files were resolved
-        - loaded_pid: process identifier under which the environment was loaded
-        - env_cache:  last resolved and merged environment dictionary
+    Now tracks full environment loading fingerprint:
+        - PID
+        - provided root/env_file parameters
+        - resolved base_dir and resolved_env_file
+        - merged env cache
 
-    Access Pattern
-    --------------
-        state = ConfigState.instance()
-        snapshot = state.snapshot()
-        state.update(base_dir=Path("/opt/app"), env_cache={"FOO": "bar"})
-
-    Thread Safety
-    -------------
-        - All read/write operations acquire the internal RLock.
-        - No external code should manipulate attributes directly.
-        - Intended to be used by ConfigManager and providers only.
+    This ensures deterministic, parameter-sensitive caching.
     """
 
     _instance: ClassVar[ConfigState | None] = None
     _lock: ClassVar[threading.RLock] = threading.RLock()
 
     def __init__(self) -> None:
-        # Base directory where the configuration was discovered (.env parent dir)
+        # Detected environment state & cache
         self._base_dir: Path | None = None
-
-        # Process ID that loaded this configuration (to detect forks or reloads)
+        self._env_file: Path | None = None
+        self._env_cache: dict[str, str] | None = None
         self._loaded_pid: int | None = None
 
-        # Cached environment variables (merged result from providers)
-        self._env_cache: dict[str, str] | None = None
+        # Parameters used to compute the cache
+        self._root_param: str | Path | None = None
+        self._env_file_param: str | Path | None = None
 
     # --------------------------------------------------------------------------
     # Singleton Accessor
     # --------------------------------------------------------------------------
     @classmethod
     def instance(cls) -> ConfigState:
-        """
-        Get or create the singleton ConfigState instance.
-
-        Returns:
-            ConfigState: singleton instance.
-        """
+        """Get or create the singleton ConfigState instance."""
         with cls._lock:
             if cls._instance is None:
                 cls._instance = cls()
             return cls._instance
-
-    # --------------------------------------------------------------------------
-    # Controlled Access
-    # --------------------------------------------------------------------------
-    def access(self, func: Callable[[], T]) -> T:
-        """
-        Execute a callable within a thread-safe lock context.
-
-        Use this to perform compound operations atomically without
-        exposing the internal lock to external callers.
-        """
-        with self._lock:
-            return func()
-
-    # --------------------------------------------------------------------------
-    # Snapshot and Getters
-    # --------------------------------------------------------------------------
-    def snapshot(self) -> dict[str, Any]:
-        """
-        Return an immutable snapshot of the current configuration state.
-
-        Returns:
-            dict[str, Any]: A copy of the internal state suitable for diagnostics.
-        """
-        with self._lock:
-            return {
-                "base_dir": str(self._base_dir) if self._base_dir else None,
-                "loaded_pid": self._loaded_pid,
-                "env_cache": dict(self._env_cache or {}),
-            }
-
-    def get_env_cache(self) -> dict[str, str]:
-        """
-        Safely retrieve a copy of the environment cache.
-
-        Returns:
-            dict[str, str]: Copy of the merged environment variables.
-        """
-        with self._lock:
-            return dict(self._env_cache or {})
 
     # --------------------------------------------------------------------------
     # Mutators
@@ -130,75 +52,111 @@ class ConfigState:
         self,
         *,
         base_dir: Path | None = None,
-        loaded_pid: int | None = None,
+        env_file: Path | None = None,
         env_cache: dict[str, str] | None = None,
+        loaded_pid: int | None = None,
+        root_param: str | Path | None = None,
+        env_file_param: str | Path | None = None,
     ) -> None:
         """
-        Atomically update parts of the configuration state.
-
-        Args:
-            base_dir: optional base directory.
-            loaded_pid: optional process ID.
-            env_cache: optional environment dictionary.
+        Atomically update the configuration state, including parameter fingerprint.
         """
         with self._lock:
             if base_dir is not None:
                 self._base_dir = base_dir
+            if env_file is not None:
+                self._env_file = env_file
+            if env_cache is not None:
+                # defensive copy
+                self._env_cache = dict(env_cache)
             if loaded_pid is not None:
                 self._loaded_pid = loaded_pid
-            if env_cache is not None:
-                self._env_cache = dict(env_cache)
+            if root_param is not None:
+                self._root_param = root_param
+            if env_file_param is not None:
+                self._env_file_param = env_file_param
 
     def reset(self) -> None:
-        """
-        Reset all internal state to None.
-
-        Use this in tests or during a hard reload.
-        """
+        """Reset the config state completely."""
         with self._lock:
             self._base_dir = None
-            self._loaded_pid = None
+            self._env_file = None
             self._env_cache = None
+            self._loaded_pid = None
+            self._root_param = None
+            self._env_file_param = None
 
-    # --------------------------------------------------------------------------
-    # Diagnostics Helpers
-    # --------------------------------------------------------------------------
-    def has_valid_cache(self) -> bool:
-        """
-        Determine whether the cache is valid for the current process.
+    # ----------------------------------------------------------------------
+    # Cache accessors
+    # ----------------------------------------------------------------------
+    def get_env_cache(self) -> dict[str, str]:
+        """Safely retrieve a copy of the cached environment variables."""
 
-        Returns:
-            bool: True if cache is non-empty and PID matches current process.
-        """
         with self._lock:
-            return (
-                self._loaded_pid == os.getpid()
-                and isinstance(self._env_cache, dict)
-                and bool(self._env_cache)
-            )
+            return dict(self._env_cache or {})
+
+    # --------------------------------------------------------------------------
+    # Validation
+    # --------------------------------------------------------------------------
+    def cache_matches_params(
+        self,
+        *,
+        root_param: str | Path | None,
+        env_file_param: str | Path | None,
+    ) -> bool:
+        """Check if parameters match the cached fingerprint."""
+
+        return self._root_param == root_param and self._env_file_param == env_file_param
+
+    def has_valid_cache(
+        self,
+        *,
+        root_param: str | Path | None,
+        env_file_param: str | Path | None,
+    ) -> bool:
+        """
+        Determine if cache is valid for:
+            - current PID
+            - provided root/env_file parameters
+            - non-empty env cache
+        """
+
+        with self._lock:
+            if self._loaded_pid != os.getpid():
+                return False
+            if not isinstance(self._env_cache, dict) or not self._env_cache:
+                return False
+            if not self.cache_matches_params(
+                root_param=root_param,
+                env_file_param=env_file_param,
+            ):
+                return False
+            return True
+
+    # ----------------------------------------------------------------------
+    # Snapshot & diagnostics
+    # ----------------------------------------------------------------------
+    def snapshot(self) -> dict[str, Any]:
+        with self._lock:
+            return {
+                "base_dir": str(self._base_dir) if self._base_dir else None,
+                "env_file": str(self._env_file) if self._env_file else None,
+                "root_param": str(self._root_param),
+                "env_file_param": str(self._env_file_param),
+                "loaded_pid": self._loaded_pid,
+                "env_size": len(self._env_cache or {}),
+            }
 
     def describe(self) -> str:
-        """
-        Return a human-readable string describing the current state.
-
-        Returns:
-            str: diagnostic string (useful for logging/debugging).
-        """
         snap = self.snapshot()
-        base_dir = snap["base_dir"] or "<unset>"
-        pid = snap["loaded_pid"] or "<unset>"
-        env_size = len(snap["env_cache"] or {})
-        return f"ConfigState(base_dir={base_dir}, pid={pid}, env_vars={env_size})"
+        return (
+            f"ConfigState(pid={snap['loaded_pid']}, "
+            f"base_dir={snap['base_dir']}, "
+            f"env_file={snap['env_file']}, "
+            f"env_vars={snap['env_size']}, "
+            f"root_param={snap['root_param']}, "
+            f"env_file_param={snap['env_file_param']})"
+        )
 
 
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Module-level constant for introspection (optional convenience)             │
-# ╰────────────────────────────────────────────────────────────────────────────╯
 CONFIG_STATE: Final[ConfigState] = ConfigState.instance()
-"""
-Global access point for the process-local ConfigState.
-
-Intended for diagnostic or read-only usage:
-    from quantum.platform.config.runtime.state import CONFIG_STATE
-    print(CONFIG_STATE.describe())
-"""

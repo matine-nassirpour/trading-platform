@@ -1,34 +1,10 @@
-"""
-Quantum Core Configuration Manager
-──────────────────────────────────
-Unified runtime facade for configuration management across the Quantum platform.
-
-Responsibilities
-----------------
-- Load and validate structured configuration models (Pydantic-based).
-- Orchestrate environment discovery through the provider layer.
-- Manage process-safe caching and state consistency via ConfigState.
-- Expose immutable, validated configuration objects for all subsystems.
-- Provide inspection and snapshot utilities for observability and diagnostics.
-
-Design Principles
------------------
-- **Single Responsibility** : orchestrates configuration lifecycle only.
-- **Clean Architecture** : depends solely on platform models and providers.
-- **Thread Safe** : relies on ConfigState synchronization and LRU caching.
-- **Immutability** : returns frozen, deterministic models.
-- **Transparency** : exposes explicit snapshot and cache management APIs.
-- **Extensibility** : open to integration of new configuration models.
-"""
-
 from __future__ import annotations
 
 import logging
 import os
 
 from collections.abc import Mapping
-from functools import lru_cache
-from pathlib import Path
+from functools import cache
 from typing import Any, Final
 
 from quantum.infrastructure.config.models.core import CoreSettings
@@ -53,72 +29,78 @@ class ConfigManager:
     # Internal helpers
     # --------------------------------------------------------------------------
     @staticmethod
-    def _normalize_env(env: Mapping[str, str] | None = None) -> dict[str, Any]:
-        """Normalize environment keys to lowercase for Pydantic model compatibility."""
+    def _normalize_env(env: Mapping[str, str] | None) -> dict[str, str]:
+        """Return env with normalized lowercase keys."""
         return {k.lower(): v for k, v in (env or os.environ).items()}
 
     # --------------------------------------------------------------------------
-    # Core loader
+    # Production / Cacheable loaders
     # --------------------------------------------------------------------------
     @staticmethod
-    @lru_cache
-    def load(
-        root: str | Path | None = None,
-        *,
-        env_file: str | Path | None = None,
-        override: bool = False,
-        env: Mapping[str, Any] | None = None,
-        apply: bool = False,
-    ) -> CoreSettings:
+    @cache
+    def load_core_cached() -> CoreSettings:
         """
-        Load the core configuration model.
+        Load CoreSettings using environment loaded from files + process env.
 
-        Steps:
-            1. Load .env layers through provider.
-            2. Merge with os.environ and explicit overrides.
-            3. Validate and instantiate CoreSettings.
-
-        Args:
-            root: optional root directory.
-            env_file: optional explicit .env file path.
-            override: whether to override os.environ keys.
-            env: optional mapping of explicit environment variables.
-            apply: whether to apply merged envs to os.environ.
-
-        Returns:
-            CoreSettings: validated and frozen settings model.
+        NOTE:
+        - No parameters → safe for memoization.
+        - Picks up the environment loaded via `load_env()`.
         """
-        merged = load_env(root, env_file, override=override, apply=apply)
-        effective_env: dict[str, Any] = {**merged, **os.environ, **(env or {})}
-        settings = CoreSettings(**effective_env)
+        merged = load_env(apply=False, override=False)
+        effective_env = {**merged, **os.environ}
+        settings = CoreSettings(**ConfigManager._normalize_env(effective_env))
 
         LOGGER.info(
-            "Core settings loaded",
+            "CoreSettings loaded (cached)",
             extra={
                 "attrs": {"app": settings.quantum_app_name, "env": settings.quantum_env}
             },
         )
         return settings
 
+    @staticmethod
+    @cache
+    def load_logging_cached() -> LoggingSettings:
+        """Cached loader for LoggingSettings."""
+        model = LoggingSettings(**ConfigManager._normalize_env(None))
+        return model
+
+    @staticmethod
+    @cache
+    def load_tracing_cached() -> TracingSettings:
+        """Cached loader for TracingSettings."""
+        model = TracingSettings(**ConfigManager._normalize_env(None))
+        return model
+
+    @staticmethod
+    @cache
+    def load_mt5_cached() -> MT5Settings:
+        """Cached loader for MT5Settings."""
+        model = MT5Settings(**ConfigManager._normalize_env(None))
+        return model
+
     # --------------------------------------------------------------------------
-    # Singleton Accessor
+    # Override / test loaders (no cache)
     # --------------------------------------------------------------------------
     @staticmethod
-    @lru_cache
-    def load_logging(env: Mapping[str, str] | None = None) -> LoggingSettings:
-        """Load and validate logging configuration."""
+    def load_core(*, env: Mapping[str, Any] | None = None) -> CoreSettings:
+        """Non-cached loader allowing explicit env overrides."""
+        effective_env = {**os.environ, **(env or {})}
+        return CoreSettings(**ConfigManager._normalize_env(effective_env))
+
+    @staticmethod
+    def load_logging(*, env: Mapping[str, Any] | None = None) -> LoggingSettings:
+        """Non-cached override loader."""
         return LoggingSettings(**ConfigManager._normalize_env(env))
 
     @staticmethod
-    @lru_cache
-    def load_tracing(env: Mapping[str, str] | None = None) -> TracingSettings:
-        """Load and validate tracing configuration."""
+    def load_tracing(*, env: Mapping[str, Any] | None = None) -> TracingSettings:
+        """Non-cached override loader."""
         return TracingSettings(**ConfigManager._normalize_env(env))
 
     @staticmethod
-    @lru_cache
-    def load_mt5(env: Mapping[str, str] | None = None) -> MT5Settings:
-        """Load and validate broker connection configuration (MT5)."""
+    def load_mt5(*, env: Mapping[str, Any] | None = None) -> MT5Settings:
+        """Non-cached override loader."""
         return MT5Settings(**ConfigManager._normalize_env(env))
 
     # --------------------------------------------------------------------------
@@ -126,44 +108,29 @@ class ConfigManager:
     # --------------------------------------------------------------------------
     @staticmethod
     def clear_caches() -> None:
-        """
-        Clear all configuration caches and reset internal state.
-
-        Intended for testing, reloads, or dynamic environment switching.
-        """
+        """Clear all cached settings + runtime environment cache."""
         for fn in (
-            ConfigManager.load,
-            ConfigManager.load_logging,
-            ConfigManager.load_tracing,
-            ConfigManager.load_mt5,
+            ConfigManager.load_core_cached,
+            ConfigManager.load_logging_cached,
+            ConfigManager.load_tracing_cached,
+            ConfigManager.load_mt5_cached,
         ):
-            cache_clear = getattr(fn, "cache_clear", None)
-            if callable(cache_clear):
-                cache_clear()
+            fn.cache_clear()
 
         ConfigState.instance().reset()
         LOGGER.info("ConfigManager caches cleared and ConfigState reset.")
 
     # --------------------------------------------------------------------------
-    # Snapshot helpers
+    # Snapshot utils
     # --------------------------------------------------------------------------
     @staticmethod
     def snapshot(
         settings: CoreSettings | None = None,
         tracing: TracingSettings | None = None,
     ) -> dict[str, str]:
-        """
-        Return a concise snapshot of current configuration context.
-
-        Args:
-            settings: optional CoreSettings instance.
-            tracing:  optional TracingSettings instance.
-
-        Returns:
-            dict[str, str]: minimal immutable summary.
-        """
-        s = settings or ConfigManager.load()
-        t = tracing or ConfigManager.load_tracing()
+        """Return minimal configuration snapshot."""
+        s = settings or ConfigManager.load_core_cached()
+        t = tracing or ConfigManager.load_tracing_cached()
 
         return {
             "app": s.quantum_app_name,
@@ -174,24 +141,30 @@ class ConfigManager:
         }
 
     # --------------------------------------------------------------------------
-    # Convenience: credentials accessors
+    # Broker Credential helper
     # --------------------------------------------------------------------------
     @staticmethod
     def get_mt5_credentials(
         channel: str,
+        *,
         env: Mapping[str, str] | None = None,
+        cached: bool = True,
     ) -> dict[str, str]:
         """
-        Retrieve broker credentials for a given MT5 channel (e.g., 'ftmo').
+        Retrieve broker credentials for MT5.
 
         Args:
-            channel: broker identifier (lowercase).
-            env: optional mapping for overrides.
+            channel: 'ftmo', 'fundednext', ...
+            env: optional override env mapping.
+            cached: whether to use cached MT5Settings.
 
-        Returns:
-            dict[str, str]: broker credentials dictionary.
         """
-        model = ConfigManager.load_mt5(env=env)
+        model = (
+            ConfigManager.load_mt5_cached()
+            if cached and env is None
+            else ConfigManager.load_mt5(env=env)
+        )
+
         prefix = channel.lower()
         return {
             "login": str(getattr(model, f"quantum_mt5_{prefix}_login", "") or ""),

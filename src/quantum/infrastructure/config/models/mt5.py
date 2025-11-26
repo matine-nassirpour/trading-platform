@@ -24,8 +24,10 @@ from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from quantum.infrastructure.config.models._mixins import PublicSettingsMixin
 
-class MT5Settings(BaseModel):
+
+class MT5Settings(BaseModel, PublicSettingsMixin):
 
     # --------------------------------------------------------------------------
     # FTMO

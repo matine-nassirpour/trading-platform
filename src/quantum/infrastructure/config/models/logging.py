@@ -26,10 +26,11 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from quantum.infrastructure.config.models._mixins import PublicSettingsMixin
 from quantum.infrastructure.config.validators import validate_field
 
 
-class LoggingSettings(BaseModel):
+class LoggingSettings(BaseModel, PublicSettingsMixin):
     """
     Structured configuration model for Quantum logging and audit subsystems.
     """

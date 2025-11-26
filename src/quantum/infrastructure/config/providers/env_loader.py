@@ -1,25 +1,3 @@
-"""
-Quantum Core Configuration Environment Loader
-─────────────────────────────────────────────
-Responsible for discovering, loading, and merging configuration layers
-from .env files, local overrides, and runtime environment variables.
-
-Responsibilities
-----------------
-- Discover .env files relative to a provided root or current working directory.
-- Load layered environment files: base, environment-specific, local.
-- Merge values deterministically with defined override order.
-- Optionally apply values to os.environ (opt-in).
-- Maintain consistency and caching through ConfigState.
-
-Design Principles
------------------
-- **Single Responsibility** : loading and merging configuration layers only.
-- **Open/Closed** : supports additional providers (e.g., Vault, remote API).
-- **No Side Effects by Default** : apply=False preserves purity.
-- **Thread Safe** : uses ConfigState for atomic operations.
-"""
-
 from __future__ import annotations
 
 import logging
@@ -42,7 +20,6 @@ LOGGER: Final = logging.getLogger("quantum.config.env_loader")
 def _merge_envs(*layers: Mapping[str, str | None]) -> dict[str, str]:
     """
     Merge multiple environment layers, ignoring None values.
-
     Later layers override earlier ones.
     """
     merged: dict[str, str] = {}
@@ -54,69 +31,45 @@ def _merge_envs(*layers: Mapping[str, str | None]) -> dict[str, str]:
 
 
 def _resolve_env_path(
-    root: str | Path | None, env_file: str | Path | None
-) -> tuple[Path | None, Path | None]:
-    """
-    Resolve base directory and .env file path.
+    root: str | Path | None,
+    env_file: str | Path | None,
+) -> tuple[Path, Path | None]:
+    """Resolve base directory + explicit env_file if provided."""
 
-    Priority:
-        1. Explicit env_file argument (if exists)
-        2. Provided root (if directory exists)
-        3. Auto-discovery via find_dotenv()
-        4. Fallback to current working directory
-    """
+    # 1. Explicit env_file
     if env_file:
         p = Path(env_file)
         if p.exists():
             return p.parent, p
 
+    # 2. root directory
     if root:
         r = Path(root)
         if r.is_dir():
             return r, None
 
+    # 3. Auto-discovery
     if find_dotenv is not None:
         found = find_dotenv(usecwd=True)
         if found:
             fp = Path(found)
             return fp.parent, fp
 
+    # 4. Fallback
     return Path.cwd(), None
 
 
-def _load_from_cache(
-    state: ConfigState, apply: bool, override: bool
-) -> dict[str, str] | None:
-    """Return cached environment if valid; apply optionally."""
-    if not state.has_valid_cache():
-        return None
-
-    cached = state.get_env_cache()
-    LOGGER.debug("Reusing cached environment (pid=%s)", os.getpid())
-
-    if apply:
-        _apply_env_vars(cached, apply=True, override=override)
-        LOGGER.debug("Applied cached environment to os.environ (from cache)")
-
-    return cached
-
-
 def _load_from_files(
-    root: str | Path | None, env_file: str | Path | None
-) -> tuple[dict[str, str], Path]:
-    """Load environment dictionaries from .env files."""
-    if dotenv_values is None:
-        LOGGER.warning("python-dotenv not installed; skipping .env loading")
-        return dict(os.environ), Path.cwd()
+    base_dir: Path,
+    explicit_file: Path | None,
+) -> dict[str, str]:
+    """Load environment layers from disk."""
 
-    base_dir, explicit_file = _resolve_env_path(root, env_file)
-    base_dir = base_dir or Path.cwd()
+    if explicit_file:
+        env_base = dotenv_values(explicit_file)
+    else:
+        env_base = dotenv_values(base_dir / ".env")
 
-    env_base = (
-        dotenv_values(explicit_file)
-        if explicit_file
-        else dotenv_values(base_dir / ".env")
-    )
     env_base = env_base or {}
 
     current_env = os.getenv("QUANTUM_ENV") or env_base.get("QUANTUM_ENV") or "dev"
@@ -124,19 +77,13 @@ def _load_from_files(
     env_local = dotenv_values(base_dir / ".env.local") or {}
 
     merged = _merge_envs(env_base, env_specific, env_local)
-    return merged, base_dir
+    return merged
 
 
-def _apply_env_vars(
-    envs: Mapping[str, str | None], apply: bool, override: bool
-) -> None:
-    """Apply environment variables to os.environ deterministically."""
+def _apply_env_vars(envs: Mapping[str, str], *, apply: bool, override: bool) -> None:
     if not apply:
         return
-
     for k, v in envs.items():
-        if v is None:
-            continue
         if not override and k in os.environ:
             continue
         os.environ[k] = v
@@ -153,46 +100,74 @@ def load_env(
     apply: bool = False,
 ) -> dict[str, str]:
     """
-    Load environment variables from .env files in a process-safe way.
+    Load environment variables from disk with fully parameter-sensitive caching.
 
-    Design goals:
-        - Deterministic and reproducible merging.
-        - Thread/process safety via ConfigState.
-        - Zero side effects unless apply=True.
+    Cache is refreshed if ANY of the following differ:
+        - PID
+        - root
+        - env_file
+        - resolved base_dir
+        - resolved env_file
 
-    Args:
-        root: optional project root or base directory.
-        env_file: optional explicit .env file path.
-        override: if True, overrides existing os.environ keys.
-        apply: if True, applies merged values to os.environ (opt-in).
-
-    Returns:
-        dict[str, str]: merged environment variables.
+    Breaking change:
+        Caching now depends explicitly on input parameters.
     """
+
     pid = os.getpid()
     state = ConfigState.instance()
 
-    def _execute_load() -> dict[str, str]:
-        cached = _load_from_cache(state, apply, override)
-        if cached is not None:
-            return cached
+    # --------------------------------------------------------------------------
+    # 1. Check cache validity w.r.t parameters
+    # --------------------------------------------------------------------------
+    if state.has_valid_cache(
+        root_param=root,
+        env_file_param=env_file,
+    ):
+        cached = state.get_env_cache()
+        if apply:
+            _apply_env_vars(cached, apply=True, override=override)
 
-        merged, base_dir = _load_from_files(root, env_file)
-        _apply_env_vars(merged, apply, override)
-
-        state.update(base_dir=base_dir, loaded_pid=pid, env_cache=merged)
-        LOGGER.info(
-            "Environment loaded",
-            extra={
-                "attrs": {
-                    "base_dir": str(base_dir),
-                    "env": os.getenv("QUANTUM_ENV", merged.get("QUANTUM_ENV", "dev")),
-                    "applied": apply,
-                    "override": override,
-                }
-            },
+        LOGGER.debug(
+            "Reusing cached environment for PID=%s (root=%s, env_file=%s)",
+            pid,
+            root,
+            env_file,
         )
-        return merged
+        return cached
 
-    # Execute atomically under internal lock
-    return state.access(_execute_load)
+    # --------------------------------------------------------------------------
+    # 2. Load from underlying files
+    # --------------------------------------------------------------------------
+    base_dir, resolved_file = _resolve_env_path(root, env_file)
+    merged = _load_from_files(base_dir, resolved_file)
+
+    _apply_env_vars(merged, apply=apply, override=override)
+
+    # --------------------------------------------------------------------------
+    # 3. Update state with full fingerprint
+    # --------------------------------------------------------------------------
+    state.update(
+        base_dir=base_dir,
+        env_file=resolved_file,
+        env_cache=merged,
+        loaded_pid=pid,
+        root_param=root,
+        env_file_param=env_file,
+    )
+
+    LOGGER.info(
+        "Environment loaded",
+        extra={
+            "attrs": {
+                "base_dir": str(base_dir),
+                "env_file": str(resolved_file) if resolved_file else None,
+                "root_param": str(root),
+                "env_file_param": str(env_file),
+                "applied": apply,
+                "override": override,
+                "env_vars": len(merged),
+            }
+        },
+    )
+
+    return merged

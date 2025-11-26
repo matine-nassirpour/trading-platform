@@ -26,10 +26,11 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from quantum.infrastructure.config.models._mixins import PublicSettingsMixin
 from quantum.infrastructure.config.validators import validate_field
 
 
-class TracingSettings(BaseModel):
+class TracingSettings(BaseModel, PublicSettingsMixin):
     """
     Structured configuration model for tracing and telemetry subsystems.
     """
