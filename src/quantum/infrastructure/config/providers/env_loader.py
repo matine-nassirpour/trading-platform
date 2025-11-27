@@ -30,54 +30,143 @@ def _merge_envs(*layers: Mapping[str, str | None]) -> dict[str, str]:
     return merged
 
 
-def _resolve_env_path(
-    root: str | Path | None,
+def _resolve_explicit_env_file(
     env_file: str | Path | None,
+) -> tuple[Path | None, Path | None]:
+    """
+    Handle explicit env_file parameter.
+    Returns (parent_dir, file) if valid, else raises.
+    """
+    if not env_file:
+        return None, None
+
+    p = Path(env_file)
+    if not p.exists():
+        raise FileNotFoundError(f"Explicit env file does not exist: '{p}'")
+
+    return p.parent, p
+
+
+def _resolve_production_env_file(root: str | Path | None) -> tuple[Path, Path]:
+    """
+    Production-grade strict resolution:
+        • Only explicit root is allowed
+        • Only .env is allowed
+        • No autodiscovery
+    """
+    if not root:
+        raise RuntimeError(
+            "Production environment requires explicit 'env_file' or explicit 'root'. "
+            "Implicit .env discovery is forbidden."
+        )
+
+    r = Path(root)
+    if not r.is_dir():
+        raise NotADirectoryError(f"Specified root is not a directory: '{r}'")
+
+    candidate = r / ".env"
+    if not candidate.exists():
+        raise FileNotFoundError(
+            f"Production environment: expected '{candidate}', but file does not exist."
+        )
+
+    return r, candidate
+
+
+def _resolve_non_production_env_file(
+    root: str | Path | None,
 ) -> tuple[Path, Path | None]:
-    """Resolve base directory + explicit env_file if provided."""
-
-    # 1. Explicit env_file
-    if env_file:
-        p = Path(env_file)
-        if p.exists():
-            return p.parent, p
-
-    # 2. root directory
+    """
+    Non-production (.env discovery allowed):
+        • root → (root, None) if valid
+        • autodiscovery via find_dotenv()
+        • fallback: CWD
+    """
     if root:
         r = Path(root)
         if r.is_dir():
             return r, None
 
-    # 3. Auto-discovery
     if find_dotenv is not None:
         found = find_dotenv(usecwd=True)
         if found:
             fp = Path(found)
             return fp.parent, fp
 
-    # 4. Fallback
     return Path.cwd(), None
+
+
+def _resolve_env_path(
+    root: str | Path | None,
+    env_file: str | Path | None,
+) -> tuple[Path, Path | None]:
+    """
+    Resolve base directory + env_file with strict production safety rules.
+
+    Constraints:
+        • Production: no implicit discovery (no .env, no .env.local)
+        • Production: explicit env_file ONLY (fail-fast otherwise)
+        • Non-production: auto-discovery allowed
+        • Deterministic and side-effect-free
+    """
+
+    # --------------------------------------------------------------------------
+    # 1. Explicit env_file always wins (allowed in all environments)
+    # --------------------------------------------------------------------------
+    explicit_parent, explicit_file = _resolve_explicit_env_file(env_file)
+    if explicit_file:
+        return explicit_parent, explicit_file
+
+    # --------------------------------------------------------------------------
+    # 2. Production-mode strict behaviour
+    # --------------------------------------------------------------------------
+    quantum_env = (os.getenv("QUANTUM_ENV") or "dev").strip().lower()
+    is_production = quantum_env == "prod"
+
+    if is_production:
+        return _resolve_production_env_file(root)
+
+    # --------------------------------------------------------------------------
+    # 3. Non-production: allow safe auto-discovery (dev/test/staging)
+    # --------------------------------------------------------------------------
+    return _resolve_non_production_env_file(root)
 
 
 def _load_from_files(
     base_dir: Path,
     explicit_file: Path | None,
 ) -> dict[str, str]:
-    """Load environment layers from disk."""
+    """
+    Load environment variables from disk with production-grade safety rules.
+    """
 
+    quantum_env = (os.getenv("QUANTUM_ENV") or "dev").strip().lower()
+    is_production = quantum_env == "prod"
+
+    # --------------------------------------------------------------------------
+    # 1. Explicit file → always prioritized
+    # --------------------------------------------------------------------------
     if explicit_file:
-        env_base = dotenv_values(explicit_file)
-    else:
-        env_base = dotenv_values(base_dir / ".env")
+        return dotenv_values(explicit_file) or {}
 
-    env_base = env_base or {}
+    # --------------------------------------------------------------------------
+    # 2. Production-mode strict loading
+    # --------------------------------------------------------------------------
+    if is_production:
+        # Only `.env` is allowed in production
+        env_base = dotenv_values(base_dir / ".env") or {}
+        return env_base
+
+    # --------------------------------------------------------------------------
+    # 3. Non-production: layered discovery
+    # --------------------------------------------------------------------------
+    env_base = dotenv_values(base_dir / ".env") or {}
 
     current_env = os.getenv("QUANTUM_ENV") or env_base.get("QUANTUM_ENV") or "dev"
     env_specific = dotenv_values(base_dir / f".env.{current_env}") or {}
     env_local = dotenv_values(base_dir / ".env.local") or {}
 
-    merged = _merge_envs(env_base, env_specific, env_local)
-    return merged
+    return _merge_envs(env_base, env_specific, env_local)
 
 
 def _apply_env_vars(envs: Mapping[str, str], *, apply: bool, override: bool) -> None:

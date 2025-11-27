@@ -12,6 +12,7 @@ from quantum.infrastructure.config.models.logging import LoggingSettings
 from quantum.infrastructure.config.models.mt5 import MT5Settings
 from quantum.infrastructure.config.models.tracing import TracingSettings
 from quantum.infrastructure.config.providers.env_loader import load_env
+from quantum.infrastructure.config.runtime.env_snapshot import get_frozen_env
 from quantum.infrastructure.config.runtime.state import ConfigState
 
 LOGGER: Final = logging.getLogger("quantum.config.manager")
@@ -39,30 +40,33 @@ class ConfigManager:
     @staticmethod
     @cache
     def load_core_cached() -> CoreSettings:
-        merged = load_env(apply=False, override=False)
-        effective_env = {**merged, **os.environ}
-        model = CoreSettings(**ConfigManager._normalize_env(effective_env))
-        return model
+        base_env = load_env(apply=False, override=False)
+        frozen_os_env = get_frozen_env()
+        effective_env = {**base_env, **frozen_os_env}
+        return CoreSettings(**ConfigManager._normalize_env(effective_env))
 
     @staticmethod
     @cache
     def load_logging_cached() -> LoggingSettings:
-        merged = load_env(apply=False, override=False)
-        effective_env = {**merged, **os.environ}
+        base_env = load_env(apply=False, override=False)
+        frozen_os_env = get_frozen_env()
+        effective_env = {**base_env, **frozen_os_env}
         return LoggingSettings(**ConfigManager._normalize_env(effective_env))
 
     @staticmethod
     @cache
     def load_tracing_cached() -> TracingSettings:
-        merged = load_env(apply=False, override=False)
-        effective_env = {**merged, **os.environ}
+        base_env = load_env(apply=False, override=False)
+        frozen_os_env = get_frozen_env()
+        effective_env = {**base_env, **frozen_os_env}
         return TracingSettings(**ConfigManager._normalize_env(effective_env))
 
     @staticmethod
     @cache
     def load_mt5_cached() -> MT5Settings:
-        merged = load_env(apply=False, override=False)
-        effective_env = {**merged, **os.environ}
+        base_env = load_env(apply=False, override=False)
+        frozen_os_env = get_frozen_env()
+        effective_env = {**base_env, **frozen_os_env}
         return MT5Settings(**ConfigManager._normalize_env(effective_env))
 
     # --------------------------------------------------------------------------
@@ -71,25 +75,29 @@ class ConfigManager:
     @staticmethod
     def load_core(*, env: Mapping[str, Any] | None = None) -> CoreSettings:
         base = load_env(apply=False, override=False)
-        effective_env = {**base, **os.environ, **(env or {})}
+        frozen_os_env = get_frozen_env()
+        effective_env = {**base, **frozen_os_env, **(env or {})}
         return CoreSettings(**ConfigManager._normalize_env(effective_env))
 
     @staticmethod
     def load_logging(*, env: Mapping[str, Any] | None = None) -> LoggingSettings:
         base = load_env(apply=False, override=False)
-        effective_env = {**base, **os.environ, **(env or {})}
+        frozen_os_env = get_frozen_env()
+        effective_env = {**base, **frozen_os_env, **(env or {})}
         return LoggingSettings(**ConfigManager._normalize_env(effective_env))
 
     @staticmethod
     def load_tracing(*, env: Mapping[str, Any] | None = None) -> TracingSettings:
         base = load_env(apply=False, override=False)
-        effective_env = {**base, **os.environ, **(env or {})}
+        frozen_os_env = get_frozen_env()
+        effective_env = {**base, **frozen_os_env, **(env or {})}
         return TracingSettings(**ConfigManager._normalize_env(effective_env))
 
     @staticmethod
     def load_mt5(*, env: Mapping[str, Any] | None = None) -> MT5Settings:
         base = load_env(apply=False, override=False)
-        effective_env = {**base, **os.environ, **(env or {})}
+        frozen_os_env = get_frozen_env()
+        effective_env = {**base, **frozen_os_env, **(env or {})}
         return MT5Settings(**ConfigManager._normalize_env(effective_env))
 
     # --------------------------------------------------------------------------

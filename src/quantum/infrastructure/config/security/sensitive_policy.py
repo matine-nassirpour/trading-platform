@@ -9,9 +9,7 @@ GLOBAL_SENSITIVE_PATTERNS: Final[frozenset[str]] = frozenset(
         "token",
         "apikey",
         "api_key",
-        "auth",
         "credential",
-        "header",
         "headers",
     }
 )
