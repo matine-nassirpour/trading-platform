@@ -3,13 +3,13 @@ trading-platform/
 │   ├── streamlit/
 │   │   ├── pages/
 │   │   │   ├── __init__.py
-│   │   │   └── observability_page.py
+│   │   │   └── page_observability_core.py
 │   │   ├── services/
 │   │   │   ├── __init__.py
 │   │   │   ├── log_reader.py
 │   │   │   └── metrics_reader.py
 │   │   ├── __init__.py
-│   │   └── bootstrap.py
+│   │   └── app.py
 │   └── __init__.py
 ├── assurance/
 │   ├── architecture/
@@ -24,6 +24,8 @@ trading-platform/
 │   └── security/
 │       ├── .secrets.baseline
 │       └── bandit.yaml
+├── bin/
+│   └── run_quantum.py
 ├── docs/
 │   ├── architecture/
 │   │   ├── decisions/
@@ -39,7 +41,8 @@ trading-platform/
 │       └── README.md
 ├── runtime/
 │   ├── __init__.py
-│   └── runtime_composer.py
+│   ├── runtime_composer.py
+│   └── runtime_engine.py
 ├── scripts/
 │   ├── generate_assurance_report.py
 │   ├── generate_log_schema.py
@@ -113,6 +116,7 @@ trading-platform/
 │       │   │   └── retry_policy.py
 │       │   ├── services/
 │       │   │   ├── __init__.py
+│       │   │   ├── application_orchestrator.py
 │       │   │   ├── execution_service.py
 │       │   │   └── operation_registry.py
 │       │   ├── use_cases/
@@ -197,36 +201,27 @@ trading-platform/
 │       │   │   │   └── settings_contracts.py
 │       │   │   ├── models/
 │       │   │   │   ├── tests/
-│       │   │   │   │   ├── __init__.py
-│       │   │   │   │   ├── test_core.py
-│       │   │   │   │   ├── test_logging.py
-│       │   │   │   │   ├── test_mt5.py
-│       │   │   │   │   └── test_tracing.py
+│       │   │   │   │   └── __init__.py
 │       │   │   │   ├── __init__.py
+│       │   │   │   ├── _mixins.py
 │       │   │   │   ├── core.py
 │       │   │   │   ├── logging.py
 │       │   │   │   ├── mt5.py
 │       │   │   │   └── tracing.py
 │       │   │   ├── providers/
 │       │   │   │   ├── tests/
-│       │   │   │   │   ├── __init__.py
-│       │   │   │   │   └── test_env_loader.py
+│       │   │   │   │   └── __init__.py
 │       │   │   │   ├── __init__.py
 │       │   │   │   └── env_loader.py
 │       │   │   ├── runtime/
 │       │   │   │   ├── tests/
-│       │   │   │   │   ├── __init__.py
-│       │   │   │   │   ├── test_manager.py
-│       │   │   │   │   └── test_state.py
+│       │   │   │   │   └── __init__.py
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── manager.py
 │       │   │   │   └── state.py
 │       │   │   ├── validators/
 │       │   │   │   ├── tests/
-│       │   │   │   │   ├── __init__.py
-│       │   │   │   │   ├── test_base.py
-│       │   │   │   │   ├── test_registry.py
-│       │   │   │   │   └── test_rules.py
+│       │   │   │   │   └── __init__.py
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── base.py
 │       │   │   │   ├── registry.py
@@ -437,14 +432,7 @@ trading-platform/
 │   ├── validation/
 │   │   ├── infrastructure/
 │   │   │   ├── config/
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── test_env_loader.py
-│   │   │   │   ├── test_failure_resilience.py
-│   │   │   │   ├── test_manager_lifecycle.py
-│   │   │   │   ├── test_model_integration.py
-│   │   │   │   ├── test_snapshot_consistency.py
-│   │   │   │   ├── test_state_runtime.py
-│   │   │   │   └── test_validator_registry.py
+│   │   │   │   └── __init__.py
 │   │   │   ├── observability/
 │   │   │   │   └── __init__.py
 │   │   │   └── __init__.py

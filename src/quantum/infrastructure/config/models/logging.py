@@ -1,25 +1,3 @@
-"""
-Quantum Core Configuration Models — Logging Settings
-────────────────────────────────────────────────────
-Immutable schema defining all configuration parameters related to logging
-and audit subsystems within the Quantum platform.
-
-Responsibilities
-----------------
-- Define validated, strongly typed logging configuration parameters.
-- Enforce consistency and safety for logging, rate limiting, and rotation.
-- Provide optional audit event schema and Streamlit visualization settings.
-- Remain independent of any logging framework implementation.
-
-Design Principles
------------------
-- **Single Responsibility** : declares logging configuration schema only.
-- **Clean Architecture** : pure model, no side effects or dependencies.
-- **Immutability** : frozen model ensuring deterministic runtime behavior.
-- **Validation by Contract** : explicit field constraints and normalization.
-- **Extensibility** : easily versioned and expanded without breaking changes.
-"""
-
 from __future__ import annotations
 
 from typing import Any

@@ -1,25 +1,3 @@
-"""
-Quantum Core Configuration Models — Tracing Settings
-────────────────────────────────────────────────────
-Immutable schema defining tracing and telemetry configuration parameters
-for distributed observability within the Quantum platform.
-
-Responsibilities
-----------------
-- Define validated and strongly typed tracing configuration options.
-- Support OpenTelemetry exporters, endpoints, and sampling configuration.
-- Provide deterministic, side-effect-free tracing settings for runtime use.
-- Ensure forward compatibility with additional tracing backends or formats.
-
-Design Principles
------------------
-- **Single Responsibility** : declares tracing configuration schema only.
-- **Clean Architecture** : pure model, independent of runtime logic.
-- **Immutability** : frozen model ensuring deterministic behavior.
-- **Validation by Contract** : explicit field normalization and checks.
-- **Extensibility** : open to new protocols, exporters, or compression modes.
-"""
-
 from __future__ import annotations
 
 from typing import Any, Literal

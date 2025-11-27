@@ -1,25 +1,3 @@
-"""
-Quantum Core Configuration Models — MT5 Settings
-────────────────────────────────────────────────
-Immutable schema defining broker credentials and terminal paths for
-MetaTrader 5 integrations within the Quantum platform.
-
-Responsibilities
-----------------
-- Define structured, validated configuration for each MT5 prop firm.
-- Enforce consistency and completeness of broker credentials.
-- Provide deterministic access to terminal paths and credentials.
-- Remain independent of any execution or API layer.
-
-Design Principles
------------------
-- **Single Responsibility** : declares MT5 connection schema only.
-- **Clean Architecture** : pure configuration model, no side effects.
-- **Immutability** : frozen model ensuring deterministic runtime use.
-- **Validation by Contract** : guarantees that declared brokers are complete.
-- **Extensibility** : open to new brokers or credentials without refactor.
-"""
-
 from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator

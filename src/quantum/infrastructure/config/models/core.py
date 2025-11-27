@@ -1,25 +1,3 @@
-"""
-Quantum Core Configuration Models — Core Settings
-─────────────────────────────────────────────────
-Immutable, validated schema defining the platform runtime configuration used
-throughout the Quantum platform.
-
-Responsibilities
-----------------
-- Define environment-independent configuration structure.
-- Enforce strict validation and typing for all runtime parameters.
-- Provide immutable and deterministic configuration state.
-- Offer a stable foundation for higher-level configuration orchestration.
-
-Design Principles
------------------
-- **Single Responsibility** : declares schema and validation only.
-- **Clean Architecture** : independent of runtime and provider layers.
-- **Immutability** : frozen model ensuring deterministic behavior.
-- **Strong Typing** : explicit field constraints and semantic validation.
-- **Forward Compatibility** : ignores unknown fields for long-term evolution.
-"""
-
 from __future__ import annotations
 
 from typing import Any
