@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import Field, model_validator
 
+from quantum.infrastructure.config.models._base_settings import BaseConfigSettings
 from quantum.infrastructure.config.models._mixins import PublicSettingsMixin
 
 
-class MT5Settings(BaseModel, PublicSettingsMixin):
+class MT5Settings(BaseConfigSettings, PublicSettingsMixin):
 
     # --------------------------------------------------------------------------
     # FTMO
@@ -33,6 +34,16 @@ class MT5Settings(BaseModel, PublicSettingsMixin):
     )
 
     # --------------------------------------------------------------------------
+    # Sensitive Fields
+    # --------------------------------------------------------------------------
+    @classmethod
+    def sensitive_fields(cls):
+        return (
+            "quantum_mt5_ftmo_password",
+            "quantum_mt5_fundednext_password",
+        )
+
+    # --------------------------------------------------------------------------
     # Validators
     # --------------------------------------------------------------------------
     @model_validator(mode="after")
@@ -56,11 +67,3 @@ class MT5Settings(BaseModel, PublicSettingsMixin):
                 raise ValueError(f"Incomplete {name} broker credentials")
 
         return self
-
-    # --------------------------------------------------------------------------
-    # Model configuration
-    # --------------------------------------------------------------------------
-    model_config = ConfigDict(
-        extra="ignore",
-        frozen=True,
-    )

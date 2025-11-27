@@ -2,13 +2,17 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import Field, field_validator
 
+from quantum.infrastructure.config.models._base_settings import BaseConfigSettings
 from quantum.infrastructure.config.models._mixins import PublicSettingsMixin
 from quantum.infrastructure.config.validators import validate_field
+from quantum.infrastructure.config.value_objects.directory_path import (
+    DirectoryPathConfig,
+)
 
 
-class LoggingSettings(BaseModel, PublicSettingsMixin):
+class LoggingSettings(BaseConfigSettings, PublicSettingsMixin):
     """
     Structured configuration model for Quantum logging and audit subsystems.
     """
@@ -46,14 +50,14 @@ class LoggingSettings(BaseModel, PublicSettingsMixin):
         description="Optional warning threshold for log file size (0 = disabled).",
         ge=0,
     )
-    quantum_log_dir: str | None = Field(
+    quantum_log_dir: DirectoryPathConfig | None = Field(
         default=None, description="Base directory for partitioned JSONL logs."
     )
 
     # --------------------------------------------------------------------------
     # Audit
     # --------------------------------------------------------------------------
-    quantum_audit_dir: str | None = Field(
+    quantum_audit_dir: DirectoryPathConfig | None = Field(
         default=None, description="Directory for audit event JSONL files."
     )
     quantum_audit_allowlist: str | None = Field(
@@ -125,11 +129,3 @@ class LoggingSettings(BaseModel, PublicSettingsMixin):
         if v in ("", None):
             return 0
         return int(v)
-
-    # --------------------------------------------------------------------------
-    # Model configuration
-    # --------------------------------------------------------------------------
-    model_config = ConfigDict(
-        extra="ignore",
-        frozen=True,
-    )

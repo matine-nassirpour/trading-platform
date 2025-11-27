@@ -2,13 +2,14 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import Field, field_validator
 
+from quantum.infrastructure.config.models._base_settings import BaseConfigSettings
 from quantum.infrastructure.config.models._mixins import PublicSettingsMixin
 from quantum.infrastructure.config.validators import validate_field
 
 
-class TracingSettings(BaseModel, PublicSettingsMixin):
+class TracingSettings(BaseConfigSettings, PublicSettingsMixin):
     """
     Structured configuration model for tracing and telemetry subsystems.
     """
@@ -58,6 +59,13 @@ class TracingSettings(BaseModel, PublicSettingsMixin):
     )
 
     # --------------------------------------------------------------------------
+    # Sensitive Fields
+    # --------------------------------------------------------------------------
+    @classmethod
+    def sensitive_fields(cls):
+        return ("quantum_trace_otlp_headers",)
+
+    # --------------------------------------------------------------------------
     # Validators
     # --------------------------------------------------------------------------
     @field_validator("quantum_trace_otlp_protocol", mode="before")
@@ -88,11 +96,3 @@ class TracingSettings(BaseModel, PublicSettingsMixin):
         if not (0.0 <= v <= 1.0):
             raise ValueError("quantum_trace_sample must be in [0, 1]")
         return v
-
-    # --------------------------------------------------------------------------
-    # Model configuration
-    # --------------------------------------------------------------------------
-    model_config = ConfigDict(
-        extra="ignore",
-        frozen=True,
-    )

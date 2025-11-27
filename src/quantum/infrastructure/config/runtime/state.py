@@ -8,17 +8,6 @@ from typing import Any, ClassVar, Final
 
 
 class ConfigState:
-    """
-    Thread-safe singleton encapsulating configuration state.
-
-    Now tracks full environment loading fingerprint:
-        - PID
-        - provided root/env_file parameters
-        - resolved base_dir and resolved_env_file
-        - merged env cache
-
-    This ensures deterministic, parameter-sensitive caching.
-    """
 
     _instance: ClassVar[ConfigState | None] = None
     _lock: ClassVar[threading.RLock] = threading.RLock()
@@ -136,26 +125,58 @@ class ConfigState:
     # ----------------------------------------------------------------------
     # Snapshot & diagnostics
     # ----------------------------------------------------------------------
+    @staticmethod
+    def _normalize(value: Any) -> Any:
+        """
+        Normalize snapshot values to ensure:
+
+        - Paths become str paths
+        - None becomes Python None (not "None")
+        - Basic builtins only (bool, int, float, str, None)
+        """
+        if value is None:
+            return None
+
+        if isinstance(value, Path):
+            return str(value)
+
+        # scalar types are fine
+        if isinstance(value, (str, int, float, bool)):
+            return value
+
+        # fallback safe-stringification
+        return str(value)
+
     def snapshot(self) -> dict[str, Any]:
+        """
+        Return a clean, normalized, JSON-safe snapshot of the config state.
+        Suitable for logs, metrics, debugging and observability dashboards.
+        """
         with self._lock:
             return {
-                "base_dir": str(self._base_dir) if self._base_dir else None,
-                "env_file": str(self._env_file) if self._env_file else None,
-                "root_param": str(self._root_param),
-                "env_file_param": str(self._env_file_param),
-                "loaded_pid": self._loaded_pid,
+                "base_dir": self._normalize(self._base_dir),
+                "env_file": self._normalize(self._env_file),
+                "root_param": self._normalize(self._root_param),
+                "env_file_param": self._normalize(self._env_file_param),
+                "loaded_pid": self._normalize(self._loaded_pid),
                 "env_size": len(self._env_cache or {}),
             }
 
     def describe(self) -> str:
+        """
+        Human-readable, normalized summary for logs & diagnostics.
+        Equivalent to snapshot(), but flattened as a single line.
+        """
         snap = self.snapshot()
         return (
-            f"ConfigState(pid={snap['loaded_pid']}, "
-            f"base_dir={snap['base_dir']}, "
-            f"env_file={snap['env_file']}, "
+            "ConfigState("
+            f"pid={snap['loaded_pid']}, "
+            f"base_dir={snap['base_dir'] or 'null'}, "
+            f"env_file={snap['env_file'] or 'null'}, "
             f"env_vars={snap['env_size']}, "
-            f"root_param={snap['root_param']}, "
-            f"env_file_param={snap['env_file_param']})"
+            f"root_param={snap['root_param'] or 'null'}, "
+            f"env_file_param={snap['env_file_param'] or 'null'}"
+            ")"
         )
 
 

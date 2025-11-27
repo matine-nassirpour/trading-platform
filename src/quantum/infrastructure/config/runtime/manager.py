@@ -39,69 +39,58 @@ class ConfigManager:
     @staticmethod
     @cache
     def load_core_cached() -> CoreSettings:
-        """
-        Load CoreSettings using environment loaded from files + process env.
-
-        NOTE:
-        - No parameters → safe for memoization.
-        - Picks up the environment loaded via `load_env()`.
-        """
         merged = load_env(apply=False, override=False)
         effective_env = {**merged, **os.environ}
-        settings = CoreSettings(**ConfigManager._normalize_env(effective_env))
-
-        LOGGER.info(
-            "CoreSettings loaded (cached)",
-            extra={
-                "attrs": {"app": settings.quantum_app_name, "env": settings.quantum_env}
-            },
-        )
-        return settings
+        model = CoreSettings(**ConfigManager._normalize_env(effective_env))
+        return model
 
     @staticmethod
     @cache
     def load_logging_cached() -> LoggingSettings:
-        """Cached loader for LoggingSettings."""
-        model = LoggingSettings(**ConfigManager._normalize_env(None))
-        return model
+        merged = load_env(apply=False, override=False)
+        effective_env = {**merged, **os.environ}
+        return LoggingSettings(**ConfigManager._normalize_env(effective_env))
 
     @staticmethod
     @cache
     def load_tracing_cached() -> TracingSettings:
-        """Cached loader for TracingSettings."""
-        model = TracingSettings(**ConfigManager._normalize_env(None))
-        return model
+        merged = load_env(apply=False, override=False)
+        effective_env = {**merged, **os.environ}
+        return TracingSettings(**ConfigManager._normalize_env(effective_env))
 
     @staticmethod
     @cache
     def load_mt5_cached() -> MT5Settings:
-        """Cached loader for MT5Settings."""
-        model = MT5Settings(**ConfigManager._normalize_env(None))
-        return model
+        merged = load_env(apply=False, override=False)
+        effective_env = {**merged, **os.environ}
+        return MT5Settings(**ConfigManager._normalize_env(effective_env))
 
     # --------------------------------------------------------------------------
     # Override / test loaders (no cache)
     # --------------------------------------------------------------------------
     @staticmethod
     def load_core(*, env: Mapping[str, Any] | None = None) -> CoreSettings:
-        """Non-cached loader allowing explicit env overrides."""
-        effective_env = {**os.environ, **(env or {})}
+        base = load_env(apply=False, override=False)
+        effective_env = {**base, **os.environ, **(env or {})}
         return CoreSettings(**ConfigManager._normalize_env(effective_env))
 
     @staticmethod
     def load_logging(*, env: Mapping[str, Any] | None = None) -> LoggingSettings:
-        """Non-cached override loader."""
-        return LoggingSettings(**ConfigManager._normalize_env(env))
+        base = load_env(apply=False, override=False)
+        effective_env = {**base, **os.environ, **(env or {})}
+        return LoggingSettings(**ConfigManager._normalize_env(effective_env))
 
     @staticmethod
     def load_tracing(*, env: Mapping[str, Any] | None = None) -> TracingSettings:
-        """Non-cached override loader."""
-        return TracingSettings(**ConfigManager._normalize_env(env))
+        base = load_env(apply=False, override=False)
+        effective_env = {**base, **os.environ, **(env or {})}
+        return TracingSettings(**ConfigManager._normalize_env(effective_env))
 
     @staticmethod
     def load_mt5(*, env: Mapping[str, Any] | None = None) -> MT5Settings:
-        """Non-cached override loader."""
-        return MT5Settings(**ConfigManager._normalize_env(env))
+        base = load_env(apply=False, override=False)
+        effective_env = {**base, **os.environ, **(env or {})}
+        return MT5Settings(**ConfigManager._normalize_env(effective_env))
 
     # --------------------------------------------------------------------------
     # Cache management

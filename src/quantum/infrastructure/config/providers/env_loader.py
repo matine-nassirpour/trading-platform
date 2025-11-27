@@ -100,17 +100,23 @@ def load_env(
     apply: bool = False,
 ) -> dict[str, str]:
     """
-    Load environment variables from disk with fully parameter-sensitive caching.
+    Load environment variables with deterministic, parameter-based caching.
 
-    Cache is refreshed if ANY of the following differ:
-        - PID
-        - root
-        - env_file
-        - resolved base_dir
-        - resolved env_file
+    Cache invalidation depends **only** on:
+        • the current PID
+        • the `root` parameter
+        • the `env_file` parameter
 
-    Breaking change:
-        Caching now depends explicitly on input parameters.
+    Changes to `.env` files on disk do **not** invalidate the cache.
+
+    On cache miss:
+        • resolve base directory / env file
+        • load .env → .env.{QUANTUM_ENV} → .env.local
+        • merge layers
+        • optionally apply to os.environ
+
+    This design ensures reproducible, explicit, and side-effect-free environment
+    loading suitable for safety-grade and production-grade systems.
     """
 
     pid = os.getpid()

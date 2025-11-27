@@ -53,12 +53,12 @@ class ValidationContext:
     def __init__(
         self,
         *,
-        field_name: str | None = None,
         model_name: str | None = None,
+        field_name: str | None = None,
         extras: Mapping[str, Any] | None = None,
     ) -> None:
-        self.field_name = field_name
         self.model_name = model_name
+        self.field_name = field_name
         self.extras = dict(extras or {})
 
     def describe(self) -> str:
@@ -71,13 +71,9 @@ class ValidationContext:
 
 
 class ValidationRule(abc.ABC):
-    """
-    Abstract base class for all validation rules.
-    """
+    """Abstract validator with strict/lenient structured output."""
 
-    # Unique identifier for registry
     rule_id: str
-    # Human-readable description
     description: str
 
     def __init__(self, rule_id: str, description: str) -> None:
@@ -88,16 +84,15 @@ class ValidationRule(abc.ABC):
     def __call__(
         self, value: Any, *, context: ValidationContext | None = None
     ) -> ValidationResult:
-        """Execute validation on the given value."""
         raise NotImplementedError
 
     # --------------------------------------------------------------------------
     # Helpers
     # --------------------------------------------------------------------------
-    def success(self, value: str) -> ValidationResult:
+    def success(self, value: Any) -> ValidationResult:
         return ValidationResult(ok=True, message=None, value=value, rule=self.rule_id)
 
-    def failure(self, message: str, value: str | None = None) -> ValidationResult:
+    def failure(self, message: str, value: Any | None = None) -> ValidationResult:
         return ValidationResult(
             ok=False, message=message, value=value, rule=self.rule_id
         )
