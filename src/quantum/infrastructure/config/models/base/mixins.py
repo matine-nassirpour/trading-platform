@@ -5,7 +5,7 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from quantum.infrastructure.config.security.sensitive_policy import is_sensitive_key
+from quantum.infrastructure.config.sanitation.sensitive_policy import is_sensitive_key
 
 
 class PublicSettingsMixin:

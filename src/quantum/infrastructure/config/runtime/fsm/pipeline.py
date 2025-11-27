@@ -4,8 +4,8 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
 
-from quantum.infrastructure.config.runtime.fsm_controller import ConfigFSMController
-from quantum.infrastructure.config.runtime.fsm_model import ConfigFSMState
+from quantum.infrastructure.config.runtime.fsm.controller import ConfigFSMController
+from quantum.infrastructure.config.runtime.fsm.model import ConfigFSMState
 
 
 @dataclass(slots=True)

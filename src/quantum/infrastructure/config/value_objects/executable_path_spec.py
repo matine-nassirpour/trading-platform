@@ -5,7 +5,7 @@ from pathlib import Path
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
-class ExecutablePathConfig(BaseModel):
+class ExecutablePathSpec(BaseModel):
     """
     Safety-grade value object representing a validated executable path.
 
@@ -36,7 +36,7 @@ class ExecutablePathConfig(BaseModel):
         raw = data.get("path")
 
         if raw is None:
-            raise ValueError("ExecutablePathConfig requires a 'path' argument")
+            raise ValueError("ExecutablePathSpec requires a 'path' argument")
 
         p = Path(str(raw)).expanduser().resolve()
 
@@ -50,7 +50,7 @@ class ExecutablePathConfig(BaseModel):
     # Step 2 — Enforce invariants AFTER construction
     # --------------------------------------------------------------------------
     @model_validator(mode="after")
-    def validate_invariants(self) -> ExecutablePathConfig:
+    def validate_invariants(self) -> ExecutablePathSpec:
         p = self.path
 
         # Must exist

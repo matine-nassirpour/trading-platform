@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from quantum.infrastructure.config.value_objects.directory_path import DirectoryPathSpec
+from quantum.infrastructure.config.value_objects.directory_path_spec import (
+    DirectoryPathSpec,
+)
 
 
 def ensure_directory_exists(spec: DirectoryPathSpec) -> Path:

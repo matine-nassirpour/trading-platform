@@ -4,7 +4,7 @@ import threading
 
 from typing import Final
 
-from quantum.infrastructure.config.runtime.fsm_model import (
+from quantum.infrastructure.config.runtime.fsm.model import (
     ConfigFSMState,
     ConfigLifecycleStatus,
 )

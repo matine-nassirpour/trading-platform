@@ -9,8 +9,8 @@ from typing import Final
 
 from dotenv import dotenv_values, find_dotenv
 
-from quantum.infrastructure.config.runtime.env_snapshot import get_frozen_env
-from quantum.infrastructure.config.runtime.state import ConfigStateManager
+from quantum.infrastructure.config.environment.snapshot import get_frozen_env
+from quantum.infrastructure.config.runtime.state.config_state import ConfigStateManager
 
 LOGGER: Final = logging.getLogger("quantum.config.env_loader")
 

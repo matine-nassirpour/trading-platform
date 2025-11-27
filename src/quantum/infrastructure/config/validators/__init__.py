@@ -1,10 +1,3 @@
-"""
-Quantum Core Configuration Validators — Public API
-───────────────────────────────────────────────────
-Provides the unified entrypoints for all validation
-operations within the Quantum configuration system.
-"""
-
 from __future__ import annotations
 
 from collections.abc import Mapping

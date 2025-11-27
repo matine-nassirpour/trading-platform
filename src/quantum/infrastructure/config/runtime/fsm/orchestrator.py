@@ -3,12 +3,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from quantum.infrastructure.config.runtime.fsm_adapters import ConfigFSMAdapters
-from quantum.infrastructure.config.runtime.fsm_model import (
+from quantum.infrastructure.config.runtime.fsm.adapters import ConfigFSMAdapters
+from quantum.infrastructure.config.runtime.fsm.model import (
     ConfigFSMState,
     ConfigLifecycleStatus,
 )
-from quantum.infrastructure.config.runtime.fsm_pipeline import ConfigFSMPipeline
+from quantum.infrastructure.config.runtime.fsm.pipeline import ConfigFSMPipeline
 
 
 @dataclass(slots=True)

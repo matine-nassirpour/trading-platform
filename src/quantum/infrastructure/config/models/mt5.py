@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from pydantic import Field, model_validator
 
-from quantum.infrastructure.config.models._base_settings import BaseConfigSettings
-from quantum.infrastructure.config.models._mixins import PublicSettingsMixin
-from quantum.infrastructure.config.value_objects.executable_path import (
-    ExecutablePathConfig,
+from quantum.infrastructure.config.models.base.base_settings import BaseConfigSettings
+from quantum.infrastructure.config.models.base.mixins import PublicSettingsMixin
+from quantum.infrastructure.config.value_objects.executable_path_spec import (
+    ExecutablePathSpec,
 )
 
 
@@ -28,10 +28,10 @@ class MT5Settings(BaseConfigSettings, PublicSettingsMixin):
     # --------------------------------------------------------------------------
     # Terminal paths
     # --------------------------------------------------------------------------
-    mt5_ftmo_terminal_path: ExecutablePathConfig | None = Field(
+    mt5_ftmo_terminal_path: ExecutablePathSpec | None = Field(
         default=None, description="Absolute path to FTMO MetaTrader terminal executable"
     )
-    mt5_fundednext_terminal_path: ExecutablePathConfig | None = Field(
+    mt5_fundednext_terminal_path: ExecutablePathSpec | None = Field(
         default=None,
         description="Absolute path to FundedNext MetaTrader terminal executable",
     )
