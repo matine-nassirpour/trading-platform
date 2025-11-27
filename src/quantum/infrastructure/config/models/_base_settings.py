@@ -10,13 +10,13 @@ class BaseConfigSettings(BaseModel):
     - No implicit .env loading
     - No implicit env var resolution
     - Immutable
-    - Extra fields ignored
+    - Extra fields forbidden
     - Case-insensitive fields (normalize keys beforehand)
     - Deterministic serialisation
     """
 
     model_config = ConfigDict(
-        extra="ignore",  # ignore unexpected keys
+        extra="forbid",
         frozen=True,  # strict immutability
         arbitrary_types_allowed=False,
         validate_assignment=False,

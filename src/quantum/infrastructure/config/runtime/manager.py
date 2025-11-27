@@ -34,71 +34,103 @@ class ConfigManager:
         """Return env with normalized lowercase keys."""
         return {k.lower(): v for k, v in (env or os.environ).items()}
 
+    @staticmethod
+    def _build_env_for_model(
+        *,
+        env_override: Mapping[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """
+        Build the effective environment for model loading.
+
+        Structure:
+            • base_env: produced by load_env(), cache-aware and PID-aware
+            • frozen_os_env: immutable snapshot of os.environ (PID-aware)
+            • env_override: direct model-specific inject (non-cached loaders only)
+
+        All merges are deterministic and side-effect-free.
+        """
+
+        base_env = load_env()
+        frozen_os_env = get_frozen_env()
+
+        combined = {
+            **base_env,  # priority 1: .env + fallback
+            **frozen_os_env,  # priority 2: OS snapshot
+            **(env_override or {}),  # priority 3: override for test/non-cached
+        }
+
+        return ConfigManager._normalize_env(combined)
+
+    @staticmethod
+    def _load_model(
+        model_cls: type[Any],
+        *,
+        cached: bool,
+        env_override: Mapping[str, Any] | None = None,
+    ):
+        """
+        Generic, factorized loader for all configuration models.
+
+        Guaranteed properties:
+            • Fully deterministic
+            • Optional override (non-cached)
+            • Zero mutation
+            • Clean Architecture compliant
+        """
+
+        if cached and env_override is None:
+
+            @cache
+            def _cached_loader() -> Any:
+                env = ConfigManager._build_env_for_model()
+                return model_cls(**env)
+
+            return _cached_loader()
+
+        env = ConfigManager._build_env_for_model(env_override=env_override)
+        return model_cls(**env)
+
     # --------------------------------------------------------------------------
-    # Production / Cacheable loaders
+    # Public API: Cached Loaders
     # --------------------------------------------------------------------------
     @staticmethod
-    @cache
     def load_core_cached() -> CoreSettings:
-        base_env = load_env()
-        frozen_os_env = get_frozen_env()
-        effective_env = {**base_env, **frozen_os_env}
-        return CoreSettings(**ConfigManager._normalize_env(effective_env))
+        return ConfigManager._load_model(CoreSettings, cached=True)
 
     @staticmethod
-    @cache
     def load_logging_cached() -> LoggingSettings:
-        base_env = load_env()
-        frozen_os_env = get_frozen_env()
-        effective_env = {**base_env, **frozen_os_env}
-        return LoggingSettings(**ConfigManager._normalize_env(effective_env))
+        return ConfigManager._load_model(LoggingSettings, cached=True)
 
     @staticmethod
-    @cache
     def load_tracing_cached() -> TracingSettings:
-        base_env = load_env()
-        frozen_os_env = get_frozen_env()
-        effective_env = {**base_env, **frozen_os_env}
-        return TracingSettings(**ConfigManager._normalize_env(effective_env))
+        return ConfigManager._load_model(TracingSettings, cached=True)
 
     @staticmethod
-    @cache
     def load_mt5_cached() -> MT5Settings:
-        base_env = load_env()
-        frozen_os_env = get_frozen_env()
-        effective_env = {**base_env, **frozen_os_env}
-        return MT5Settings(**ConfigManager._normalize_env(effective_env))
+        return ConfigManager._load_model(MT5Settings, cached=True)
 
     # --------------------------------------------------------------------------
-    # Override / test loaders (no cache)
+    # Override / test loaders (override-friendly, non-cached)
     # --------------------------------------------------------------------------
     @staticmethod
     def load_core(*, env: Mapping[str, Any] | None = None) -> CoreSettings:
-        base = load_env()
-        frozen_os_env = get_frozen_env()
-        effective_env = {**base, **frozen_os_env, **(env or {})}
-        return CoreSettings(**ConfigManager._normalize_env(effective_env))
+        return ConfigManager._load_model(CoreSettings, cached=False, env_override=env)
 
     @staticmethod
     def load_logging(*, env: Mapping[str, Any] | None = None) -> LoggingSettings:
-        base = load_env()
-        frozen_os_env = get_frozen_env()
-        effective_env = {**base, **frozen_os_env, **(env or {})}
-        return LoggingSettings(**ConfigManager._normalize_env(effective_env))
+        return ConfigManager._load_model(
+            LoggingSettings, cached=False, env_override=env
+        )
 
     @staticmethod
     def load_tracing(*, env: Mapping[str, Any] | None = None) -> TracingSettings:
-        base = load_env()
-        frozen_os_env = get_frozen_env()
-        effective_env = {**base, **frozen_os_env, **(env or {})}
-        return TracingSettings(**ConfigManager._normalize_env(effective_env))
+        return ConfigManager._load_model(
+            TracingSettings, cached=False, env_override=env
+        )
 
     @staticmethod
     def load_mt5(*, env: Mapping[str, Any] | None = None) -> MT5Settings:
-        base = load_env()
-        frozen_os_env = get_frozen_env()
-        effective_env = {**base, **frozen_os_env, **(env or {})}
-        return MT5Settings(**ConfigManager._normalize_env(effective_env))
+        return ConfigManager._load_model(MT5Settings, cached=False, env_override=env)
 
     # --------------------------------------------------------------------------
     # Cache management
@@ -121,7 +153,8 @@ class ConfigManager:
             root_param=None,
             env_file_param=None,
         )
-        LOGGER.info("ConfigManager caches cleared and ConfigState reset.")
+
+        LOGGER.info("ConfigManager caches cleared and ConfigStateManager reset.")
 
     # --------------------------------------------------------------------------
     # Snapshot utils

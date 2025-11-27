@@ -10,7 +10,6 @@ GLOBAL_SENSITIVE_PATTERNS: Final[frozenset[str]] = frozenset(
         "apikey",
         "api_key",
         "credential",
-        "headers",
     }
 )
 
