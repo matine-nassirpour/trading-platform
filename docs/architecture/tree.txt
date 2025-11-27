@@ -220,7 +220,13 @@ trading-platform/
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── directory_initializer.py
 │       │   │   │   ├── env_snapshot.py
+│       │   │   │   ├── fsm_adapters.py
+│       │   │   │   ├── fsm_controller.py
+│       │   │   │   ├── fsm_model.py
+│       │   │   │   ├── fsm_orchestrator.py
+│       │   │   │   ├── fsm_pipeline.py
 │       │   │   │   ├── manager.py
+│       │   │   │   ├── ready_state_cache.py
 │       │   │   │   └── state.py
 │       │   │   ├── security/
 │       │   │   │   ├── __init__.py
@@ -417,8 +423,7 @@ trading-platform/
 │   │   ├── environment.py
 │   │   ├── logging.py
 │   │   ├── observability.py
-│   │   ├── settings.py
-│   │   └── state.py
+│   │   └── settings.py
 │   ├── governance/
 │   │   ├── __init__.py
 │   │   ├── test_classification_policy.py

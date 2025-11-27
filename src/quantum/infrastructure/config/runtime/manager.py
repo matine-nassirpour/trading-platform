@@ -1,171 +1,162 @@
 from __future__ import annotations
 
 import logging
-import os
 
 from collections.abc import Mapping
+from pathlib import Path
 from typing import Any, Final
 
 from quantum.infrastructure.config.models.core import CoreSettings
 from quantum.infrastructure.config.models.logging import LoggingSettings
 from quantum.infrastructure.config.models.mt5 import MT5Settings
 from quantum.infrastructure.config.models.tracing import TracingSettings
-from quantum.infrastructure.config.providers.env_loader import load_env
-from quantum.infrastructure.config.runtime.env_snapshot import get_frozen_env
-from quantum.infrastructure.config.runtime.model_cache import ModelCache
-from quantum.infrastructure.config.runtime.state import ConfigStateManager
+from quantum.infrastructure.config.runtime.fsm_orchestrator import ConfigFSMOrchestrator
+from quantum.infrastructure.config.runtime.ready_state_cache import ReadyStateCache
 
 LOGGER: Final = logging.getLogger("quantum.config.manager")
 
 
 class ConfigManager:
     """
-    Thread-safe, deterministic configuration manager.
+    High-level configuration façade using the FSM + ReadyStateCache architecture.
 
-    Improvements over previous version:
-        • Explicit versioned cache via ModelCache
-        • No hidden cache factories
-        • Deterministic fingerprinting across PID/schema changes
-        • Fully safety-grade design (predictable behaviour)
+    Responsibilities:
+        • Preserve the original public API (backward compatible)
+        • Route configuration loading through the FSM orchestrator
+        • Store a canonical READY state in ReadyStateCache
+        • Derive Core/Logging/Tracing/MT5 settings from READY state
+        • Provide both cached and non-cached getters
+
+    All configuration now flows through:
+        I/O → Adapters → FSM Pipeline (pure) → READY state → extraction
     """
+
+    _orchestrator: Final[ConfigFSMOrchestrator] = ConfigFSMOrchestrator()
 
     # --------------------------------------------------------------------------
     # Internal helpers
     # --------------------------------------------------------------------------
     @staticmethod
-    def _normalize_env(env: Mapping[str, str] | None) -> dict[str, str]:
-        """Return env with normalized lowercase keys."""
-        return {k.lower(): v for k, v in (env or os.environ).items()}
-
-    @staticmethod
-    def _build_env_for_model(
+    def _run_fsm(
         *,
-        env_override: Mapping[str, Any] | None = None,
-    ) -> dict[str, Any]:
-        """
-        Build the effective environment for model loading.
-
-        Structure:
-            • base_env: produced by load_env(), cache-aware and PID-aware
-            • frozen_os_env: immutable snapshot of os.environ (PID-aware)
-            • env_override: direct model-specific inject (non-cached loaders only)
-
-        All merges are deterministic and side-effect-free.
-        """
-
-        base_env = load_env()
-        frozen_os_env = get_frozen_env()
-
-        combined = {
-            **base_env,  # priority 1: .env + fallback
-            **frozen_os_env,  # priority 2: OS snapshot
-            **(env_override or {}),  # priority 3: override for test/non-cached
-        }
-
-        return ConfigManager._normalize_env(combined)
-
-    @staticmethod
-    def _load_model(
-        model_cls: type[Any],
-        *,
-        cached: bool,
-        env_override: Mapping[str, Any] | None = None,
+        root: str | Path | None = None,
+        env_file: str | Path | None = None,
     ):
         """
-        Robust, deterministic model loader with explicit versioned caching.
+        Execute the full FSM lifecycle and return a READY state.
+
+        This ALWAYS returns a ConfigFSMState in READY status.
         """
+        return ConfigManager._orchestrator.run_full_lifecycle(
+            root=root,
+            env_file=env_file,
+        )
 
-        key = model_cls.__name__
+    @staticmethod
+    def _get_ready_state() -> Any:
+        """
+        Retrieve the current READY state from cache, or compute and store it.
 
-        # Cached path
-        if cached and env_override is None:
-            existing = ModelCache.get(key)
-            if existing is not None:
-                return existing
+        This ensures:
+            • Deterministic loading
+            • Single canonical READY snapshot for the process
+        """
+        state = ReadyStateCache.get()
+        if state is not None:
+            return state
 
-            env = ConfigManager._build_env_for_model()
-            instance = model_cls(**env)
-            ModelCache.set(key, instance)
-            return instance
+        state = ConfigManager._run_fsm()
+        ReadyStateCache.set(state)
+        return state
 
-        # Non-cached or override mode
-        env = ConfigManager._build_env_for_model(env_override=env_override)
-        return model_cls(**env)
+    @staticmethod
+    def _extract_settings_group(
+        state,
+        *,
+        group: str,
+    ) -> Mapping[str, Any]:
+        """
+        Extract a subgroup (core, logging, tracing, mt5) from READY.state.settings
+        """
+        if not state.settings:
+            raise RuntimeError("READY state has no settings dictionary.")
+
+        if group not in state.settings:
+            raise KeyError(f"Settings group '{group}' not found in READY state.")
+
+        return state.settings[group]
 
     # --------------------------------------------------------------------------
-    # Cached Loaders (Cached)
+    # Cached Loaders
     # --------------------------------------------------------------------------
     @staticmethod
     def load_core_cached() -> CoreSettings:
-        return ConfigManager._load_model(CoreSettings, cached=True)
+        state = ConfigManager._get_ready_state()
+        core_dict = ConfigManager._extract_settings_group(state, group="core")
+        return CoreSettings(**core_dict)
 
     @staticmethod
     def load_logging_cached() -> LoggingSettings:
-        return ConfigManager._load_model(LoggingSettings, cached=True)
+        state = ConfigManager._get_ready_state()
+        log_dict = ConfigManager._extract_settings_group(state, group="logging")
+        return LoggingSettings(**log_dict)
 
     @staticmethod
     def load_tracing_cached() -> TracingSettings:
-        return ConfigManager._load_model(TracingSettings, cached=True)
+        state = ConfigManager._get_ready_state()
+        tr_dict = ConfigManager._extract_settings_group(state, group="tracing")
+        return TracingSettings(**tr_dict)
 
     @staticmethod
     def load_mt5_cached() -> MT5Settings:
-        return ConfigManager._load_model(MT5Settings, cached=True)
+        state = ConfigManager._get_ready_state()
+        mt5_dict = ConfigManager._extract_settings_group(state, group="mt5")
+        return MT5Settings(**mt5_dict)
 
     # --------------------------------------------------------------------------
-    # Override-friendly (non-cached)
+    # Non-cached public API
     # --------------------------------------------------------------------------
     @staticmethod
     def load_core(*, env: Mapping[str, Any] | None = None) -> CoreSettings:
-        return ConfigManager._load_model(CoreSettings, cached=False, env_override=env)
+        if env is not None:
+            # Non-cached path bypasses READY-state cache entirely
+            return CoreSettings(**env)
+        return ConfigManager.load_core_cached()
 
     @staticmethod
     def load_logging(*, env: Mapping[str, Any] | None = None) -> LoggingSettings:
-        return ConfigManager._load_model(
-            LoggingSettings, cached=False, env_override=env
-        )
+        if env is not None:
+            return LoggingSettings(**env)
+        return ConfigManager.load_logging_cached()
 
     @staticmethod
     def load_tracing(*, env: Mapping[str, Any] | None = None) -> TracingSettings:
-        return ConfigManager._load_model(
-            TracingSettings, cached=False, env_override=env
-        )
+        if env is not None:
+            return TracingSettings(**env)
+        return ConfigManager.load_tracing_cached()
 
     @staticmethod
     def load_mt5(*, env: Mapping[str, Any] | None = None) -> MT5Settings:
-        return ConfigManager._load_model(MT5Settings, cached=False, env_override=env)
-
-    # --------------------------------------------------------------------------
-    # Cache management
-    # --------------------------------------------------------------------------
-    @staticmethod
-    def clear_caches() -> None:
-        ModelCache.clear()
-        ConfigStateManager.instance().update(
-            base_dir=None,
-            env_file=None,
-            env_cache=None,
-            root_param=None,
-            env_file_param=None,
-        )
-        LOGGER.info("ConfigManager caches cleared (ModelCache + ConfigStateManager).")
+        if env is not None:
+            return MT5Settings(**env)
+        return ConfigManager.load_mt5_cached()
 
     # --------------------------------------------------------------------------
     # Snapshot utils
     # --------------------------------------------------------------------------
     @staticmethod
-    def snapshot(
-        settings: CoreSettings | None = None,
-        tracing: TracingSettings | None = None,
-    ) -> dict[str, str]:
-        s = settings or ConfigManager.load_core_cached()
-        t = tracing or ConfigManager.load_tracing_cached()
+    def snapshot() -> dict[str, str]:
+        state = ConfigManager._get_ready_state()
+
+        core = state.settings["core"]
+        tracing = state.settings["tracing"]
 
         return {
-            "app": s.quantum_app_name,
-            "version": s.quantum_app_version,
-            "env": s.quantum_env,
-            "trace_exporter": t.quantum_trace_exporter,
-            "metrics_port": str(s.quantum_metrics_port),
+            "app": core["quantum_app_name"],
+            "version": core["quantum_app_version"],
+            "env": core["quantum_env"],
+            "trace_exporter": tracing["quantum_trace_exporter"],
+            "metrics_port": str(core["quantum_metrics_port"]),
         }
 
     # --------------------------------------------------------------------------
@@ -174,28 +165,19 @@ class ConfigManager:
     @staticmethod
     def get_mt5_credentials(
         channel: str,
-        *,
-        env: Mapping[str, str] | None = None,
-        cached: bool = True,
     ) -> dict[str, str]:
         """
-        Retrieve broker credentials for MT5.
+        Extract MT5 credentials from the READY state.
 
-        Args:
-            channel: 'ftmo', 'fundednext', ...
-            env: optional override env mapping.
-            cached: whether to use cached MT5Settings.
-
+        This replaces the old direct ConfigManager.load_mt5_cached() logic.
         """
-        model = (
-            ConfigManager.load_mt5_cached()
-            if cached and env is None
-            else ConfigManager.load_mt5(env=env)
-        )
+        state = ConfigManager._get_ready_state()
+        mt5 = state.settings["mt5"]
 
         prefix = channel.lower()
+
         return {
-            "login": str(getattr(model, f"quantum_mt5_{prefix}_login", "") or ""),
-            "server": getattr(model, f"quantum_mt5_{prefix}_server", "") or "",
-            "password": getattr(model, f"quantum_mt5_{prefix}_password", "") or "",
+            "login": str(mt5.get(f"quantum_mt5_{prefix}_login") or ""),
+            "server": mt5.get(f"quantum_mt5_{prefix}_server") or "",
+            "password": mt5.get(f"quantum_mt5_{prefix}_password") or "",
         }
