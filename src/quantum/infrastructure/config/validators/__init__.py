@@ -8,37 +8,79 @@ from quantum.infrastructure.config.validators.base import (
     ValidationResult,
 )
 from quantum.infrastructure.config.validators.registry import ValidatorRegistry
+from quantum.infrastructure.config.validators.rules import get_default_validators
+
+# Runtime registry instance (set once at bootstrap)
+_RUNTIME_REGISTRY: ValidatorRegistry | None = None
 
 
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Bootstrap API                                                              │
+# ╰────────────────────────────────────────────────────────────────────────────╯
+def initialize_validators(registry: ValidatorRegistry | None = None) -> None:
+    """
+    Initialize the runtime validator registry.
+    This MUST be called exactly once during application startup.
+
+    If no registry is provided, a default sealed registry is created.
+    """
+    global _RUNTIME_REGISTRY
+
+    if _RUNTIME_REGISTRY is not None:
+        # Multiple initialization forbidden — deterministic behavior enforced.
+        raise RuntimeError("Validator registry has already been initialized.")
+
+    if registry is None:
+        from quantum.infrastructure.config.validators.registry import (
+            ValidatorRegistryFactory,
+        )
+
+        default = get_default_validators()
+        registry = ValidatorRegistryFactory.create_default(default)
+
+    _RUNTIME_REGISTRY = registry
+
+
+def _require_registry() -> ValidatorRegistry:
+    if _RUNTIME_REGISTRY is None:
+        raise RuntimeError(
+            "Validator registry not initialized. "
+            "Call initialize_validors() during application bootstrap."
+        )
+    return _RUNTIME_REGISTRY
+
+
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Public API                                                                 │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 def validate_field(
-    rule_id: str, value: Any, *, field: str | None = None, model: str | None = None
+    rule_id: str,
+    value: Any,
+    *,
+    field: str | None = None,
+    model: str | None = None,
 ) -> Any:
-    """
-    Validate a single field using a registered rule and return the validated value.
-    Raises ValueError if validation fails.
-    """
+    registry = _require_registry()
     context = ValidationContext(field_name=field, model_name=model)
-    result: ValidationResult = ValidatorRegistry.validate(
-        rule_id, value, context=context
-    )
+    result: ValidationResult = registry.validate(rule_id, value, context=context)
     return result.raise_if_failed()
 
 
 def validate_model(model_name: str, values: Mapping[str, Any]) -> Mapping[str, Any]:
-    """
-    Apply all known validators whose field names match rule identifiers.
-    Used for whole-model validation if needed.
-    """
+    registry = _require_registry()
+
     validated = dict(values)
-    for rule_id, rule in ValidatorRegistry.all().items():
+    for rule_id, rule in registry.all().items():
         field = rule_id.split(".")[-1]
+
         if field in values:
             ctx = ValidationContext(field_name=field, model_name=model_name)
             res = rule(values[field], context=ctx)
             validated[field] = res.raise_if_failed()
+
     return validated
 
 
 def get_registered_rules() -> Mapping[str, str]:
-    """Return a mapping of rule_id -> description for documentation."""
-    return {rid: r.description for rid, r in ValidatorRegistry.all().items()}
+    registry = _require_registry()
+    return {rid: rule.description for rid, rule in registry.all().items()}
