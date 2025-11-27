@@ -45,9 +45,6 @@ class EnvProviderProtocol(Protocol):
         self,
         root: str | Path | None = None,
         env_file: str | Path | None = None,
-        *,
-        override: bool = False,
-        apply: bool = False,
     ) -> dict[str, str]:
         """
         Load environment variables from one or more sources.

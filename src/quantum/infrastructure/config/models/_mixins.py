@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -9,51 +10,61 @@ from quantum.infrastructure.config.security.sensitive_policy import is_sensitive
 
 class PublicSettingsMixin:
     """
-    Industry-grade sanitization mixin for configuration models.
+    Industry-grade sanitization mixin with full cycle-detection protection.
 
-    Features:
-        • Recursive sanitization of nested models (Pydantic, VO, dicts, lists, sets)
-        • Local sensitive field overrides (sensitive_fields())
-        • Global pattern-based masking (is_sensitive_key)
-        • Deterministic ordering for stable logs
-        • Fully log-safe output (no leaks, no unsafe repr)
-        • Structural transparency (sub-models reveal only their own public dict)
+    Guarantees:
+        • Recursive sanitization across dicts, lists, sets, tuples, Pydantic models
+        • Cycle-safe via deterministic visited-set tracking
+        • Sensitive-field exclusion (local + global patterns)
+        • Deterministic ordering (sorted keys)
+        • Immutable & side-effect-free
+        • Fully log-safe and audit-safe
     """
 
     # --------------------------------------------------------------------------
     # Sanitization helpers
     # --------------------------------------------------------------------------
-    def _sanitize_value(self, value):
+    def _sanitize_value(self, value: Any, visited: set[int]) -> Any:
         """
-        Sanitization of any value type:
-            - Nested Pydantic models
-            - Sequences
-            - Dict-like mappings
-            - Scalars
+        Cycle-safe sanitization dispatcher.
+
+        Rules:
+            - If object ID already encountered → return a stable sentinel
+            - Pydantic model → sanitized via its own public interface
+            - Mapping → sanitized key/value pairs
+            - Iterable → sanitized elements
+            - Scalar → converted to str
         """
 
-        # ─── Case 1: Pydantic model (or subclass)
+        oid = id(value)
+        if oid in visited:
+            return "<cycle>"
+
+        # We add to visited *before* descending
+        visited.add(oid)
+
+        # Case 1 — Pydantic model
         if isinstance(value, BaseModel):
-            # Prefer its own to_public_dict() if it implements it
             if hasattr(value, "to_public_dict"):
                 return value.to_public_dict()
-            # Fallback to minimal safe repr
             return {value.__class__.__name__: "<hidden>"}
 
-        # ─── Case 2: Mapping (dict-like)
+        # Case 2 — Mapping
         if isinstance(value, Mapping):
             sanitized = {
-                str(k): self._sanitize_value(v)
+                str(k): self._sanitize_value(v, visited)
                 for k, v in value.items()
                 if v is not None
             }
             return dict(sorted(sanitized.items()))
 
-        # ─── Case 3: Iterable (list, tuple, set)
-        if isinstance(value, Iterable) and not isinstance(value, (str, bytes)):
-            return [self._sanitize_value(v) for v in value]
+        # Case 3 — Iterable (but not str/bytes)
+        if isinstance(value, Iterable) and not isinstance(
+            value, (str, bytes, bytearray)
+        ):
+            return [self._sanitize_value(v, visited) for v in value]
 
-        # ─── Case 4: Scalar
+        # Case 4 — Scalar
         return str(value)
 
     # --------------------------------------------------------------------------
@@ -70,35 +81,25 @@ class PublicSettingsMixin:
     # --------------------------------------------------------------------------
     # Public dict sanitization
     # --------------------------------------------------------------------------
-    def to_public_dict(self) -> dict[str, str | dict]:
+    def to_public_dict(self) -> dict[str, Any]:
         """
-        Recursively produce a sanitized, log-safe public representation.
-
-        Rules:
-            - model_dump() extracts raw data
-            - Sensitive fields excluded (local + global rules)
-            - None values excluded
-            - Nested models sanitized recursively
-            - Collections sanitized recursively
-            - Deterministic ordering
+        Recursively produce a sanitized, log-safe, cycle-safe representation.
         """
 
         raw = self.model_dump()
         local_sensitive = set(self.sensitive_fields())
 
-        public: dict[str, str | dict] = {}
+        visited: set[int] = set()
 
+        public: dict[str, Any] = {}
         for key, value in raw.items():
             if value is None:
                 continue
-
-            # Sensitive exclusion (local or global)
             if key in local_sensitive:
                 continue
             if is_sensitive_key(key):
                 continue
 
-            public[key] = self._sanitize_value(value)
+            public[key] = self._sanitize_value(value, visited)
 
-        # Deterministic ordering
         return dict(sorted(public.items()))

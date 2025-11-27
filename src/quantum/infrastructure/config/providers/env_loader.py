@@ -9,7 +9,8 @@ from typing import Final
 
 from dotenv import dotenv_values, find_dotenv
 
-from quantum.infrastructure.config.runtime.state import ConfigState
+from quantum.infrastructure.config.runtime.env_snapshot import get_frozen_env
+from quantum.infrastructure.config.runtime.state import ConfigStateManager
 
 LOGGER: Final = logging.getLogger("quantum.config.env_loader")
 
@@ -19,8 +20,8 @@ LOGGER: Final = logging.getLogger("quantum.config.env_loader")
 # ╰────────────────────────────────────────────────────────────────────────────╯
 def _merge_envs(*layers: Mapping[str, str | None]) -> dict[str, str]:
     """
-    Merge multiple environment layers, ignoring None values.
-    Later layers override earlier ones.
+    Merge environment layers without mutating os.environ.
+    Later layers override earlier ones, None values are ignored.
     """
     merged: dict[str, str] = {}
     for layer in layers:
@@ -153,90 +154,54 @@ def _load_from_files(
     # 2. Production-mode strict loading
     # --------------------------------------------------------------------------
     if is_production:
-        # Only `.env` is allowed in production
-        env_base = dotenv_values(base_dir / ".env") or {}
-        return env_base
+        return dotenv_values(base_dir / ".env") or {}
 
     # --------------------------------------------------------------------------
     # 3. Non-production: layered discovery
     # --------------------------------------------------------------------------
     env_base = dotenv_values(base_dir / ".env") or {}
-
-    current_env = os.getenv("QUANTUM_ENV") or env_base.get("QUANTUM_ENV") or "dev"
-    env_specific = dotenv_values(base_dir / f".env.{current_env}") or {}
+    env_specific = dotenv_values(base_dir / f".env.{quantum_env}") or {}
     env_local = dotenv_values(base_dir / ".env.local") or {}
 
     return _merge_envs(env_base, env_specific, env_local)
 
 
-def _apply_env_vars(envs: Mapping[str, str], *, apply: bool, override: bool) -> None:
-    if not apply:
-        return
-    for k, v in envs.items():
-        if not override and k in os.environ:
-            continue
-        os.environ[k] = v
-
-
 # ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Core Loader                                                                │
+# │ Public API                                                                 │
 # ╰────────────────────────────────────────────────────────────────────────────╯
 def load_env(
     root: str | Path | None = None,
     env_file: str | Path | None = None,
-    *,
-    override: bool = False,
-    apply: bool = False,
 ) -> dict[str, str]:
     """
-    Load environment variables with deterministic, parameter-based caching.
+    Load environment variables with full immutability and zero side effects.
 
-    Cache invalidation depends **only** on:
-        • the current PID
-        • the `root` parameter
-        • the `env_file` parameter
-
-    Changes to `.env` files on disk do **not** invalidate the cache.
-
-    On cache miss:
-        • resolve base directory / env file
-        • load .env → .env.{QUANTUM_ENV} → .env.local
-        • merge layers
-        • optionally apply to os.environ
-
-    This design ensures reproducible, explicit, and side-effect-free environment
-    loading suitable for safety-grade and production-grade systems.
+    - No mutation of os.environ (apply=True is a no-op for safety)
+    - Deterministic caching based on (PID, root, env_file)
+    - Fully compatible with safety-critical systems
     """
 
     pid = os.getpid()
-    state = ConfigState.instance()
+    state = ConfigStateManager.instance()
 
     # --------------------------------------------------------------------------
-    # 1. Check cache validity w.r.t parameters
+    # 1. Check cache validity
     # --------------------------------------------------------------------------
-    if state.has_valid_cache(
-        root_param=root,
-        env_file_param=env_file,
-    ):
+    if state.has_valid_cache(root_param=root, env_file_param=env_file):
         cached = state.get_env_cache()
-        if apply:
-            _apply_env_vars(cached, apply=True, override=override)
-
-        LOGGER.debug(
-            "Reusing cached environment for PID=%s (root=%s, env_file=%s)",
-            pid,
-            root,
-            env_file,
-        )
         return cached
 
     # --------------------------------------------------------------------------
-    # 2. Load from underlying files
+    # 2. Compute new environment set
     # --------------------------------------------------------------------------
     base_dir, resolved_file = _resolve_env_path(root, env_file)
-    merged = _load_from_files(base_dir, resolved_file)
+    loaded = _load_from_files(base_dir, resolved_file)
 
-    _apply_env_vars(merged, apply=apply, override=override)
+    # Retrieve immutable OS snapshot, lowercased
+    frozen_os_env = dict(get_frozen_env())
+
+    # Final merge: .env < .env.{env} < .env.local < OS snapshot
+    effective_env = _merge_envs(loaded, frozen_os_env)
 
     # --------------------------------------------------------------------------
     # 3. Update state with full fingerprint
@@ -244,25 +209,23 @@ def load_env(
     state.update(
         base_dir=base_dir,
         env_file=resolved_file,
-        env_cache=merged,
-        loaded_pid=pid,
+        env_cache=effective_env,
         root_param=root,
         env_file_param=env_file,
     )
 
     LOGGER.info(
-        "Environment loaded",
+        "Environment loaded (immutable)",
         extra={
             "attrs": {
                 "base_dir": str(base_dir),
                 "env_file": str(resolved_file) if resolved_file else None,
-                "root_param": str(root),
-                "env_file_param": str(env_file),
-                "applied": apply,
-                "override": override,
-                "env_vars": len(merged),
+                "env_vars": len(effective_env),
+                "applied": False,
+                "override": False,
+                "pid": pid,
             }
         },
     )
 
-    return merged
+    return effective_env

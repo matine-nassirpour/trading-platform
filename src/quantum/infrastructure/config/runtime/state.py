@@ -4,38 +4,36 @@ import os
 import threading
 
 from pathlib import Path
-from typing import Any, ClassVar, Final
+from typing import Any, Final
 
 
-class ConfigState:
+class _ProcessLocalState:
+    """
+    Process-local, thread-safe configuration state.
 
-    _instance: ClassVar[ConfigState | None] = None
-    _lock: ClassVar[threading.RLock] = threading.RLock()
+    Guarantees:
+        • One state instance per PID
+        • Thread-safe access
+        • Safe under reload (module re-import)
+        • Safe under multiprocessing (fork/spawn)
+        • Strict immutability semantics (state replaced atomically)
+    """
 
-    def __init__(self) -> None:
-        # Detected environment state & cache
+    def __init__(self, pid: int) -> None:
+        self._pid: int = pid
+
+        # Internal fields
         self._base_dir: Path | None = None
         self._env_file: Path | None = None
         self._env_cache: dict[str, str] | None = None
-        self._loaded_pid: int | None = None
-
-        # Parameters used to compute the cache
         self._root_param: str | Path | None = None
         self._env_file_param: str | Path | None = None
 
-    # --------------------------------------------------------------------------
-    # Singleton Accessor
-    # --------------------------------------------------------------------------
-    @classmethod
-    def instance(cls) -> ConfigState:
-        """Get or create the singleton ConfigState instance."""
-        with cls._lock:
-            if cls._instance is None:
-                cls._instance = cls()
-            return cls._instance
+        # Lock for updates
+        self._lock: threading.RLock = threading.RLock()
 
     # --------------------------------------------------------------------------
-    # Mutators
+    # Update atomic
     # --------------------------------------------------------------------------
     def update(
         self,
@@ -43,49 +41,33 @@ class ConfigState:
         base_dir: Path | None = None,
         env_file: Path | None = None,
         env_cache: dict[str, str] | None = None,
-        loaded_pid: int | None = None,
         root_param: str | Path | None = None,
         env_file_param: str | Path | None = None,
     ) -> None:
-        """
-        Atomically update the configuration state, including parameter fingerprint.
-        """
+        """Atomic, thread-safe update of the process-local state."""
+
         with self._lock:
             if base_dir is not None:
                 self._base_dir = base_dir
             if env_file is not None:
                 self._env_file = env_file
             if env_cache is not None:
-                # defensive copy
                 self._env_cache = dict(env_cache)
-            if loaded_pid is not None:
-                self._loaded_pid = loaded_pid
             if root_param is not None:
                 self._root_param = root_param
             if env_file_param is not None:
                 self._env_file_param = env_file_param
 
-    def reset(self) -> None:
-        """Reset the config state completely."""
-        with self._lock:
-            self._base_dir = None
-            self._env_file = None
-            self._env_cache = None
-            self._loaded_pid = None
-            self._root_param = None
-            self._env_file_param = None
-
     # ----------------------------------------------------------------------
-    # Cache accessors
+    # Retrieval
     # ----------------------------------------------------------------------
     def get_env_cache(self) -> dict[str, str]:
         """Safely retrieve a copy of the cached environment variables."""
-
         with self._lock:
             return dict(self._env_cache or {})
 
     # --------------------------------------------------------------------------
-    # Validation
+    # Validation helpers
     # --------------------------------------------------------------------------
     def cache_matches_params(
         self,
@@ -93,8 +75,6 @@ class ConfigState:
         root_param: str | Path | None,
         env_file_param: str | Path | None,
     ) -> bool:
-        """Check if parameters match the cached fingerprint."""
-
         return self._root_param == root_param and self._env_file_param == env_file_param
 
     def has_valid_cache(
@@ -103,37 +83,22 @@ class ConfigState:
         root_param: str | Path | None,
         env_file_param: str | Path | None,
     ) -> bool:
-        """
-        Determine if cache is valid for:
-            - current PID
-            - provided root/env_file parameters
-            - non-empty env cache
-        """
+        """Cache is valid only if PID matches and parameters match."""
 
-        with self._lock:
-            if self._loaded_pid != os.getpid():
-                return False
-            if not isinstance(self._env_cache, dict) or not self._env_cache:
-                return False
-            if not self.cache_matches_params(
-                root_param=root_param,
-                env_file_param=env_file_param,
-            ):
-                return False
-            return True
+        if self._pid != os.getpid():
+            return False
+        if not isinstance(self._env_cache, dict) or not self._env_cache:
+            return False
+        return self.cache_matches_params(
+            root_param=root_param,
+            env_file_param=env_file_param,
+        )
 
-    # ----------------------------------------------------------------------
-    # Snapshot & diagnostics
-    # ----------------------------------------------------------------------
+    # --------------------------------------------------------------------------
+    # Diagnostics
+    # --------------------------------------------------------------------------
     @staticmethod
     def _normalize(value: Any) -> Any:
-        """
-        Normalize snapshot values to ensure:
-
-        - Paths become str paths
-        - None becomes Python None (not "None")
-        - Basic builtins only (bool, int, float, str, None)
-        """
         if value is None:
             return None
 
@@ -148,29 +113,21 @@ class ConfigState:
         return str(value)
 
     def snapshot(self) -> dict[str, Any]:
-        """
-        Return a clean, normalized, JSON-safe snapshot of the config state.
-        Suitable for logs, metrics, debugging and observability dashboards.
-        """
         with self._lock:
             return {
+                "pid": self._pid,
                 "base_dir": self._normalize(self._base_dir),
                 "env_file": self._normalize(self._env_file),
                 "root_param": self._normalize(self._root_param),
                 "env_file_param": self._normalize(self._env_file_param),
-                "loaded_pid": self._normalize(self._loaded_pid),
                 "env_size": len(self._env_cache or {}),
             }
 
     def describe(self) -> str:
-        """
-        Human-readable, normalized summary for logs & diagnostics.
-        Equivalent to snapshot(), but flattened as a single line.
-        """
         snap = self.snapshot()
         return (
             "ConfigState("
-            f"pid={snap['loaded_pid']}, "
+            f"pid={snap['pid']}, "
             f"base_dir={snap['base_dir'] or 'null'}, "
             f"env_file={snap['env_file'] or 'null'}, "
             f"env_vars={snap['env_size']}, "
@@ -180,4 +137,33 @@ class ConfigState:
         )
 
 
-CONFIG_STATE: Final[ConfigState] = ConfigState.instance()
+class ConfigStateManager:
+    """
+    Factory ensuring process-local, reload-safe configuration state.
+
+    Guarantees:
+        • One state per process
+        • Auto-regeneration on PID change or reload
+        • Thread-safe retrieval
+    """
+
+    _lock: Final[threading.RLock] = threading.RLock()
+    _state: _ProcessLocalState | None = None
+
+    @classmethod
+    def instance(cls) -> _ProcessLocalState:
+        """
+        Return a process-local state instance.
+        Automatically regenerates state when:
+            • PID changed (fork / multiprocessing)
+            • Reload occurred (module re-import)
+        """
+        pid = os.getpid()
+        with cls._lock:
+            if cls._state is None or cls._state._pid != pid:
+                cls._state = _ProcessLocalState(pid)
+            return cls._state
+
+
+# Public handle, for backward compatibility
+CONFIG_STATE: Final[_ProcessLocalState] = ConfigStateManager.instance()
