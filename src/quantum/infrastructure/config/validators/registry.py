@@ -1,10 +1,3 @@
-"""
-Quantum Core Configuration Validators — Rule Registry
-─────────────────────────────────────────────────────
-Central registry tracking all available validation rules
-and exposing introspection and retrieval APIs.
-"""
-
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping

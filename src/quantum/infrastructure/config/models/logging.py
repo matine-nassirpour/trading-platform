@@ -7,9 +7,7 @@ from pydantic import Field, field_validator
 from quantum.infrastructure.config.models._base_settings import BaseConfigSettings
 from quantum.infrastructure.config.models._mixins import PublicSettingsMixin
 from quantum.infrastructure.config.validators import validate_field
-from quantum.infrastructure.config.value_objects.directory_path import (
-    DirectoryPathConfig,
-)
+from quantum.infrastructure.config.value_objects.directory_path import DirectoryPathSpec
 
 
 class LoggingSettings(BaseConfigSettings, PublicSettingsMixin):
@@ -26,6 +24,7 @@ class LoggingSettings(BaseConfigSettings, PublicSettingsMixin):
     )
     quantum_log_sample_info: int = Field(
         default=10,
+        ge=0,  # >= 0
         description="Log sampling frequency for INFO-level messages "
         "(every Nth INFO log is kept if sampling enabled).",
     )
@@ -34,7 +33,9 @@ class LoggingSettings(BaseConfigSettings, PublicSettingsMixin):
         description="Enable log rate limiting to prevent output flooding.",
     )
     quantum_log_rps: int = Field(
-        100, description="Maximum log entries per second when rate limiting is active."
+        default=100,
+        ge=0,
+        description="Maximum log entries per second when rate limiting is active.",
     )
     quantum_log_fsync: bool = Field(
         default=False,
@@ -42,22 +43,22 @@ class LoggingSettings(BaseConfigSettings, PublicSettingsMixin):
     )
     quantum_log_max_bytes: int = Field(
         default=10 * 1024 * 1024,
-        description="Maximum size (in bytes) per log file before rotation.",
         ge=0,
+        description="Maximum size (in bytes) per log file before rotation.",
     )
     quantum_log_warn_bytes: int = Field(
         default=0,
-        description="Optional warning threshold for log file size (0 = disabled).",
         ge=0,
+        description="Optional warning threshold for log file size (0 = disabled).",
     )
-    quantum_log_dir: DirectoryPathConfig | None = Field(
+    quantum_log_dir: DirectoryPathSpec | None = Field(
         default=None, description="Base directory for partitioned JSONL logs."
     )
 
     # --------------------------------------------------------------------------
     # Audit
     # --------------------------------------------------------------------------
-    quantum_audit_dir: DirectoryPathConfig | None = Field(
+    quantum_audit_dir: DirectoryPathSpec | None = Field(
         default=None, description="Directory for audit event JSONL files."
     )
     quantum_audit_allowlist: str | None = Field(
@@ -79,10 +80,12 @@ class LoggingSettings(BaseConfigSettings, PublicSettingsMixin):
     )
     streamlit_log_chunk_bytes: int = Field(
         default=256_000,
+        ge=0,
         description="Maximum chunk size (bytes) when reading log tails.",
     )
     streamlit_log_tail_max_lines: int = Field(
         default=100,
+        ge=0,
         description="Maximum number of log lines displayed in the Streamlit tail view.",
     )
     streamlit_log_glob: str = Field(

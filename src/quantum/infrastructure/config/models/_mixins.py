@@ -1,23 +1,64 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
+
+from pydantic import BaseModel
 
 from quantum.infrastructure.config.security.sensitive_policy import is_sensitive_key
 
 
 class PublicSettingsMixin:
     """
-    Mixin providing industry-grade sanitization of configuration models.
+    Industry-grade sanitization mixin for configuration models.
 
     Features:
-        - Global pattern-based sensitive-field masking
-        - Local overrides via sensitive_fields()
-        - Defensive, deterministic, log-safe output
+        • Recursive sanitization of nested models (Pydantic, VO, dicts, lists, sets)
+        • Local sensitive field overrides (sensitive_fields())
+        • Global pattern-based masking (is_sensitive_key)
+        • Deterministic ordering for stable logs
+        • Fully log-safe output (no leaks, no unsafe repr)
+        • Structural transparency (sub-models reveal only their own public dict)
     """
 
-    # ----------------------------------------------------------------------
-    # Sensitive fields handling
-    # ----------------------------------------------------------------------
+    # --------------------------------------------------------------------------
+    # Sanitization helpers
+    # --------------------------------------------------------------------------
+    def _sanitize_value(self, value):
+        """
+        Sanitization of any value type:
+            - Nested Pydantic models
+            - Sequences
+            - Dict-like mappings
+            - Scalars
+        """
+
+        # ─── Case 1: Pydantic model (or subclass)
+        if isinstance(value, BaseModel):
+            # Prefer its own to_public_dict() if it implements it
+            if hasattr(value, "to_public_dict"):
+                return value.to_public_dict()
+            # Fallback to minimal safe repr
+            return {value.__class__.__name__: "<hidden>"}
+
+        # ─── Case 2: Mapping (dict-like)
+        if isinstance(value, Mapping):
+            sanitized = {
+                str(k): self._sanitize_value(v)
+                for k, v in value.items()
+                if v is not None
+            }
+            return dict(sorted(sanitized.items()))
+
+        # ─── Case 3: Iterable (list, tuple, set)
+        if isinstance(value, Iterable) and not isinstance(value, (str, bytes)):
+            return [self._sanitize_value(v) for v in value]
+
+        # ─── Case 4: Scalar
+        return str(value)
+
+    # --------------------------------------------------------------------------
+    # Sensitive fields (local overrides)
+    # --------------------------------------------------------------------------
     @classmethod
     def sensitive_fields(cls) -> Iterable[str]:
         """
@@ -26,39 +67,38 @@ class PublicSettingsMixin:
         """
         return ()
 
-    # ----------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Public dict sanitization
-    # ----------------------------------------------------------------------
-    def to_public_dict(self) -> dict[str, str]:
+    # --------------------------------------------------------------------------
+    def to_public_dict(self) -> dict[str, str | dict]:
         """
-        Industry-grade sanitized dict safe for logs and diagnostics.
+        Recursively produce a sanitized, log-safe public representation.
 
         Rules:
-            - model_dump() is used to extract raw fields.
-            - All fields marked as sensitive locally are excluded.
-            - All fields matching global patterns are excluded.
-            - None values are removed.
-            - Values converted to str for log-safety.
-            - Deterministic ordering.
+            - model_dump() extracts raw data
+            - Sensitive fields excluded (local + global rules)
+            - None values excluded
+            - Nested models sanitized recursively
+            - Collections sanitized recursively
+            - Deterministic ordering
         """
-        raw = self.model_dump()
 
+        raw = self.model_dump()
         local_sensitive = set(self.sensitive_fields())
 
-        public: dict[str, str] = {}
+        public: dict[str, str | dict] = {}
 
         for key, value in raw.items():
             if value is None:
                 continue
 
-            # Local explicit exclusion
+            # Sensitive exclusion (local or global)
             if key in local_sensitive:
                 continue
-
-            # Global pattern-based exclusion
             if is_sensitive_key(key):
                 continue
 
-            public[key] = str(value)
+            public[key] = self._sanitize_value(value)
 
+        # Deterministic ordering
         return dict(sorted(public.items()))

@@ -2,71 +2,55 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
-class DirectoryPathConfig(BaseModel):
+class DirectoryPathSpec(BaseModel):
     """
-    Safety-grade value object representing a validated directory path.
+    Pure, safety-grade value object representing a validated directory path spec.
 
     Guarantees:
-        - Absolute path only
-        - Not a file, not a symlink to a file
-        - Optionally ensures existence (create=True)
-        - Portable across Linux / Windows
-        - Immutable (frozen)
-        - Clean Architecture compliant (pure value object)
-
-    Notes:
-        - This is INFRASTRUCTURE layer: no business rules here.
-        - It encapsulates strict filesystem invariants suitable for audit/log directories.
+        • Absolute path required
+        • Must represent a directory path (may or may not exist)
+        • No side effects (no creation)
+        • Immutable
+        • Pydantic v2 canonical validation via model_validator
+        • Suitable for Clean Architecture and safety-critical systems
     """
 
-    path: Path = Field(..., description="Absolute and validated directory path")
-    create: bool = Field(
-        default=False,
-        description="If True, directory will be created (mkdir -p) during validation.",
-    )
+    path: Path = Field(..., description="Absolute directory path (pure spec).")
 
     model_config = ConfigDict(
-        frozen=True, extra="forbid", arbitrary_types_allowed=False
+        frozen=True,
+        extra="forbid",
+        arbitrary_types_allowed=False,
     )
 
     # --------------------------------------------------------------------------
-    # Validators
+    # Validation
     # --------------------------------------------------------------------------
-    def __init__(self, **data: object) -> None:
-        raw_path = data.get("path")
+    @model_validator(mode="before")
+    @classmethod
+    def validate_raw(cls, data: dict) -> dict:
+        """
+        Normalize and enforce invariants before model construction.
+        """
+        raw = data.get("path")
+        if raw is None:
+            raise ValueError("DirectoryPathSpec requires a 'path' argument.")
 
-        if raw_path is None:
-            raise ValueError("DirectoryPathConfig requires a 'path'")
-
-        # Normalize to Path object
-        p = Path(str(raw_path)).expanduser().resolve()
+        p = Path(str(raw)).expanduser().resolve()
 
         # Absolute path only
         if not p.is_absolute():
             raise ValueError(f"Directory path must be absolute: '{p}'")
 
-        # Security: prevent file paths
+        # Security: must not refer to an existing file
         if p.exists() and not p.is_dir():
             raise ValueError(f"Path exists but is not a directory: '{p}'")
 
-        # Optional creation
-        if data.get("create", False):
-            try:
-                p.mkdir(parents=True, exist_ok=True)
-            except Exception as exc:  # nosec B110
-                raise ValueError(f"Failed to create directory '{p}': {exc}") from exc
-
-        # After creation, must be a directory or non-existing but valid
-        if p.exists() and not p.is_dir():
-            raise ValueError(f"'{p}' is not a directory after creation attempt.")
-
-        # Mutate the validated path back into data
         data["path"] = p
-
-        super().__init__(**data)
+        return data
 
     # --------------------------------------------------------------------------
     # API Methods
