@@ -4,7 +4,6 @@ import logging
 import os
 
 from collections.abc import Mapping
-from functools import cache
 from typing import Any, Final
 
 from quantum.infrastructure.config.models.core import CoreSettings
@@ -13,6 +12,7 @@ from quantum.infrastructure.config.models.mt5 import MT5Settings
 from quantum.infrastructure.config.models.tracing import TracingSettings
 from quantum.infrastructure.config.providers.env_loader import load_env
 from quantum.infrastructure.config.runtime.env_snapshot import get_frozen_env
+from quantum.infrastructure.config.runtime.model_cache import ModelCache
 from quantum.infrastructure.config.runtime.state import ConfigStateManager
 
 LOGGER: Final = logging.getLogger("quantum.config.manager")
@@ -20,10 +20,13 @@ LOGGER: Final = logging.getLogger("quantum.config.manager")
 
 class ConfigManager:
     """
-    Thread-safe, process-stable facade for configuration management.
+    Thread-safe, deterministic configuration manager.
 
-    Exposes unified access to all configuration models (core, logging,
-    tracing, brokers) and utilities for cache management.
+    Improvements over previous version:
+        • Explicit versioned cache via ModelCache
+        • No hidden cache factories
+        • Deterministic fingerprinting across PID/schema changes
+        • Fully safety-grade design (predictable behaviour)
     """
 
     # --------------------------------------------------------------------------
@@ -69,29 +72,28 @@ class ConfigManager:
         env_override: Mapping[str, Any] | None = None,
     ):
         """
-        Generic, factorized loader for all configuration models.
-
-        Guaranteed properties:
-            • Fully deterministic
-            • Optional override (non-cached)
-            • Zero mutation
-            • Clean Architecture compliant
+        Robust, deterministic model loader with explicit versioned caching.
         """
 
+        key = model_cls.__name__
+
+        # Cached path
         if cached and env_override is None:
+            existing = ModelCache.get(key)
+            if existing is not None:
+                return existing
 
-            @cache
-            def _cached_loader() -> Any:
-                env = ConfigManager._build_env_for_model()
-                return model_cls(**env)
+            env = ConfigManager._build_env_for_model()
+            instance = model_cls(**env)
+            ModelCache.set(key, instance)
+            return instance
 
-            return _cached_loader()
-
+        # Non-cached or override mode
         env = ConfigManager._build_env_for_model(env_override=env_override)
         return model_cls(**env)
 
     # --------------------------------------------------------------------------
-    # Public API: Cached Loaders
+    # Cached Loaders (Cached)
     # --------------------------------------------------------------------------
     @staticmethod
     def load_core_cached() -> CoreSettings:
@@ -110,7 +112,7 @@ class ConfigManager:
         return ConfigManager._load_model(MT5Settings, cached=True)
 
     # --------------------------------------------------------------------------
-    # Override / test loaders (override-friendly, non-cached)
+    # Override-friendly (non-cached)
     # --------------------------------------------------------------------------
     @staticmethod
     def load_core(*, env: Mapping[str, Any] | None = None) -> CoreSettings:
@@ -137,15 +139,7 @@ class ConfigManager:
     # --------------------------------------------------------------------------
     @staticmethod
     def clear_caches() -> None:
-        """Clear all cached settings + runtime environment cache."""
-        for fn in (
-            ConfigManager.load_core_cached,
-            ConfigManager.load_logging_cached,
-            ConfigManager.load_tracing_cached,
-            ConfigManager.load_mt5_cached,
-        ):
-            fn.cache_clear()
-
+        ModelCache.clear()
         ConfigStateManager.instance().update(
             base_dir=None,
             env_file=None,
@@ -153,8 +147,7 @@ class ConfigManager:
             root_param=None,
             env_file_param=None,
         )
-
-        LOGGER.info("ConfigManager caches cleared and ConfigStateManager reset.")
+        LOGGER.info("ConfigManager caches cleared (ModelCache + ConfigStateManager).")
 
     # --------------------------------------------------------------------------
     # Snapshot utils
@@ -164,7 +157,6 @@ class ConfigManager:
         settings: CoreSettings | None = None,
         tracing: TracingSettings | None = None,
     ) -> dict[str, str]:
-        """Return minimal configuration snapshot."""
         s = settings or ConfigManager.load_core_cached()
         t = tracing or ConfigManager.load_tracing_cached()
 

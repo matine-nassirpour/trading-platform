@@ -20,4 +20,5 @@ class BaseConfigSettings(BaseModel):
         frozen=True,  # strict immutability
         arbitrary_types_allowed=False,
         validate_assignment=False,
+        validate_default=False,
     )
