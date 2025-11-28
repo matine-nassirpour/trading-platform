@@ -41,37 +41,39 @@ class ConfigFSMOrchestrator:
         env_file: str | Path | None = None,
     ) -> ConfigFSMState:
         """
-        Execute the entire deterministic configuration lifecycle.
+        Execute the entire configuration lifecycle and return a READY state.
 
         Returns:
-            Final READY state containing:
-                • env: Mapping[str, str]
-                • settings: dict[str, Any]
-                • metadata: dict[str, Any]
+            • env: Mapping[str, str]
+            • settings: dict[str, Any]
+            • metadata: dict[str, Any]
         """
 
-        # 1. initial state
+        # 1. Initial FSM state
         state = ConfigFSMState.initial()
 
-        # 2. resolve base directory + env path
-        state = self.adapters.resolve_env_path(
+        # 2. PURE RESOLVE — produces new FSM state + resolution VO
+        state, resolution = self.adapters.resolve_env_path(
             state,
             root=root,
             env_file=env_file,
         )
 
-        # 3. load environment
+        # 3. LOAD ENVIRONMENT — impure, called ONLY ONCE
         state = self.adapters.load_environment(
             state,
-            root=root,
-            env_file=env_file,
+            resolution=resolution,
+            root_param=root,
+            env_file_param=env_file,
         )
 
         env = state.env
         if env is None:
-            raise RuntimeError("FSM invariant violation: ENV_LOADED state without env.")
+            raise RuntimeError(
+                "Configuration FSM invariant violation: missing env in ENV_LOADED state."
+            )
 
-        # 4. construct raw settings
+        # 4. BUILD MODELS (impure Pydantic construction)
         state = self.adapters.build_models(
             state,
             env=env,
@@ -80,24 +82,24 @@ class ConfigFSMOrchestrator:
         settings = state.settings
         if settings is None:
             raise RuntimeError(
-                "FSM invariant violation: MODEL_BUILT state without settings."
+                "Configuration FSM invariant violation: missing settings in MODEL_BUILT state."
             )
 
-        # 5. validate settings (already done by Pydantic)
+        # 5. VALIDATE MODELS (pure, external validation already applied by Pydantic)
         state = self.adapters.validate_models(
             state,
             env=env,
             settings=settings,
         )
 
-        # 6. freeze settings
+        # 6. FREEZE MODELS (pure)
         state = self.adapters.freeze_models(
             state,
             env=env,
             settings=settings,
         )
 
-        # 7. final READY state
+        # 7. READY (pure)
         state = self.adapters.finalize_ready(
             state,
             env=env,
@@ -106,7 +108,7 @@ class ConfigFSMOrchestrator:
 
         if state.status is not ConfigLifecycleStatus.READY:
             raise RuntimeError(
-                f"FSM lifecycle did not reach READY state, got: {state.status.value}"
+                f"FSM lifecycle did not reach READY state — got: {state.status.value}"
             )
 
         return state
