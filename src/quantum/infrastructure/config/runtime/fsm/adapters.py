@@ -6,6 +6,10 @@ from pathlib import Path
 from typing import Any
 
 from quantum.infrastructure.config.environment.loader import load_env_from_resolved
+from quantum.infrastructure.config.environment.model_router import (
+    EnvironmentModelRouter,
+    find_orphan_environment_variables,
+)
 from quantum.infrastructure.config.environment.resolver import resolve_env
 from quantum.infrastructure.config.environment.types import EnvResolutionResult
 from quantum.infrastructure.config.models.core import CoreSettings
@@ -68,7 +72,7 @@ class ConfigFSMAdapters:
         return self.pipeline.step_load_env(state, env=env)
 
     # --------------------------------------------------------------------------
-    # STEP 3 — Construct raw settings (impure)
+    # STEP 3 — Construct raw Pydantic models (impure)
     # --------------------------------------------------------------------------
     def build_models(
         self,
@@ -76,10 +80,23 @@ class ConfigFSMAdapters:
         *,
         env: Mapping[str, str],
     ) -> ConfigFSMState:
-        core = CoreSettings(**env)
-        logging = LoggingSettings(**env)
-        tracing = TracingSettings(**env)
-        mt5 = MT5Settings(**env)
+        models = {
+            "core": CoreSettings,
+            "logging": LoggingSettings,
+            "tracing": TracingSettings,
+            "mt5": MT5Settings,
+        }
+
+        routed_env = EnvironmentModelRouter.route(models, env)
+
+        # Detect orphan variables — purely informational, no crash
+        orphans = find_orphan_environment_variables(models, env)
+
+        # Construct each model with its own routed environment
+        core = CoreSettings(**routed_env["core"])
+        logging = LoggingSettings(**routed_env["logging"])
+        tracing = TracingSettings(**routed_env["tracing"])
+        mt5 = MT5Settings(**routed_env["mt5"])
 
         settings_dict = {
             "core": core.model_dump(),
@@ -88,7 +105,12 @@ class ConfigFSMAdapters:
             "mt5": mt5.model_dump(),
         }
 
-        return self.pipeline.step_build_model(state, env=env, settings=settings_dict)
+        # Enrich metadata with orphans (optional, transparent, non-breaking)
+        metadata = {"orphans": sorted(orphans)} if orphans else {}
+
+        return self.pipeline.step_build_model(
+            state, env=env, settings=settings_dict, metadata=metadata
+        )
 
     # --------------------------------------------------------------------------
     # STEP 4 — Validate constructed models (already validated by Pydantic)
