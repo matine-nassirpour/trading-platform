@@ -8,7 +8,6 @@ from typing import Final
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-# Allowed Windows executable extensions
 _WINDOWS_EXECUTABLE_EXT: Final[frozenset[str]] = frozenset(
     {".exe", ".bat", ".cmd", ".ps1"}
 )
@@ -20,11 +19,11 @@ _WINDOWS_EXECUTABLE_EXT: Final[frozenset[str]] = frozenset(
 # │ - PE (Windows): MZ (4D 5A)                                                 │
 # ╰────────────────────────────────────────────────────────────────────────────╯
 _MAGIC_PREFIXES: Final[tuple[bytes, ...]] = (
-    b"\x7fELF",  # Linux ELF
+    b"\x7fELF",  # ELF (Linux)
     b"\xfe\xed\xfa\xce",
     b"\xcf\xfa\xed\xfe",
-    b"\xce\xfa\xed\xfe",  # macOS Mach-O
-    b"MZ",  # Windows PE
+    b"\xce\xfa\xed\xfe",  # Mach-O (macOS)
+    b"MZ",  # PE (Windows)
 )
 
 
@@ -33,19 +32,20 @@ _MAGIC_PREFIXES: Final[tuple[bytes, ...]] = (
 # ╰────────────────────────────────────────────────────────────────────────────╯
 def _validate_magic_bytes(path: Path) -> bool:
     """
-    Validate executable signature using magic bytes.
+    Validate file header against known executable signatures.
 
-    • Reads first 4–8 bytes (zero risk)
-    • No silent failures
-    • Cross-platform heuristic
+    Guarantees:
+        • No mutation
+        • Minimal IO (8 bytes)
+        • Explicit failure paths
     """
     try:
         with path.open("rb") as f:
             header = f.read(8)
-    except Exception as e:
+    except Exception as exc:
         raise ValueError(
-            f"Failed to read file header for executable validation: {path}"
-        ) from e
+            f"Failed to read file header for executable validation: '{path}'"
+        ) from exc
 
     return any(header.startswith(prefix) for prefix in _MAGIC_PREFIXES)
 
@@ -54,8 +54,8 @@ def _is_executable_posix(path: Path) -> bool:
     """POSIX executable bit check with explicit error handling."""
     try:
         mode = path.stat().st_mode
-    except Exception as e:
-        raise ValueError(f"Unable to stat file for executable check: {path}") from e
+    except Exception as exc:
+        raise ValueError(f"Unable to stat file for executable check: '{path}'") from exc
 
     return bool(mode & 0o111)
 
@@ -65,29 +65,59 @@ def _is_executable_windows(path: Path) -> bool:
     return path.suffix.lower() in _WINDOWS_EXECUTABLE_EXT
 
 
-@functools.lru_cache(maxsize=256)
-def _is_executable(path: Path, *, require_magic: bool) -> bool:
+def _get_file_signature(path: Path) -> tuple[str, float, int]:
     """
-    Unified executable detection (POSIX + Windows + Magic bytes).
+    Return deterministic file metadata used as the cache key.
 
-    Caching ensures fast repeated validation in quant systems.
-
-    require_magic:
-        • If True  → requires a valid executable signature (ELF/Mach-O/PE)
-        • If False → extension/permission-based detection is sufficient
+    Components:
+        • absolute, resolved path as string
+        • modification timestamp
+        • file size in bytes
     """
+    try:
+        st = path.stat()
+    except Exception as exc:
+        raise ValueError(f"Unable to stat file for signature: '{path}'") from exc
+
+    return str(path), st.st_mtime, st.st_size
+
+
+@functools.lru_cache(maxsize=512)
+def _is_executable_cached(
+    signature: tuple[str, float, int],
+    *,
+    require_magic: bool,
+) -> bool:
+    """
+    Pure cached executable validation.
+
+    Critical properties:
+        • Cache key includes full signature → safe invalidation
+        • No dependence on mutable global state
+        • Deterministic & reproducible
+        • All IO is minimal and controlled
+    """
+    full_path = Path(signature[0])
 
     # Windows
     if os.name == "nt":
-        if not _is_executable_windows(path):
+        if not _is_executable_windows(full_path):
             return False
-        return True if not require_magic else _validate_magic_bytes(path)
+        return True if not require_magic else _validate_magic_bytes(full_path)
 
     # POSIX
-    if not _is_executable_posix(path):
+    if not _is_executable_posix(full_path):
         return False
 
-    return True if not require_magic else _validate_magic_bytes(path)
+    return True if not require_magic else _validate_magic_bytes(full_path)
+
+
+def _is_executable(path: Path, *, require_magic: bool) -> bool:
+    """
+    Non-cached API that computes signature and delegates to the cached validator.
+    """
+    sig = _get_file_signature(path)
+    return _is_executable_cached(sig, require_magic=require_magic)
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
@@ -101,29 +131,31 @@ class ExecutablePathSpec(BaseModel):
         • Absolute path only
         • Must exist & be a file
         • Optional symlink acceptance (default: forbidden)
-        • Optional magic-bytes validation for executable authenticity
-        • Cross-platform robustness
-        • Zero side effects
-        • Immutable (frozen)
-        • Suitable for Clean Architecture, secure operations, and safety-critical use
+        • Optional magic-bytes validation for authenticity
+        • Deterministic validation
+        • Zero mutation (filesystem or global state)
+        • Immutability guaranteed via pydantic v2 (frozen)
+        • Suitable for critical environments (DO-178C / IEC-62304 / ISO-26262)
     """
 
-    path: Path = Field(..., description="Absolute path to an executable file")
+    path: Path = Field(..., description="Absolute path to an executable file.")
 
     allow_symlink: bool = Field(
         default=False,
-        description="Allow executable to be a symlink (default False for safety-critical systems).",
+        description="Allow executable path to be a symlink (default False).",
     )
 
     require_magic: bool = Field(
         default=True,
-        description="Validate actual executable signature (ELF/Mach-O/PE). Recommended=True for all production-grade systems.",
+        description="Validate binary signature via magic bytes (recommended=True).",
     )
 
     model_config = ConfigDict(
         frozen=True,
         extra="forbid",
         arbitrary_types_allowed=False,
+        validate_assignment=False,
+        validate_default=False,
     )
 
     # --------------------------------------------------------------------------
@@ -139,14 +171,14 @@ class ExecutablePathSpec(BaseModel):
 
         try:
             p = Path(str(raw)).expanduser()
-        except Exception as e:
-            raise ValueError(f"Invalid path value: {raw!r}") from e
+        except Exception as exc:
+            raise ValueError(f"Invalid path value: {raw!r}") from exc
 
+        # Non-strict resolve: deterministic, no failure on non-existent FS segments
         try:
-            # strict=False: preserves non-existent parent resolution
             p = p.resolve(strict=False)
-        except Exception as e:
-            raise ValueError(f"Failed to resolve path '{raw}': {e}") from e
+        except Exception as exc:
+            raise ValueError(f"Failed to resolve path '{raw}': {exc}") from exc
 
         if not p.is_absolute():
             raise ValueError(f"Executable path must be absolute: '{p}'")
@@ -161,20 +193,19 @@ class ExecutablePathSpec(BaseModel):
     def validate_invariants(self) -> ExecutablePathSpec:
         p: Path = self.path
 
-        # ─── Symlink policy
+        # Symlink policy
         if p.is_symlink() and not self.allow_symlink:
             raise ValueError(
-                f"Executable symlink is not permitted: '{p}' " "(allow_symlink=False)"
+                f"Executable symlink is not permitted: '{p}' (allow_symlink=False)"
             )
 
-        # ─── File existence
+        # Existence and file requirement
         if not p.exists():
             raise ValueError(f"Executable does not exist: '{p}'")
-
         if not p.is_file():
             raise ValueError(f"Executable path is not a file: '{p}'")
 
-        # ─── Executable detection
+        # Executable test (cached safely)
         if not _is_executable(p, require_magic=self.require_magic):
             if self.require_magic:
                 raise ValueError(

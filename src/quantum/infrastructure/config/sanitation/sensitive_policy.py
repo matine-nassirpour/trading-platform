@@ -5,8 +5,14 @@ import unicodedata
 
 from typing import Final
 
-# These patterns intentionally use a *semantic* vocabulary instead of
-# implementation-specific names to remain future-proof.
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Canonical Sensitive Semantics                                              │
+# │ -------------------------------------------------------------------------- │
+# │ LIST RULES:                                                                │
+# │   - Vocabulary is semantic, not implementation-dependent.                  │
+# │   - All entries MUST represent conceptual secrets identifiable in config.  │
+# │   - All entries MUST be lowercase and ASCII-only (normalized downstream).  │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 GLOBAL_SENSITIVE_PATTERNS: Final[frozenset[str]] = frozenset(
     {
         # Classical credentials
@@ -39,19 +45,23 @@ GLOBAL_SENSITIVE_PATTERNS: Final[frozenset[str]] = frozenset(
 )
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Compiled regex (optimised for deterministic substring detection)           │
+# │ Boundary-Aware Regex Construction (Industry-Grade)                         │
 # │ -------------------------------------------------------------------------- │
-# │ Notes:                                                                     │
-# │   - We escape each literal and then OR-join them into a single regex.      │
-# │   - (?i) enforces case-insensitive comparison.                             │
-# │   - Using word boundaries ensures no spurious detection in compound names, │
-# │     while still detecting e.g. "my_api_key_root".                          │
+# │ Strategy:                                                                  │
+# │   - Use custom boundary matcher:                                           │
+# │       (?<![A-Za-z0-9])pattern(?![A-Za-z0-9])                               │
+# │     → safer than \b for snake_case/hyphens.                                │
 # │                                                                            │
-# │   Final pattern example:                                                   │
-# │       r"(?i)(password|secret|token|...)"                                   │
+# │   - Case-insensitive enforced via (?i).                                    │
+# │   - Patterns sorted for deterministic output.                              │
 # ╰────────────────────────────────────────────────────────────────────────────╯
+_BOUNDARY = r"(?<![A-Za-z0-9])"
+_END_BOUNDARY = r"(?![A-Za-z0-9])"
+
 _SENSITIVE_REGEX: Final[re.Pattern[str]] = re.compile(
-    "(?i)(" + "|".join(re.escape(p) for p in sorted(GLOBAL_SENSITIVE_PATTERNS)) + ")"
+    rf"(?i){_BOUNDARY}("
+    + "|".join(re.escape(p) for p in sorted(GLOBAL_SENSITIVE_PATTERNS))
+    + rf"){_END_BOUNDARY}"
 )
 
 
@@ -72,19 +82,15 @@ def is_sensitive_key(key: str) -> bool:
     Determine whether a configuration key must be treated as sensitive.
 
     Guarantees:
-        - Unicode normalized (NFKC)
-        - Case-insensitive
-        - Regex-based detection with strict ordered patterns
-        - Future-proof: adding new patterns does not require code changes
-        - Side-effect-free and deterministic
+        • Unicode NFKC normalized
+        • Case-insensitive
+        • Boundary-aware detection (no false positives from substrings)
+        • Deterministic behaviour
+        • Zero side effects
     """
 
     if not isinstance(key, str):
-        return False  # Defensive: non-string keys are ignored.
+        return False  # Defensive: enforce string semantics
 
     norm = _normalize(key)
-
-    # Regex search ensures:
-    #   - detection of substring occurrences
-    #   - strong semantics (no accidental overlaps)
     return _SENSITIVE_REGEX.search(norm) is not None

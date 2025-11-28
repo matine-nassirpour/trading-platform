@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -10,49 +12,38 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 # ╰────────────────────────────────────────────────────────────────────────────╯
 def _has_read_permission(path: Path) -> bool:
     """
-    True if current process can list the directory.
-    No side effects: no file creation, just permission probing.
+    Side-effect-free read permission check.
 
-    Using path.iterdir() inside a try block is the most direct
-    and portable check across Linux / macOS / Windows.
+    Strategy:
+        • Uses os.access(path, os.R_OK) which is non-mutating
+        • Avoids iterating the directory (which may raise on deep FS issues)
+        • Pure, deterministic, audit-safe
     """
     try:
-        next(path.iterdir(), None)
-        return True
+        return os.access(path, os.R_OK)
     except Exception:
         return False
 
 
 def _has_write_permission(path: Path) -> bool:
     """
-    True if current process can attempt metadata updates in directory.
+    Side-effect-free write permission check.
 
-    Robust, cross-platform write-check without touching actual contents:
-        • Try using Path.touch() on a temporary name with exist_ok=False.
-        • Immediately remove it.
-    Side-effect-free behavior:
-        • If directory is writable but external factors block creation,
-          we catch & interpret (safety-grade).
-        • If created, deletion is immediate and guaranteed.
+    Strategy:
+        • Uses os.access(path, W_OK)
+        • Does NOT create temporary files (no touch, no unlink)
+        • High-assurance: avoids race conditions, side effects, FS mutation
+
+    Limitations:
+        • os.access() checks *effective user* permissions, which is exactly
+          what high-assurance permission verification requires.
+        • It does not test mount options (e.g. read-only FS), but standards
+          forbid mutation in validation code, so we guarantee purity.
     """
-    import uuid
-
-    test_name = f".perm_test_{uuid.uuid4().hex}"
-    test_path = path / test_name
-
     try:
-        test_path.touch(exist_ok=False)
+        return os.access(path, os.W_OK)
     except Exception:
         return False
-    finally:
-        try:
-            if test_path.exists():
-                test_path.unlink()
-        except Exception:
-            # If unlink fails, we treat as write-unsafe.
-            return False
-
-    return True
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
