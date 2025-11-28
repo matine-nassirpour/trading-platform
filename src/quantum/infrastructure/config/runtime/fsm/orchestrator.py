@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from quantum.infrastructure.config.runtime.fsm.adapters import ConfigFSMAdapters
@@ -28,8 +28,8 @@ class ConfigFSMOrchestrator:
     All state evolution is done through the pure FSM pipeline.
     """
 
-    pipeline: ConfigFSMPipeline = ConfigFSMPipeline()
-    adapters: ConfigFSMAdapters = ConfigFSMAdapters()
+    pipeline: ConfigFSMPipeline = field(default_factory=ConfigFSMPipeline)
+    adapters: ConfigFSMAdapters = field(default_factory=ConfigFSMAdapters)
 
     # --------------------------------------------------------------------------
     # High-level run sequence

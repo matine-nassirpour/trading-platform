@@ -27,6 +27,8 @@ from quantum.infrastructure.config.models.core import CoreSettings
 from quantum.infrastructure.config.models.logging import LoggingSettings
 from quantum.infrastructure.config.models.tracing import TracingSettings
 from quantum.infrastructure.config.runtime.manager import ConfigManager
+from quantum.infrastructure.config.runtime.state.ready_cache import ReadyStateCache
+from quantum.infrastructure.config.validators import initialize_validators
 from quantum.infrastructure.observability.bootstrap.init_manager import (
     init_observability,
     shutdown_observability,
@@ -175,18 +177,22 @@ def compose_runtime(
 
     MUST NOT import domain/application directly.
     """
-    # Load configuration using internal configuration framework
-    core = ConfigManager.load(root, env_file=env_file, override=False, apply=False)
-    env_dict = core.model_dump()
+    # 1. Initialize validator registry (required for Pydantic models)
+    initialize_validators()
 
-    logging_settings = ConfigManager.load_logging(env=env_dict)
-    tracing_settings = ConfigManager.load_tracing(env=env_dict)
-    mt5_settings = ConfigManager.load_mt5(env=env_dict)
-
-    LOGGER.info(
-        "Runtime configuration loaded",
-        extra={"attrs": {"env": core.quantum_env, "app": core.quantum_app_name}},
+    # 2. Warm-up configuration subsystem
+    state = ConfigManager._run_fsm(
+        root=root,
+        env_file=env_file,
     )
+
+    # 3. Store READY state in ReadyStateCache
+    ReadyStateCache.set(state)
+
+    core = ConfigManager.load_core_cached()
+    logging_settings = ConfigManager.load_logging_cached()
+    tracing_settings = ConfigManager.load_tracing_cached()
+    mt5_settings = ConfigManager.load_mt5_cached()
 
     return QuantumRuntime(
         core_settings=core,

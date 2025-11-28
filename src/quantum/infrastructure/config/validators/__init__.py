@@ -45,7 +45,7 @@ def _require_registry() -> ValidatorRegistry:
     if _RUNTIME_REGISTRY is None:
         raise RuntimeError(
             "Validator registry not initialized. "
-            "Call initialize_validors() during application bootstrap."
+            "Call initialize_validators() during application bootstrap."
         )
     return _RUNTIME_REGISTRY
 

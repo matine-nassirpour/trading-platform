@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -9,6 +9,7 @@ from quantum.infrastructure.config.environment.loader import load_env_from_resol
 from quantum.infrastructure.config.environment.model_router import (
     EnvironmentModelRouter,
     find_orphan_environment_variables,
+    validate_environment_keys_strict,
 )
 from quantum.infrastructure.config.environment.resolver import resolve_env
 from quantum.infrastructure.config.environment.types import EnvResolutionResult
@@ -37,7 +38,7 @@ class ConfigFSMAdapters:
         • Deterministic resolve/load split
     """
 
-    pipeline: ConfigFSMPipeline = ConfigFSMPipeline()
+    pipeline: ConfigFSMPipeline = field(default_factory=ConfigFSMPipeline)
 
     # --------------------------------------------------------------------------
     # STEP 1 — Resolve environment path (impure: uses file system)
@@ -86,6 +87,9 @@ class ConfigFSMAdapters:
             "tracing": TracingSettings,
             "mt5": MT5Settings,
         }
+
+        # Strict env validation (fail-fast, safety-grade)
+        validate_environment_keys_strict(models, env)
 
         routed_env = EnvironmentModelRouter.route(models, env)
 
