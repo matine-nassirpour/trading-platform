@@ -7,6 +7,7 @@ import threading
 from typing import Final
 
 from quantum.infrastructure.config.runtime.fsm.model import (
+    FSM_SCHEMA_VERSION,
     ConfigFSMState,
     ConfigLifecycleStatus,
 )
@@ -71,6 +72,7 @@ class ReadyStateCache:
             raise ValueError("Fingerprint can only be computed for READY states.")
 
         normalized = {
+            "fsm_schema_version": FSM_SCHEMA_VERSION,
             "env": dict(state.env or {}),
             "settings": {k: dict(v) for k, v in dict(state.settings or {}).items()},
             "metadata": dict(state.metadata or {}),
@@ -79,7 +81,7 @@ class ReadyStateCache:
         canonical = _canonical_json(normalized)
         digest = _hash_sha256(canonical)
 
-        return f"SHA256:{digest}"
+        return f"SHA256-V{FSM_SCHEMA_VERSION}:{digest}"
 
     # --------------------------------------------------------------------------
     # Public API
@@ -97,8 +99,9 @@ class ReadyStateCache:
         fp = cls._compute_fingerprint(state)
 
         with cls._lock:
+            # Automatic invalidation if schema version OR state changed
             if cls._fingerprint == fp:
-                return  # Already cached, nothing to do
+                return
 
             cls._state = state
             cls._fingerprint = fp
