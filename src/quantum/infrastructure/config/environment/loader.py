@@ -73,7 +73,7 @@ def load_env_from_resolved(
     os_env = dict(get_frozen_env())
 
     # Final merge = user-defined .env overrides OS snapshot
-    effective = {**file_env, **os_env}
+    effective = {**os_env, **file_env}
 
     state.update(
         base_dir=resolution.base_dir,

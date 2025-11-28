@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import json
 import threading
 
 from typing import Final
@@ -10,44 +12,78 @@ from quantum.infrastructure.config.runtime.fsm.model import (
 )
 
 
+def _canonical_json(data: object) -> str:
+    """
+    Produce a canonical JSON representation:
+        • Sorted keys (deterministic ordering)
+        • No whitespace variance (compact form)
+        • No Python object references
+        • UTF-8 safe
+        • Cross-platform reproducibility
+
+    Required for safety-critical fingerprinting.
+    """
+    return json.dumps(
+        data,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+    )
+
+
+def _hash_sha256(text: str) -> str:
+    """
+    Compute a stable, cryptographic SHA-256 hash.
+    Always returns a 64-char lowercase hex digest.
+    """
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
 class ReadyStateCache:
     """
     Cache storing the *entire* FSM READY state.
 
     Guarantees:
+        • Cryptographically stable fingerprint (SHA-256)
+        • Deterministic serialization (canonical JSON)
         • Immutable storage
         • Thread-safe
-        • Invalidated when fingerprint changes
-        • Canonically tied to the final deterministic READY state
+        • Fingerprint guards against silent divergence
     """
 
     _lock: Final[threading.RLock] = threading.RLock()
     _state: ConfigFSMState | None = None
     _fingerprint: str | None = None
 
+    # --------------------------------------------------------------------------
+    # Canonical fingerprint computation
+    # --------------------------------------------------------------------------
     @staticmethod
     def _compute_fingerprint(state: ConfigFSMState) -> str:
         """
         Compute canonical fingerprint based on the full READY state.
-        Includes:
-            • Schema version (implicit via settings)
-            • Environment dict normalized
-            • Settings dict normalized
-            • Metadata dict normalized
+        Ensures:
+            • Deterministic across processes / machines
+            • Stable between Python runs
+            • Safe for audit, logging, persistence
         """
         if state.status is not ConfigLifecycleStatus.READY:
             raise ValueError("Fingerprint can only be computed for READY states.")
 
-        env_items = tuple(sorted(state.env.items())) if state.env else ()
-        settings_items = tuple(
-            sorted(
-                (k, tuple(sorted(v.items()))) for k, v in (state.settings or {}).items()
-            )
-        )
-        meta_items = tuple(sorted(state.metadata.items())) if state.metadata else ()
+        normalized = {
+            "env": dict(state.env or {}),
+            "settings": {k: dict(v) for k, v in dict(state.settings or {}).items()},
+            "metadata": dict(state.metadata or {}),
+        }
 
-        return f"FP:{hash(env_items)}:{hash(settings_items)}:{hash(meta_items)}"
+        canonical = _canonical_json(normalized)
+        digest = _hash_sha256(canonical)
 
+        return f"SHA256:{digest}"
+
+    # --------------------------------------------------------------------------
+    # Public API
+    # --------------------------------------------------------------------------
     @classmethod
     def get(cls) -> ConfigFSMState | None:
         with cls._lock:
