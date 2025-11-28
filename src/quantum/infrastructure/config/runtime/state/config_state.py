@@ -6,23 +6,37 @@ import threading
 from pathlib import Path
 from typing import Any, Final
 
+_thread_local = threading.local()
+
+
+def _get_thread_scratchpad() -> dict:
+    """
+    Thread-local scratchpad used only for ephemeral diagnostics.
+    Never authoritative. Never cached. Zero side effects.
+    """
+    d = getattr(_thread_local, "scratchpad", None)
+    if d is None:
+        d = {}
+        _thread_local.scratchpad = d
+    return d
+
 
 class _ProcessLocalState:
     """
     Process-local, thread-safe configuration state.
 
     Guarantees:
-        • One state instance per PID
-        • Thread-safe access
-        • Safe under reload (module re-import)
-        • Safe under multiprocessing (fork/spawn)
-        • Strict immutability semantics (state replaced atomically)
+        • Fork-safe: state re-initialized automatically after fork
+        • Thread-safe: internal RLock protects updates
+        • Process-coherent: PID is authoritative identity
+        • Scratchpad separated from authoritative state
+        • Atomic state replacement (no partial state)
     """
 
     def __init__(self, pid: int) -> None:
         self._pid: int = pid
 
-        # Internal fields
+        # Authoritative fields
         self._base_dir: Path | None = None
         self._env_file: Path | None = None
         self._env_cache: dict[str, str] | None = None
@@ -30,7 +44,23 @@ class _ProcessLocalState:
         self._env_file_param: str | Path | None = None
 
         # Lock for updates
-        self._lock: threading.RLock = threading.RLock()
+        self._state_lock: threading.RLock = threading.RLock()
+
+    # --------------------------------------------------------------------------
+    # Fork handler (POSIX)
+    # --------------------------------------------------------------------------
+    def __enter_fork_child__(self) -> None:
+        """
+        Called automatically after os.fork().
+        Must reset state cleanly to avoid sharing corrupted locks or state.
+        """
+        with self._state_lock:
+            self._pid = os.getpid()
+            self._base_dir = None
+            self._env_file = None
+            self._env_cache = None
+            self._root_param = None
+            self._env_file_param = None
 
     # --------------------------------------------------------------------------
     # Update atomic
@@ -46,28 +76,33 @@ class _ProcessLocalState:
     ) -> None:
         """Atomic, thread-safe update of the process-local state."""
 
-        with self._lock:
+        with self._state_lock:
             if base_dir is not None:
                 self._base_dir = base_dir
+
             if env_file is not None:
                 self._env_file = env_file
+
             if env_cache is not None:
+                # Atomic replace
                 self._env_cache = dict(env_cache)
+
             if root_param is not None:
                 self._root_param = root_param
+
             if env_file_param is not None:
                 self._env_file_param = env_file_param
 
     # ----------------------------------------------------------------------
-    # Retrieval
+    # Getters (thread-safe)
     # ----------------------------------------------------------------------
     def get_env_cache(self) -> dict[str, str]:
         """Safely retrieve a copy of the cached environment variables."""
-        with self._lock:
+        with self._state_lock:
             return dict(self._env_cache or {})
 
     # --------------------------------------------------------------------------
-    # Validation helpers
+    # Cache validation
     # --------------------------------------------------------------------------
     def cache_matches_params(
         self,
@@ -83,12 +118,12 @@ class _ProcessLocalState:
         root_param: str | Path | None,
         env_file_param: str | Path | None,
     ) -> bool:
-        """Cache is valid only if PID matches and parameters match."""
+        with self._state_lock:
+            if self._pid != os.getpid():
+                return False
+            if not isinstance(self._env_cache, dict) or not self._env_cache:
+                return False
 
-        if self._pid != os.getpid():
-            return False
-        if not isinstance(self._env_cache, dict) or not self._env_cache:
-            return False
         return self.cache_matches_params(
             root_param=root_param,
             env_file_param=env_file_param,
@@ -113,7 +148,7 @@ class _ProcessLocalState:
         return str(value)
 
     def snapshot(self) -> dict[str, Any]:
-        with self._lock:
+        with self._state_lock:
             return {
                 "pid": self._pid,
                 "base_dir": self._normalize(self._base_dir),
@@ -139,31 +174,44 @@ class _ProcessLocalState:
 
 class ConfigStateManager:
     """
-    Factory ensuring process-local, reload-safe configuration state.
+    Produces and manages the authoritative process-local state.
 
-    Guarantees:
-        • One state per process
-        • Auto-regeneration on PID change or reload
-        • Thread-safe retrieval
+    New features:
+        • auto-regeneration on PID change
+        • fork-safe through os.register_at_fork
+        • thread-safe access
     """
 
-    _lock: Final[threading.RLock] = threading.RLock()
+    _global_lock: Final[threading.RLock] = threading.RLock()
     _state: _ProcessLocalState | None = None
 
     @classmethod
-    def instance(cls) -> _ProcessLocalState:
-        """
-        Return a process-local state instance.
-        Automatically regenerates state when:
-            • PID changed (fork / multiprocessing)
-            • Reload occurred (module re-import)
-        """
+    def _init_state(cls) -> _ProcessLocalState:
         pid = os.getpid()
-        with cls._lock:
-            if cls._state is None or cls._state._pid != pid:
-                cls._state = _ProcessLocalState(pid)
+        return _ProcessLocalState(pid)
+
+    @classmethod
+    def instance(cls) -> _ProcessLocalState:
+        pid = os.getpid()
+
+        with cls._global_lock:
+            if cls._state is None:
+                cls._state = cls._init_state()
+                return cls._state
+
+            # PID changed → fork detected
+            if cls._state._pid != pid:
+                cls._state = cls._init_state()
+                return cls._state
+
             return cls._state
 
 
-# Public handle, for backward compatibility
+# Register fork handlers (POSIX only)
+if hasattr(os, "register_at_fork"):
+    os.register_at_fork(
+        after_in_child=lambda: ConfigStateManager.instance().__enter_fork_child__()
+    )
+
+# Public backwards-compatible export
 CONFIG_STATE: Final[_ProcessLocalState] = ConfigStateManager.instance()
