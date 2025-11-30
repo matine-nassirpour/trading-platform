@@ -8,6 +8,11 @@ from typing import Final
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from quantum.infrastructure.config.value_objects._path_normalization import (
+    PathNormalizationError,
+    canonicalize_raw_path,
+)
+
 _WINDOWS_EXECUTABLE_EXT: Final[frozenset[str]] = frozenset(
     {".exe", ".bat", ".cmd", ".ps1"}
 )
@@ -164,32 +169,10 @@ class ExecutablePathSpec(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def normalize_and_validate_raw(cls, data: dict | str | Path | None) -> dict:
-        if data is None:
-            raise ValueError("ExecutablePathSpec requires a 'path' argument.")
-
-        # Case 1 — Already a mapping
-        if isinstance(data, dict):
-            raw = data.get("path")
-            if raw is None:
-                raise ValueError("ExecutablePathSpec requires a 'path' field.")
-        else:
-            # Case 2 — Bare string or Path from env
-            raw = data
-
-        # Normalize to Path
         try:
-            p = Path(str(raw)).expanduser()
-        except Exception as e:
-            raise ValueError(f"Invalid path value: {raw!r}") from e
-
-        # Resolve safely
-        try:
-            p = p.resolve(strict=False)
-        except Exception as e:
-            raise ValueError(f"Failed to resolve path '{raw}': {e}") from e
-
-        if not p.is_absolute():
-            raise ValueError(f"Executable path must be absolute: '{p}'")
+            p = canonicalize_raw_path(data, field_name="path")
+        except PathNormalizationError as exc:
+            raise ValueError(str(exc)) from exc
 
         return {"path": p}
 
