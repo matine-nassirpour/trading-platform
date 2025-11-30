@@ -80,28 +80,35 @@ class DirectoryPathSpec(BaseModel):
     # --------------------------------------------------------------------------
     @model_validator(mode="before")
     @classmethod
-    def normalize_and_validate_raw(cls, data: dict) -> dict:
-        raw = data.get("path")
-        if raw is None:
+    def normalize_and_validate_raw(cls, data: dict | str | Path | None) -> dict:
+        if data is None:
             raise ValueError("DirectoryPathSpec requires a 'path' argument.")
 
-        # Normalize to string then Path
+        # Case 1 — Already a mapping
+        if isinstance(data, dict):
+            raw = data.get("path")
+            if raw is None:
+                raise ValueError("DirectoryPathSpec requires a 'path' field.")
+        else:
+            # Case 2 — Bare string or Path from env
+            raw = data
+
+        # Normalize to Path
         try:
             p = Path(str(raw)).expanduser()
         except Exception as e:
             raise ValueError(f"Invalid path value: {raw!r}") from e
 
-        # resolve() may raise if underlying FS is inconsistent
+        # Resolve safely
         try:
-            p = p.resolve(strict=False)  # strict=False avoids raising if nonexistent
+            p = p.resolve(strict=False)
         except Exception as e:
             raise ValueError(f"Failed to resolve path '{raw}': {e}") from e
 
         if not p.is_absolute():
             raise ValueError(f"Directory path must be absolute: '{p}'")
 
-        data["path"] = p
-        return data
+        return {"path": p}
 
     # --------------------------------------------------------------------------
     # Step 2 — Invariant enforcement (AFTER model)

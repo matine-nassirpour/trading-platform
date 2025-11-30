@@ -4,6 +4,7 @@ import hashlib
 import json
 import threading
 
+from collections.abc import Mapping
 from typing import Final
 
 from quantum.infrastructure.config.runtime.fsm.model import (
@@ -11,6 +12,44 @@ from quantum.infrastructure.config.runtime.fsm.model import (
     ConfigFSMState,
     ConfigLifecycleStatus,
 )
+
+
+def _normalize_json_safe(value):
+    """
+    Convert recursively any object into a JSON-serializable structure.
+    - Path → str
+    - Sets/FrozenSets → sorted lists
+    - Custom VO with __dict__ → recurse
+    - Mapping → recurse
+    - Sequence/Generator → recurse
+    """
+    from pathlib import Path
+
+    if value is None:
+        return None
+
+    # Primitive JSON-safe types
+    if isinstance(value, (str, int, float, bool)):
+        return value
+
+    # Path → str
+    if isinstance(value, Path):
+        return str(value)
+
+    # Mapping → dict
+    if isinstance(value, Mapping):
+        return {k: _normalize_json_safe(v) for k, v in value.items()}
+
+    # List / tuple / set / frozenset
+    if isinstance(value, (list, tuple, set, frozenset)):
+        return [_normalize_json_safe(v) for v in value]
+
+    # Pydantic models or custom Value Objects
+    if hasattr(value, "__dict__"):
+        return _normalize_json_safe(dict(value.__dict__))
+
+    # Fallback safe string
+    return str(value)
 
 
 def _canonical_json(data: object) -> str:
@@ -73,9 +112,9 @@ class ReadyStateCache:
 
         normalized = {
             "fsm_schema_version": FSM_SCHEMA_VERSION,
-            "env": dict(state.env or {}),
-            "settings": {k: dict(v) for k, v in dict(state.settings or {}).items()},
-            "metadata": dict(state.metadata or {}),
+            "env": _normalize_json_safe(state.env or {}),
+            "settings": _normalize_json_safe(state.settings or {}),
+            "metadata": _normalize_json_safe(state.metadata or {}),
         }
 
         canonical = _canonical_json(normalized)
