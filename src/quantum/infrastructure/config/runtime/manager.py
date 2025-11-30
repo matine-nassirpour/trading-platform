@@ -34,17 +34,16 @@ class ConfigManager:
     _orchestrator: Final[ConfigFSMOrchestrator] = ConfigFSMOrchestrator()
 
     # --------------------------------------------------------------------------
-    # Internal helpers
+    # Subsystem Bootstrapper
     # --------------------------------------------------------------------------
     @staticmethod
-    def _run_fsm(
+    def run_fsm(
         *,
         root: str | Path | None = None,
         env_file: str | Path | None = None,
     ):
         """
         Execute the full FSM lifecycle and return a READY state.
-
         This ALWAYS returns a ConfigFSMState in READY status.
         """
         return ConfigManager._orchestrator.run_full_lifecycle(
@@ -52,6 +51,9 @@ class ConfigManager:
             env_file=env_file,
         )
 
+    # --------------------------------------------------------------------------
+    # Internal helpers
+    # --------------------------------------------------------------------------
     @staticmethod
     def _get_ready_state() -> Any:
         """
@@ -65,7 +67,7 @@ class ConfigManager:
         if state is not None:
             return state
 
-        state = ConfigManager._run_fsm()
+        state = ConfigManager.run_fsm()
         ReadyStateCache.set(state)
         return state
 

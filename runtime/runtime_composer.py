@@ -25,6 +25,7 @@ from typing import Final
 
 from quantum.infrastructure.config.models.core import CoreSettings
 from quantum.infrastructure.config.models.logging import LoggingSettings
+from quantum.infrastructure.config.models.mt5 import MT5Settings
 from quantum.infrastructure.config.models.tracing import TracingSettings
 from quantum.infrastructure.config.runtime.manager import ConfigManager
 from quantum.infrastructure.config.runtime.state.ready_cache import ReadyStateCache
@@ -64,7 +65,7 @@ class QuantumRuntime:
         core_settings: CoreSettings,
         logging_settings: LoggingSettings,
         tracing_settings: TracingSettings,
-        mt5_settings,
+        mt5_settings: MT5Settings,
     ) -> None:
         self.core = core_settings
         self.logging_cfg = logging_settings
@@ -181,7 +182,7 @@ def compose_runtime(
     initialize_validators()
 
     # 2. Warm-up configuration subsystem
-    state = ConfigManager._run_fsm(
+    state = ConfigManager.run_fsm(
         root=root,
         env_file=env_file,
     )
