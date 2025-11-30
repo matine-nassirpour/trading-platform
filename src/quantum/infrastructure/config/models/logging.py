@@ -6,7 +6,7 @@ from pydantic import Field, field_validator
 
 from quantum.infrastructure.config.models.base.base_settings import BaseConfigSettings
 from quantum.infrastructure.config.models.base.mixins import PublicSettingsMixin
-from quantum.infrastructure.config.validators import validate_field
+from quantum.infrastructure.config.validators.runtime import validate_field
 from quantum.infrastructure.config.value_objects.directory_path_spec import (
     DirectoryPathSpec,
 )
@@ -63,9 +63,9 @@ class LoggingSettings(BaseConfigSettings, PublicSettingsMixin):
     quantum_audit_dir: DirectoryPathSpec | None = Field(
         default=None, description="Directory for audit event JSONL files."
     )
-    quantum_audit_allowlist: str | None = Field(
-        default=None,
-        description="Comma-separated list of event types to audit.",
+    quantum_audit_allowlist: frozenset[str] = Field(
+        default_factory=frozenset,
+        description="Comma-separated list of audit events.",
     )
 
     # --------------------------------------------------------------------------
@@ -107,6 +107,16 @@ class LoggingSettings(BaseConfigSettings, PublicSettingsMixin):
             field="quantum_log_level",
             model="LoggingSettings",
         )
+
+    @field_validator("quantum_audit_allowlist", mode="before")
+    @classmethod
+    def parse_allowlist(cls, v):
+        if v is None or v == "":
+            return frozenset()
+        if isinstance(v, str):
+            parts = [s.strip() for s in v.split(",") if s.strip()]
+            return frozenset(parts)
+        return frozenset(v)
 
     @field_validator("streamlit_log_tz", mode="before")
     @classmethod

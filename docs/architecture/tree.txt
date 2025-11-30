@@ -4,10 +4,6 @@ trading-platform/
 │   │   ├── pages/
 │   │   │   ├── __init__.py
 │   │   │   └── page_observability_core.py
-│   │   ├── services/
-│   │   │   ├── __init__.py
-│   │   │   ├── log_reader.py
-│   │   │   └── metrics_reader.py
 │   │   ├── __init__.py
 │   │   └── app.py
 │   └── __init__.py
@@ -245,9 +241,11 @@ trading-platform/
 │       │   │   │   ├── base.py
 │       │   │   │   ├── policy.py
 │       │   │   │   ├── registry.py
-│       │   │   │   └── rules.py
+│       │   │   │   ├── rules.py
+│       │   │   │   └── runtime.py
 │       │   │   ├── value_objects/
 │       │   │   │   ├── __init__.py
+│       │   │   │   ├── _path_normalization.py
 │       │   │   │   ├── directory_path_spec.py
 │       │   │   │   └── executable_path_spec.py
 │       │   │   └── __init__.py

@@ -6,7 +6,7 @@ from pydantic import Field, field_validator
 
 from quantum.infrastructure.config.models.base.base_settings import BaseConfigSettings
 from quantum.infrastructure.config.models.base.mixins import PublicSettingsMixin
-from quantum.infrastructure.config.validators import validate_field
+from quantum.infrastructure.config.validators.runtime import validate_field
 
 
 class TracingSettings(BaseConfigSettings, PublicSettingsMixin):

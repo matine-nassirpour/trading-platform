@@ -29,7 +29,7 @@ from quantum.infrastructure.config.models.mt5 import MT5Settings
 from quantum.infrastructure.config.models.tracing import TracingSettings
 from quantum.infrastructure.config.runtime.manager import ConfigManager
 from quantum.infrastructure.config.runtime.state.ready_cache import ReadyStateCache
-from quantum.infrastructure.config.validators import initialize_validators
+from quantum.infrastructure.config.validators.runtime import initialize_validators
 from quantum.infrastructure.observability.bootstrap.init_manager import (
     init_observability,
     shutdown_observability,
