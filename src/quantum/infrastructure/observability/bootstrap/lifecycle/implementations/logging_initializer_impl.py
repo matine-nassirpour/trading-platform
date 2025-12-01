@@ -33,11 +33,7 @@ class LoggingInitializerImpl:
 
         try:
             bundle = LoggingRuntimeBundle(
-                environment=config.environment,
-                service_namespace=config.service_namespace,
-                service_name=config.service_name,
-                service_version=config.service_version,
-                instance_id=config.instance_id,
+                identity=config.identity,
                 log_dir=config.log_dir,
                 audit_dir=config.audit_dir,
                 audit_allowlist=config.audit_allowlist,

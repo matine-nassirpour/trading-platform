@@ -8,7 +8,7 @@ from quantum.infrastructure.observability.bootstrap.lifecycle.configs.core_confi
 
 
 @dataclass(frozen=True)
-class TracingConfig(CoreConfig):
+class TracingConfig:
     """
     Immutable value object defining all necessary settings for initializing
     the OpenTelemetry tracing subsystem.
@@ -17,6 +17,7 @@ class TracingConfig(CoreConfig):
     in a Clean Architecture context.
     """
 
+    identity: CoreConfig
     trace_exporter: str
 
     trace_otlp_endpoint: str

@@ -9,7 +9,7 @@ from quantum.infrastructure.observability.bootstrap.lifecycle.configs.core_confi
 
 
 @dataclass(frozen=True)
-class LoggingConfig(CoreConfig):
+class LoggingConfig:
     """
     Immutable value object describing all runtime configuration required
     for initializing the logging pipeline.
@@ -23,6 +23,8 @@ class LoggingConfig(CoreConfig):
       • Full testability and predictability
       • Certification-ready design (DO-178C / IEC 62304 / ISO 26262)
     """
+
+    identity: CoreConfig
 
     log_dir: Path | None
     audit_dir: Path | None

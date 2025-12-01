@@ -59,13 +59,13 @@ class HandlerFactory:
         """Return a fully configured partitioned JSONL file handler."""
         policy = PartitionPolicy(
             base_dir=self._bundle.log_dir,
-            env=self._bundle.environment,
-            namespace=self._bundle.service_namespace,
-            app=self._bundle.service_name,
+            env=self._bundle.identity.environment,
+            namespace=self._bundle.identity.service_namespace,
+            app=self._bundle.identity.service_name,
             max_bytes=self._bundle.log_max_bytes,
         )
 
-        formatter = JSONLFormatter(instance_id=self._bundle.instance_id)
+        formatter = JSONLFormatter(instance_id=self._bundle.identity.instance_id)
 
         handler = PartitionedJSONLFileHandler(formatter=formatter, policy=policy)
 

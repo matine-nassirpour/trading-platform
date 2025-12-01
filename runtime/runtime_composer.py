@@ -88,11 +88,7 @@ class QuantumRuntime:
             instance_id=c.quantum_instance_id or "unknown",
             log_dir=s.quantum_log_dir,
             audit_dir=s.quantum_audit_dir,
-            audit_allowlist=frozenset(
-                x.strip()
-                for x in (s.quantum_audit_allowlist or "").split(",")
-                if x.strip()
-            ),
+            audit_allowlist=s.quantum_audit_allowlist,
             log_level=_parse_log_level(s.quantum_log_level),
             sample_info_every=s.quantum_log_sample_info,
             ratelimit_rps=float(s.quantum_log_rps),

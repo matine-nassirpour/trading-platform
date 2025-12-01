@@ -13,7 +13,7 @@ from quantum.infrastructure.config.runtime.state.ready_cache import ReadyStateCa
 def _load_runtime():
     """Load and freeze the Quantum Runtime (cached once)."""
     runtime = compose_runtime()
-    # runtime.initialize_observability()  # optional: safe if idempotent
+    runtime.initialize_observability()  # optional: safe if idempotent
     return runtime
 
 

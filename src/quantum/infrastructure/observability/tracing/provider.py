@@ -185,11 +185,11 @@ def _create_tracer_provider(bundle: TracingRuntimeBundle) -> TracerProvider:
     sample_ratio = max(0.0, min(1.0, float(bundle.trace_sample)))
     resource = Resource.create(
         {
-            SERVICE_NAME: bundle.service_name,
-            SERVICE_VERSION: bundle.service_version,
-            SERVICE_NAMESPACE: bundle.service_namespace,
-            DEPLOYMENT_ENVIRONMENT: bundle.environment,
-            SERVICE_INSTANCE_ID: bundle.instance_id or socket.gethostname(),
+            SERVICE_NAME: bundle.identity.service_name,
+            SERVICE_VERSION: bundle.identity.service_version,
+            SERVICE_NAMESPACE: bundle.identity.service_namespace,
+            DEPLOYMENT_ENVIRONMENT: bundle.identity.environment,
+            SERVICE_INSTANCE_ID: bundle.identity.instance_id or socket.gethostname(),
         }
     )
     provider = TracerProvider(

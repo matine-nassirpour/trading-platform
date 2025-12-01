@@ -32,7 +32,7 @@ class LoggingBuilder:
     def __init__(self, bundle: LoggingRuntimeBundle) -> None:
         self._bundle = bundle
         self._pipeline = LoggingPipelineFactory.build(bundle.pipeline_config, bundle)
-        self._formatter = JsonFormatter(bundle.instance_id)
+        self._formatter = JsonFormatter(bundle.identity.instance_id)
         self._factory = HandlerFactory(bundle, self._formatter, self._pipeline)
 
     # --------------------------------------------------------------------------
@@ -70,9 +70,9 @@ class LoggingBuilder:
 
         handler = AuditEventFileHandler(
             base_dir=self._bundle.audit_dir,
-            env=self._bundle.environment,
-            namespace=self._bundle.service_namespace,
-            app=self._bundle.service_name,
+            env=self._bundle.identity.environment,
+            namespace=self._bundle.identity.service_namespace,
+            app=self._bundle.identity.service_name,
         )
         handler.setLevel(logging.NOTSET)
         handler.setFormatter(self._formatter)

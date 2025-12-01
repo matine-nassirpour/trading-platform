@@ -32,11 +32,7 @@ class TracingInitializerImpl:
 
     def initialize(self, config: TracingConfig) -> Any:
         bundle = TracingRuntimeBundle(
-            environment=config.environment,
-            service_namespace=config.service_namespace,
-            service_name=config.service_name,
-            service_version=config.service_version,
-            instance_id=config.instance_id,
+            identity=config.identity,
             trace_exporter=config.trace_exporter,
             trace_otlp_endpoint=config.trace_otlp_endpoint,
             trace_otlp_protocol=config.trace_otlp_protocol,
