@@ -96,8 +96,7 @@ def tmp_workspace(iso_env, clean_registry) -> Generator[Workspace]:
     os.environ.setdefault("QUANTUM_LOG_WARN_BYTES", "0")
     os.environ.setdefault("QUANTUM_TRACE_SAMPLE", "1.0")
     os.environ.setdefault("QUANTUM_TRACE_EXPORTER", "console")
-    os.environ.setdefault("QUANTUM_AUDIT_EVENTS_VERSION", "v1")
-    os.environ.setdefault("QUANTUM_AUDIT_EVENTS", "order_submit_v1")
+    os.environ.setdefault("QUANTUM_AUDIT_ALLOWLIST", "order_submit_v1")
 
     payload: Workspace = {"root": tmpdir, "logs": log_dir, "audit": audit_dir}
 

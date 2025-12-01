@@ -3,9 +3,9 @@ from __future__ import annotations
 import logging
 import threading
 
-from typing import Any, TypeVar, final
+from typing import Any, Final, TypeVar, final
 
-logger = logging.getLogger(__name__)
+LOGGER: Final = logging.getLogger(__name__)
 
 T = TypeVar("T")
 
@@ -50,13 +50,13 @@ class EventSchemaRegistry:
             if key in self._registry:
                 existing = self._registry[key]
                 if existing is not event_cls:
-                    logger.warning(
+                    LOGGER.warning(
                         f"Schema registry conflict for key '{key}': "
                         f"{existing.__name__} already registered, ignoring duplicate {event_cls.__name__}"
                     )
                     return existing
             self._registry[key] = event_cls
-            logger.debug(f"Registered event schema: {key}")
+            LOGGER.debug(f"Registered event schema: {key}")
             return event_cls
 
     # ─── Lookup

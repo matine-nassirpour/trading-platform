@@ -5,8 +5,8 @@
 #
 #  Purpose : Formal architectural governance contract for the Quantum Platform.
 #  Scope   : Applies to all Python packages within the 'quantum' namespace.
-#  Version : 2.1.0
-#  Updated : 2025-11-06
+#  Version : 2.2.0
+#  Updated : 2025-11-25
 #
 # ──────────────────────────────────────────────────────────────────────────────
 # 1. Mission
@@ -50,7 +50,7 @@ include_external_packages = True
 # │     Foundational to certifiable modularity (DO-178C §11.8, NASA-SWE-134).  │
 # │                                                                            │
 # │ Expected Result :                                                          │
-# │     Infrastructure → Interfaces → Application → Domain → Contracts         │
+# │     Infrastructure → Interfaces → Application → Domain                     │
 # │     Each layer can import only those beneath it.                           │
 # ╰────────────────────────────────────────────────────────────────────────────╯
 
@@ -62,7 +62,6 @@ layers =
     quantum.interfaces
     quantum.application
     quantum.domain
-    quantum.contracts
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
@@ -183,4 +182,3 @@ type = forbidden
 source_modules = quantum.application
 forbidden_modules =
     quantum.infrastructure
-    runtime

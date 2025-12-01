@@ -1,35 +1,18 @@
-"""
-Quantum Core Configuration Models — Logging Settings
-────────────────────────────────────────────────────
-Immutable schema defining all configuration parameters related to logging
-and audit subsystems within the Quantum platform.
-
-Responsibilities
-----------------
-- Define validated, strongly typed logging configuration parameters.
-- Enforce consistency and safety for logging, rate limiting, and rotation.
-- Provide optional audit event schema and Streamlit visualization settings.
-- Remain independent of any logging framework implementation.
-
-Design Principles
------------------
-- **Single Responsibility** : declares logging configuration schema only.
-- **Clean Architecture** : pure model, no side effects or dependencies.
-- **Immutability** : frozen model ensuring deterministic runtime behavior.
-- **Validation by Contract** : explicit field constraints and normalization.
-- **Extensibility** : easily versioned and expanded without breaking changes.
-"""
-
 from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import Field, field_validator
 
-from quantum.infrastructure.config.validators import validate_field
+from quantum.infrastructure.config.models.base.base_settings import BaseConfigSettings
+from quantum.infrastructure.config.models.base.mixins import PublicSettingsMixin
+from quantum.infrastructure.config.validators.runtime import validate_field
+from quantum.infrastructure.config.value_objects.directory_path_spec import (
+    DirectoryPathSpec,
+)
 
 
-class LoggingSettings(BaseModel):
+class LoggingSettings(BaseConfigSettings, PublicSettingsMixin):
     """
     Structured configuration model for Quantum logging and audit subsystems.
     """
@@ -43,6 +26,7 @@ class LoggingSettings(BaseModel):
     )
     quantum_log_sample_info: int = Field(
         default=10,
+        ge=0,  # >= 0
         description="Log sampling frequency for INFO-level messages "
         "(every Nth INFO log is kept if sampling enabled).",
     )
@@ -51,7 +35,9 @@ class LoggingSettings(BaseModel):
         description="Enable log rate limiting to prevent output flooding.",
     )
     quantum_log_rps: int = Field(
-        100, description="Maximum log entries per second when rate limiting is active."
+        default=100,
+        ge=0,
+        description="Maximum log entries per second when rate limiting is active.",
     )
     quantum_log_fsync: bool = Field(
         default=False,
@@ -59,34 +45,27 @@ class LoggingSettings(BaseModel):
     )
     quantum_log_max_bytes: int = Field(
         default=10 * 1024 * 1024,
-        description="Maximum size (in bytes) per log file before rotation.",
         ge=0,
+        description="Maximum size (in bytes) per log file before rotation.",
     )
     quantum_log_warn_bytes: int = Field(
         default=0,
-        description="Optional warning threshold for log file size (0 = disabled).",
         ge=0,
+        description="Optional warning threshold for log file size (0 = disabled).",
     )
-    quantum_log_deep_probe: bool = Field(
-        default=False,
-        description="Enable deep internal logging for diagnostic inspection.",
-    )
-    quantum_log_dir: str | None = Field(
+    quantum_log_dir: DirectoryPathSpec | None = Field(
         default=None, description="Base directory for partitioned JSONL logs."
     )
 
     # --------------------------------------------------------------------------
     # Audit
     # --------------------------------------------------------------------------
-    quantum_audit_dir: str | None = Field(
+    quantum_audit_dir: DirectoryPathSpec | None = Field(
         default=None, description="Directory for audit event JSONL files."
     )
-    quantum_audit_events: str | None = Field(
-        default=None,
-        description="Comma-separated list of event types to audit.",
-    )
-    quantum_audit_events_version: str = Field(
-        default="v1", description="Version of audit event schema."
+    quantum_audit_allowlist: frozenset[str] = Field(
+        default_factory=frozenset,
+        description="Comma-separated list of audit events.",
     )
 
     # --------------------------------------------------------------------------
@@ -103,10 +82,12 @@ class LoggingSettings(BaseModel):
     )
     streamlit_log_chunk_bytes: int = Field(
         default=256_000,
+        ge=0,
         description="Maximum chunk size (bytes) when reading log tails.",
     )
     streamlit_log_tail_max_lines: int = Field(
         default=100,
+        ge=0,
         description="Maximum number of log lines displayed in the Streamlit tail view.",
     )
     streamlit_log_glob: str = Field(
@@ -126,6 +107,16 @@ class LoggingSettings(BaseModel):
             field="quantum_log_level",
             model="LoggingSettings",
         )
+
+    @field_validator("quantum_audit_allowlist", mode="before")
+    @classmethod
+    def parse_allowlist(cls, v):
+        if v is None or v == "":
+            return frozenset()
+        if isinstance(v, str):
+            parts = [s.strip() for s in v.split(",") if s.strip()]
+            return frozenset(parts)
+        return frozenset(v)
 
     @field_validator("streamlit_log_tz", mode="before")
     @classmethod
@@ -153,11 +144,3 @@ class LoggingSettings(BaseModel):
         if v in ("", None):
             return 0
         return int(v)
-
-    # --------------------------------------------------------------------------
-    # Model configuration
-    # --------------------------------------------------------------------------
-    model_config = ConfigDict(
-        extra="ignore",
-        frozen=True,
-    )

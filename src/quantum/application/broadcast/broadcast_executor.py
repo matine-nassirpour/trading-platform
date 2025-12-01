@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import logging
 
-from typing import Any
+from typing import Any, Final
 
 from quantum.application.broadcast.broadcast_result import BroadcastResult
 from quantum.application.contracts.execution_result import ExecutionResult
@@ -16,7 +16,7 @@ from quantum.application.resilience.retry_policy import RetryPolicy
 from quantum.application.services.execution_service import ExecutionService
 from quantum.domain.types.execution_channel import ExecutionChannel
 
-logger = logging.getLogger(__name__)
+LOGGER: Final = logging.getLogger(__name__)
 
 
 class BroadcastExecutor:
@@ -82,13 +82,13 @@ class BroadcastExecutor:
                         result = await loop.run_in_executor(None, fn, *args)
                     return result
                 except Exception as e:
-                    logger.exception("[Broadcast] %s.%s failed: %s", ch.value, call, e)
+                    LOGGER.exception("[Broadcast] %s.%s failed: %s", ch.value, call, e)
                     return ExecutionResult.fatal(str(e))
 
             try:
                 async with self._sem:
                     result = await safe_call()
-                    logger.debug(
+                    LOGGER.debug(
                         "[Broadcast] %s.%s completed with code=%s",
                         ch.value,
                         call,
@@ -96,7 +96,7 @@ class BroadcastExecutor:
                     )
                     return ch, result
             except Exception as exc:
-                logger.exception(
+                LOGGER.exception(
                     "[Broadcast] %s.%s resilience layer failure: %s",
                     ch.value,
                     call,

@@ -1,16 +1,11 @@
 trading-platform/
-├── __pycache__/
 ├── apps/
 │   ├── streamlit/
 │   │   ├── pages/
 │   │   │   ├── __init__.py
-│   │   │   └── observability_page.py
-│   │   ├── services/
-│   │   │   ├── __init__.py
-│   │   │   ├── log_reader.py
-│   │   │   └── metrics_reader.py
+│   │   │   └── page_observability_core.py
 │   │   ├── __init__.py
-│   │   └── bootstrap.py
+│   │   └── app.py
 │   └── __init__.py
 ├── assurance/
 │   ├── architecture/
@@ -25,6 +20,8 @@ trading-platform/
 │   └── security/
 │       ├── .secrets.baseline
 │       └── bandit.yaml
+├── bin/
+│   └── run_quantum.py
 ├── docs/
 │   ├── architecture/
 │   │   ├── decisions/
@@ -40,7 +37,8 @@ trading-platform/
 │       └── README.md
 ├── runtime/
 │   ├── __init__.py
-│   └── runtime_composer.py
+│   ├── runtime_composer.py
+│   └── runtime_engine.py
 ├── scripts/
 │   ├── generate_assurance_report.py
 │   ├── generate_log_schema.py
@@ -64,8 +62,7 @@ trading-platform/
 │       │   │   ├── __init__.py
 │       │   │   └── resilience_injection.py
 │       │   ├── dto/
-│       │   │   ├── __init__.py
-│       │   │   └── config_bundle.py
+│       │   │   └── __init__.py
 │       │   ├── events/
 │       │   │   ├── __init__.py
 │       │   │   ├── event_adapter.py
@@ -104,14 +101,10 @@ trading-platform/
 │       │   │   │   └── __init__.py
 │       │   │   ├── outbound/
 │       │   │   │   ├── __init__.py
-│       │   │   │   ├── config_port.py
 │       │   │   │   ├── event_bus_port.py
 │       │   │   │   ├── execution_port.py
-│       │   │   │   ├── logging_port.py
-│       │   │   │   ├── observability_port.py
 │       │   │   │   ├── time_provider_port.py
-│       │   │   │   ├── timeout_runner_port.py
-│       │   │   │   └── tracing_port.py
+│       │   │   │   └── timeout_runner_port.py
 │       │   │   └── __init__.py
 │       │   ├── resilience/
 │       │   │   ├── __init__.py
@@ -119,15 +112,12 @@ trading-platform/
 │       │   │   └── retry_policy.py
 │       │   ├── services/
 │       │   │   ├── __init__.py
+│       │   │   ├── application_orchestrator.py
 │       │   │   ├── execution_service.py
 │       │   │   └── operation_registry.py
 │       │   ├── use_cases/
 │       │   │   └── __init__.py
 │       │   └── __init__.py
-│       ├── contracts/
-│       │   ├── __init__.py
-│       │   ├── base_contracts.py
-│       │   └── settings_contracts.py
 │       ├── domain/
 │       │   ├── entities/
 │       │   │   └── __init__.py
@@ -197,50 +187,67 @@ trading-platform/
 │       │   │   │   │   ├── contracts.py
 │       │   │   │   │   ├── gateway.py
 │       │   │   │   │   └── timeout_utils.py
-│       │   │   │   ├── utils/
-│       │   │   │   │   └── __init__.py
-│       │   │   │   └── __init__.py
+│       │   │   │   ├── __init__.py
+│       │   │   │   └── execution_metrics.py
 │       │   │   └── __init__.py
 │       │   ├── config/
-│       │   │   ├── adapters/
-│       │   │   │   ├── __init__.py
-│       │   │   │   └── config_adapter.py
-│       │   │   ├── models/
+│       │   │   ├── environment/
 │       │   │   │   ├── tests/
+│       │   │   │   │   └── __init__.py
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── loader.py
+│       │   │   │   ├── model_router.py
+│       │   │   │   ├── resolver.py
+│       │   │   │   ├── snapshot.py
+│       │   │   │   └── types.py
+│       │   │   ├── models/
+│       │   │   │   ├── base/
 │       │   │   │   │   ├── __init__.py
-│       │   │   │   │   ├── test_core.py
-│       │   │   │   │   ├── test_logging.py
-│       │   │   │   │   ├── test_mt5.py
-│       │   │   │   │   └── test_tracing.py
+│       │   │   │   │   ├── base_settings.py
+│       │   │   │   │   └── mixins.py
+│       │   │   │   ├── tests/
+│       │   │   │   │   └── __init__.py
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── core.py
 │       │   │   │   ├── logging.py
 │       │   │   │   ├── mt5.py
 │       │   │   │   └── tracing.py
-│       │   │   ├── providers/
-│       │   │   │   ├── tests/
-│       │   │   │   │   ├── __init__.py
-│       │   │   │   │   └── test_env_loader.py
-│       │   │   │   ├── __init__.py
-│       │   │   │   └── env_loader.py
 │       │   │   ├── runtime/
-│       │   │   │   ├── tests/
+│       │   │   │   ├── fsm/
 │       │   │   │   │   ├── __init__.py
-│       │   │   │   │   ├── test_manager.py
-│       │   │   │   │   └── test_state.py
+│       │   │   │   │   ├── adapters.py
+│       │   │   │   │   ├── controller.py
+│       │   │   │   │   ├── model.py
+│       │   │   │   │   ├── orchestrator.py
+│       │   │   │   │   └── pipeline.py
+│       │   │   │   ├── io/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   └── directory_service.py
+│       │   │   │   ├── state/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── config_state.py
+│       │   │   │   │   └── ready_cache.py
+│       │   │   │   ├── tests/
+│       │   │   │   │   └── __init__.py
 │       │   │   │   ├── __init__.py
-│       │   │   │   ├── manager.py
-│       │   │   │   └── state.py
+│       │   │   │   └── manager.py
+│       │   │   ├── sanitation/
+│       │   │   │   ├── __init__.py
+│       │   │   │   └── sensitive_policy.py
 │       │   │   ├── validators/
 │       │   │   │   ├── tests/
-│       │   │   │   │   ├── __init__.py
-│       │   │   │   │   ├── test_base.py
-│       │   │   │   │   ├── test_registry.py
-│       │   │   │   │   └── test_rules.py
+│       │   │   │   │   └── __init__.py
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── base.py
+│       │   │   │   ├── policy.py
 │       │   │   │   ├── registry.py
-│       │   │   │   └── rules.py
+│       │   │   │   ├── rules.py
+│       │   │   │   └── runtime.py
+│       │   │   ├── value_objects/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── _path_normalization.py
+│       │   │   │   ├── directory_path_spec.py
+│       │   │   │   └── executable_path_spec.py
 │       │   │   └── __init__.py
 │       │   ├── datafeeds/
 │       │   │   └── __init__.py
@@ -254,88 +261,160 @@ trading-platform/
 │       │   │   └── __init__.py
 │       │   ├── observability/
 │       │   │   ├── bootstrap/
+│       │   │   │   ├── lifecycle/
+│       │   │   │   │   ├── configs/
+│       │   │   │   │   │   ├── __init__.py
+│       │   │   │   │   │   ├── core_config.py
+│       │   │   │   │   │   ├── logging_config.py
+│       │   │   │   │   │   ├── metrics_config.py
+│       │   │   │   │   │   └── tracing_config.py
+│       │   │   │   │   ├── implementations/
+│       │   │   │   │   │   ├── __init__.py
+│       │   │   │   │   │   ├── logging_initializer_impl.py
+│       │   │   │   │   │   ├── metrics_initializer_impl.py
+│       │   │   │   │   │   └── tracing_initializer_impl.py
+│       │   │   │   │   ├── protocols/
+│       │   │   │   │   │   ├── __init__.py
+│       │   │   │   │   │   ├── logging_initializer.py
+│       │   │   │   │   │   ├── metrics_initializer.py
+│       │   │   │   │   │   └── tracing_initializer.py
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── dependencies.py
+│       │   │   │   │   └── lifecycle.py
 │       │   │   │   ├── __init__.py
-│       │   │   │   ├── diagnostics.py
 │       │   │   │   ├── health_registry.py
-│       │   │   │   ├── init_manager.py
-│       │   │   │   ├── lifecycle.py
-│       │   │   │   └── state.py
+│       │   │   │   ├── init_diagnostics.py
+│       │   │   │   └── init_manager.py
 │       │   │   ├── context/
 │       │   │   │   ├── __init__.py
+│       │   │   │   ├── context_attributes_provider.py
+│       │   │   │   ├── correlation_id.py
 │       │   │   │   └── run_id.py
-│       │   │   ├── drivers/
-│       │   │   │   ├── __init__.py
-│       │   │   │   ├── logging_driver.py
-│       │   │   │   ├── observability_driver.py
-│       │   │   │   └── tracing_driver.py
+│       │   │   ├── foundation/
+│       │   │   │   ├── config/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── logging_runtime_bundle.py
+│       │   │   │   │   ├── observability_runtime_bundle.py
+│       │   │   │   │   └── tracing_runtime_bundle.py
+│       │   │   │   ├── metrics/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   └── c0_metric_registry.py
+│       │   │   │   ├── system_diagnostics/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   └── c0_diagnostic_logger.py
+│       │   │   │   └── __init__.py
 │       │   │   ├── logging/
-│       │   │   │   ├── filters/
-│       │   │   │   │   ├── tests/
+│       │   │   │   ├── api/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── handler_factory.py
+│       │   │   │   │   ├── logging_builder.py
+│       │   │   │   │   └── logging_service.py
+│       │   │   │   ├── audit/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── allowlist.py
+│       │   │   │   │   ├── emitter.py
+│       │   │   │   │   └── filter.py
+│       │   │   │   ├── core/
+│       │   │   │   │   ├── contracts/
 │       │   │   │   │   │   ├── __init__.py
-│       │   │   │   │   │   └── test_filters.py
-│       │   │   │   │   ├── __init__.py
-│       │   │   │   │   ├── audit_event_filter.py
-│       │   │   │   │   ├── context_filter.py
-│       │   │   │   │   ├── ignore_libraries_filter.py
-│       │   │   │   │   ├── info_sampler_filter.py
-│       │   │   │   │   ├── monotonic_timestamp_filter.py
-│       │   │   │   │   ├── rate_limit_filter.py
-│       │   │   │   │   ├── redact_filter.py
-│       │   │   │   │   └── static_fields_filter.py
-│       │   │   │   ├── formatters/
-│       │   │   │   │   ├── tests/
+│       │   │   │   │   │   └── log_contract_v1.py
+│       │   │   │   │   ├── mapping/
 │       │   │   │   │   │   ├── __init__.py
-│       │   │   │   │   │   └── test_json_formatter.py
-│       │   │   │   │   ├── __init__.py
-│       │   │   │   │   └── json_formatter.py
-│       │   │   │   ├── handlers/
-│       │   │   │   │   ├── tests/
+│       │   │   │   │   │   ├── contract_to_payload.py
+│       │   │   │   │   │   └── dto_to_contract.py
+│       │   │   │   │   ├── models/
 │       │   │   │   │   │   ├── __init__.py
-│       │   │   │   │   │   ├── test_audit_sink_handler.py
-│       │   │   │   │   │   └── test_partitioned_handler.py
-│       │   │   │   │   ├── __init__.py
-│       │   │   │   │   ├── audit_sink_handler.py
-│       │   │   │   │   └── partitioned_handler.py
-│       │   │   │   ├── models/
+│       │   │   │   │   │   ├── fallback_payload.py
+│       │   │   │   │   │   └── log_payload.py
+│       │   │   │   │   └── __init__.py
+│       │   │   │   ├── formatting/
 │       │   │   │   │   ├── tests/
+│       │   │   │   │   │   └── __init__.py
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── json_formatter.py
+│       │   │   │   │   └── jsonl_formatter.py
+│       │   │   │   ├── foundation/
+│       │   │   │   │   ├── constants/
 │       │   │   │   │   │   ├── __init__.py
-│       │   │   │   │   │   └── test_factory.py
+│       │   │   │   │   │   └── severity_map.py
+│       │   │   │   │   └── __init__.py
+│       │   │   │   ├── ingestion/
 │       │   │   │   │   ├── __init__.py
-│       │   │   │   │   ├── factory.py
-│       │   │   │   │   ├── log_payload_v1.py
-│       │   │   │   │   └── severity_map.py
-│       │   │   │   ├── tests/
+│       │   │   │   │   ├── exception_extractor.py
+│       │   │   │   │   ├── internal_log_event.py
+│       │   │   │   │   └── log_record_adapter.py
+│       │   │   │   ├── pipeline/
+│       │   │   │   │   ├── engine/
+│       │   │   │   │   │   ├── __init__.py
+│       │   │   │   │   │   ├── argument_kind.py
+│       │   │   │   │   │   ├── factory.py
+│       │   │   │   │   │   ├── pipeline.py
+│       │   │   │   │   │   ├── pipeline_config.py
+│       │   │   │   │   │   ├── registry.py
+│       │   │   │   │   │   ├── step.py
+│       │   │   │   │   │   └── step_definition.py
+│       │   │   │   │   ├── state/
+│       │   │   │   │   │   ├── __init__.py
+│       │   │   │   │   │   ├── info_sampler_state.py
+│       │   │   │   │   │   └── rate_limit_state.py
+│       │   │   │   │   ├── steps/
+│       │   │   │   │   │   ├── control/
+│       │   │   │   │   │   │   ├── __init__.py
+│       │   │   │   │   │   │   ├── ignore_libraries.py
+│       │   │   │   │   │   │   ├── info_sampler.py
+│       │   │   │   │   │   │   └── rate_limit.py
+│       │   │   │   │   │   ├── enrichment/
+│       │   │   │   │   │   │   ├── __init__.py
+│       │   │   │   │   │   │   ├── correlation.py
+│       │   │   │   │   │   │   ├── exception_enrichment.py
+│       │   │   │   │   │   │   ├── resource_metadata.py
+│       │   │   │   │   │   │   └── unified_attrs.py
+│       │   │   │   │   │   ├── security/
+│       │   │   │   │   │   │   ├── __init__.py
+│       │   │   │   │   │   │   └── redaction.py
+│       │   │   │   │   │   └── __init__.py
+│       │   │   │   │   └── __init__.py
+│       │   │   │   ├── processing/
 │       │   │   │   │   ├── __init__.py
-│       │   │   │   │   ├── test_constants.py
-│       │   │   │   │   └── test_event_emitter.py
-│       │   │   │   ├── __init__.py
-│       │   │   │   ├── _io_utils.py
-│       │   │   │   ├── constants.py
-│       │   │   │   ├── event_emitter.py
-│       │   │   │   └── service.py
+│       │   │   │   │   ├── fallback_builder.py
+│       │   │   │   │   └── payload_assembler.py
+│       │   │   │   ├── sinks/
+│       │   │   │   │   ├── filesystem/
+│       │   │   │   │   │   ├── handlers/
+│       │   │   │   │   │   │   ├── __init__.py
+│       │   │   │   │   │   │   ├── audit_event_file_handler.py
+│       │   │   │   │   │   │   └── partitioned_jsonl_file_handler.py
+│       │   │   │   │   │   ├── policies/
+│       │   │   │   │   │   │   ├── __init__.py
+│       │   │   │   │   │   │   └── partition_policy.py
+│       │   │   │   │   │   ├── writers/
+│       │   │   │   │   │   │   ├── __init__.py
+│       │   │   │   │   │   │   ├── quarantine_writer.py
+│       │   │   │   │   │   │   └── safe_file_writer.py
+│       │   │   │   │   │   ├── __init__.py
+│       │   │   │   │   │   ├── fsync_utils.py
+│       │   │   │   │   │   └── naming.py
+│       │   │   │   │   └── __init__.py
+│       │   │   │   ├── utils/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   └── json_sanitize.py
+│       │   │   │   └── __init__.py
 │       │   │   ├── metrics/
-│       │   │   │   ├── collectors/
-│       │   │   │   │   ├── __init__.py
-│       │   │   │   │   └── health_collector.py
 │       │   │   │   ├── __init__.py
-│       │   │   │   └── mt5.py
+│       │   │   │   └── metrics_exporter.py
 │       │   │   ├── tracing/
-│       │   │   │   ├── correlation/
-│       │   │   │   │   ├── __init__.py
-│       │   │   │   │   └── correlation_id.py
 │       │   │   │   ├── tests/
-│       │   │   │   │   ├── __init__.py
-│       │   │   │   │   └── test_propagation.py
+│       │   │   │   │   └── __init__.py
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── propagation.py
-│       │   │   │   └── provider.py
+│       │   │   │   ├── provider.py
+│       │   │   │   └── trace_context.py
 │       │   │   └── __init__.py
 │       │   ├── storage/
 │       │   │   └── __init__.py
 │       │   ├── time/
 │       │   │   ├── __init__.py
-│       │   │   ├── format_utils.py
-│       │   │   ├── naming.py
+│       │   │   ├── time_format.py
 │       │   │   └── time_provider_adapter.py
 │       │   └── __init__.py
 │       ├── interfaces/
@@ -349,8 +428,7 @@ trading-platform/
 │   │   ├── environment.py
 │   │   ├── logging.py
 │   │   ├── observability.py
-│   │   ├── settings.py
-│   │   └── state.py
+│   │   └── settings.py
 │   ├── governance/
 │   │   ├── __init__.py
 │   │   ├── test_classification_policy.py
@@ -369,33 +447,15 @@ trading-platform/
 │   ├── system/
 │   │   ├── infrastructure/
 │   │   │   ├── observability/
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── test_observability_fsync_e2e.py
-│   │   │   │   ├── test_observability_metrics_http_e2e.py
-│   │   │   │   ├── test_observability_otlp_grpc_e2e.py
-│   │   │   │   ├── test_observability_otlp_http_e2e.py
-│   │   │   │   └── test_observability_pipeline_e2e.py
+│   │   │   │   └── __init__.py
 │   │   │   └── __init__.py
 │   │   └── __init__.py
 │   ├── validation/
 │   │   ├── infrastructure/
 │   │   │   ├── config/
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── test_env_loader.py
-│   │   │   │   ├── test_failure_resilience.py
-│   │   │   │   ├── test_manager_lifecycle.py
-│   │   │   │   ├── test_model_integration.py
-│   │   │   │   ├── test_snapshot_consistency.py
-│   │   │   │   ├── test_state_runtime.py
-│   │   │   │   └── test_validator_registry.py
+│   │   │   │   └── __init__.py
 │   │   │   ├── observability/
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── test_bootstrap_shutdown.py
-│   │   │   │   ├── test_context_propagation.py
-│   │   │   │   ├── test_metrics_http_endpoint.py
-│   │   │   │   ├── test_otlp_exporter_selection.py
-│   │   │   │   ├── test_persistence_probe.py
-│   │   │   │   └── test_pipeline_contract.py
+│   │   │   │   └── __init__.py
 │   │   │   └── __init__.py
 │   │   └── __init__.py
 │   ├── __init__.py

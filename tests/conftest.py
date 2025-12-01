@@ -5,7 +5,6 @@ import pytest
 pytest_plugins = [
     "tests.fixtures.environment",
     "tests.fixtures.observability",
-    "tests.fixtures.state",
     "tests.fixtures.logging",
     "tests.fixtures.settings",
 ]

@@ -21,7 +21,7 @@ from typing import Final
 
 from quantum.application.contracts.execution_code import ExecutionCode
 
-logger = logging.getLogger(__name__)
+LOGGER: Final = logging.getLogger(__name__)
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Canonical mapping                                                          │
@@ -78,7 +78,7 @@ def _warn_once_for_unknown(code: int) -> None:
     with _UNKNOWN_LOCK:
         if code not in _UNKNOWN_CODES:
             _UNKNOWN_CODES.add(code)
-            logger.warning(
+            LOGGER.warning(
                 f"Unknown MT5 retcode encountered: {code}",
                 extra={"attrs": {"retcode": code}},
             )
@@ -113,5 +113,5 @@ def map_mt5_res_to_exec(code: int | None) -> ExecutionCode:
         return ExecutionCode.UNKNOWN
 
     except Exception as e:
-        logger.exception(f"Error mapping MT5 retcode {code}: {e}")
+        LOGGER.exception(f"Error mapping MT5 retcode {code}: {e}")
         return ExecutionCode.INTERNAL_FAIL

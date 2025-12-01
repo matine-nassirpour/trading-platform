@@ -1,140 +1,131 @@
+from __future__ import annotations
+
 import logging
 import threading
 
 from collections.abc import Iterator
-from contextlib import contextmanager, suppress
+from contextlib import contextmanager
+from typing import Final
 
-from quantum.application.ports.outbound.event_bus_port import EventBusPort
-from quantum.infrastructure.config.runtime.manager import ConfigManager
-from quantum.infrastructure.observability.bootstrap.health_registry import (
-    get_health_registry,
+from quantum.infrastructure.observability.bootstrap.lifecycle.configs.logging_config import (
+    LoggingConfig,
 )
-from quantum.infrastructure.observability.bootstrap.lifecycle import LifecycleService
-from quantum.infrastructure.observability.context.run_id import (
-    generate_run_id,
-    get_run_id,
+from quantum.infrastructure.observability.bootstrap.lifecycle.configs.metrics_config import (
+    MetricsConfig,
 )
+from quantum.infrastructure.observability.bootstrap.lifecycle.configs.tracing_config import (
+    TracingConfig,
+)
+from quantum.infrastructure.observability.bootstrap.lifecycle.dependencies import (
+    create_observability_dependencies,
+)
+from quantum.infrastructure.observability.bootstrap.lifecycle.lifecycle import (
+    LifecycleService,
+)
+from quantum.infrastructure.observability.context.context_attributes_provider import (
+    ContextAttributesProvider,
+)
+from quantum.infrastructure.observability.context.run_id import generate_run_id
+
+LOGGER: Final = logging.getLogger(__name__)
+
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Internal state                                                             │
 # ╰────────────────────────────────────────────────────────────────────────────╯
 _initialized = False
 _init_lock = threading.Lock()
-_logger = logging.getLogger(__name__)
+
+_lifecycle: LifecycleService | None = None
+_dependencies = create_observability_dependencies()
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Core API                                                                   │
+# │ Public API                                                                 │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-async def init_observability_with_bus(event_bus: EventBusPort) -> None:
+def init_observability(
+    *,
+    logging_config: LoggingConfig,
+    tracing_config: TracingConfig,
+    metrics_config: MetricsConfig,
+    force: bool = False,
+) -> bool:
     """
-    Initialize observability and subscribe to EventBus for runtime events.
+    High-level initialization entry point for the Observability stack.
+
+    This function does NOT load configuration:
+      The caller (runtime or application entry point) must already have
+      constructed the Value Objects through its own configuration logic.
+
+    This ensures total separation from ConfigManager and makes this module
+    fully Clean Architecture compliant.
     """
-    from quantum.infrastructure.observability.drivers.observability_driver import (
-        ObservabilityDriver,
-    )
-
-    adapter = ObservabilityDriver(event_bus)
-    adapter.initialize_observability()
-
-
-def init_observability(*, force: bool = False) -> None:
-    """
-    Thread-safe, idempotent initialization of the observability stack.
-
-    Loads configuration models, initializes tracing, logging, and metrics,
-    updates health gauges, and ensures that correlation context (run_id)
-    is properly established.
-    """
-    global _initialized
+    global _initialized, _lifecycle
 
     with _init_lock:
         if _initialized and not force:
-            _logger.debug("[Observability] Already initialized — skipping reinit.")
-            return
+            LOGGER.debug("[Observability] Already initialized — skipping.")
+            return True
 
-        if force:
-            _logger.info("[Observability] Force reinitialization requested.")
-            with suppress(AttributeError):
-                ConfigManager.clear_caches()
-
-        # ─── Load configuration models
-        core_settings = ConfigManager.load()
-        logging_settings = ConfigManager.load_logging()
-        tracing_settings = ConfigManager.load_tracing()
-
-        # ─── Setup registry and lifecycle
-        registry = get_health_registry()
-        lifecycle = LifecycleService(registry)
-
-        # ─── Reset all gauges (health state)
-        registry.reset_all()
-        lifecycle.refresh_build_info()
-
-        # ─── Ensure run_id exists for correlation context
-        if not get_run_id():
+        # Ensure a run_id exists for correlation context
+        ctx = ContextAttributesProvider.get()
+        if ctx.run_id is None:
             generate_run_id()
 
-        # ─── Initialize tracing
-        tracing_ok = lifecycle.init_tracing(core_settings, tracing_settings, force)
-        registry.mark_tracing_ok(tracing_ok)
+        if _lifecycle is None:
+            _lifecycle = LifecycleService(_dependencies)
 
-        # ─── Initialize logging
-        logging_ok = lifecycle.init_logging_safe(core_settings, logging_settings)
-        registry.mark_logging_ok(logging_ok)
-
-        # ─── Probe persistent sinks (deep probe optional)
-        lifecycle.probe_logging_sinks(
-            deep_probe=logging_settings.quantum_log_deep_probe
+        ok = _lifecycle.initialize(
+            logging_config=logging_config,
+            tracing_config=tracing_config,
+            metrics_config=metrics_config,
+            force=force,
         )
 
-        # ─── Initialize metrics HTTP exporter
-        metrics_ok = lifecycle.init_metrics(core_settings)
-
-        # ─── Aggregate pipeline health
-        pipeline_ok = tracing_ok and logging_ok and metrics_ok
-        registry.mark_pipeline_up(pipeline_ok)
-
-        _initialized = pipeline_ok
+        _initialized = ok
+        return ok
 
 
 def shutdown_observability(
     *,
     close_logging: bool = True,
     shutdown_tracing: bool = True,
-    reset_state: bool = True,
     set_gauges_down: bool = False,
 ) -> None:
-    """Clean and idempotent shutdown of observability components."""
-    global _initialized
+    """
+    Clean shutdown of the entire observability pipeline.
 
-    registry = get_health_registry()
-    lifecycle = LifecycleService(registry)
+    This version does NOT clear configuration caches because this module
+    no longer touches ConfigManager or global config.
+    """
+    global _initialized, _lifecycle
 
-    if shutdown_tracing:
-        lifecycle.shutdown_tracing(set_gauge_down=set_gauges_down)
+    if _lifecycle is not None:
+        _lifecycle.shutdown(
+            close_logging=close_logging,
+            shutdown_tracing=shutdown_tracing,
+            set_gauges_down=set_gauges_down,
+        )
 
-    if close_logging:
-        lifecycle.shutdown_logging(set_gauge_down=set_gauges_down)
-
-    if set_gauges_down:
-        registry.mark_pipeline_up(False)
-
-    if reset_state:
-        _initialized = False
-        _logger.info("[Observability] Stack shutdown complete; state reset.")
+    _initialized = False
+    LOGGER.info("[Observability] Stack shutdown complete.")
 
 
 @contextmanager
-def observability_session(*, force: bool = False) -> Iterator[None]:
-    """
-    Context manager for automatic observability setup and teardown.
-
-    Example:
-        >>> with observability_session():
-                run_trading_pipeline()
-    """
-    init_observability(force=force)
+def observability_session(
+    *,
+    logging_config: LoggingConfig,
+    tracing_config: TracingConfig,
+    metrics_config: MetricsConfig,
+    force: bool = False,
+) -> Iterator[None]:
+    """Context manager for deterministic init/shutdown."""
+    init_observability(
+        logging_config=logging_config,
+        tracing_config=tracing_config,
+        metrics_config=metrics_config,
+        force=force,
+    )
     try:
         yield
     finally:

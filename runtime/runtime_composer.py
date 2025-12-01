@@ -1,116 +1,203 @@
 """
-Quantum Runtime Composer
-────────────────────────
-Central composition root responsible for assembling the Quantum
-runtime dependency graph in a clean, explicit, and certifiable way.
+Quantum Runtime Composition Root
 
 Responsibilities
 ----------------
-- Wire up application ports to their infrastructure drivers.
-- Provide a unified entry point for Streamlit, CLI, or other interfaces.
-- Guarantee strict compliance with Clean Architecture (DIP).
-- Serve as a testable and auditable composition layer (no business logic).
+- Load validated configuration models (Core/Logging/Tracing/MT5)
+- Produce observability configs (logging/tracing/metrics)
+- Bootstrap the Observability subsystem
+- Return a QuantumRuntime instance (container only)
 
-Design Principles
------------------
-- Single Responsibility: assembles dependencies, nothing more.
-- Inversion of Control: injects implementations into abstractions.
-- Framework Independence: runtime wiring is explicit and isolated.
-- Transparency: dependencies are declared, not auto-magically resolved.
+This module MUST NOT:
+    - instantiate application services
+    - instantiate event bus
+    - instantiate runtime engine
+    - import application/domain layers
+
+It is purely an internal infrastructure composition root.
 """
 
 from __future__ import annotations
 
-import asyncio
 import logging
 
-from dataclasses import dataclass
+from typing import Final
 
-from quantum.application.ports.outbound.config_port import ConfigPort
-from quantum.application.ports.outbound.event_bus_port import EventBusPort
-from quantum.application.ports.outbound.logging_port import LoggingPort
-from quantum.application.ports.outbound.observability_port import ObservabilityPort
-from quantum.infrastructure.config.adapters.config_adapter import ConfigAdapter
-from quantum.infrastructure.eventbus.asyncio_event_bus_adapter import (
-    AsyncioEventBusAdapter,
+from quantum.infrastructure.config.models.core import CoreSettings
+from quantum.infrastructure.config.models.logging import LoggingSettings
+from quantum.infrastructure.config.models.mt5 import MT5Settings
+from quantum.infrastructure.config.models.tracing import TracingSettings
+from quantum.infrastructure.config.runtime.manager import ConfigManager
+from quantum.infrastructure.config.runtime.state.ready_cache import ReadyStateCache
+from quantum.infrastructure.config.validators.runtime import initialize_validators
+from quantum.infrastructure.observability.bootstrap.init_manager import (
+    init_observability,
+    shutdown_observability,
 )
-from quantum.infrastructure.observability.drivers.logging_driver import LoggingDriver
-from quantum.infrastructure.observability.drivers.observability_driver import (
-    ObservabilityDriver,
+from quantum.infrastructure.observability.bootstrap.lifecycle.configs.logging_config import (
+    LoggingConfig,
 )
+from quantum.infrastructure.observability.bootstrap.lifecycle.configs.metrics_config import (
+    MetricsConfig,
+)
+from quantum.infrastructure.observability.bootstrap.lifecycle.configs.tracing_config import (
+    TracingConfig,
+)
+
+LOGGER: Final = logging.getLogger("quantum.runtime.composer")
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Data structure representing the composed runtime context                   │
+# │ Internal Helper                                                            │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-@dataclass(frozen=True, slots=True)
-class QuantumRuntimeContext:
-    """
-    Aggregates all active providers implementing outbound ports.
-
-    This structure defines the dependency graph available to
-    any interface layer (UI, CLI, API, etc.).
-    """
-
-    config_provider: ConfigPort
-    logging_provider: LoggingPort
-    observability_provider: ObservabilityPort
-    event_bus: EventBusPort
-
-    def describe(self) -> dict[str, str]:
-        return {
-            "config_provider": type(self.config_provider).__name__,
-            "logging_provider": type(self.logging_provider).__name__,
-            "observability_provider": type(self.observability_provider).__name__,
-            "event_bus": type(self.event_bus).__name__,
-        }
+def _parse_log_level(level: str) -> int:
+    """Convert validated uppercase string (INFO, DEBUG…) to logging level int."""
+    return getattr(logging, level.upper(), logging.INFO)
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Composer (factory for the runtime context)                                 │
+# │ Runtime Object                                                             │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-class RuntimeComposer:
-    """Responsible for assembling the full runtime dependency graph."""
+class QuantumRuntime:
+    def __init__(
+        self,
+        *,
+        core_settings: CoreSettings,
+        logging_settings: LoggingSettings,
+        tracing_settings: TracingSettings,
+        mt5_settings: MT5Settings,
+    ) -> None:
+        self.core = core_settings
+        self.logging_cfg = logging_settings
+        self.tracing_cfg = tracing_settings
+        self.mt5_cfg = mt5_settings
 
-    _instance: QuantumRuntimeContext | None = None
+        self._observability_initialized = False
 
-    @classmethod
-    def compose(cls) -> QuantumRuntimeContext:
-        """Build and cache the Quantum runtime context."""
-        if cls._instance is not None:
-            return cls._instance
-
-        logger = logging.getLogger(__name__)
-        logger.info("Assembling Quantum runtime context...")
-
-        # ─── Core providers
-        config_provider = ConfigAdapter()
-        logging_provider = LoggingDriver()
-
-        # ─── Event bus (asyncio-based)
-        event_bus = AsyncioEventBusAdapter()
-        asyncio.run(event_bus.initialize())
-
-        # ─── Observability adapter wired with event bus
-        observability_provider = ObservabilityDriver(event_bus=event_bus)
-
-        cls._instance = QuantumRuntimeContext(
-            config_provider=config_provider,
-            logging_provider=logging_provider,
-            observability_provider=observability_provider,
-            event_bus=event_bus,
+    # --------------------------------------------------------------------------
+    # Adapters — convert Pydantic Settings → Observability Value Objects
+    # --------------------------------------------------------------------------
+    def _make_logging_config(self) -> LoggingConfig:
+        s = self.logging_cfg
+        c = self.core
+        return LoggingConfig(
+            environment=c.quantum_env,
+            service_namespace=c.quantum_ns,
+            service_name=c.quantum_app_name,
+            service_version=c.quantum_app_version,
+            instance_id=c.quantum_instance_id or "unknown",
+            log_dir=s.quantum_log_dir,
+            audit_dir=s.quantum_audit_dir,
+            audit_allowlist=frozenset(
+                x.strip()
+                for x in (s.quantum_audit_allowlist or "").split(",")
+                if x.strip()
+            ),
+            log_level=_parse_log_level(s.quantum_log_level),
+            sample_info_every=s.quantum_log_sample_info,
+            ratelimit_rps=float(s.quantum_log_rps),
+            log_fsync=s.quantum_log_fsync,
+            log_max_bytes=s.quantum_log_max_bytes,
+            log_warn_bytes=s.quantum_log_warn_bytes,
         )
 
-        logger.info(
-            "Quantum runtime context assembled successfully: %s",
-            cls._instance.describe(),
+    def _make_tracing_config(self) -> TracingConfig:
+        c = self.core
+        s = self.tracing_cfg
+        return TracingConfig(
+            environment=c.quantum_env,
+            service_namespace=c.quantum_ns,
+            service_name=c.quantum_app_name,
+            service_version=c.quantum_app_version,
+            instance_id=c.quantum_instance_id or "unknown",
+            trace_exporter=s.quantum_trace_exporter,
+            trace_otlp_endpoint=s.quantum_trace_otlp_endpoint,
+            trace_otlp_protocol=s.quantum_trace_otlp_protocol,
+            trace_otlp_headers=s.quantum_trace_otlp_headers or "",
+            trace_otlp_timeout_ms=s.quantum_trace_otlp_timeout_ms,
+            trace_otlp_compression=s.quantum_trace_otlp_compression,
+            trace_otlp_insecure=s.quantum_trace_otlp_insecure,
+            trace_sample=s.quantum_trace_sample,
         )
-        return cls._instance
+
+    def _make_metrics_config(self) -> MetricsConfig:
+        c = self.core
+        return MetricsConfig(
+            host=c.quantum_metrics_host,
+            port=c.quantum_metrics_port,
+        )
+
+    # --------------------------------------------------------------------------
+    # Observability lifecycle
+    # --------------------------------------------------------------------------
+    def initialize_observability(self) -> bool:
+        if self._observability_initialized:
+            return True
+
+        try:
+            ok = init_observability(
+                logging_config=self._make_logging_config(),
+                tracing_config=self._make_tracing_config(),
+                metrics_config=self._make_metrics_config(),
+                force=False,
+            )
+            self._observability_initialized = ok
+            return ok
+
+        except Exception as exc:
+            LOGGER.exception("Observability initialization failed: %s", exc)
+            return False
+
+    def shutdown_observability(self) -> None:
+        if not self._observability_initialized:
+            return
+
+        try:
+            shutdown_observability(
+                close_logging=True,
+                shutdown_tracing=True,
+                set_gauges_down=True,
+            )
+        finally:
+            self._observability_initialized = False
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Global accessor                                                            │
+# │ Composition Root                                                           │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-def get_runtime() -> QuantumRuntimeContext:
-    """Retrieve the active Quantum runtime context (singleton instance)."""
-    return RuntimeComposer.compose()
+def compose_runtime(
+    *, root: str | None = None, env_file: str | None = None
+) -> QuantumRuntime:
+    """
+    Main Composition Root of the whole software system.
+
+    Responsibilities:
+        - Load environment layers (.env base, env-specific, local)
+        - Instantiate validated configuration models
+        - Produce a fully-configured QuantumRuntime instance
+
+    MUST NOT import domain/application directly.
+    """
+    # 1. Initialize validator registry (required for Pydantic models)
+    initialize_validators()
+
+    # 2. Warm-up configuration subsystem
+    state = ConfigManager.run_fsm(
+        root=root,
+        env_file=env_file,
+    )
+
+    # 3. Store READY state in ReadyStateCache
+    ReadyStateCache.set(state)
+
+    core = ConfigManager.load_core_cached()
+    logging_settings = ConfigManager.load_logging_cached()
+    tracing_settings = ConfigManager.load_tracing_cached()
+    mt5_settings = ConfigManager.load_mt5_cached()
+
+    return QuantumRuntime(
+        core_settings=core,
+        logging_settings=logging_settings,
+        tracing_settings=tracing_settings,
+        mt5_settings=mt5_settings,
+    )

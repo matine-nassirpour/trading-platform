@@ -1,0 +1,32 @@
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from pathlib import Path
+
+from quantum.infrastructure.observability.foundation.config.observability_runtime_bundle import (
+    ObservabilityRuntimeBundle,
+)
+from quantum.infrastructure.observability.logging.pipeline.engine.pipeline_config import (
+    PipelineConfig,
+)
+
+
+@dataclass(frozen=True)
+class LoggingRuntimeBundle(ObservabilityRuntimeBundle):
+    log_dir: Path | None
+    audit_dir: Path | None
+
+    audit_allowlist: frozenset[str]
+
+    log_level: int
+    sample_info_every: int
+    ratelimit_rps: float
+
+    log_fsync: bool
+    log_max_bytes: int
+    log_warn_bytes: int
+
+    enable_partition_handler: bool
+    enable_console_handler: bool = True
+
+    pipeline_config: PipelineConfig = field(default_factory=PipelineConfig)

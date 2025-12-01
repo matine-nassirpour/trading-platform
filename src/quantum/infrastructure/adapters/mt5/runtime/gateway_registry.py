@@ -16,7 +16,7 @@ from quantum.infrastructure.adapters.mt5.transport.gateway import (
 )
 from quantum.infrastructure.config.runtime.manager import ConfigManager
 
-logger = logging.getLogger(__name__)
+LOGGER: Final = logging.getLogger(__name__)
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
@@ -93,19 +93,19 @@ def _resolve_terminal_path(channel: ExecutionChannel) -> str:
         source = f"ConfigManager:{attr_name}"
 
         if not path_candidate.exists():
-            logger.warning(
+            LOGGER.warning(
                 f"Configured MT5 terminal path not found for {channel.name}",
                 extra={"attrs": {"path": str(path_candidate), "source": source}},
             )
         else:
-            logger.debug(
+            LOGGER.debug(
                 f"MT5 terminal path resolved via {source}",
                 extra={"attrs": {"path": str(path_candidate)}},
             )
 
         return str(path_candidate.resolve())
 
-    logger.warning(
+    LOGGER.warning(
         f"No MT5 terminal path configured for {channel.name}",
         extra={"attrs": {"source": "ConfigManager"}},
     )
@@ -136,7 +136,7 @@ def get_gateway(channel: ExecutionChannel) -> GatewayConfig:
                 terminal_path=_resolve_terminal_path(channel),
             )
             _GATEWAYS[channel] = gw
-            logger.info(f"Registered gateway for {channel.name}")
+            LOGGER.info(f"Registered gateway for {channel.name}")
 
         # ─── Health gate enforcement
         h = gw.health
@@ -149,7 +149,7 @@ def get_gateway(channel: ExecutionChannel) -> GatewayConfig:
             )
 
         if not h.initialized:
-            logger.warning(
+            LOGGER.warning(
                 f"Gateway {channel.name} not initialized; attempting auto-init..."
             )
             ok = init_mt5_terminal(channel, gw.terminal_path)
@@ -176,7 +176,7 @@ def record_gateway_failure(channel: ExecutionChannel) -> None:
         if h.consecutive_failures >= _MAX_FAILURES:
             h.healthy = False
             h.cooldown_until = h.last_failure + _COOLDOWN_SEC
-            logger.error(
+            LOGGER.error(
                 f"[Gateway:{channel.name}] marked unhealthy after "
                 f"{h.consecutive_failures} failures — cooldown {_COOLDOWN_SEC}s."
             )
@@ -191,7 +191,7 @@ def record_gateway_success(channel: ExecutionChannel) -> None:
 
         h = gw.health
         h.reset()
-        logger.debug(f"[Gateway:{channel.name}] health reset on success.")
+        LOGGER.debug(f"[Gateway:{channel.name}] health reset on success.")
 
 
 def is_gateway_healthy(channel: ExecutionChannel) -> bool:

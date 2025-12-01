@@ -17,7 +17,7 @@ from __future__ import annotations
 import logging
 
 from decimal import Decimal
-from typing import Any, cast
+from typing import Any, Final, cast
 
 from quantum.application.contracts.execution_request import (
     CheckRequest,
@@ -31,7 +31,7 @@ from quantum.domain.types.enums import (
     TradeAction,
 )
 
-logger = logging.getLogger(__name__)
+LOGGER: Final = logging.getLogger(__name__)
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
@@ -116,7 +116,7 @@ def to_mt5_trade_request(req: OrderRequest) -> dict[str, Any]:
         "type_filling": _map_type_filling(req.filling),
     }
 
-    logger.debug(
+    LOGGER.debug(
         "Mapped OrderRequest → MT5 TradeRequest",
         extra={"attrs": {"request": req.model_dump(), "mapped": mt5_dict}},
     )

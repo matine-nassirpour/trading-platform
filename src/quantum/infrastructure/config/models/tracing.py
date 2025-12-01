@@ -1,35 +1,15 @@
-"""
-Quantum Core Configuration Models — Tracing Settings
-────────────────────────────────────────────────────
-Immutable schema defining tracing and telemetry configuration parameters
-for distributed observability within the Quantum platform.
-
-Responsibilities
-----------------
-- Define validated and strongly typed tracing configuration options.
-- Support OpenTelemetry exporters, endpoints, and sampling configuration.
-- Provide deterministic, side-effect-free tracing settings for runtime use.
-- Ensure forward compatibility with additional tracing backends or formats.
-
-Design Principles
------------------
-- **Single Responsibility** : declares tracing configuration schema only.
-- **Clean Architecture** : pure model, independent of runtime logic.
-- **Immutability** : frozen model ensuring deterministic behavior.
-- **Validation by Contract** : explicit field normalization and checks.
-- **Extensibility** : open to new protocols, exporters, or compression modes.
-"""
-
 from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import Field, field_validator
 
-from quantum.infrastructure.config.validators import validate_field
+from quantum.infrastructure.config.models.base.base_settings import BaseConfigSettings
+from quantum.infrastructure.config.models.base.mixins import PublicSettingsMixin
+from quantum.infrastructure.config.validators.runtime import validate_field
 
 
-class TracingSettings(BaseModel):
+class TracingSettings(BaseConfigSettings, PublicSettingsMixin):
     """
     Structured configuration model for tracing and telemetry subsystems.
     """
@@ -79,6 +59,13 @@ class TracingSettings(BaseModel):
     )
 
     # --------------------------------------------------------------------------
+    # Sensitive Fields
+    # --------------------------------------------------------------------------
+    @classmethod
+    def sensitive_fields(cls):
+        return ("quantum_trace_otlp_headers",)
+
+    # --------------------------------------------------------------------------
     # Validators
     # --------------------------------------------------------------------------
     @field_validator("quantum_trace_otlp_protocol", mode="before")
@@ -109,11 +96,3 @@ class TracingSettings(BaseModel):
         if not (0.0 <= v <= 1.0):
             raise ValueError("quantum_trace_sample must be in [0, 1]")
         return v
-
-    # --------------------------------------------------------------------------
-    # Model configuration
-    # --------------------------------------------------------------------------
-    model_config = ConfigDict(
-        extra="ignore",
-        frozen=True,
-    )

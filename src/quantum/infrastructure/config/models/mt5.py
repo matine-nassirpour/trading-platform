@@ -1,31 +1,15 @@
-"""
-Quantum Core Configuration Models — MT5 Settings
-────────────────────────────────────────────────
-Immutable schema defining broker credentials and terminal paths for
-MetaTrader 5 integrations within the Quantum platform.
-
-Responsibilities
-----------------
-- Define structured, validated configuration for each MT5 prop firm.
-- Enforce consistency and completeness of broker credentials.
-- Provide deterministic access to terminal paths and credentials.
-- Remain independent of any execution or API layer.
-
-Design Principles
------------------
-- **Single Responsibility** : declares MT5 connection schema only.
-- **Clean Architecture** : pure configuration model, no side effects.
-- **Immutability** : frozen model ensuring deterministic runtime use.
-- **Validation by Contract** : guarantees that declared brokers are complete.
-- **Extensibility** : open to new brokers or credentials without refactor.
-"""
-
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import Field, model_validator
+
+from quantum.infrastructure.config.models.base.base_settings import BaseConfigSettings
+from quantum.infrastructure.config.models.base.mixins import PublicSettingsMixin
+from quantum.infrastructure.config.value_objects.executable_path_spec import (
+    ExecutablePathSpec,
+)
 
 
-class MT5Settings(BaseModel):
+class MT5Settings(BaseConfigSettings, PublicSettingsMixin):
 
     # --------------------------------------------------------------------------
     # FTMO
@@ -44,13 +28,23 @@ class MT5Settings(BaseModel):
     # --------------------------------------------------------------------------
     # Terminal paths
     # --------------------------------------------------------------------------
-    mt5_ftmo_terminal_path: str | None = Field(
+    mt5_ftmo_terminal_path: ExecutablePathSpec | None = Field(
         default=None, description="Absolute path to FTMO MetaTrader terminal executable"
     )
-    mt5_fundednext_terminal_path: str | None = Field(
+    mt5_fundednext_terminal_path: ExecutablePathSpec | None = Field(
         default=None,
         description="Absolute path to FundedNext MetaTrader terminal executable",
     )
+
+    # --------------------------------------------------------------------------
+    # Sensitive Fields
+    # --------------------------------------------------------------------------
+    @classmethod
+    def sensitive_fields(cls):
+        return (
+            "quantum_mt5_ftmo_password",
+            "quantum_mt5_fundednext_password",
+        )
 
     # --------------------------------------------------------------------------
     # Validators
@@ -76,11 +70,3 @@ class MT5Settings(BaseModel):
                 raise ValueError(f"Incomplete {name} broker credentials")
 
         return self
-
-    # --------------------------------------------------------------------------
-    # Model configuration
-    # --------------------------------------------------------------------------
-    model_config = ConfigDict(
-        extra="ignore",
-        frozen=True,
-    )

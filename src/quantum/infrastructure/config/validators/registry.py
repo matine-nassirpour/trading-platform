@@ -1,16 +1,8 @@
-"""
-Quantum Core Configuration Validators — Rule Registry
-─────────────────────────────────────────────────────
-Central registry tracking all available validation rules
-and exposing introspection and retrieval APIs.
-"""
-
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping
+from collections.abc import Mapping
 from typing import Any
 
-from quantum.infrastructure.config.validators import rules
 from quantum.infrastructure.config.validators.base import (
     ValidationContext,
     ValidationResult,
@@ -20,82 +12,91 @@ from quantum.infrastructure.config.validators.base import (
 
 class ValidatorRegistry:
     """
-    Central registry of all validation rules in the system.
+    Immutable, safety-critical-grade registry of validation rules.
 
-    - Provides declarative access by rule_id
-    - Supports registration of custom rules
-    - Offers safe execution wrappers (with result capture)
+    Properties:
+        • Deterministic once sealed
+        • No mutation allowed after creation
+        • No implicit global state
+        • Suitable for multiprocess, multi-thread, Clean Architecture
     """
 
-    _registry: dict[str, ValidationRule] = {}
+    __slots__ = ("_rules", "_sealed")
+
+    def __init__(self) -> None:
+        self._rules: dict[str, ValidationRule] = {}
+        self._sealed: bool = False
 
     # --------------------------------------------------------------------------
-    # Lifecycle Management
+    # Registration (allowed only before sealing)
     # --------------------------------------------------------------------------
-    @classmethod
-    def clear_registry(cls) -> None:
-        """
-        Completely clear the validator registry.
+    def register(self, rule: ValidationRule) -> None:
+        if self._sealed:
+            raise RuntimeError("Cannot register a rule on a sealed ValidatorRegistry.")
 
-        Used for test isolation or controlled lifecycle resets.
-        """
-        cls._registry.clear()
-
-    # --------------------------------------------------------------------------
-    # Registration
-    # --------------------------------------------------------------------------
-    @classmethod
-    def register(cls, rule: ValidationRule) -> None:
-        if rule.rule_id in cls._registry:
+        if rule.rule_id in self._rules:
             raise ValueError(f"Duplicate validator id: {rule.rule_id}")
-        cls._registry[rule.rule_id] = rule
 
-    @classmethod
-    def register_defaults(cls) -> None:
-        """Register all default Quantum validators."""
-        defaults: dict[str, Callable[[], ValidationRule]] = {
-            "platform.runtime.environment": rules.EnvironmentValidator,
-            "platform.logging.log_level": rules.LogLevelValidator,
-            "platform.logging.timezone": rules.TimezoneValidator,
-            "platform.tracing.otlp_protocol": rules.OtlpProtocolValidator,
-            "platform.tracing.compression": rules.CompressionValidator,
-        }
+        self._rules[rule.rule_id] = rule
 
-        for rid, factory in defaults.items():
-            if rid not in cls._registry:
-                cls.register(factory())
+    def register_many(self, rules: Mapping[str, ValidationRule]) -> None:
+        for rule in rules.values():
+            self.register(rule)
+
+    # --------------------------------------------------------------------------
+    # Seal (make immutable)
+    # --------------------------------------------------------------------------
+    def seal(self) -> None:
+        """
+        Seal the registry permanently. No further modification possible.
+        Deterministic = required for safety-critical certainty.
+        """
+        self._rules = dict(sorted(self._rules.items()))
+        self._sealed = True
 
     # --------------------------------------------------------------------------
     # Lookup
     # --------------------------------------------------------------------------
-    @classmethod
-    def get(cls, rule_id: str) -> ValidationRule:
-        """Retrieve a registered validation rule by id."""
+    def get(self, rule_id: str) -> ValidationRule:
         try:
-            return cls._registry[rule_id]
+            return self._rules[rule_id]
         except KeyError as e:
             raise KeyError(f"Validator not found: {rule_id}") from e
 
-    @classmethod
-    def all(cls) -> Mapping[str, ValidationRule]:
-        """Return a shallow copy of the registry for inspection."""
-        return dict(cls._registry)
+    def all(self) -> Mapping[str, ValidationRule]:
+        return dict(self._rules)
 
     # --------------------------------------------------------------------------
-    # Execution helpers
+    # Execution API
     # --------------------------------------------------------------------------
-    @classmethod
     def validate(
-        cls,
+        self,
         rule_id: str,
         value: Any,
         *,
         context: ValidationContext | None = None,
     ) -> ValidationResult:
-        """Execute a registered validation rule."""
-        rule = cls.get(rule_id)
+        rule = self.get(rule_id)
         return rule(value, context=context)
 
 
-# Initialize default rules at import time
-ValidatorRegistry.register_defaults()
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Factory for creating safe registry instances                               │
+# ╰────────────────────────────────────────────────────────────────────────────╯
+class ValidatorRegistryFactory:
+    """
+    Factory for producing sealed ValidatorRegistry instances.
+
+    Clean Architecture:
+        • Application bootstrap calls ValidatorRegistryFactory.create_default()
+        • Tests can create custom registries safely
+    """
+
+    @staticmethod
+    def create_default(
+        default_rules: Mapping[str, ValidationRule],
+    ) -> ValidatorRegistry:
+        reg = ValidatorRegistry()
+        reg.register_many(default_rules)
+        reg.seal()
+        return reg

@@ -1,16 +1,10 @@
-"""
-Quantum Core Configuration Validators — Base Contracts
-──────────────────────────────────────────────────────
-Defines abstract classes and base types for reusable,
-composable, and introspectable validation rules.
-"""
-
 from __future__ import annotations
 
 import abc
 
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from types import MappingProxyType
 from typing import Any
 
 
@@ -38,46 +32,46 @@ class ValidationResult:
         return self.value
 
 
+@dataclass(frozen=True, slots=True)
 class ValidationContext:
     """
     Immutable context passed to validators for additional information.
 
-    Examples:
-        - field_name: logical name of the field
-        - model_name: Pydantic model name
-        - config_env: current runtime environment
+    Guarantees:
+        • Fully immutable (frozen dataclass + mapping proxy)
+        • Zero side effects, zero mutation
+        • Suitable for safety-critical and deterministic validation
+        • Safe for cross-thread usage
+        • Explicit structure: model_name, field_name, extras (read-only)
     """
 
-    __slots__ = ("field_name", "model_name", "extras")
+    model_name: str | None = None
+    field_name: str | None = None
+    extras: Mapping[str, Any] = field(default_factory=lambda: MappingProxyType({}))
 
-    def __init__(
-        self,
-        *,
-        field_name: str | None = None,
-        model_name: str | None = None,
-        extras: Mapping[str, Any] | None = None,
-    ) -> None:
-        self.field_name = field_name
-        self.model_name = model_name
-        self.extras = dict(extras or {})
+    def __post_init__(self) -> None:
+        # Convert extras to an immutable mapping proxy
+        object.__setattr__(self, "extras", MappingProxyType(dict(self.extras)))
 
     def describe(self) -> str:
-        parts = []
+        """
+        Return a canonical textual description of the context.
+        Stable, deterministic and safe for logs/audit.
+        """
+        parts: list[str] = []
+
         if self.model_name:
             parts.append(f"model={self.model_name}")
         if self.field_name:
             parts.append(f"field={self.field_name}")
+
         return f"ValidationContext({', '.join(parts) or 'anonymous'})"
 
 
 class ValidationRule(abc.ABC):
-    """
-    Abstract base class for all validation rules.
-    """
+    """Abstract validator with strict/lenient structured output."""
 
-    # Unique identifier for registry
     rule_id: str
-    # Human-readable description
     description: str
 
     def __init__(self, rule_id: str, description: str) -> None:
@@ -88,16 +82,15 @@ class ValidationRule(abc.ABC):
     def __call__(
         self, value: Any, *, context: ValidationContext | None = None
     ) -> ValidationResult:
-        """Execute validation on the given value."""
         raise NotImplementedError
 
     # --------------------------------------------------------------------------
     # Helpers
     # --------------------------------------------------------------------------
-    def success(self, value: str) -> ValidationResult:
+    def success(self, value: Any) -> ValidationResult:
         return ValidationResult(ok=True, message=None, value=value, rule=self.rule_id)
 
-    def failure(self, message: str, value: str | None = None) -> ValidationResult:
+    def failure(self, message: str, value: Any | None = None) -> ValidationResult:
         return ValidationResult(
             ok=False, message=message, value=value, rule=self.rule_id
         )

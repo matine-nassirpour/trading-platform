@@ -96,15 +96,15 @@ clean: ## Remove build/test artifacts and caches
 	-@Remove-Item -Recurse -Force -ErrorAction SilentlyContinue .pytest_cache,.mypy_cache,.ruff_cache,.isort_cache,htmlcov,dist,build,*.egg-info,.coverage,coverage.xml,test-results,build/coverage
 
 ui: ## Launch Streamlit
-	@$$env:PYTHONPATH = 'src;.'; poetry run streamlit run apps/streamlit/pages/observability_page.py --server.headless true
+	@$$env:PYTHONPATH = 'src;.'; poetry run streamlit run apps/streamlit/app.py --server.headless true
 
 tree: ## Generate documentation of directory structure
 	@New-Item -ItemType Directory -Force -Path 'docs/architecture' | Out-Null
-	@Write-Host "▶ Generating architecture directory Tree ..." -ForegroundColor Cyan
+	@Write-Host "`n▶ Generating architecture directory tree ..." -ForegroundColor Cyan
 	@poetry run python scripts/print_tree.py . --output docs/architecture/tree.txt --respect-gitignore --max-depth 10
-	@Write-Host "✔ Architecture tree generated: docs/architecture/tree.txt"  -ForegroundColor Green
+	@Write-Host "`n✔ Architecture tree generated: docs/architecture/tree.txt`n"  -ForegroundColor Green
 
-log-schema: ## Generate canonical JSON schema for LogPayloadV1
+log-schema: ## Generate canonical JSON schema for LogPayload
 	@Write-Host "Generating LogPayloadV1 schema..."
 	@New-Item -ItemType Directory -Force -Path 'docs/observability' | Out-Null
 	@$$env:PYTHONPATH = 'src;.'; poetry run python scripts/generate_log_schema.py

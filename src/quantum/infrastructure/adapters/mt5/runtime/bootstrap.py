@@ -2,7 +2,10 @@ import atexit
 import logging
 import time
 
+from typing import Final
+
 from quantum.domain.types.execution_channel import ExecutionChannel
+from quantum.infrastructure.adapters.mt5.execution_metrics import terminal_up
 from quantum.infrastructure.adapters.mt5.runtime.gateway_registry import get_gateway
 from quantum.infrastructure.adapters.mt5.sessions.session_manager import (
     Mt5SessionManager,
@@ -12,11 +15,10 @@ from quantum.infrastructure.adapters.mt5.transport.gateway import (
     shutdown_mt5_terminal,
 )
 from quantum.infrastructure.config.runtime.manager import ConfigManager
-from quantum.infrastructure.observability.metrics.mt5 import terminal_up
 from quantum.infrastructure.observability.tracing.provider import get_tracer
 
-logger = logging.getLogger(__name__)
-tracer = get_tracer("infra.runtime.mt5.bootstrap")
+LOGGER: Final = logging.getLogger(__name__)
+TRACER: Final = get_tracer("infra.runtime.mt5.bootstrap")
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
@@ -35,13 +37,13 @@ def _safe_init_channel(channel: ExecutionChannel) -> bool:
     path = gw.terminal_path
     settings = ConfigManager.load()
 
-    with tracer.start_as_current_span(f"runtime.init.{channel.name}") as span:
+    with TRACER.start_as_current_span(f"runtime.init.{channel.name}") as span:
         span.set_attribute("mt5.channel", str(channel))
         span.set_attribute("mt5.terminal_path", path or "N/A")
 
         for attempt in range(1, settings.quantum_exec_retries + 1):
             start = time.time()
-            logger.info(
+            LOGGER.info(
                 f"[MT5] Initializing terminal for {channel.name} "
                 f"(attempt {attempt}/{settings.quantum_exec_retries})",
                 extra={"attrs": {"channel": channel.name, "terminal_path": path}},
@@ -53,7 +55,7 @@ def _safe_init_channel(channel: ExecutionChannel) -> bool:
 
             if ok:
                 terminal_up.labels(channel=channel.name).set(1.0)
-                logger.info(
+                LOGGER.info(
                     f"[MT5] Terminal initialized successfully for {channel.name} "
                     f"in {dur_ms} ms",
                     extra={"attrs": {"channel": channel.name, "latency_ms": dur_ms}},
@@ -63,7 +65,7 @@ def _safe_init_channel(channel: ExecutionChannel) -> bool:
 
             # Failed attempt
             terminal_up.labels(channel=channel.name).set(0.0)
-            logger.warning(
+            LOGGER.warning(
                 f"[MT5] Initialization failed for {channel.name} (attempt {attempt})",
                 extra={"attrs": {"channel": channel.name, "terminal_path": path}},
             )
@@ -73,7 +75,7 @@ def _safe_init_channel(channel: ExecutionChannel) -> bool:
             time.sleep(backoff)
 
         # All attempts failed
-        logger.error(
+        LOGGER.error(
             f"[MT5] Terminal initialization failed after "
             f"{settings.quantum_exec_retries} attempts for {channel.name}",
             extra={"attrs": {"channel": channel.name, "terminal_path": path}},
@@ -100,11 +102,11 @@ def bootstrap_all_terminals() -> Mt5SessionManager:
     Returns:
         Mt5SessionManager: ready-to-use manager containing all active adapters.
     """
-    logger.info("Bootstrapping all MT5 execution terminals...")
+    LOGGER.info("Bootstrapping all MT5 execution terminals...")
     session_manager = Mt5SessionManager()
     status_summary: dict[str, bool] = {}
 
-    with tracer.start_as_current_span("runtime.mt5.bootstrap_all") as span:
+    with TRACER.start_as_current_span("runtime.mt5.bootstrap_all") as span:
         for channel in ExecutionChannel:
             try:
                 ok = _safe_init_channel(channel)
@@ -112,14 +114,14 @@ def bootstrap_all_terminals() -> Mt5SessionManager:
 
                 if ok:
                     session_manager.start(channel)
-                    logger.info(f"[MT5] Session started for {channel.name}")
+                    LOGGER.info(f"[MT5] Session started for {channel.name}")
                 else:
-                    logger.warning(
+                    LOGGER.warning(
                         f"[MT5] Terminal bootstrap incomplete for {channel.name}"
                     )
 
             except Exception as e:
-                logger.exception(
+                LOGGER.exception(
                     f"Unexpected error during MT5 bootstrap for {channel.name}: {e}",
                     extra={"attrs": {"channel": channel.name}},
                 )
@@ -131,9 +133,9 @@ def bootstrap_all_terminals() -> Mt5SessionManager:
     # Register global shutdown hook
     try:
         atexit.register(_graceful_shutdown)
-        logger.info("Registered MT5 shutdown hook (atexit).")
+        LOGGER.info("Registered MT5 shutdown hook (atexit).")
     except Exception as e:
-        logger.warning(f"Failed to register MT5 shutdown hook: {e}")
+        LOGGER.warning(f"Failed to register MT5 shutdown hook: {e}")
 
     return session_manager
 
@@ -143,12 +145,12 @@ def bootstrap_all_terminals() -> Mt5SessionManager:
 # ╰────────────────────────────────────────────────────────────────────────────╯
 def _graceful_shutdown() -> None:
     """Gracefully shuts down all MT5 terminals on process exit."""
-    logger.info("[MT5] Shutting down all terminals...")
-    with tracer.start_as_current_span("runtime.mt5.shutdown"):
+    LOGGER.info("[MT5] Shutting down all terminals...")
+    with TRACER.start_as_current_span("runtime.mt5.shutdown"):
         try:
             shutdown_mt5_terminal()
             for channel in ExecutionChannel:
                 terminal_up.labels(channel=channel.name).set(0.0)
-            logger.info("[MT5] All terminals shut down successfully.")
+            LOGGER.info("[MT5] All terminals shut down successfully.")
         except Exception as e:
-            logger.exception("[MT5] Error during shutdown", exc_info=e)
+            LOGGER.exception("[MT5] Error during shutdown", exc_info=e)

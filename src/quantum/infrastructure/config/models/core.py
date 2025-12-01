@@ -1,36 +1,15 @@
-"""
-Quantum Core Configuration Models — Core Settings
-─────────────────────────────────────────────────
-Immutable, validated schema defining the platform runtime configuration used
-throughout the Quantum platform.
-
-Responsibilities
-----------------
-- Define environment-independent configuration structure.
-- Enforce strict validation and typing for all runtime parameters.
-- Provide immutable and deterministic configuration state.
-- Offer a stable foundation for higher-level configuration orchestration.
-
-Design Principles
------------------
-- **Single Responsibility** : declares schema and validation only.
-- **Clean Architecture** : independent of runtime and provider layers.
-- **Immutability** : frozen model ensuring deterministic behavior.
-- **Strong Typing** : explicit field constraints and semantic validation.
-- **Forward Compatibility** : ignores unknown fields for long-term evolution.
-"""
-
 from __future__ import annotations
 
 from typing import Any
 
 from pydantic import Field, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from quantum.infrastructure.config.validators import validate_field
+from quantum.infrastructure.config.models.base.base_settings import BaseConfigSettings
+from quantum.infrastructure.config.models.base.mixins import PublicSettingsMixin
+from quantum.infrastructure.config.validators.runtime import validate_field
 
 
-class CoreSettings(BaseSettings):
+class CoreSettings(BaseConfigSettings, PublicSettingsMixin):
     """
     Structured and validated configuration for the Quantum platform runtime.
 
@@ -59,7 +38,7 @@ class CoreSettings(BaseSettings):
     # --------------------------------------------------------------------------
     # Metrics
     # --------------------------------------------------------------------------
-    quantum_metrics_addr: str = Field("0.0.0.0")  # nosec B104
+    quantum_metrics_host: str = Field("0.0.0.0")  # nosec B104
     quantum_metrics_port: int = Field(0, ge=0)
 
     # --------------------------------------------------------------------------
@@ -94,13 +73,3 @@ class CoreSettings(BaseSettings):
             field="quantum_env",
             model="CoreSettings",
         )
-
-    # --------------------------------------------------------------------------
-    # Settings metadata
-    # --------------------------------------------------------------------------
-    model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-        case_sensitive=False,
-        extra="ignore",
-    )

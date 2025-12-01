@@ -38,6 +38,7 @@ DEFAULT_EXCLUDES = (
     ".git",
     ".hg",
     ".svn",
+    "__pycache__",
     "**/__pycache__",
     "**/.mypy_cache",
     "**/.pytest_cache",

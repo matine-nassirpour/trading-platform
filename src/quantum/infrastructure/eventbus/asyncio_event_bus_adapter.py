@@ -6,11 +6,11 @@ import logging
 from collections import defaultdict
 from collections.abc import Awaitable, Callable
 from contextlib import suppress
-from typing import Any
+from typing import Any, Final
 
 from quantum.application.ports.outbound.event_bus_port import EventBusPort
 
-logger = logging.getLogger(__name__)
+LOGGER: Final = logging.getLogger(__name__)
 
 
 class AsyncioEventBusAdapter(EventBusPort):
@@ -41,7 +41,7 @@ class AsyncioEventBusAdapter(EventBusPort):
     # --------------------------------------------------------------------------
     async def initialize(self) -> None:
         """Initialize the event bus runtime (no-op for asyncio)."""
-        logger.info("[EventBus] Initialized asyncio in-memory event bus.")
+        LOGGER.info("[EventBus] Initialized asyncio in-memory event bus.")
 
     async def close(self) -> None:
         """Gracefully shut down the event bus."""
@@ -51,7 +51,7 @@ class AsyncioEventBusAdapter(EventBusPort):
             self._shutdown_flag = True
             self._subscribers.clear()
             self._closed.set()
-        logger.info("[EventBus] Asyncio bus closed — no further publications allowed.")
+        LOGGER.info("[EventBus] Asyncio bus closed — no further publications allowed.")
 
     # --------------------------------------------------------------------------
     # Subscription management
@@ -72,12 +72,12 @@ class AsyncioEventBusAdapter(EventBusPort):
                     f"[EventBus] Cannot subscribe after shutdown: {topic}"
                 )
             if handler in self._subscribers[topic]:
-                logger.warning(
+                LOGGER.warning(
                     "[EventBus] Duplicate subscription ignored for topic '%s'", topic
                 )
                 return
             self._subscribers[topic].append(handler)
-            logger.debug(
+            LOGGER.debug(
                 "[EventBus] Subscribed handler=%s to topic=%s",
                 handler.__qualname__,
                 topic,
@@ -95,7 +95,7 @@ class AsyncioEventBusAdapter(EventBusPort):
                 return
             with suppress(ValueError):
                 handlers.remove(handler)
-                logger.debug(
+                LOGGER.debug(
                     "[EventBus] Unsubscribed handler=%s from topic=%s",
                     handler.__qualname__,
                     topic,
@@ -114,17 +114,17 @@ class AsyncioEventBusAdapter(EventBusPort):
         Exceptions are isolated and logged individually.
         """
         if self._shutdown_flag:
-            logger.warning("[EventBus] Publish ignored after shutdown (%s)", topic)
+            LOGGER.warning("[EventBus] Publish ignored after shutdown (%s)", topic)
             return
 
         async with self._lock:
             subscribers = list(self._subscribers.get(topic, []))
 
         if not subscribers:
-            logger.debug("[EventBus] No subscribers for topic '%s'", topic)
+            LOGGER.debug("[EventBus] No subscribers for topic '%s'", topic)
             return
 
-        logger.debug(
+        LOGGER.debug(
             "[EventBus] Publishing topic='%s' to %d subscriber(s)",
             topic,
             len(subscribers),
@@ -151,7 +151,7 @@ class AsyncioEventBusAdapter(EventBusPort):
         except asyncio.CancelledError:
             raise
         except Exception as exc:
-            logger.error(
+            LOGGER.error(
                 "[EventBus] Handler error — topic=%s handler=%s exc=%s",
                 topic,
                 handler.__qualname__,
