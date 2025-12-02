@@ -25,16 +25,3 @@ class TracingRuntimeBundle:
     trace_otlp_insecure: bool
 
     trace_sample: float
-
-    def __post_init__(self):
-        if self.trace_exporter not in {"otlp", "console", "none"}:
-            raise ValueError("Invalid trace_exporter type.")
-
-        if self.trace_otlp_protocol not in {"http", "grpc"}:
-            raise ValueError("trace_otlp_protocol must be 'http' or 'grpc'.")
-
-        if self.trace_otlp_compression not in {"gzip", "none"}:
-            raise ValueError("trace_otlp_compression must be 'gzip' or 'none'.")
-
-        if not (0.0 <= self.trace_sample <= 1.0):
-            raise ValueError("trace_sample must be in [0.0, 1.0].")

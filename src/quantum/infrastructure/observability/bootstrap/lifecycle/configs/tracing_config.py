@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from quantum.infrastructure.observability.bootstrap.lifecycle.configs.core_config import (
-    CoreConfig,
+from quantum.infrastructure.observability.foundation.config.identity_runtime_bundle import (
+    IdentityRuntimeBundle,
 )
 
 
@@ -17,7 +17,7 @@ class TracingConfig:
     in a Clean Architecture context.
     """
 
-    identity: CoreConfig
+    identity: IdentityRuntimeBundle
     trace_exporter: str
 
     trace_otlp_endpoint: str

@@ -43,6 +43,9 @@ from quantum.infrastructure.observability.bootstrap.lifecycle.configs.metrics_co
 from quantum.infrastructure.observability.bootstrap.lifecycle.configs.tracing_config import (
     TracingConfig,
 )
+from quantum.infrastructure.observability.foundation.config.identity_runtime_bundle import (
+    IdentityRuntimeBundle,
+)
 
 LOGGER: Final = logging.getLogger("quantum.runtime.composer")
 
@@ -77,15 +80,20 @@ class QuantumRuntime:
     # --------------------------------------------------------------------------
     # Adapters — convert Pydantic Settings → Observability Value Objects
     # --------------------------------------------------------------------------
-    def _make_logging_config(self) -> LoggingConfig:
-        s = self.logging_cfg
+    def _make_identity(self) -> IdentityRuntimeBundle:
         c = self.core
-        return LoggingConfig(
+        return IdentityRuntimeBundle(
             environment=c.quantum_env,
             service_namespace=c.quantum_ns,
             service_name=c.quantum_app_name,
             service_version=c.quantum_app_version,
             instance_id=c.quantum_instance_id or "unknown",
+        )
+
+    def _make_logging_config(self) -> LoggingConfig:
+        s = self.logging_cfg
+        return LoggingConfig(
+            identity=self._make_identity(),
             log_dir=s.quantum_log_dir,
             audit_dir=s.quantum_audit_dir,
             audit_allowlist=s.quantum_audit_allowlist,
@@ -98,14 +106,9 @@ class QuantumRuntime:
         )
 
     def _make_tracing_config(self) -> TracingConfig:
-        c = self.core
         s = self.tracing_cfg
         return TracingConfig(
-            environment=c.quantum_env,
-            service_namespace=c.quantum_ns,
-            service_name=c.quantum_app_name,
-            service_version=c.quantum_app_version,
-            instance_id=c.quantum_instance_id or "unknown",
+            identity=self._make_identity(),
             trace_exporter=s.quantum_trace_exporter,
             trace_otlp_endpoint=s.quantum_trace_otlp_endpoint,
             trace_otlp_protocol=s.quantum_trace_otlp_protocol,

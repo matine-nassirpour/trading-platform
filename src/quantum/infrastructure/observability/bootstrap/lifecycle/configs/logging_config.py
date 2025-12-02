@@ -3,8 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from quantum.infrastructure.observability.bootstrap.lifecycle.configs.core_config import (
-    CoreConfig,
+from quantum.infrastructure.observability.foundation.config.identity_runtime_bundle import (
+    IdentityRuntimeBundle,
 )
 
 
@@ -24,7 +24,7 @@ class LoggingConfig:
       • Certification-ready design (DO-178C / IEC 62304 / ISO 26262)
     """
 
-    identity: CoreConfig
+    identity: IdentityRuntimeBundle
 
     log_dir: Path | None
     audit_dir: Path | None
