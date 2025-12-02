@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+import threading
+
 from collections.abc import Callable, Iterable
 from contextlib import suppress
+
+_METRICS_LOCK = threading.Lock()
 
 
 class Counter:
@@ -70,16 +74,15 @@ _internal_metrics: dict[str, Counter] = {}
 def define_counter(name: str) -> Counter:
     """
     Create or retrieve a C0 counter (idempotent).
-
-    This is the official way for any layer (C1/C2/C3) to define a counter.
     """
-    existing = _internal_metrics.get(name)
-    if existing is not None:
-        return existing
+    with _METRICS_LOCK:
+        existing = _internal_metrics.get(name)
+        if existing is not None:
+            return existing
 
-    cnt = Counter(name)
-    _internal_metrics[name] = cnt
-    return cnt
+        cnt = Counter(name)
+        _internal_metrics[name] = cnt
+        return cnt
 
 
 def get_internal_counter(name: str) -> Counter | None:

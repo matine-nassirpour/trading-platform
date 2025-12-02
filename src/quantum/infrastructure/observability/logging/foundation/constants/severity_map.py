@@ -14,8 +14,11 @@ from collections.abc import Mapping
 from types import MappingProxyType
 from typing import Final, Literal
 
-SeverityText = Literal["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"]
+from quantum.infrastructure.observability.foundation.metrics.c0_metric_registry import (
+    define_counter,
+)
 
+SeverityText = Literal["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"]
 SeverityPair = tuple[SeverityText, int]
 SeverityMapType = Mapping[int, SeverityPair]
 ReverseTextMapType = Mapping[str, int]
@@ -40,6 +43,8 @@ _REV_TEXT_TO_LEVELNO: Final[ReverseLevelMapType] = MappingProxyType(
     {text: levelno for (levelno, (text, _)) in _CANONICAL_SEVERITY_MAP.items()}
 )
 
+_SEVERITY_MAPPING_ERRORS = define_counter("severity_mapping_errors")
+
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Public API                                                                 │
@@ -52,7 +57,8 @@ def canonical_severity(levelno: int) -> SeverityPair:
     try:
         return _CANONICAL_SEVERITY_MAP[levelno]
     except Exception:
-        return "INFO", 9
+        _SEVERITY_MAPPING_ERRORS.inc()
+        return "ERROR", 17
 
 
 def severity_number_from_text(text: str) -> int:

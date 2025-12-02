@@ -19,12 +19,45 @@ _DEFAULT_PREFIXES: Final[set[str]] = {
 }
 
 
+class _PrefixTrie:
+    """High-performance prefix matcher."""
+
+    __slots__ = ("children", "terminal")
+
+    def __init__(self):
+        self.children = {}
+        self.terminal = False
+
+    def insert(self, prefix: str) -> None:
+        node = self
+        for ch in prefix:
+            node = node.children.setdefault(ch, _PrefixTrie())
+        node.terminal = True
+
+    def matches(self, text: str) -> bool:
+        node = self
+        for ch in text:
+            if ch in node.children:
+                node = node.children[ch]
+                if node.terminal:
+                    return True
+            else:
+                return False
+        return node.terminal
+
+
 class IgnoreLibrariesStep(PipelineStep):
-    """Filters out log records from noisy third-party libraries."""
+    """Filters out log records from noisy third-party libraries (optimized)."""
+
+    __slots__ = ("_trie",)
 
     def __init__(self, noisy_prefixes: Iterable[str] | None = None) -> None:
-        self._prefixes = set(noisy_prefixes) if noisy_prefixes else _DEFAULT_PREFIXES
+        prefixes = noisy_prefixes or _DEFAULT_PREFIXES
+        trie = _PrefixTrie()
+        for p in prefixes:
+            trie.insert(p)
+        self._trie = trie
 
     def process(self, record: logging.LogRecord) -> bool:
         name = getattr(record, "name", "")
-        return not any(name.startswith(prefix) for prefix in self._prefixes)
+        return not self._trie.matches(name)

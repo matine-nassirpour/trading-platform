@@ -38,10 +38,10 @@ SECRET_KEYS: Final[frozenset[str]] = frozenset(
 )
 
 _JWT_RE: Final[re.Pattern[str]] = re.compile(
-    r"eyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}"
+    r"\beyJ[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+\b"
 )
 
-_HEX32_RE: Final[re.Pattern[str]] = re.compile(r"\b[0-9a-fA-F]{32,}\b")
+_HEX_TOKEN_RE: Final[re.Pattern[str]] = re.compile(r"\b[0-9a-fA-F]{40,}\b")
 
 _MAX_VALUE_LEN: Final[int] = 5_000
 
@@ -76,7 +76,7 @@ def _redact_value(value: Any) -> Any:
             s = s[:_MAX_VALUE_LEN] + "…"
 
         # redact token-like values
-        if _JWT_RE.search(s) or _HEX32_RE.search(s):
+        if _JWT_RE.search(s) or _HEX_TOKEN_RE.search(s):
             return "[REDACTED]"
 
         return s
@@ -93,6 +93,8 @@ class RedactionStep(PipelineStep):
         - truncates excessively long strings
     """
 
+    __slots__ = ()
+
     def process(self, record: logging.LogRecord) -> bool:
         modified = False
 
@@ -105,7 +107,7 @@ class RedactionStep(PipelineStep):
                 redacted = _redact_value(attrs)
                 record.attrs = redacted if isinstance(redacted, dict) else {}
 
-                after = json.dumps(redacted, ensure_ascii=False)
+                after = json.dumps(record.attrs, ensure_ascii=False)
 
                 if before is not None and after is not None and before != after:
                     modified = True
@@ -116,7 +118,7 @@ class RedactionStep(PipelineStep):
                 redacted_msg = msg
 
                 redacted_msg = _JWT_RE.sub("[REDACTED]", redacted_msg)
-                redacted_msg = _HEX32_RE.sub("[REDACTED]", redacted_msg)
+                redacted_msg = _HEX_TOKEN_RE.sub("[REDACTED]", redacted_msg)
 
                 if len(redacted_msg) > _MAX_VALUE_LEN:
                     redacted_msg = redacted_msg[:_MAX_VALUE_LEN] + "…"
