@@ -6,6 +6,9 @@ from runtime.runtime_composer import compose_runtime
 
 from quantum.infrastructure.config.runtime.manager import ConfigManager
 from quantum.infrastructure.config.runtime.state.ready_cache import ReadyStateCache
+from quantum.infrastructure.observability.context.correlation_id import (
+    correlation_context,
+)
 
 logger = logging.getLogger("quantum.app")
 
@@ -53,7 +56,10 @@ def render_page() -> None:
     render_orphans()
     st.divider()
 
-    logger.warning("⚠️ Streamlit démarre – handlers actifs ? %s", bool(logger.handlers))
+    with correlation_context():
+        logger.warning(
+            "⚠️ Streamlit démarre – handlers actifs ? %s", bool(logger.handlers)
+        )
 
     if st.button("Générer un log"):
         logger.info("Test log depuis Streamlit")

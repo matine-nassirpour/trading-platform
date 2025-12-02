@@ -19,7 +19,7 @@ class ResourceMetadataStep(PipelineStep):
         self.identity = identity
 
     def process(self, record: logging.LogRecord) -> bool:
-        record.environment = getattr(record, "environment", self.identity.environment)
+        record.env = getattr(record, "env", self.identity.environment)
         record.service_namespace = getattr(
             record, "service_namespace", self.identity.service_namespace
         )

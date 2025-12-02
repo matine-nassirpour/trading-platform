@@ -9,6 +9,9 @@ from quantum.infrastructure.observability.logging.formatting.json_formatter impo
 from quantum.infrastructure.observability.logging.formatting.jsonl_formatter import (
     JSONLFormatter,
 )
+from quantum.infrastructure.observability.logging.formatting.pretty_json_formatter import (
+    PrettyJsonFormatter,
+)
 from quantum.infrastructure.observability.logging.pipeline.engine.pipeline import (
     LoggingPipeline,
 )
@@ -54,12 +57,27 @@ class HandlerFactory:
         return handler
 
     # --------------------------------------------------------------------------
-    # Console handler
+    # Console handler (Pretty JSON)
     # --------------------------------------------------------------------------
     def console(self) -> logging.Handler:
-        """Return a fully configured console handler."""
+        """
+        Return a console handler with PrettyConsoleFormatter.
+        This produces human-readable JSON output with indentation.
+        No impact on structured JSON logging (files stay compact).
+        """
         handler = logging.StreamHandler()
-        return self._attach(handler, add_formatter=True)
+
+        if self._bundle.enable_pretty_console:
+            formatter = PrettyJsonFormatter(self._bundle.identity.instance_id)
+        else:
+            formatter = self._formatter  # JsonFormatter compact
+
+        handler.setFormatter(formatter)
+
+        # Attach pipeline + level
+        handler.addFilter(self._pipeline)
+        handler.setLevel(self._bundle.log_level)
+        return handler
 
     # --------------------------------------------------------------------------
     # Partitioned JSONL file handler (structured machine output)

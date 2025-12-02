@@ -15,6 +15,7 @@ from quantum.infrastructure.observability.logging.utils.json_sanitize import (
 
 _EXCLUDED_STD_FIELDS: Final[set[str]] = {
     "args",
+    "attrs",
     "asctime",
     "created",
     "exc_info",

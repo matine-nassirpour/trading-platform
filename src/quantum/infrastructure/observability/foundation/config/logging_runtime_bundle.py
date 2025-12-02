@@ -41,5 +41,6 @@ class LoggingRuntimeBundle:
     # Handlers
     enable_partition_handler: bool
     enable_console_handler: bool = True
+    enable_pretty_console: bool = True
 
     pipeline_config: PipelineConfig = field(default_factory=PipelineConfig)
