@@ -69,12 +69,7 @@ PIPELINE_STEP_REGISTRY: list[StepDefinition] = [
     StepDefinition(
         key="resource_metadata",
         enabled_flag="enable_resource_metadata",
-        factory=lambda bundle: ResourceMetadataStep(
-            env=bundle.env,
-            namespace=bundle.namespace,
-            name=bundle.app_name,
-            version=bundle.app_version,
-        ),
+        factory=lambda bundle: ResourceMetadataStep(identity=bundle.identity),
         arg_kind=StepArgumentKind.BUNDLE,
     ),
     StepDefinition(

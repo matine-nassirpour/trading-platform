@@ -94,8 +94,8 @@ class QuantumRuntime:
         s = self.logging_cfg
         return LoggingConfig(
             identity=self._make_identity(),
-            log_dir=s.quantum_log_dir,
-            audit_dir=s.quantum_audit_dir,
+            log_dir=s.quantum_log_dir.as_path(),
+            audit_dir=s.quantum_audit_dir.as_path(),
             audit_allowlist=s.quantum_audit_allowlist,
             log_level=_parse_log_level(s.quantum_log_level),
             sample_info_every=s.quantum_log_sample_info,

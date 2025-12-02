@@ -1,9 +1,13 @@
+import logging
+
 import streamlit as st
 
 from runtime.runtime_composer import compose_runtime
 
 from quantum.infrastructure.config.runtime.manager import ConfigManager
 from quantum.infrastructure.config.runtime.state.ready_cache import ReadyStateCache
+
+logger = logging.getLogger("quantum.app")
 
 
 # =============================================================================
@@ -48,6 +52,12 @@ def render_page() -> None:
 
     render_orphans()
     st.divider()
+
+    logger.warning("⚠️ Streamlit démarre – handlers actifs ? %s", bool(logger.handlers))
+
+    if st.button("Générer un log"):
+        logger.info("Test log depuis Streamlit")
+        st.success("Log généré ! (vérifie tes fichiers / pipeline)")
 
 
 # =============================================================================

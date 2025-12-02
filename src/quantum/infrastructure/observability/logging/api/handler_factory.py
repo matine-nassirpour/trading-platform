@@ -37,6 +37,9 @@ class HandlerFactory:
         self._formatter = formatter
         self._pipeline = pipeline
 
+    # ------------------------------------------------------------------
+    # Internal helper
+    # ------------------------------------------------------------------
     def _attach(
         self, handler: logging.Handler, *, add_formatter: bool, level: int | None = None
     ) -> logging.Handler:
@@ -50,11 +53,17 @@ class HandlerFactory:
         handler.addFilter(self._pipeline)
         return handler
 
+    # --------------------------------------------------------------------------
+    # Console handler
+    # --------------------------------------------------------------------------
     def console(self) -> logging.Handler:
         """Return a fully configured console handler."""
         handler = logging.StreamHandler()
         return self._attach(handler, add_formatter=True)
 
+    # --------------------------------------------------------------------------
+    # Partitioned JSONL file handler (structured machine output)
+    # --------------------------------------------------------------------------
     def partitioned(self) -> logging.Handler:
         """Return a fully configured partitioned JSONL file handler."""
         policy = PartitionPolicy(
