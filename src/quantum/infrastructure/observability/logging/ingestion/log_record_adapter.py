@@ -22,6 +22,9 @@ from quantum.infrastructure.observability.logging.ingestion.internal_log_event i
     SeverityDTO,
     TimestampsDTO,
 )
+from quantum.infrastructure.observability.logging.utils.json_sanitize import (
+    json_sanitize,
+)
 from quantum.infrastructure.observability.tracing.trace_context import (
     extract_trace_context,
 )
@@ -146,5 +149,5 @@ class LogRecordAdapter:
             resource=resource,
             correlation=correlation,
             exception=exception,
-            attrs=attrs,
+            attrs=json_sanitize(attrs),
         )
