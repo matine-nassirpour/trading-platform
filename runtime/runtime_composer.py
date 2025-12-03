@@ -3,18 +3,15 @@ Quantum Runtime Composition Root
 
 Responsibilities
 ----------------
-- Load validated configuration models (Core/Logging/Tracing/MT5)
-- Produce observability configs (logging/tracing/metrics)
-- Bootstrap the Observability subsystem
-- Return a QuantumRuntime instance (container only)
+- Instantiate configuration, identity and observability subsystems.
+- Assemble application ports, adapters and runtime services.
+- Produce a fully-initialized QuantumRuntime object.
 
-This module MUST NOT:
-    - instantiate application services
-    - instantiate event bus
-    - instantiate runtime engine
-    - import application/domain layers
-
-It is purely an internal infrastructure composition root.
+Notes
+-----
+This module is part of the external composition root.
+It is allowed to import any architectural layer, because it is not
+itself part of the Clean Architecture core.
 """
 
 from __future__ import annotations

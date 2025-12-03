@@ -1,17 +1,14 @@
 """
-Quantum Runtime Entrypoint
+Quantum Runtime Entrypoint (Async + Signals)
 
 Responsibilities
 ----------------
-    • Bootstrapping the runtime via runtime_composer
-    • Performing safe early-stage logging initialization
-    • Handling OS signals (SIGINT, SIGTERM) for graceful shutdown
-    • Exposing deterministic exit codes for orchestration systems
-    • Ensuring observability and configuration initialization succeed
-    • Protecting against partial initialization or inconsistent state
-
-This script acts as the “Deployment Shell” in Clean Architecture terminology.
-It intentionally remains thin and free of domain/application logic.
+- Fully async bootstrap.
+- Proper POSIX signal integration using asyncio loop.
+- Deterministic startup and teardown.
+- Observability lifecycle supervision.
+- No blocking waits / no threading.Event.
+- Clean Architecture compliant (deployment shell only).
 """
 
 from __future__ import annotations
@@ -20,7 +17,6 @@ import asyncio
 import logging
 import signal
 import sys
-import threading
 
 from typing import Final
 
@@ -36,8 +32,8 @@ from quantum.infrastructure.eventbus.asyncio_event_bus_adapter import (
 )
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Logging — Early Stage Minimal Logger                                       │
-# │ Before observability initialization, we want deterministic stderr logging. │
+# │ Early Stage Minimal Logger                                                 │
+# │ Deterministic stderr logging before observability initialized.             │
 # ╰────────────────────────────────────────────────────────────────────────────╯
 logging.basicConfig(
     level=logging.INFO,
@@ -47,70 +43,70 @@ LOGGER: Final = logging.getLogger("quantum.bootstrap")
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Signal Handling                                                            │
-# ╰────────────────────────────────────────────────────────────────────────────╯
-_shutdown_event = threading.Event()
-
-
-def _handle_signal(signum: int, frame) -> None:
-    """Handle termination signals from OS."""
-    LOGGER.warning("Received signal %s — initiating shutdown...", signum)
-    _shutdown_event.set()
-
-
-def _register_signals() -> None:
-    """Register POSIX signal handlers."""
-    for sig in (signal.SIGINT, signal.SIGTERM):
-        signal.signal(sig, _handle_signal)
-    LOGGER.info("Signal handlers registered.")
-
-
-# ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Entrypoint Logic                                                           │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-def main() -> int:
+async def main_async() -> int:
     LOGGER.info("Starting Quantum runtime…")
 
-    _register_signals()
-
-    # 1) Build base runtime (config + observability)
+    # 1. Build runtime (config + observability)
     try:
         runtime = compose_runtime()
     except Exception as exc:
         LOGGER.exception("Fatal composition error: %s", exc)
         return 2
 
-    # 2) Initialize observability
     if not runtime.initialize_observability():
         LOGGER.error("Observability startup failed")
         return 3
 
-    # 3) Build application shell (event bus + orchestrator + engine)
+    # 2. Build application shell (event bus + orchestrator + engine)
     event_bus: EventBusPort = AsyncioEventBusAdapter()
     orchestrator = ApplicationOrchestrator(event_bus=event_bus)
     engine = RuntimeEngine(app_service=orchestrator, event_bus=event_bus)
 
-    # 4) Run async engine
-    async def _run():
+    # 3) Register POSIX signals in the current asyncio loop
+    loop = asyncio.get_running_loop()
+
+    def _handle_sigterm() -> None:
+        LOGGER.warning("[Runtime] SIGTERM received — requesting shutdown")
+        asyncio.create_task(engine.request_shutdown())
+
+    def _handle_sigint() -> None:
+        LOGGER.warning("[Runtime] SIGINT received — requesting shutdown")
+        asyncio.create_task(engine.request_shutdown())
+
+    try:
+        loop.add_signal_handler(signal.SIGTERM, _handle_sigterm)
+        loop.add_signal_handler(signal.SIGINT, _handle_sigint)
+    except NotImplementedError:
+        # Windows fallback
+        LOGGER.warning("Signal handlers not available on this platform.")
+
+    # 4. Start the runtime engine (async)
+    try:
         await engine.start()
-
-    asyncio.run(_run())
-
-    # 5) Wait for signal
-    _shutdown_event.wait()
-
-    # 6) Engine shutdown
-    asyncio.run(engine.request_shutdown())
-
-    # 7) Observability shutdown
-    runtime.shutdown_observability()
+    finally:
+        # 5. Shutdown observability
+        LOGGER.info("[Runtime] Shutting down observability")
+        runtime.shutdown_observability()
 
     LOGGER.info("Quantum runtime exited cleanly.")
     return 0
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
-# │ CLI Entrypoint                                                             │
+# │ Synchronous wrapper                                                        │
 # ╰────────────────────────────────────────────────────────────────────────────╯
+def main() -> int:
+    try:
+        return asyncio.run(main_async())
+    except KeyboardInterrupt:
+        LOGGER.warning("Interrupted by user.")
+        return 130
+    except Exception as exc:
+        LOGGER.exception("Unexpected fatal error: %s", exc)
+        return 1
+
+
 if __name__ == "__main__":
     sys.exit(main())

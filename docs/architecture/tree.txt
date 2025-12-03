@@ -264,7 +264,6 @@ trading-platform/
 │       │   │   │   ├── lifecycle/
 │       │   │   │   │   ├── configs/
 │       │   │   │   │   │   ├── __init__.py
-│       │   │   │   │   │   ├── core_config.py
 │       │   │   │   │   │   ├── logging_config.py
 │       │   │   │   │   │   ├── metrics_config.py
 │       │   │   │   │   │   └── tracing_config.py
@@ -293,8 +292,8 @@ trading-platform/
 │       │   │   ├── foundation/
 │       │   │   │   ├── config/
 │       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── identity_runtime_bundle.py
 │       │   │   │   │   ├── logging_runtime_bundle.py
-│       │   │   │   │   ├── observability_runtime_bundle.py
 │       │   │   │   │   └── tracing_runtime_bundle.py
 │       │   │   │   ├── metrics/
 │       │   │   │   │   ├── __init__.py
@@ -332,7 +331,8 @@ trading-platform/
 │       │   │   │   │   │   └── __init__.py
 │       │   │   │   │   ├── __init__.py
 │       │   │   │   │   ├── json_formatter.py
-│       │   │   │   │   └── jsonl_formatter.py
+│       │   │   │   │   ├── jsonl_formatter.py
+│       │   │   │   │   └── pretty_json_formatter.py
 │       │   │   │   ├── foundation/
 │       │   │   │   │   ├── constants/
 │       │   │   │   │   │   ├── __init__.py
