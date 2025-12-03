@@ -44,46 +44,55 @@ class HandlerFactory:
     # Internal helper
     # ------------------------------------------------------------------
     def _attach(
-        self, handler: logging.Handler, *, add_formatter: bool, level: int | None = None
+        self,
+        handler: logging.Handler,
+        *,
+        level: int | None = None,
+        formatter: logging.Formatter | None = None,
     ) -> logging.Handler:
-        """Attach level + pipeline filter."""
+        """
+        Attach:
+        - log level
+        - unified pipeline filter
+        - optional explicit formatter
+        """
 
         handler.setLevel(level or self._bundle.log_level)
 
-        if add_formatter:
+        if formatter is not None:
+            handler.setFormatter(formatter)
+        else:
             handler.setFormatter(self._formatter)
 
         handler.addFilter(self._pipeline)
         return handler
 
     # --------------------------------------------------------------------------
-    # Console handler (Pretty JSON)
+    # Console handler (Pretty or compact JSON)
     # --------------------------------------------------------------------------
     def console(self) -> logging.Handler:
         """
-        Return a console handler with PrettyConsoleFormatter.
-        This produces human-readable JSON output with indentation.
-        No impact on structured JSON logging (files stay compact).
+        Return a console handler with PrettyJsonFormatter (human-readable)
+        or JsonFormatter (compact) depending on configuration.
         """
         handler = logging.StreamHandler()
 
-        if self._bundle.enable_pretty_console:
-            formatter = PrettyJsonFormatter(self._bundle.identity.instance_id)
-        else:
-            formatter = self._formatter  # JsonFormatter compact
+        formatter = (
+            PrettyJsonFormatter(self._bundle.identity.instance_id)
+            if self._bundle.enable_pretty_console
+            else self._formatter
+        )
 
-        handler.setFormatter(formatter)
-
-        # Attach pipeline + level
-        handler.addFilter(self._pipeline)
-        handler.setLevel(self._bundle.log_level)
-        return handler
+        return self._attach(handler, formatter=formatter)
 
     # --------------------------------------------------------------------------
     # Partitioned JSONL file handler (structured machine output)
     # --------------------------------------------------------------------------
     def partitioned(self) -> logging.Handler:
-        """Return a fully configured partitioned JSONL file handler."""
+        """
+        Return a fully configured partitioned JSONL file handler.
+        Formatter is internal to handler; no external formatter attached.
+        """
         policy = PartitionPolicy(
             base_dir=self._bundle.log_dir,
             env=self._bundle.identity.environment,
@@ -93,8 +102,7 @@ class HandlerFactory:
         )
 
         formatter = JSONLFormatter(instance_id=self._bundle.identity.instance_id)
-
         handler = PartitionedJSONLFileHandler(formatter=formatter, policy=policy)
 
         # handler has its own internal formatter → no external logging.Formatter attached
-        return self._attach(handler, add_formatter=False)
+        return self._attach(handler, formatter=None)
