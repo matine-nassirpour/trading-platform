@@ -1,4 +1,9 @@
 import logging
+import os
+import platform
+import socket
+
+from pathlib import Path
 
 import streamlit as st
 
@@ -33,6 +38,37 @@ def render_fingerprint_section() -> None:
     fp = ReadyStateCache._fingerprint
 
     st.code(fp, language="text")
+
+
+def render_runtime_overview(runtime) -> None:
+    st.subheader("🧩 Runtime Overview")
+
+    identity = runtime._make_identity()
+    now_utc = runtime.time_provider.now_utc()
+
+    overview = {
+        "application": {
+            "name": identity.service_name,
+            "version": identity.service_version,
+            "namespace": identity.service_namespace,
+            "environment": identity.environment,
+            "instance_id": identity.instance_id,
+        },
+        "runtime": {
+            "pid": os.getpid(),
+            "working_directory": str(Path.cwd()),
+            "python_version": platform.python_version(),
+        },
+        "system": {
+            "hostname": socket.gethostname(),
+            "os": platform.platform(),
+            "cpu_count": os.cpu_count(),
+            "system_time_utc": now_utc.isoformat(),
+            "timezone": "UTC",
+        },
+    }
+
+    st.json(overview)
 
 
 def render_core_settings() -> None:
@@ -102,12 +138,12 @@ def render_page() -> None:
 
     st.title("🔍 Quantum Observability — Core Dashboard")
     st.write("Realtime supervision of the Quantum Runtime configuration.")
-
-    now_utc = runtime.time_provider.now_utc()
-    st.write(f"Current UTC time: {now_utc.isoformat()}")
     st.divider()
 
     render_fingerprint_section()
+    st.divider()
+
+    render_runtime_overview(runtime)
     st.divider()
 
     render_core_settings()
