@@ -31,6 +31,7 @@ class PrettyJsonFormatter(JsonFormatter):
                 ensure_ascii=False,
                 indent=2,
                 separators=(",", ": "),
+                sort_keys=False,
             )
         except Exception:
             # fallback: never interrupt logging pipeline
