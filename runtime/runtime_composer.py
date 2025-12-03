@@ -23,6 +23,7 @@ import logging
 
 from typing import Final
 
+from quantum.application.ports.outbound.time_provider_port import TimeProviderPort
 from quantum.infrastructure.config.models.core import CoreSettings
 from quantum.infrastructure.config.models.logging import LoggingSettings
 from quantum.infrastructure.config.models.mt5 import MT5Settings
@@ -46,6 +47,7 @@ from quantum.infrastructure.observability.bootstrap.lifecycle.configs.tracing_co
 from quantum.infrastructure.observability.foundation.config.identity_runtime_bundle import (
     IdentityRuntimeBundle,
 )
+from quantum.infrastructure.time.time_provider_adapter import SystemTimeProviderAdapter
 
 LOGGER: Final = logging.getLogger("quantum.runtime.composer")
 
@@ -69,11 +71,13 @@ class QuantumRuntime:
         logging_settings: LoggingSettings,
         tracing_settings: TracingSettings,
         mt5_settings: MT5Settings,
+        time_provider: TimeProviderPort,
     ) -> None:
-        self.core = core_settings
-        self.logging_cfg = logging_settings
-        self.tracing_cfg = tracing_settings
-        self.mt5_cfg = mt5_settings
+        self._core = core_settings
+        self._logging_cfg = logging_settings
+        self._tracing_cfg = tracing_settings
+        self._mt5_cfg = mt5_settings
+        self._time_provider = time_provider
 
         self._observability_initialized = False
 
@@ -81,7 +85,7 @@ class QuantumRuntime:
     # Adapters — convert Pydantic Settings → Observability Value Objects
     # --------------------------------------------------------------------------
     def _make_identity(self) -> IdentityRuntimeBundle:
-        c = self.core
+        c = self._core
         return IdentityRuntimeBundle(
             environment=c.quantum_env,
             service_namespace=c.quantum_ns,
@@ -91,7 +95,7 @@ class QuantumRuntime:
         )
 
     def _make_logging_config(self) -> LoggingConfig:
-        s = self.logging_cfg
+        s = self._logging_cfg
         return LoggingConfig(
             identity=self._make_identity(),
             log_dir=s.quantum_log_dir.as_path(),
@@ -106,7 +110,7 @@ class QuantumRuntime:
         )
 
     def _make_tracing_config(self) -> TracingConfig:
-        s = self.tracing_cfg
+        s = self._tracing_cfg
         return TracingConfig(
             identity=self._make_identity(),
             trace_exporter=s.quantum_trace_exporter,
@@ -120,7 +124,7 @@ class QuantumRuntime:
         )
 
     def _make_metrics_config(self) -> MetricsConfig:
-        c = self.core
+        c = self._core
         return MetricsConfig(
             host=c.quantum_metrics_host,
             port=c.quantum_metrics_port,
@@ -159,6 +163,13 @@ class QuantumRuntime:
             )
         finally:
             self._observability_initialized = False
+
+    # --------------------------------------------------------------------------
+    # Properties
+    # --------------------------------------------------------------------------
+    @property
+    def time_provider(self) -> TimeProviderPort:
+        return self._time_provider
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
@@ -199,4 +210,5 @@ def compose_runtime(
         logging_settings=logging_settings,
         tracing_settings=tracing_settings,
         mt5_settings=mt5_settings,
+        time_provider=SystemTimeProviderAdapter(),
     )

@@ -13,62 +13,20 @@ from quantum.infrastructure.observability.context.correlation_id import (
 logger = logging.getLogger("quantum.app")
 
 
-# =============================================================================
-# Cached runtime initialization (safety-critical: executed once)
-# =============================================================================
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Cached runtime initialization (safety-critical: executed once)             │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 @st.cache_resource
 def _load_runtime():
     """Load and freeze the Quantum Runtime (cached once)."""
     runtime = compose_runtime()
-    runtime.initialize_observability()  # optional: safe if idempotent
+    runtime.initialize_observability()
     return runtime
 
 
-# =============================================================================
-# Main Page Renderer
-# =============================================================================
-def render_page() -> None:
-    st.title("🔍 Quantum Observability — Core Dashboard")
-
-    st.write("Realtime supervision of the Quantum Runtime configuration.")
-    st.divider()
-
-    _load_runtime()
-
-    render_fingerprint_section()
-    st.divider()
-
-    render_core_settings()
-    st.divider()
-
-    render_logging_settings()
-    st.divider()
-
-    render_tracing_settings()
-    st.divider()
-
-    render_mt5_settings()
-    st.divider()
-
-    render_env_snapshot()
-    st.divider()
-
-    render_orphans()
-    st.divider()
-
-    with correlation_context():
-        logger.warning(
-            "⚠️ Streamlit démarre – handlers actifs ? %s", bool(logger.handlers)
-        )
-
-    if st.button("Générer un log"):
-        logger.info("Test log depuis Streamlit")
-        st.success("Log généré ! (vérifie tes fichiers / pipeline)")
-
-
-# =============================================================================
-# Sections
-# =============================================================================
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Sections                                                                   │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 def render_fingerprint_section() -> None:
     st.subheader("📌 Runtime Fingerprint")
 
@@ -134,3 +92,47 @@ def render_orphans() -> None:
     else:
         st.warning(f"{len(orphans)} orphan variables detected:")
         st.json(orphans)
+
+
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Main Page Renderer                                                         │
+# ╰────────────────────────────────────────────────────────────────────────────╯
+def render_page() -> None:
+    runtime = _load_runtime()
+
+    st.title("🔍 Quantum Observability — Core Dashboard")
+    st.write("Realtime supervision of the Quantum Runtime configuration.")
+
+    now_utc = runtime.time_provider.now_utc()
+    st.write(f"Current UTC time: {now_utc.isoformat()}")
+    st.divider()
+
+    render_fingerprint_section()
+    st.divider()
+
+    render_core_settings()
+    st.divider()
+
+    render_logging_settings()
+    st.divider()
+
+    render_tracing_settings()
+    st.divider()
+
+    render_mt5_settings()
+    st.divider()
+
+    render_env_snapshot()
+    st.divider()
+
+    render_orphans()
+    st.divider()
+
+    with correlation_context():
+        logger.warning(
+            "⚠️ Streamlit démarre – handlers actifs ? %s", bool(logger.handlers)
+        )
+
+    if st.button("Générer un log"):
+        logger.info("Test log depuis Streamlit")
+        st.success("Log généré ! (vérifie tes fichiers / pipeline)")
