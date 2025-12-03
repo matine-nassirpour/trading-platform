@@ -182,8 +182,6 @@ def compose_runtime(
         - Load environment layers (.env base, env-specific, local)
         - Instantiate validated configuration models
         - Produce a fully-configured QuantumRuntime instance
-
-    MUST NOT import domain/application directly.
     """
     # 1. Initialize validator registry (required for Pydantic models)
     initialize_validators()
