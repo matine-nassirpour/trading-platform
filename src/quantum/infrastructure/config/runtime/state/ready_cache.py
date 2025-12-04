@@ -126,6 +126,11 @@ class ReadyStateCache:
     # Public API
     # --------------------------------------------------------------------------
     @classmethod
+    def get_fingerprint(cls) -> str | None:
+        with cls._lock:
+            return cls._fingerprint
+
+    @classmethod
     def get(cls) -> ConfigFSMState | None:
         with cls._lock:
             return cls._state

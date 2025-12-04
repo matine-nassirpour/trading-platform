@@ -165,6 +165,10 @@ class QuantumRuntime:
     # Properties
     # --------------------------------------------------------------------------
     @property
+    def identity(self) -> IdentityRuntimeBundle:
+        return self._make_identity()
+
+    @property
     def time_provider(self) -> TimeProviderPort:
         return self._time_provider
 
