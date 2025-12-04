@@ -69,33 +69,6 @@ class LoggingSettings(BaseConfigSettings, PublicSettingsMixin):
     )
 
     # --------------------------------------------------------------------------
-    # Streamlit integration (optional visualization defaults)
-    # --------------------------------------------------------------------------
-    streamlit_log_tz: str = Field(
-        default="utc", description="Timezone for log display (utc or local)."
-    )
-    streamlit_log_renderer: str = Field(
-        default="json", description="Preferred log rendering mode ('json' or 'code')."
-    )
-    streamlit_log_expanded: bool = Field(
-        default=False, description="Whether Streamlit log view is expanded by default."
-    )
-    streamlit_log_chunk_bytes: int = Field(
-        default=256_000,
-        ge=0,
-        description="Maximum chunk size (bytes) when reading log tails.",
-    )
-    streamlit_log_tail_max_lines: int = Field(
-        default=100,
-        ge=0,
-        description="Maximum number of log lines displayed in the Streamlit tail view.",
-    )
-    streamlit_log_glob: str = Field(
-        default="events-*.jsonl",
-        description="Glob pattern for log discovery in Streamlit UI.",
-    )
-
-    # --------------------------------------------------------------------------
     # Validators
     # --------------------------------------------------------------------------
     @field_validator("quantum_log_level", mode="before")
@@ -117,26 +90,6 @@ class LoggingSettings(BaseConfigSettings, PublicSettingsMixin):
             parts = [s.strip() for s in v.split(",") if s.strip()]
             return frozenset(parts)
         return frozenset(v)
-
-    @field_validator("streamlit_log_tz", mode="before")
-    @classmethod
-    def validate_tz(cls, v: Any) -> Any:
-        return validate_field(
-            "platform.logging.timezone",
-            v,
-            field="streamlit_log_tz",
-            model="LoggingSettings",
-        )
-
-    @field_validator("streamlit_log_renderer", mode="before")
-    @classmethod
-    def validate_renderer(cls, v: str) -> str:
-        if not v:
-            return "json"
-        v = str(v).strip().lower()
-        if v not in ("json", "code"):
-            raise ValueError("streamlit_log_renderer must be 'json' or 'code'")
-        return v
 
     @field_validator("quantum_log_sample_info", mode="before")
     @classmethod
