@@ -23,8 +23,8 @@ class LoggingRuntimeBundle:
     identity: IdentityRuntimeBundle
 
     # Directories
-    log_dir: Path | None
-    audit_dir: Path | None
+    log_dir: Path
+    audit_dir: Path
 
     # Allowlist
     audit_allowlist: frozenset[str]

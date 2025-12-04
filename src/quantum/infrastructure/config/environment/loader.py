@@ -6,6 +6,8 @@ from pathlib import Path
 
 from dotenv import dotenv_values
 
+from quantum.infrastructure.config.environment.namespace import extract_application_env
+from quantum.infrastructure.config.environment.normalization import normalize_env_keys
 from quantum.infrastructure.config.environment.snapshot import get_frozen_env
 from quantum.infrastructure.config.environment.types import EnvResolutionResult
 from quantum.infrastructure.config.runtime.state.config_state import ConfigStateManager
@@ -66,14 +68,18 @@ def load_env_from_resolved(
     ):
         return state.get_env_cache()
 
-    file_env = _load_env_files(
-        base_dir=resolution.base_dir,
-        env_file=resolution.env_file,
+    file_env = normalize_env_keys(
+        _load_env_files(
+            base_dir=resolution.base_dir,
+            env_file=resolution.env_file,
+        )
     )
-    os_env = dict(get_frozen_env())
+
+    os_env = normalize_env_keys(get_frozen_env())
 
     # Final merge = user-defined .env overrides OS snapshot
-    effective = {**os_env, **file_env}
+    merged = {**os_env, **file_env}
+    effective = extract_application_env(merged)
 
     state.update(
         base_dir=resolution.base_dir,

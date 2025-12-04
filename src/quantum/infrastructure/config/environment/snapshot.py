@@ -6,6 +6,8 @@ import threading
 from collections.abc import Mapping
 from typing import Final
 
+from quantum.infrastructure.config.environment.normalization import normalize_env_keys
+
 
 class FrozenEnvironment:
     """
@@ -36,7 +38,7 @@ class FrozenEnvironment:
             # Recreate snapshot if PID changed (fork, multiprocessing)
             if cls._pid != pid or cls._snapshot is None:
                 # Create immutable lowercase version of environment
-                normalized = {k.lower(): v for k, v in os.environ.items()}
+                normalized = normalize_env_keys(os.environ)
                 cls._snapshot = dict(normalized)  # defensive copy
                 cls._pid = pid
 

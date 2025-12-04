@@ -8,8 +8,6 @@ from typing import Any
 from quantum.infrastructure.config.environment.loader import load_env_from_resolved
 from quantum.infrastructure.config.environment.model_router import (
     EnvironmentModelRouter,
-    find_orphan_environment_variables,
-    validate_environment_keys_strict,
 )
 from quantum.infrastructure.config.environment.resolver import resolve_env
 from quantum.infrastructure.config.environment.types import EnvResolutionResult
@@ -88,13 +86,7 @@ class ConfigFSMAdapters:
             "mt5": MT5Settings,
         }
 
-        # Strict env validation (fail-fast, safety-grade)
-        validate_environment_keys_strict(models, env)
-
         routed_env = EnvironmentModelRouter.route(models, env)
-
-        # Detect orphan variables — purely informational, no crash
-        orphans = find_orphan_environment_variables(models, env)
 
         # Construct each model with its own routed environment
         core = CoreSettings(**routed_env["core"])
@@ -109,12 +101,7 @@ class ConfigFSMAdapters:
             "mt5": mt5.model_dump(),
         }
 
-        # Enrich metadata with orphans (optional, transparent, non-breaking)
-        metadata = {"orphans": sorted(orphans)} if orphans else {}
-
-        return self.pipeline.step_build_model(
-            state, env=env, settings=settings_dict, metadata=metadata
-        )
+        return self.pipeline.step_build_model(state, env=env, settings=settings_dict)
 
     # --------------------------------------------------------------------------
     # STEP 4 — Validate constructed models (already validated by Pydantic)

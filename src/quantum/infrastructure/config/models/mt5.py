@@ -28,10 +28,10 @@ class MT5Settings(BaseConfigSettings, PublicSettingsMixin):
     # --------------------------------------------------------------------------
     # Terminal paths
     # --------------------------------------------------------------------------
-    mt5_ftmo_terminal_path: ExecutablePathSpec | None = Field(
+    quantum_mt5_ftmo_terminal_path: ExecutablePathSpec | None = Field(
         default=None, description="Absolute path to FTMO MetaTrader terminal executable"
     )
-    mt5_fundednext_terminal_path: ExecutablePathSpec | None = Field(
+    quantum_mt5_fundednext_terminal_path: ExecutablePathSpec | None = Field(
         default=None,
         description="Absolute path to FundedNext MetaTrader terminal executable",
     )

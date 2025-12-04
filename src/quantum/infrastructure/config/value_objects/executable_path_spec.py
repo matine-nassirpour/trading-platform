@@ -169,12 +169,19 @@ class ExecutablePathSpec(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def normalize_and_validate_raw(cls, data: dict | str | Path | None) -> dict:
+        if not isinstance(data, dict):
+            raw_input = data
+            data = {}
+        else:
+            raw_input = data.get("path", data)
+
         try:
-            p = canonicalize_raw_path(data, field_name="path")
+            p = canonicalize_raw_path(raw_input, field_name="path")
         except PathNormalizationError as exc:
             raise ValueError(str(exc)) from exc
 
-        return {"path": p}
+        data["path"] = p
+        return data
 
     # --------------------------------------------------------------------------
     # Step 2 — Validate invariants (AFTER model construction)

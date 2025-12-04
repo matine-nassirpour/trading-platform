@@ -137,8 +137,16 @@ class PublicSettingsMixin:
         """
         Recursive, cycle-safe sanitization.
         """
-        guid = _get_stable_guid(value, guid_cache)
+        if not (
+            isinstance(value, BaseModel)
+            or dataclasses.is_dataclass(value)
+            or hasattr(value, "_fields")
+            or isinstance(value, Mapping)
+            or self._is_iterable(value)
+        ):
+            return _to_safe_string(value)
 
+        guid = _get_stable_guid(value, guid_cache)
         if guid in visited:
             return "<cycle>"
         visited.add(guid)

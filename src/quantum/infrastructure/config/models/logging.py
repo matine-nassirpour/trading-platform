@@ -53,15 +53,15 @@ class LoggingSettings(BaseConfigSettings, PublicSettingsMixin):
         ge=0,
         description="Optional warning threshold for log file size (0 = disabled).",
     )
-    quantum_log_dir: DirectoryPathSpec | None = Field(
-        default=None, description="Base directory for partitioned JSONL logs."
+    quantum_log_dir: DirectoryPathSpec = Field(
+        description="Base directory for partitioned JSONL logs."
     )
 
     # --------------------------------------------------------------------------
     # Audit
     # --------------------------------------------------------------------------
-    quantum_audit_dir: DirectoryPathSpec | None = Field(
-        default=None, description="Directory for audit event JSONL files."
+    quantum_audit_dir: DirectoryPathSpec = Field(
+        description="Directory for audit event JSONL files."
     )
     quantum_audit_allowlist: frozenset[str] = Field(
         default_factory=frozenset,
