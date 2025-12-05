@@ -37,6 +37,7 @@ trading-platform/
 │       └── README.md
 ├── runtime/
 │   ├── __init__.py
+│   ├── observability_http_server.py
 │   ├── runtime_composer.py
 │   └── runtime_engine.py
 ├── scripts/
@@ -197,9 +198,13 @@ trading-platform/
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── loader.py
 │       │   │   │   ├── model_router.py
+│       │   │   │   ├── namespace.py
+│       │   │   │   ├── normalization.py
+│       │   │   │   ├── policy.py
 │       │   │   │   ├── resolver.py
 │       │   │   │   ├── snapshot.py
-│       │   │   │   └── types.py
+│       │   │   │   ├── types.py
+│       │   │   │   └── validation.py
 │       │   │   ├── models/
 │       │   │   │   ├── base/
 │       │   │   │   │   ├── __init__.py
