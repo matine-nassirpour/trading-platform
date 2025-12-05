@@ -5,22 +5,18 @@ import socket
 import requests
 import streamlit as st
 
-RUNTIME_OBS_HTTP = "http://127.0.0.1:8765/ready-state"
+CONFIG_READINESS_URL = "http://127.0.0.1:8765/config-readiness"
 
 
 def load_ready_state() -> dict | None:
     """
     Passive read-only retrieval of the Runtime READY state.
-
-    No side effects.
-    No dependency on runtime internals.
-    Fully Clean Architecture compliant.
     """
     try:
-        r = requests.get(RUNTIME_OBS_HTTP, timeout=1)
-        if r.status_code == 200:
-            return r.json()
-        return None
+        r = requests.get(CONFIG_READINESS_URL, timeout=1)
+        data = r.json()
+        data["_http_status_code"] = r.status_code
+        return data
     except Exception:
         return None
 
@@ -105,11 +101,12 @@ def render_page() -> None:
     ready = load_ready_state()
 
     if ready is None:
-        st.error("❌ Failed to reach Runtime Observability API.")
+        st.error("❌ Failed to reach Runtime Status API.")
         return
 
-    # Detect NOT READY (503 path)
-    if "status" in ready and ready["status"] != "ok":
+    status_code = ready.pop("_http_status_code", 200)
+
+    if status_code != 200:
         st.error(f"❌ Runtime not READY: {ready.get('reason', 'Unknown reason')}")
         st.code(ready, language="json")
         return

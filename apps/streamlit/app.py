@@ -1,6 +1,6 @@
 import streamlit as st
 
-from apps.streamlit.pages.page_observability_core import render_page
+from apps.streamlit.dashboards.dashboard_config_runtime import render_page
 
 
 def main() -> None:

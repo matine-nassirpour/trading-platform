@@ -5,7 +5,7 @@ from quantum.infrastructure.config.runtime.state.config_state import CONFIG_STAT
 from quantum.infrastructure.config.runtime.state.ready_cache import ReadyStateCache
 
 
-class ReadyStateAdapter:
+class ConfigReadinessProvider:
     """
     Responsibility: Extract READY state snapshot.
     Pure read-only adapter. No JSON, no HTTP.

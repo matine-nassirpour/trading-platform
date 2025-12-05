@@ -5,7 +5,7 @@ import logging
 
 from typing import Final
 
-from runtime.supervisor.http.server import RuntimeStatusHTTPServer
+from runtime.control_plane.admin_http.server import RuntimeSupervisorHTTPServer
 
 from quantum.application.ports.outbound.event_bus_port import EventBusPort
 from quantum.application.services.application_orchestrator import (
@@ -52,7 +52,7 @@ class RuntimeEngine:
         self._graceful_timeout = graceful_shutdown_timeout
 
         self._shutdown_requested = asyncio.Event()
-        self._runtime_http_server = RuntimeStatusHTTPServer()
+        self._runtime_supervisor_http_server = RuntimeSupervisorHTTPServer()
 
         self._running = False
         self._shutdown_started = False
@@ -76,7 +76,7 @@ class RuntimeEngine:
 
         LOGGER.info("[Runtime] Starting Quantum Runtime Engine")
 
-        await self._runtime_http_server.start()
+        await self._runtime_supervisor_http_server.start()
         await self._event_bus.initialize()
         await self._app.start()
 
@@ -100,7 +100,7 @@ class RuntimeEngine:
         if not self._shutdown_requested.is_set():
             LOGGER.warning("[Runtime] Shutdown requested")
             self._shutdown_requested.set()
-            await self._runtime_http_server.stop()
+            await self._runtime_supervisor_http_server.stop()
 
     # --------------------------------------------------------------------------
     # Internal Lifecycle

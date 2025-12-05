@@ -1,12 +1,12 @@
 import logging
 
 from aiohttp import web
-from runtime.supervisor.http.routing import build_routes
+from runtime.control_plane.admin_http.routing import build_routes
 
 LOGGER = logging.getLogger("quantum.runtime.http")
 
 
-class RuntimeStatusHTTPServer:
+class RuntimeSupervisorHTTPServer:
     """
     Minimal, deterministic, low-criticality HTTP server.
     Responsibility: Transport ONLY.
@@ -28,7 +28,9 @@ class RuntimeStatusHTTPServer:
         self._site = web.TCPSite(self._runner, self._host, self._port)
         await self._site.start()
 
-        LOGGER.info(f"[HTTP Server] Server started at http://{self._host}:{self._port}")
+        LOGGER.info(
+            f"[HTTP Server] RuntimeSupervisor Server started at http://{self._host}:{self._port}"
+        )
 
     async def stop(self) -> None:
         if self._runner is None:
@@ -41,4 +43,4 @@ class RuntimeStatusHTTPServer:
         self._runner = None
         self._site = None
 
-        LOGGER.info("Observability HTTP server stopped.")
+        LOGGER.info("[HTTP Server] RuntimeSupervisor server stopped.")

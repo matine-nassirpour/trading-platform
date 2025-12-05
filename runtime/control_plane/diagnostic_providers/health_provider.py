@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 
 
-class HealthAdapter:
+class HealthProvider:
     """
     Responsibility: Produce minimal liveness snapshot.
     No HTTP, no JSON.
