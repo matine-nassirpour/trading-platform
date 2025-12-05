@@ -17,11 +17,9 @@ from quantum.infrastructure.config.runtime.state.ready_cache import ReadyStateCa
 LOGGER = logging.getLogger("quantum.observability.http")
 
 
-# ---------------------------------------------------------------------------
-# Canonical serialization helpers (dependable, certifiable)
-# ---------------------------------------------------------------------------
-
-
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Internal Helpers                                                           │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 def _normalize_json_safe(value):
     """
     Convert recursively any object into a JSON-serializable structure.
@@ -86,18 +84,16 @@ def _canonical_json(data: object) -> str:
     )
 
 
-# ---------------------------------------------------------------------------
-# HTTP Handlers
-# ---------------------------------------------------------------------------
-
-
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ HTTP Handlers                                                              │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 async def handle_ready_state(request: web.Request) -> web.Response:
     """
     Expose the FULL READY state of the runtime in canonical JSON form.
 
     This endpoint is:
     - Read-only
-    - Side-effect free
+    - Side effect free
     - Fully deterministic
     - Safe for audit, supervision, regulatory inspection
     """
@@ -146,11 +142,9 @@ async def handle_health(request: web.Request) -> web.Response:
     return web.json_response(payload, status=200)
 
 
-# ---------------------------------------------------------------------------
-# Server lifecycle
-# ---------------------------------------------------------------------------
-
-
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Server lifecycle                                                           │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 class ObservabilityHTTPServer:
     """
     Fully async embedded HTTP server exposing observability endpoints.
@@ -170,9 +164,9 @@ class ObservabilityHTTPServer:
         self._runner: web.AppRunner | None = None
         self._site: web.TCPSite | None = None
 
-    # ----------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Start
-    # ----------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     async def start(self) -> None:
         app = web.Application()
         app.add_routes(
@@ -192,9 +186,9 @@ class ObservabilityHTTPServer:
             f"Observability HTTP server started at http://{self._host}:{self._port}"
         )
 
-    # ----------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Stop
-    # ----------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     async def stop(self) -> None:
         if self._runner is None:
             return
