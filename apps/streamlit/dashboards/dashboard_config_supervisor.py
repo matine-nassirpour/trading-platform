@@ -8,7 +8,7 @@ import streamlit as st
 CONFIG_READINESS_URL = "http://127.0.0.1:8765/config-readiness"
 
 
-def load_ready_state() -> dict | None:
+def fetch_ready_config_state() -> dict | None:
     """
     Passive read-only retrieval of the Runtime READY state.
     """
@@ -98,24 +98,26 @@ def render_env_snapshot_from_json(env: dict, metadata: dict) -> None:
 # │ Main Page Renderer                                                         │
 # ╰────────────────────────────────────────────────────────────────────────────╯
 def render_page() -> None:
-    ready = load_ready_state()
+    ready_config_state = fetch_ready_config_state()
 
-    if ready is None:
+    if ready_config_state is None:
         st.error("❌ Failed to reach Runtime Status API.")
         return
 
-    status_code = ready.pop("_http_status_code", 200)
+    status_code = ready_config_state.pop("_http_status_code", 200)
 
     if status_code != 200:
-        st.error(f"❌ Runtime not READY: {ready.get('reason', 'Unknown reason')}")
-        st.code(ready, language="json")
+        st.error(
+            f"❌ Runtime not READY: {ready_config_state.get('reason', 'Unknown reason')}"
+        )
+        st.code(ready_config_state, language="json")
         return
 
     # READY path (canonical structure)
-    ready_state = ready.get("ready_state")
+    ready_state = ready_config_state.get("ready_state")
     if ready_state is None:
         st.error("❌ Missing ready_state in response.")
-        st.code(ready, language="json")
+        st.code(ready_config_state, language="json")
         return
 
     # Settings, metadata, env
@@ -128,15 +130,13 @@ def render_page() -> None:
     st.divider()
 
     # FSM status
-    st.subheader("🏁 Configuration State")
-    st.success("READY")
-    st.write(f"Fingerprint : `{ready.get('fingerprint')}`")
-    st.write(f"Schema version : `{ready.get('schema_version')}`")
-    st.write(f"Timestamp : `{ready.get('timestamp_utc')}`")
+    status = ready_state.get("status")
+    fp = ready_config_state.get("fingerprint")
+    render_fsm_status(status, fp)
     st.divider()
 
     # Runtime overview
-    render_runtime_overview_from_json(ready)
+    render_runtime_overview_from_json(ready_config_state)
     st.divider()
 
     render_configuration_settings_from_json(settings)

@@ -33,4 +33,9 @@ def handle_config_readiness(request: web.Request) -> web.Response:
 
 def handle_health(request: web.Request) -> web.Response:
     payload = HealthProvider.get_health()
-    return web.json_response(payload, status=200)
+    canonical = canonical_json(payload)
+    return web.Response(
+        body=canonical.encode("utf-8"),
+        content_type="application/json",
+        status=200,
+    )

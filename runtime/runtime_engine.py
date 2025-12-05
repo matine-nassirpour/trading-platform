@@ -58,51 +58,6 @@ class RuntimeEngine:
         self._shutdown_started = False
 
     # --------------------------------------------------------------------------
-    # Public API
-    # --------------------------------------------------------------------------
-    async def start(self) -> None:
-        """
-        Start and run the Quantum Runtime Engine.
-
-        Steps:
-            1. Initialize event bus.
-            2. Start application services.
-            3. Enter cooperative async loop.
-            4. Wait for shutdown signal.
-        """
-        if self._running:
-            LOGGER.warning("[Runtime] start() called but engine is already running")
-            return
-
-        LOGGER.info("[Runtime] Starting Quantum Runtime Engine")
-
-        await self._runtime_supervisor_http_server.start()
-        await self._event_bus.initialize()
-        await self._app.start()
-
-        self._running = True
-        LOGGER.info("[Runtime] Runtime is now operational")
-
-        try:
-            await self._main_loop()
-        finally:
-            await self._shutdown()
-
-    async def request_shutdown(self) -> None:
-        """
-        External trigger for shutdown.
-
-        Called by:
-        - OS signals (SIGINT, SIGTERM)
-        - Streamlit UI
-        - Application watchdog
-        """
-        if not self._shutdown_requested.is_set():
-            LOGGER.warning("[Runtime] Shutdown requested")
-            self._shutdown_requested.set()
-            await self._runtime_supervisor_http_server.stop()
-
-    # --------------------------------------------------------------------------
     # Internal Lifecycle
     # --------------------------------------------------------------------------
     async def _main_loop(self) -> None:
@@ -117,41 +72,36 @@ class RuntimeEngine:
         while not self._shutdown_requested.is_set():
             await asyncio.sleep(0.05)  # Cooperative scheduling
 
+    async def _do_shutdown(self) -> None:
+        LOGGER.debug("[Runtime Engine] Stopping application orchestrator")
+        with self._suppress_cancel():
+            await self._app.stop()
+
+        LOGGER.debug("[Runtime Engine] Closing event bus")
+        with self._suppress_cancel():
+            await self._event_bus.close()
+
+        LOGGER.debug("[Runtime Engine] Stopping HTTP supervisor server")
+        await self._runtime_supervisor_http_server.stop()
+
     async def _shutdown(self) -> None:
         """
         Deterministic and safe shutdown sequence.
         """
         if self._shutdown_started:
-            LOGGER.warning("[Runtime] Shutdown already in progress — skipping.")
+            LOGGER.warning("[Runtime Engine] Shutdown already in progress — skipping.")
             return
 
         self._shutdown_started = True
-        LOGGER.info("[Runtime] Performing graceful shutdown")
+        LOGGER.info("[Runtime Engine] Performing graceful shutdown")
 
         try:
             await asyncio.wait_for(self._do_shutdown(), timeout=self._graceful_timeout)
         except TimeoutError:
-            LOGGER.error("[Runtime] Forced shutdown (timeout exceeded)")
+            LOGGER.error("[Runtime Engine] Forced shutdown (timeout exceeded)")
 
         self._running = False
-        LOGGER.info("[Runtime] Shutdown complete")
-
-    async def _do_shutdown(self) -> None:
-        """
-        Actual shutdown logic.
-
-        Order:
-            1. Stop application orchestrator
-            2. Close event bus
-            3. Release OS-level resources
-        """
-        LOGGER.debug("[Runtime] Stopping application orchestrator")
-        with self._suppress_cancel():
-            await self._app.stop()
-
-        LOGGER.debug("[Runtime] Closing event bus")
-        with self._suppress_cancel():
-            await self._event_bus.close()
+        LOGGER.info("[Runtime Engine] Shutdown complete")
 
     # --------------------------------------------------------------------------
     # Utilities
@@ -169,3 +119,48 @@ class RuntimeEngine:
         def __exit__(self, exc_type, exc, tb) -> bool:
             # Convert CancelledError to “handled”
             return exc_type is asyncio.CancelledError
+
+    # --------------------------------------------------------------------------
+    # Public API
+    # --------------------------------------------------------------------------
+    async def start(self) -> None:
+        """
+        Start and run the Quantum Runtime Engine.
+
+        Steps:
+            1. Initialize event bus.
+            2. Start application services.
+            3. Enter cooperative async loop.
+            4. Wait for shutdown signal.
+        """
+        if self._running:
+            LOGGER.warning("[Runtime] start() called but engine is already running")
+            return
+
+        LOGGER.info("[Runtime Engine] Starting Quantum Runtime Engine")
+
+        await self._runtime_supervisor_http_server.start()
+        await self._event_bus.initialize()
+        await self._app.start()
+
+        self._running = True
+        LOGGER.info("[Runtime Engine] Runtime is now operational")
+
+        try:
+            await self._main_loop()
+        finally:
+            await self._shutdown()
+
+    async def request_shutdown(self) -> None:
+        """
+        External trigger for shutdown.
+
+        Called by:
+        - OS signals (SIGINT, SIGTERM)
+        - Streamlit UI
+        - Application watchdog
+        """
+        if not self._shutdown_requested.is_set():
+            LOGGER.warning("[Runtime Engine] Shutdown requested")
+            self._shutdown_requested.set()
+            await self._runtime_supervisor_http_server.stop()

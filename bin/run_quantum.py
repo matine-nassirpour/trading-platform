@@ -57,6 +57,10 @@ async def main_async() -> int:
 
     if not runtime.initialize_observability():
         LOGGER.error("Observability startup failed")
+        try:
+            runtime.shutdown_observability()
+        except Exception:
+            LOGGER.exception("Error while rolling back observability init")
         return 3
 
     # 2. Build application shell (event bus + orchestrator + engine)

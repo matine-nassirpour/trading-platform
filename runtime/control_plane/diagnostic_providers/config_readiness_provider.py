@@ -24,6 +24,7 @@ class ConfigReadinessProvider:
             "fingerprint": fp,
             "timestamp_utc": datetime.now(UTC).isoformat(),
             "ready_state": {
+                "status": state.status.value,
                 "env": state.env,
                 "settings": state.settings,
                 "metadata": state.metadata,

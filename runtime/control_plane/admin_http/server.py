@@ -19,6 +19,10 @@ class RuntimeSupervisorHTTPServer:
         self._site: web.TCPSite | None = None
 
     async def start(self) -> None:
+        if self._runner is not None:
+            LOGGER.warning("[HTTP Server] RuntimeSupervisor server already started")
+            return
+
         app = web.Application()
         app.add_routes(build_routes())
 
