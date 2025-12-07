@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/psf/black
-    rev: 25.9.0
+    rev: 25.11.0
     hooks:
       - id: black
         args: ["--config", "assurance/quality/black.toml"]
@@ -12,7 +12,7 @@ repos:
         args: ["--settings-file", "assurance/quality/isort.cfg"]
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.3
+    rev: v0.14.8
     hooks:
       - id: ruff
         args: ["--fix", "--config", "assurance/quality/ruff.toml"]
@@ -39,13 +39,13 @@ repos:
 #        ]
 
   - repo: https://github.com/pypa/pip-audit
-    rev: v2.9.0
+    rev: v2.10.0
     hooks:
       - id: pip-audit
-        args: ["--strict", "--ignore-vuln", "GHSA-4xh5-x5gv-qwph"]
+        args: ["--strict", "--skip-editable"]
 
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.21.0
+    rev: v3.21.2
     hooks:
       - id: pyupgrade
         args: ["--py311-plus"]

@@ -74,7 +74,7 @@ assurance-report: ## Generate unified HTML Assurance Report
 
 audit: ## Dependency and vulnerability audit
 	@poetry check
-	@poetry run pip-audit -l; if ($$LASTEXITCODE -ne 0) { Write-Host "pip-audit found issues"; exit 1 }
+	@poetry run pip-audit -l --skip-editable; if ($$LASTEXITCODE -ne 0) { Write-Host "pip-audit found issues"; exit 1 }
 
 contracts: ## Enforce architectural boundaries (Import Linter)
 	@Write-Host "Checking architecture contracts..."

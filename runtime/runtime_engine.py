@@ -124,32 +124,40 @@ class RuntimeEngine:
     # Public API
     # --------------------------------------------------------------------------
     async def start(self) -> None:
-        """
-        Start and run the Quantum Runtime Engine.
+        """Start and run the Quantum Runtime Engine."""
 
-        Steps:
-            1. Initialize event bus.
-            2. Start application services.
-            3. Enter cooperative async loop.
-            4. Wait for shutdown signal.
-        """
         if self._running:
-            LOGGER.warning("[Runtime] start() called but engine is already running")
             return
 
         LOGGER.info("[Runtime Engine] Starting Quantum Runtime Engine")
 
-        await self._runtime_supervisor_http_server.start()
-        await self._event_bus.initialize()
-        await self._app.start()
-
-        self._running = True
-        LOGGER.info("[Runtime Engine] Runtime is now operational")
-
         try:
-            await self._main_loop()
-        finally:
-            await self._shutdown()
+            await self._runtime_supervisor_http_server.start()
+            try:
+                await self._event_bus.initialize()
+                try:
+                    await self._app.start()
+                except Exception:
+                    # rollback event bus
+                    with self._suppress_cancel():
+                        await self._event_bus.close()
+                    raise
+            except Exception:
+                # rollback HTTP server
+                await self._runtime_supervisor_http_server.stop()
+                raise
+
+            self._running = True
+            LOGGER.info("[Runtime Engine] Runtime is now operational")
+
+            try:
+                await self._main_loop()
+            finally:
+                await self._shutdown()
+
+        except Exception:
+            LOGGER.exception("[Runtime Engine] Fatal error during startup")
+            raise
 
     async def request_shutdown(self) -> None:
         """
