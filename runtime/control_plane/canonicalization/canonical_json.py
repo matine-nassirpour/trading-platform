@@ -22,6 +22,10 @@ def _normalize(value: Any, *, _seen: set[int] | None = None) -> Any:
     if _seen is None:
         _seen = set()
 
+    # None / primitives
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+
     obj_id = id(value)
     if obj_id in _seen:
         # Cycle detected → safe canonical marker
@@ -29,10 +33,6 @@ def _normalize(value: Any, *, _seen: set[int] | None = None) -> Any:
 
     # Track current object to detect cycles deeper in recursion.
     _seen.add(obj_id)
-
-    # None / primitives
-    if value is None or isinstance(value, (str, int, float, bool)):
-        return value
 
     # Sequences / unordered sets → deterministic list
     if isinstance(value, (list, tuple)):

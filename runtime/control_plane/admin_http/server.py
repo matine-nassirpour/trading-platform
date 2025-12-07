@@ -3,7 +3,7 @@ import logging
 from aiohttp import web
 from runtime.control_plane.admin_http.routing import build_routes
 
-LOGGER = logging.getLogger("quantum.runtime.http")
+LOGGER = logging.getLogger("quantum.runtime.control_plane.admin_http.server")
 
 
 def _normalize_base_path(base_path: str) -> str:
@@ -53,7 +53,7 @@ class RuntimeSupervisorHTTPServer:
 
     async def start(self) -> None:
         if self._runner is not None:
-            LOGGER.warning("[HTTP Server] RuntimeSupervisor server already started")
+            LOGGER.warning("[HTTP Server] RuntimeSupervisor server already started.")
             return
 
         app = web.Application()
