@@ -3,9 +3,10 @@ import json
 from collections.abc import Mapping
 from pathlib import Path
 from types import MappingProxyType
+from typing import Any
 
 
-def _normalize(value):
+def _normalize(value: Any, *, _seen: set[int] | None = None) -> Any:
     """
     Convert recursively any object into a JSON-serializable structure.
 
@@ -18,35 +19,55 @@ def _normalize(value):
         • Arbitrary objects → vars() / str()
     """
 
+    if _seen is None:
+        _seen = set()
+
+    obj_id = id(value)
+    if obj_id in _seen:
+        # Cycle detected → safe canonical marker
+        return "<CYCLE>"
+
+    # Track current object to detect cycles deeper in recursion.
+    _seen.add(obj_id)
+
     # None / primitives
     if value is None or isinstance(value, (str, int, float, bool)):
         return value
 
-    # Sequences / sets → list
-    if isinstance(value, (list, tuple, set, frozenset)):
-        return [_normalize(v) for v in value]
+    # Sequences / unordered sets → deterministic list
+    if isinstance(value, (list, tuple)):
+        return [_normalize(v, _seen=_seen) for v in value]
 
-    # MappingProxyType (immutable mapping wrapper)
-    if isinstance(value, MappingProxyType):
-        return {k: _normalize(v) for k, v in value.items()}
+    if isinstance(value, (set, frozenset)):
+        # Sort using stringified representation for deterministic ordering
+        return sorted(
+            (_normalize(v, _seen=_seen) for v in value),
+            key=lambda x: json.dumps(x, sort_keys=True),
+        )
 
-    # General mappings
-    if isinstance(value, Mapping):
-        return {str(k): _normalize(v) for k, v in value.items()}
+    # MappingProxyType and general Mapping
+    if isinstance(value, MappingProxyType) or isinstance(value, Mapping):
+        # Normalize keys → canonical string keys
+        normalized_items = [
+            (str(k), _normalize(v, _seen=_seen)) for k, v in value.items()
+        ]
+        # Ensure deterministic ordering
+        normalized_items.sort(key=lambda kv: kv[0])
+        return {k: v for k, v in normalized_items}
 
-    # Path → str
+    # Path → string
     if isinstance(value, Path):
         return str(value)
 
     # Pydantic models
     if hasattr(value, "model_dump"):
-        return _normalize(value.model_dump())
+        return _normalize(value.model_dump(), _seen=_seen)
 
-    # Generic objects with __dict__
+    # Objects with __dict__
     if hasattr(value, "__dict__"):
-        return _normalize(vars(value))
+        return _normalize(vars(value), _seen=_seen)
 
-    # Fallback safe string
+    # Final fallback to stable string
     return str(value)
 
 

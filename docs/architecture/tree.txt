@@ -3,7 +3,7 @@ trading-platform/
 │   ├── streamlit/
 │   │   ├── dashboards/
 │   │   │   ├── __init__.py
-│   │   │   └── dashboard_config_supervisor.py
+│   │   │   └── config_readiness.py
 │   │   ├── __init__.py
 │   │   ├── app.py
 │   │   └── config_runtime_client.py
@@ -37,6 +37,10 @@ trading-platform/
 │       ├── log_schema_v1.json
 │       └── README.md
 ├── runtime/
+│   ├── composition/
+│   │   ├── __init__.py
+│   │   ├── runtime_composer.py
+│   │   └── runtime_system.py
 │   ├── control_plane/
 │   │   ├── admin_http/
 │   │   │   ├── __init__.py
@@ -52,9 +56,7 @@ trading-platform/
 │   │   │   └── health_provider.py
 │   │   └── __init__.py
 │   ├── __init__.py
-│   ├── runtime_composer.py
-│   ├── runtime_engine.py
-│   └── runtime_system.py
+│   └── runtime_engine.py
 ├── scripts/
 │   ├── generate_assurance_report.py
 │   ├── generate_log_schema.py

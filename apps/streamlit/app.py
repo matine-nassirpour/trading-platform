@@ -1,6 +1,6 @@
 import streamlit as st
 
-from apps.streamlit.dashboards.dashboard_config_supervisor import render_page
+from apps.streamlit.dashboards.config_readiness import render_page
 
 
 def main() -> None:
