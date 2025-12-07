@@ -5,6 +5,12 @@ import logging
 
 from typing import Final, Protocol
 
+from runtime.runtime_state import (
+    RuntimeInvalidStateError,
+    RuntimeState,
+    RuntimeStateMachine,
+)
+
 from quantum.application.ports.outbound.event_bus_port import EventBusPort
 from quantum.application.services.application_orchestrator import (
     ApplicationOrchestrator,
@@ -29,21 +35,10 @@ class RuntimeEngine:
     Quantum Runtime Engine (asynchronous)
 
     Responsibilities:
-    • Orchestration root for the entire Quantum runtime lifecycle.
-    • Drives application-level async behaviors (event-driven loop).
-    • Owns the event bus lifecycle (init → run → shutdown).
-    • Owns the admin HTTP supervisor lifecycle (start → run → stop),
-      via an abstract port (AdminHTTPServerPort).
-    • Provides deterministic startup and teardown semantics.
-    • Zero domain knowledge, zero infrastructure knowledge.
-    • Stable API designed for 10+ years compatibility.
-
-    Architectural Position:
-    This class is the OS-internal orchestrator.
-    - Does NOT import infrastructure directly.
-    - Does NOT contain business logic.
-    - Does NOT manipulate observability, logging, or configuration.
-    - All external dependencies are injected (DIP-compliant).
+    • Deterministic orchestration of the runtime lifecycle.
+    • Strict lifecycle FSM (STOPPED → STARTING → RUNNING → STOPPING → STOPPED).
+    • Drives event bus + application orchestrator + admin HTTP supervisor.
+    • Zero domain knowledge; fully DIP-compliant.
     """
 
     def __init__(
@@ -60,9 +55,14 @@ class RuntimeEngine:
         self._graceful_timeout = graceful_shutdown_timeout
 
         self._shutdown_requested = asyncio.Event()
+        self._fsm = RuntimeStateMachine()
 
-        self._running = False
-        self._shutdown_started = False
+    # --------------------------------------------------------------------------
+    # Public API
+    # --------------------------------------------------------------------------
+    @property
+    def state(self) -> RuntimeState:
+        return self._fsm.state
 
     # --------------------------------------------------------------------------
     # Internal Lifecycle
@@ -74,7 +74,6 @@ class RuntimeEngine:
         Responsibilities:
         - keep the runtime responsive
         - handle graceful cancellation
-        - no business logic runs here
         """
         while not self._shutdown_requested.is_set():
             await asyncio.sleep(0.05)  # Cooperative scheduling
@@ -92,22 +91,19 @@ class RuntimeEngine:
         await self._admin_http_server.stop()
 
     async def _shutdown(self) -> None:
-        """
-        Deterministic and safe shutdown sequence.
-        """
-        if self._shutdown_started:
-            LOGGER.warning("[Runtime Engine] Shutdown already in progress — skipping.")
-            return
+        try:
+            self._fsm.transition(RuntimeState.STOPPING)
+        except RuntimeInvalidStateError as exc:
+            LOGGER.error("Illegal shutdown transition: %s", exc)
 
-        self._shutdown_started = True
-        LOGGER.info("[Runtime Engine] Performing graceful shutdown.")
+        LOGGER.info("[Runtime Engine] Graceful shutdown starting.")
 
         try:
             await asyncio.wait_for(self._do_shutdown(), timeout=self._graceful_timeout)
         except TimeoutError:
             LOGGER.error("[Runtime Engine] Forced shutdown (timeout exceeded).")
 
-        self._running = False
+        self._fsm.transition(RuntimeState.STOPPED)
         LOGGER.info("[Runtime Engine] Shutdown complete.")
 
     # --------------------------------------------------------------------------
@@ -133,9 +129,12 @@ class RuntimeEngine:
     async def start(self) -> None:
         """Start and run the Quantum Runtime Engine."""
 
-        if self._running:
-            return
+        if self._fsm.state != RuntimeState.STOPPED:
+            raise RuntimeInvalidStateError(
+                f"RuntimeEngine.start() illegal in state {self._fsm.state.value}"
+            )
 
+        self._fsm.transition(RuntimeState.STARTING)
         LOGGER.info("[Runtime Engine] Starting Quantum Runtime Engine.")
 
         try:
@@ -154,7 +153,7 @@ class RuntimeEngine:
                 await self._admin_http_server.stop()
                 raise
 
-            self._running = True
+            self._fsm.transition(RuntimeState.RUNNING)
             LOGGER.info("[Runtime Engine] Runtime is now operational.")
 
             try:
@@ -164,18 +163,18 @@ class RuntimeEngine:
 
         except Exception:
             LOGGER.exception("[Runtime Engine] Fatal error during startup.")
+            self._fsm.transition(RuntimeState.STOPPING)
+            await self._shutdown()
             raise
 
     async def request_shutdown(self) -> None:
-        """
-        External trigger for shutdown.
+        if self._fsm.state not in {RuntimeState.RUNNING, RuntimeState.STARTING}:
+            LOGGER.warning(
+                "[Runtime Engine] Shutdown request ignored (state: %s).",
+                self._fsm.state.value,
+            )
+            return
 
-        Called by:
-        - OS signals (SIGINT, SIGTERM)
-        - Streamlit UI
-        - Application watchdog
-        """
-        if not self._shutdown_requested.is_set():
-            LOGGER.warning("[Runtime Engine] Shutdown requested.")
-            self._shutdown_requested.set()
-            await self._admin_http_server.stop()
+        LOGGER.warning("[Runtime Engine] Shutdown requested.")
+        self._shutdown_requested.set()
+        await self._admin_http_server.stop()
