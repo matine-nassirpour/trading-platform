@@ -45,7 +45,7 @@ class ApplicationOrchestrator:
         if self._running:
             return
 
-        LOGGER.info("[App] Starting application layer…")
+        LOGGER.info("[App] Starting application layer...")
 
         # Register event handlers
         await self._register_handlers()

@@ -172,6 +172,13 @@ class QuantumRuntime:
     def time_provider(self) -> TimeProviderPort:
         return self._time_provider
 
+    @property
+    def core_settings(self) -> CoreSettings:
+        """
+        Expose validated core settings for deployment-shell / runtime system wiring.
+        """
+        return self._core
+
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Composition Root                                                           │

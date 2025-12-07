@@ -9,6 +9,11 @@ Responsibilities
 - Observability lifecycle supervision.
 - No blocking waits / no threading.Event.
 - Clean Architecture compliant (deployment shell only).
+
+This module SHALL NOT:
+- Contain business logic.
+- Know about infrastructure adapter types.
+- Perform low-level wiring of runtime internals.
 """
 
 from __future__ import annotations
@@ -21,15 +26,7 @@ import sys
 from typing import Final
 
 from runtime.runtime_composer import compose_runtime
-from runtime.runtime_engine import RuntimeEngine
-
-from quantum.application.ports.outbound.event_bus_port import EventBusPort
-from quantum.application.services.application_orchestrator import (
-    ApplicationOrchestrator,
-)
-from quantum.infrastructure.eventbus.asyncio_event_bus_adapter import (
-    AsyncioEventBusAdapter,
-)
+from runtime.runtime_system import build_runtime_system
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Early Stage Minimal Logger                                                 │
@@ -37,7 +34,7 @@ from quantum.infrastructure.eventbus.asyncio_event_bus_adapter import (
 # ╰────────────────────────────────────────────────────────────────────────────╯
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s [bootstrap] %(levelname)s: %(message)s",
+    format="%(asctime)s [Bootstrap] %(levelname)s: %(message)s",
 )
 LOGGER: Final = logging.getLogger("quantum.bootstrap")
 
@@ -46,7 +43,7 @@ LOGGER: Final = logging.getLogger("quantum.bootstrap")
 # │ Entrypoint Logic                                                           │
 # ╰────────────────────────────────────────────────────────────────────────────╯
 async def main_async() -> int:
-    LOGGER.info("Starting Quantum runtime…")
+    LOGGER.info("Starting Quantum runtime...")
 
     # 1. Build runtime (config + observability)
     try:
@@ -55,6 +52,7 @@ async def main_async() -> int:
         LOGGER.exception("Fatal composition error: %s", exc)
         return 2
 
+    # 2. Initialize observability stack
     if not runtime.initialize_observability():
         LOGGER.error("Observability startup failed")
         try:
@@ -63,12 +61,11 @@ async def main_async() -> int:
             LOGGER.exception("Error while rolling back observability init")
         return 3
 
-    # 2. Build application shell (event bus + orchestrator + engine)
-    event_bus: EventBusPort = AsyncioEventBusAdapter()
-    orchestrator = ApplicationOrchestrator(event_bus=event_bus)
-    engine = RuntimeEngine(app_service=orchestrator, event_bus=event_bus)
+    # 3. Build the fully-wired runtime system (engine + internal transports)
+    system = build_runtime_system(runtime)
+    engine = system.engine
 
-    # 3) Register POSIX signals in the current asyncio loop
+    # 4. Register POSIX signals in the current asyncio loop
     loop = asyncio.get_running_loop()
 
     def _handle_sigterm() -> None:
@@ -86,13 +83,13 @@ async def main_async() -> int:
         # Windows fallback
         LOGGER.warning("Signal handlers not available on this platform.")
 
-    # 4. Start the runtime engine (async)
+    # 5. Start the runtime engine (async)
     try:
         await engine.start()
     finally:
-        # 5. Shutdown observability
+        # 6. Shutdown observability
         LOGGER.info("[Runtime] Shutting down observability")
-        runtime.shutdown_observability()
+        system.runtime.shutdown_observability()
 
     LOGGER.info("Quantum runtime exited cleanly.")
     return 0

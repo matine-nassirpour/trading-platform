@@ -42,6 +42,14 @@ class CoreSettings(BaseConfigSettings, PublicSettingsMixin):
     quantum_metrics_port: int = Field(0, ge=0)
 
     # --------------------------------------------------------------------------
+    # Admin HTTP Runtime EntryPoint
+    # --------------------------------------------------------------------------
+    quantum_admin_http_enabled: bool = Field(True)
+    quantum_admin_http_host: str = Field("127.0.0.1")
+    quantum_admin_http_port: int = 8765
+    quantum_admin_http_base_path: str = Field("/")
+
+    # --------------------------------------------------------------------------
     # Execution policy
     # --------------------------------------------------------------------------
     quantum_exec_timeout: float = Field(

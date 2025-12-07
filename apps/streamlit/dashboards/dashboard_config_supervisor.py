@@ -5,20 +5,31 @@ import socket
 import requests
 import streamlit as st
 
-CONFIG_READINESS_URL = "http://127.0.0.1:8765/config-readiness"
+from apps.streamlit.config_runtime_client import AdminHTTPConfig, get_admin_http_config
 
 
-def fetch_ready_config_state() -> dict | None:
+def fetch_ready_config_state() -> tuple[dict | None, AdminHTTPConfig]:
     """
     Passive read-only retrieval of the Runtime READY state.
+
+    Returns:
+        (payload_or_none, admin_http_config)
     """
+    admin_cfg = get_admin_http_config()
+
+    if not admin_cfg.enabled or not admin_cfg.base_url:
+        # Admin HTTP disabled by configuration
+        return None, admin_cfg
+
+    url = f"{admin_cfg.base_url}/config-readiness"
+
     try:
-        r = requests.get(CONFIG_READINESS_URL, timeout=1)
+        r = requests.get(url, timeout=1)
         data = r.json()
         data["_http_status_code"] = r.status_code
-        return data
+        return data, admin_cfg
     except Exception:
-        return None
+        return None, admin_cfg
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
@@ -98,9 +109,16 @@ def render_env_snapshot_from_json(env: dict, metadata: dict) -> None:
 # │ Main Page Renderer                                                         │
 # ╰────────────────────────────────────────────────────────────────────────────╯
 def render_page() -> None:
-    ready_config_state = fetch_ready_config_state()
+    ready_config_state, admin_cfg = fetch_ready_config_state()
 
     if ready_config_state is None:
+        if not admin_cfg.enabled:
+            st.info(
+                "ℹ️ Admin HTTP endpoint is disabled by configuration.\n\n"
+                "No runtime status API is exposed for this environment."
+            )
+            return
+
         st.error("❌ Failed to reach Runtime Status API.")
         return
 
@@ -120,7 +138,6 @@ def render_page() -> None:
         st.code(ready_config_state, language="json")
         return
 
-    # Settings, metadata, env
     env = ready_state.get("env", {})
     settings = ready_state.get("settings", {})
     metadata = ready_state.get("metadata", {})
