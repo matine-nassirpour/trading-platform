@@ -1,4 +1,6 @@
-from datetime import UTC, datetime
+from runtime.control_plane.diagnostic_providers.time_provider_dependency import (
+    TimeProviderDependency,
+)
 
 
 class HealthProvider:
@@ -9,7 +11,8 @@ class HealthProvider:
 
     @staticmethod
     def get_health() -> dict:
+        time_provider = TimeProviderDependency.get()
         return {
             "status": "ok",
-            "timestamp_utc": datetime.now(UTC).isoformat(),
+            "timestamp_utc": time_provider.now_utc().isoformat(),
         }

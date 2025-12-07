@@ -7,6 +7,9 @@ from runtime.control_plane.admin_http.server import (
     NullRuntimeSupervisorHTTPServer,
     RuntimeSupervisorHTTPServer,
 )
+from runtime.control_plane.diagnostic_providers.time_provider_dependency import (
+    TimeProviderDependency,
+)
 from runtime.runtime_engine import RuntimeEngine
 
 from quantum.application.ports.outbound.event_bus_port import EventBusPort
@@ -46,6 +49,9 @@ def build_runtime_system(runtime: QuantumRuntime) -> RuntimeSystem:
     core, and is therefore allowed to import infrastructure-level adapters.
     """
     core_cfg = runtime.core_settings
+
+    # Time provider injection
+    TimeProviderDependency.set(runtime.time_provider)
 
     # Event bus
     event_bus: EventBusPort = AsyncioEventBusAdapter()

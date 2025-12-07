@@ -40,7 +40,9 @@ def fetch_ready_config_state() -> tuple[dict | None, AdminHTTPConfig]:
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Sections                                                                   │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-def render_fsm_status(status: str, fingerprint: str):
+def render_fsm_status(
+    *, fsm_version: int, status: str, fingerprint: str, timestamp: str
+):
     st.title("🏁 CONFIGURATION STATE OVERVIEW")
 
     colors = {
@@ -53,9 +55,12 @@ def render_fsm_status(status: str, fingerprint: str):
         f"### **FSM Status :** <span style='color:{color}'>**{status.upper()}**</span>",
         unsafe_allow_html=True,
     )
+    st.markdown(f"FSM Version: {fsm_version}")
 
     st.markdown("### 🔐 Fingerprint Canonical (SHA-256)")
     st.code(fingerprint, language="text")
+
+    st.write(f"System clock: {timestamp}")
 
 
 def render_runtime_overview_from_json(ready_json: dict) -> None:
@@ -152,10 +157,12 @@ def render_page() -> None:
     st.write("Realtime supervision of the Quantum Runtime configuration.")
     st.divider()
 
-    # FSM status
-    status = ready_state.get("status")
-    fp = ready_config_state.get("fingerprint")
-    render_fsm_status(status, fp)
+    render_fsm_status(
+        fsm_version=ready_config_state.get("schema_version"),
+        status=ready_state.get("status"),
+        fingerprint=ready_config_state.get("fingerprint"),
+        timestamp=ready_config_state.get("timestamp_utc"),
+    )
     st.divider()
 
     # Runtime overview
