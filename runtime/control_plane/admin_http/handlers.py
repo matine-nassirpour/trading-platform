@@ -39,3 +39,66 @@ def handle_health(request: web.Request) -> web.Response:
         content_type="application/json",
         status=200,
     )
+
+
+def _build_admin_base_url(request: web.Request) -> str:
+    """
+    Build the effective admin base URL as seen by the client.
+
+    Uses:
+        - request.scheme  (http / https)
+        - request.host    (host:port from Host header)
+        - request.app["admin_base_path"]  (injected by the HTTP server)
+
+    Guarantees:
+        - No trailing slash (except for root "/").
+    """
+    scheme = request.scheme
+    host = request.host  # already includes host:port
+
+    base_path = request.app.get("admin_base_path", "/") or "/"
+    base_path = base_path.strip()
+
+    if base_path == "" or base_path == "/":
+        return f"{scheme}://{host}"
+
+    if not base_path.startswith("/"):
+        base_path = "/" + base_path
+
+    if len(base_path) > 1 and base_path.endswith("/"):
+        base_path = base_path[:-1]
+
+    return f"{scheme}://{host}{base_path}"
+
+
+def handle_runtime_metadata(request: web.Request) -> web.Response:
+    """
+    Expose minimal runtime metadata for external clients (e.g. Streamlit UI).
+
+    This endpoint is the *single source of truth* for:
+        - The effective admin HTTP base URL
+        - The well-known admin endpoints
+
+    No configuration models are exposed here.
+    """
+    base_url = _build_admin_base_url(request)
+
+    payload = {
+        "status": "ok",
+        "timestamp_utc": datetime.now(UTC).isoformat(),
+        "admin_http": {
+            "base_url": base_url,
+            "endpoints": {
+                "health": f"{base_url}/healthz",
+                "config_readiness": f"{base_url}/config-readiness",
+                "runtime_metadata": f"{base_url}/runtime-metadata",
+            },
+        },
+    }
+
+    canonical = canonical_json(payload)
+    return web.Response(
+        body=canonical.encode("utf-8"),
+        content_type="application/json",
+        status=200,
+    )

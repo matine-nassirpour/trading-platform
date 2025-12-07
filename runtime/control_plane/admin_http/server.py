@@ -57,12 +57,16 @@ class RuntimeSupervisorHTTPServer:
             return
 
         app = web.Application()
+        # Expose the normalized base path for handlers that need to build URLs.
+        app["admin_base_path"] = self._base_path
+
         routes = build_routes()
 
         if self._base_path == "/":
             app.add_routes(routes)
         else:
             subapp = web.Application()
+            subapp["admin_base_path"] = self._base_path
             subapp.add_routes(routes)
             app.add_subapp(self._base_path, subapp)
 
@@ -73,7 +77,7 @@ class RuntimeSupervisorHTTPServer:
         await self._site.start()
 
         LOGGER.info(
-            "[HTTP Server] RuntimeSupervisor Server started at " "http://%s:%s%s",
+            "[HTTP Server] RuntimeSupervisor Server started at http://%s:%s%s",
             self._host,
             self._port,
             "" if self._base_path == "/" else self._base_path,
@@ -101,11 +105,13 @@ class NullRuntimeSupervisorHTTPServer:
     Satisfies the AdminHTTPServerPort protocol expected by RuntimeEngine.
     """
 
-    async def start(self) -> None:
+    @staticmethod
+    async def start() -> None:
         LOGGER.info(
             "[HTTP Server] Admin HTTP server is DISABLED by configuration. "
             "No HTTP control-plane will be exposed."
         )
 
-    async def stop(self) -> None:
+    @staticmethod
+    async def stop() -> None:
         LOGGER.info("[HTTP Server] Admin HTTP server disabled — nothing to stop.")

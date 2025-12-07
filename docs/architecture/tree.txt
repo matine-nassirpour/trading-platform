@@ -5,7 +5,8 @@ trading-platform/
 │   │   │   ├── __init__.py
 │   │   │   └── dashboard_config_supervisor.py
 │   │   ├── __init__.py
-│   │   └── app.py
+│   │   ├── app.py
+│   │   └── config_runtime_client.py
 │   └── __init__.py
 ├── assurance/
 │   ├── architecture/
@@ -52,7 +53,8 @@ trading-platform/
 │   │   └── __init__.py
 │   ├── __init__.py
 │   ├── runtime_composer.py
-│   └── runtime_engine.py
+│   ├── runtime_engine.py
+│   └── runtime_system.py
 ├── scripts/
 │   ├── generate_assurance_report.py
 │   ├── generate_log_schema.py

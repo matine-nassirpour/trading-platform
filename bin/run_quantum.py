@@ -25,8 +25,8 @@ import sys
 
 from typing import Final
 
-from runtime.runtime_composer import compose_runtime
-from runtime.runtime_system import build_runtime_system
+from runtime.composition.runtime_composer import compose_runtime
+from runtime.composition.runtime_system import build_runtime_system
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Early Stage Minimal Logger                                                 │

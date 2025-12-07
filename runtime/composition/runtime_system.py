@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from runtime.composition.runtime_composer import QuantumRuntime
 from runtime.control_plane.admin_http.server import (
     NullRuntimeSupervisorHTTPServer,
     RuntimeSupervisorHTTPServer,
 )
-from runtime.runtime_composer import QuantumRuntime
 from runtime.runtime_engine import RuntimeEngine
 
 from quantum.application.ports.outbound.event_bus_port import EventBusPort

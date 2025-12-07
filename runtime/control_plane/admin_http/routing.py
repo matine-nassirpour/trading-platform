@@ -2,6 +2,7 @@ from aiohttp import web
 from runtime.control_plane.admin_http.handlers import (
     handle_config_readiness,
     handle_health,
+    handle_runtime_metadata,
 )
 
 
@@ -9,4 +10,5 @@ def build_routes() -> list[web.RouteDef]:
     return [
         web.get("/healthz", handle_health),
         web.get("/config-readiness", handle_config_readiness),
+        web.get("/runtime-metadata", handle_runtime_metadata),
     ]

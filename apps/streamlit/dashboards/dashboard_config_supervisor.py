@@ -18,10 +18,15 @@ def fetch_ready_config_state() -> tuple[dict | None, AdminHTTPConfig]:
     admin_cfg = get_admin_http_config()
 
     if not admin_cfg.enabled or not admin_cfg.base_url:
-        # Admin HTTP disabled by configuration
+        # Admin HTTP not reachable (runtime down, disabled, or misconfigured)
         return None, admin_cfg
 
-    url = f"{admin_cfg.base_url}/config-readiness"
+    # Prefer the fully-qualified endpoint URL if provided by the Runtime,
+    # otherwise fall back to base_url + /config-readiness for backward compatibility.
+    url = (
+        admin_cfg.endpoints.get("config_readiness")
+        or f"{admin_cfg.base_url}/config-readiness"
+    )
 
     try:
         r = requests.get(url, timeout=1)
@@ -114,8 +119,9 @@ def render_page() -> None:
     if ready_config_state is None:
         if not admin_cfg.enabled:
             st.info(
-                "ℹ️ Admin HTTP endpoint is disabled by configuration.\n\n"
-                "No runtime status API is exposed for this environment."
+                "ℹ️ Admin HTTP endpoint is not available.\n\n"
+                "The Runtime may be down, unreachable from this environment, "
+                "or the admin HTTP control-plane may be disabled."
             )
             return
 
