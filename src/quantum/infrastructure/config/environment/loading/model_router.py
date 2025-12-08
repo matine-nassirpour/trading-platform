@@ -8,11 +8,10 @@ from pydantic import BaseModel
 from quantum.infrastructure.config.environment.core.validation import (
     validate_no_unknown_environment_variables,
 )
+from quantum.infrastructure.config.environment.policy.constants import RESERVED_ENV_KEYS
 from quantum.infrastructure.config.environment.policy.strictness import (
     is_env_routing_strict,
 )
-
-RESERVED_ENV_KEYS = {"quantum_env"}  # safety-grade reserved keys
 
 
 class EnvironmentModelRouter:
@@ -45,7 +44,7 @@ class EnvironmentModelRouter:
             validate_no_unknown_environment_variables(
                 models=models,
                 env=env,
-                reserved=RESERVED_ENV_KEYS,
+                reserved=set(RESERVED_ENV_KEYS),
             )
 
         # Route only allowed keys to each model

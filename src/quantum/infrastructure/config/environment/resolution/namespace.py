@@ -28,8 +28,8 @@ def extract_application_env(
         • System variables are ignored completely
     """
 
-    prefixes = derive_prefixes_from_models(models=models)
     reserved = reserved or set()
+    prefixes = derive_prefixes_from_models(models=models)
 
     return {
         k: v

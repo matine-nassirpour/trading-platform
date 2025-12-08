@@ -8,6 +8,7 @@ from quantum.infrastructure.config.environment.core.normalization import (
     normalize_env_keys,
 )
 from quantum.infrastructure.config.environment.core.types import EnvResolutionResult
+from quantum.infrastructure.config.environment.policy.constants import RESERVED_ENV_KEYS
 from quantum.infrastructure.config.environment.resolution.namespace import (
     extract_application_env,
 )
@@ -18,8 +19,6 @@ from quantum.infrastructure.config.environment.system.current_env import (
 from quantum.infrastructure.config.environment.system.snapshot import get_frozen_env
 from quantum.infrastructure.config.runtime.registry import CONFIG_MODELS
 from quantum.infrastructure.config.runtime.state.config_state import ConfigStateManager
-
-RESERVED_ENV_KEYS = {"quantum_env"}  # must come only from OS
 
 
 def _load_env_files(base_dir: Path, env_file: Path | None) -> dict[str, str]:
@@ -97,7 +96,7 @@ def load_env_from_resolved(
     effective = extract_application_env(
         merged,
         models=CONFIG_MODELS.models,
-        reserved=RESERVED_ENV_KEYS,
+        reserved=set(RESERVED_ENV_KEYS),
     )
 
     state.update(

@@ -32,7 +32,7 @@ def derive_prefixes_from_models(
 
             if not _PREFIX_RE.fullmatch(prefix):
                 raise ValueError(
-                    f"Invalid prefix derived from model field '{field}': "
+                    f"Invalid prefix derived from field '{field}': "
                     f"'{prefix}' does not match {_PREFIX_RE.pattern!r}"
                 )
 
