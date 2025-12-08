@@ -2,8 +2,12 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 
+from quantum.infrastructure.config.environment.prefixes import (
+    derive_prefixes_from_models,
+)
 
-def extract_application_env(env: Mapping[str, str]) -> dict[str, str]:
+
+def extract_application_env(env: Mapping[str, str], *, models) -> dict[str, str]:
     """
     Extract only environment variables relevant to the application namespace.
 
@@ -17,7 +21,7 @@ def extract_application_env(env: Mapping[str, str]) -> dict[str, str]:
         • System variables are ignored completely
     """
 
-    prefixes = ("quantum_",)
+    prefixes = derive_prefixes_from_models(models=models)
 
     return {
         k: v for k, v in env.items() if any(k.startswith(prefix) for prefix in prefixes)

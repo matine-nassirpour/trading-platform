@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-import os
-
 from pathlib import Path
 
 from dotenv import find_dotenv
 
+from quantum.infrastructure.config.environment.current import is_production
 from quantum.infrastructure.config.environment.types import EnvResolutionResult
 
 
@@ -22,13 +21,8 @@ def _resolve_explicit_env_file(
     return EnvResolutionResult(base_dir=p.parent, env_file=p)
 
 
-def _is_production() -> bool:
-    quantum_env = (os.getenv("QUANTUM_ENV") or "dev").strip().lower()
-    return quantum_env == "prod"
-
-
 def _resolve_production(root: str | Path | None) -> EnvResolutionResult | None:
-    if not _is_production():
+    if not is_production():
         return None
 
     if not root:

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 
 from quantum.infrastructure.config.models.base.base_settings import BaseConfigSettings
 from quantum.infrastructure.config.models.base.mixins import PublicSettingsMixin
@@ -68,6 +68,27 @@ class TracingSettings(BaseConfigSettings, PublicSettingsMixin):
     # --------------------------------------------------------------------------
     # Validators
     # --------------------------------------------------------------------------
+    @model_validator(mode="after")
+    def validate_endpoint_protocol(self) -> TracingSettings:
+        proto = self.quantum_trace_otlp_protocol
+        endpoint = self.quantum_trace_otlp_endpoint
+
+        if proto == "http":
+            if not (endpoint.startswith("http://") or endpoint.startswith("https://")):
+                raise ValueError(
+                    "OTLP HTTP protocol requires endpoint starting with http:// or https://"
+                )
+
+        if proto == "grpc":
+            # GRPC endpoints must not include scheme
+            if "://" in endpoint:
+                raise ValueError(
+                    "OTLP gRPC protocol requires raw host:port endpoint "
+                    "(no URL scheme allowed)."
+                )
+
+        return self
+
     @field_validator("quantum_trace_otlp_protocol", mode="before")
     @classmethod
     def validate_protocol(cls, v: Any) -> Any:

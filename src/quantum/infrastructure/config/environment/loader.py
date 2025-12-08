@@ -1,15 +1,18 @@
 from __future__ import annotations
 
-import os
-
 from pathlib import Path
 
 from dotenv import dotenv_values
 
+from quantum.infrastructure.config.environment.current import (
+    get_current_env,
+    is_production,
+)
 from quantum.infrastructure.config.environment.namespace import extract_application_env
 from quantum.infrastructure.config.environment.normalization import normalize_env_keys
 from quantum.infrastructure.config.environment.snapshot import get_frozen_env
 from quantum.infrastructure.config.environment.types import EnvResolutionResult
+from quantum.infrastructure.config.runtime.registry import CONFIG_MODELS
 from quantum.infrastructure.config.runtime.state.config_state import ConfigStateManager
 
 
@@ -19,20 +22,20 @@ def _load_env_files(base_dir: Path, env_file: Path | None) -> dict[str, str]:
     PURE FILE READ ONLY. Does not merge OS env.
     """
 
-    quantum_env = (os.getenv("QUANTUM_ENV") or "dev").strip().lower()
-    is_prod = quantum_env == "prod"
+    current_env = get_current_env()
+    prod_mode = is_production()
 
     # Explicit file
     if env_file:
         return dotenv_values(env_file) or {}
 
     # Production strict
-    if is_prod:
+    if prod_mode:
         return dotenv_values(base_dir / ".env") or {}
 
     # Non-production layered
     env_base = dotenv_values(base_dir / ".env") or {}
-    env_specific = dotenv_values(base_dir / f".env.{quantum_env}") or {}
+    env_specific = dotenv_values(base_dir / f".env.{current_env}") or {}
     env_local = dotenv_values(base_dir / ".env.local") or {}
 
     merged = {}
@@ -79,7 +82,7 @@ def load_env_from_resolved(
 
     # Final merge = user-defined .env overrides OS snapshot
     merged = {**os_env, **file_env}
-    effective = extract_application_env(merged)
+    effective = extract_application_env(merged, models=CONFIG_MODELS.models)
 
     state.update(
         base_dir=resolution.base_dir,

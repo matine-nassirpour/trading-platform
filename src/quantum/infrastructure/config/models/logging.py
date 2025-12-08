@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 
 from quantum.infrastructure.config.models.base.base_settings import BaseConfigSettings
 from quantum.infrastructure.config.models.base.mixins import PublicSettingsMixin
@@ -71,6 +71,23 @@ class LoggingSettings(BaseConfigSettings, PublicSettingsMixin):
     # --------------------------------------------------------------------------
     # Validators
     # --------------------------------------------------------------------------
+    @model_validator(mode="after")
+    def validate_cross_invariants(self) -> LoggingSettings:
+        # Log dir and audit dir must never be equal
+        if self.quantum_log_dir.as_path() == self.quantum_audit_dir.as_path():
+            raise ValueError(
+                "log_dir and audit_dir must be distinct directories "
+                "(safety-grade requirement: separation of logging and audit streams)."
+            )
+
+        # Ratelimit logic cross-check
+        if self.quantum_log_ratelimit and self.quantum_log_rps == 0:
+            raise ValueError(
+                "quantum_log_rps must be > 0 when rate limiting is enabled."
+            )
+
+        return self
+
     @field_validator("quantum_log_level", mode="before")
     @classmethod
     def validate_log_level(cls, v: Any) -> Any:

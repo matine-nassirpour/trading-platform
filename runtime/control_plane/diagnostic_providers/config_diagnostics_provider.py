@@ -24,6 +24,7 @@ from quantum.infrastructure.config.models.mt5 import MT5Settings
 from quantum.infrastructure.config.models.tracing import TracingSettings
 from quantum.infrastructure.config.runtime.fsm.model import FSM_SCHEMA_VERSION
 from quantum.infrastructure.config.runtime.manager import ConfigManager
+from quantum.infrastructure.config.runtime.registry import CONFIG_MODELS
 from quantum.infrastructure.config.runtime.state.config_state import CONFIG_STATE
 from quantum.infrastructure.config.runtime.state.ready_cache import ReadyStateCache
 
@@ -156,7 +157,7 @@ class ConfigDiagnosticsProvider:
 
         # effective merge as per system rules
         merged = {**normalized_os, **normalized_file}
-        effective = extract_application_env(merged)
+        effective = extract_application_env(merged, models=CONFIG_MODELS.models)
 
         return {
             "raw_file_env": raw_file,
