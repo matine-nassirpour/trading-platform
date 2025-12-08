@@ -10,15 +10,15 @@ from runtime.control_plane.diagnostic_providers.time_provider_dependency import 
     TimeProviderDependency,
 )
 
-from quantum.infrastructure.config.environment.foundation.normalization import (
+from quantum.infrastructure.config.environment.core.normalization import (
     normalize_env_keys,
-)
-from quantum.infrastructure.config.environment.foundation.policy import (
-    is_env_routing_strict,
 )
 from quantum.infrastructure.config.environment.loading.loader import _load_env_files
 from quantum.infrastructure.config.environment.loading.model_router import (
     EnvironmentModelRouter,
+)
+from quantum.infrastructure.config.environment.policy.strictness import (
+    is_env_routing_strict,
 )
 from quantum.infrastructure.config.environment.resolution.namespace import (
     extract_application_env,

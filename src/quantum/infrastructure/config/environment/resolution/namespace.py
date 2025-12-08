@@ -4,7 +4,7 @@ from collections.abc import Mapping
 
 from pydantic import BaseModel
 
-from quantum.infrastructure.config.environment.foundation.prefixes import (
+from quantum.infrastructure.config.environment.core.prefixes import (
     derive_prefixes_from_models,
 )
 

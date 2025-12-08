@@ -5,11 +5,11 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from quantum.infrastructure.config.environment.foundation.policy import (
-    is_env_routing_strict,
-)
-from quantum.infrastructure.config.environment.foundation.validation import (
+from quantum.infrastructure.config.environment.core.validation import (
     validate_no_unknown_environment_variables,
+)
+from quantum.infrastructure.config.environment.policy.strictness import (
+    is_env_routing_strict,
 )
 
 

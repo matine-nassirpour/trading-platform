@@ -5,9 +5,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from quantum.infrastructure.config.environment.foundation.types import (
-    EnvResolutionResult,
-)
+from quantum.infrastructure.config.environment.core.types import EnvResolutionResult
 from quantum.infrastructure.config.environment.loading.loader import (
     load_env_from_resolved,
 )

@@ -4,10 +4,8 @@ from pathlib import Path
 
 from dotenv import find_dotenv
 
-from quantum.infrastructure.config.environment.foundation.current import is_production
-from quantum.infrastructure.config.environment.foundation.types import (
-    EnvResolutionResult,
-)
+from quantum.infrastructure.config.environment.core.types import EnvResolutionResult
+from quantum.infrastructure.config.environment.system.current_env import is_production
 
 
 def _resolve_explicit_env_file(
@@ -30,7 +28,7 @@ def _resolve_production(root: str | Path | None) -> EnvResolutionResult | None:
     if not root:
         raise RuntimeError(
             "Production requires explicit root or env_file. "
-            "Implicit .env discovery forbidden."
+            "Implicit .env discovery is forbidden in production."
         )
 
     r = Path(root)
@@ -49,8 +47,12 @@ def _resolve_production(root: str | Path | None) -> EnvResolutionResult | None:
 def _resolve_non_production(root: str | Path | None) -> EnvResolutionResult:
     if root:
         r = Path(root)
-        if r.is_dir():
-            return EnvResolutionResult(base_dir=r, env_file=None)
+        if not r.is_dir():
+            raise NotADirectoryError(
+                f"Invalid root directory passed in development mode: '{r}'. "
+                f"Non-production root must be a valid directory."
+            )
+        return EnvResolutionResult(base_dir=r, env_file=None)
 
     found = find_dotenv(usecwd=True)
     if found:
@@ -66,12 +68,12 @@ def resolve_env(
     env_file: str | Path | None = None,
 ) -> EnvResolutionResult:
     """
-    PURE RESOLUTION ONLY.
-    No disk reads, no parsing, no loader, no cache.
+    Pure resolution logic.
 
-    Only decide:
-        • base directory
-        • which .env file (if any) to use
+    Guarantees:
+        • No parsing of .env files
+        • Only path resolution (may stat the filesystem)
+        • No env loading or merging
     """
 
     # 1. Explicit env_file always wins

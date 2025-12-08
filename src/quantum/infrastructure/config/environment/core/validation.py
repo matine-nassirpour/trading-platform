@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -12,7 +13,7 @@ class UnknownEnvironmentVariablesError(ValueError):
 def validate_no_unknown_environment_variables(
     *,
     models: Mapping[str, type[BaseModel]],
-    env: Mapping[str, str],
+    env: Mapping[str, Any],
 ) -> None:
     """
     Fail-fast validation ensuring NO unknown variables exist in the environment.
@@ -23,7 +24,7 @@ def validate_no_unknown_environment_variables(
         • Exhaustive listing of unknown variables
         • Aligns environment input strictly with model declarations
     """
-    allowed: set[str] = set()
+    allowed = set()
     for model_cls in models.values():
         allowed.update(model_cls.model_fields.keys())
 
@@ -33,14 +34,14 @@ def validate_no_unknown_environment_variables(
     if not unknown:
         return
 
-    # Build deterministic error message
-    lines: list[str] = []
-    lines.append("Unknown environment variables detected.")
-    lines.append("These keys do not correspond to any declared configuration model:")
-    lines.append("")
-    for key in unknown:
-        lines.append(f"  - {key!r}")
-    lines.append("")
-    lines.append("Strict environment routing is enabled. Aborting.")
+    msg = "\n".join(
+        [
+            "Unknown environment variables detected.",
+            "These keys do not correspond to any declared configuration model:",
+            "",
+        ]
+        + [f"  - {key!r}" for key in unknown]
+        + ["", "Strict environment routing is enabled. Aborting."]
+    )
 
-    raise UnknownEnvironmentVariablesError("\n".join(lines))
+    raise UnknownEnvironmentVariablesError(msg)
