@@ -8,7 +8,7 @@ def extract_application_env(env: Mapping[str, str]) -> dict[str, str]:
     Extract only environment variables relevant to the application namespace.
 
     Strategy:
-        • Keep only keys starting with known prefixes (e.g., 'quantum_', 'mt5_')
+        • Keep only keys starting with known prefixes (e.g., 'quantum_')
         • Ignore all OS/system/editor variables
         • Pure, deterministic, safety-grade
 

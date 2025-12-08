@@ -53,10 +53,12 @@ trading-platform/
 │   │   ├── diagnostic_providers/
 │   │   │   ├── __init__.py
 │   │   │   ├── config_readiness_provider.py
-│   │   │   └── health_provider.py
+│   │   │   ├── health_provider.py
+│   │   │   └── time_provider_dependency.py
 │   │   └── __init__.py
 │   ├── __init__.py
-│   └── runtime_engine.py
+│   ├── runtime_engine.py
+│   └── runtime_state.py
 ├── scripts/
 │   ├── generate_assurance_report.py
 │   ├── generate_log_schema.py

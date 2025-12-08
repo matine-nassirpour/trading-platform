@@ -37,6 +37,54 @@ def fetch_ready_config_state() -> tuple[dict | None, AdminHTTPConfig]:
         return None, admin_cfg
 
 
+def fetch_config_diagnostics(admin_cfg: AdminHTTPConfig) -> dict | None:
+    if not admin_cfg.enabled or not admin_cfg.base_url:
+        return None
+
+    url = (
+        admin_cfg.endpoints.get("config_diagnostics")
+        or f"{admin_cfg.base_url}/config-diagnostics"
+    )
+
+    try:
+        r = requests.get(url, timeout=1)
+        return r.json()
+    except Exception:
+        return None
+
+
+def fetch_full_config_diagnostics(admin_cfg: AdminHTTPConfig) -> dict | None:
+    if not admin_cfg.enabled or not admin_cfg.base_url:
+        return None
+
+    url = (
+        admin_cfg.endpoints.get("config_diagnostics_full")
+        or f"{admin_cfg.base_url}/config-diagnostics-full"
+    )
+
+    try:
+        r = requests.get(url, timeout=2)
+        return r.json()
+    except Exception:
+        return None
+
+
+def fetch_fsm_diagnostics(admin_cfg: AdminHTTPConfig) -> dict | None:
+    if not admin_cfg.enabled or not admin_cfg.base_url:
+        return None
+
+    url = (
+        admin_cfg.endpoints.get("fsm_diagnostics")
+        or f"{admin_cfg.base_url}/fsm-diagnostics"
+    )
+
+    try:
+        r = requests.get(url, timeout=2)
+        return r.json()
+    except Exception:
+        return None
+
+
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Sections                                                                   │
 # ╰────────────────────────────────────────────────────────────────────────────╯
@@ -115,6 +163,99 @@ def render_env_snapshot_from_json(env: dict, metadata: dict) -> None:
         st.json(metadata)
 
 
+def render_config_state_diagnostics(diagnostics: dict):
+    st.subheader("🛠️ Config State Diagnostics")
+
+    with st.expander("Process Information"):
+        st.json(
+            {
+                "pid_current": diagnostics.get("pid_current"),
+                "pid_recorded": diagnostics.get("pid_recorded"),
+                "fork_detected": diagnostics.get("fork_detected"),
+            }
+        )
+
+    with st.expander("Configuration Parameters"):
+        st.json(
+            {
+                "base_dir": diagnostics.get("base_dir"),
+                "env_file": diagnostics.get("env_file"),
+                "root_param": diagnostics.get("root_param"),
+                "env_file_param": diagnostics.get("env_file_param"),
+            }
+        )
+
+    with st.expander("Cache Status"):
+        st.json(
+            {
+                "cache_size": diagnostics.get("cache_size"),
+                "cache_matches_params": diagnostics.get("cache_matches_params"),
+                "has_valid_cache": diagnostics.get("has_valid_cache"),
+                "reload_count": diagnostics.get("reload_count"),
+            }
+        )
+
+    with st.expander("Lock Information"):
+        st.json(diagnostics.get("lock_info"))
+
+
+def render_full_config_diagnostics(diag: dict):
+    st.header("🧬 Full Configuration Diagnostics")
+
+    with st.expander("📌 Readiness Snapshot"):
+        st.json(diag.get("readiness", {}))
+
+    with st.expander("🧱 ConfigState Snapshot"):
+        st.json(diag.get("config_state", {}))
+
+    with st.expander("📚 Environment Resolution"):
+        st.json(diag.get("env_resolution", {}))
+
+    with st.expander("📄 Environment Loading"):
+        st.json(diag.get("env_loading", {}))
+
+    with st.expander("🗺️ Model Routing"):
+        st.json(diag.get("routing", {}))
+
+    with st.expander("⚙️ Final Validated Settings"):
+        st.json(diag.get("final_settings", {}))
+
+
+def render_fsm_diagnostics(diag: dict):
+    st.header("🔀 FSM Transition Diagnostics")
+
+    st.write(f"Total transitions: **{diag.get('transition_count', 0)}**")
+    st.write(f"Timestamp UTC: {diag.get('timestamp_utc')}")
+
+    ready = diag.get("ready_state", {})
+    with st.expander("📌 Ready State"):
+        st.json(ready)
+
+    transitions = diag.get("transitions", [])
+    with st.expander("📜 Transition Records"):
+        for t in transitions:
+            st.markdown(f"### Transition #{t.get('index')}")
+            st.json(t)
+
+    with st.expander("⏱ Summary Table"):
+        if transitions:
+            st.dataframe(
+                [
+                    {
+                        "index": t["index"],
+                        "from": t["from"],
+                        "to": t["to"],
+                        "duration_ms": t["duration_ms"],
+                        "t_start_utc": t["t_start_utc"],
+                        "t_end_utc": t["t_end_utc"],
+                    }
+                    for t in transitions
+                ]
+            )
+        else:
+            st.info("No transitions recorded.")
+
+
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Main Page Renderer                                                         │
 # ╰────────────────────────────────────────────────────────────────────────────╯
@@ -174,3 +315,26 @@ def render_page() -> None:
 
     render_env_snapshot_from_json(env, metadata)
     st.divider()
+
+    diagnostics = fetch_config_diagnostics(admin_cfg)
+    if diagnostics is not None:
+        render_config_state_diagnostics(diagnostics)
+        st.divider()
+    else:
+        st.warning("Unable to fetch Config Diagnostics.")
+    st.divider()
+
+    full_diag = fetch_full_config_diagnostics(admin_cfg)
+    if full_diag is not None:
+        st.divider()
+        render_full_config_diagnostics(full_diag)
+    else:
+        st.warning("Unable to fetch full configuration diagnostics.")
+    st.divider()
+
+    fsm_diag = fetch_fsm_diagnostics(admin_cfg)
+    if fsm_diag is not None:
+        st.divider()
+        render_fsm_diagnostics(fsm_diag)
+    else:
+        st.warning("Unable to fetch FSM diagnostics.")
