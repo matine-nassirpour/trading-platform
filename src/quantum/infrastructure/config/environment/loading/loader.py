@@ -4,14 +4,20 @@ from pathlib import Path
 
 from dotenv import dotenv_values
 
-from quantum.infrastructure.config.environment.current import (
+from quantum.infrastructure.config.environment.foundation.current import (
     get_current_env,
     is_production,
 )
-from quantum.infrastructure.config.environment.namespace import extract_application_env
-from quantum.infrastructure.config.environment.normalization import normalize_env_keys
-from quantum.infrastructure.config.environment.snapshot import get_frozen_env
-from quantum.infrastructure.config.environment.types import EnvResolutionResult
+from quantum.infrastructure.config.environment.foundation.normalization import (
+    normalize_env_keys,
+)
+from quantum.infrastructure.config.environment.foundation.snapshot import get_frozen_env
+from quantum.infrastructure.config.environment.foundation.types import (
+    EnvResolutionResult,
+)
+from quantum.infrastructure.config.environment.resolution.namespace import (
+    extract_application_env,
+)
 from quantum.infrastructure.config.runtime.registry import CONFIG_MODELS
 from quantum.infrastructure.config.runtime.state.config_state import ConfigStateManager
 

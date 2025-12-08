@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from typing import Final
 
-from quantum.infrastructure.config.environment.normalization import normalize_env_keys
-from quantum.infrastructure.config.environment.snapshot import get_frozen_env
+from quantum.infrastructure.config.environment.foundation.normalization import (
+    normalize_env_keys,
+)
+from quantum.infrastructure.config.environment.foundation.snapshot import get_frozen_env
 
 _ENV_CACHE: Final[dict[str, str]] = normalize_env_keys(get_frozen_env())
 

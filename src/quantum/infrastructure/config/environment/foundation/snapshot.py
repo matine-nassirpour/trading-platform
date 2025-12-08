@@ -6,7 +6,9 @@ import threading
 from collections.abc import Mapping
 from typing import Final
 
-from quantum.infrastructure.config.environment.normalization import normalize_env_keys
+from quantum.infrastructure.config.environment.foundation.normalization import (
+    normalize_env_keys,
+)
 
 
 class FrozenEnvironment:

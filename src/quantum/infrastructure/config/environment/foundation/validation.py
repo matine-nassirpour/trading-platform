@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 
+from pydantic import BaseModel
+
 
 class UnknownEnvironmentVariablesError(ValueError):
     """Raised when unknown environment variables are detected in strict mode."""
@@ -9,7 +11,7 @@ class UnknownEnvironmentVariablesError(ValueError):
 
 def validate_no_unknown_environment_variables(
     *,
-    models: Mapping[str, type],
+    models: Mapping[str, type[BaseModel]],
     env: Mapping[str, str],
 ) -> None:
     """

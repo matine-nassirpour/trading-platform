@@ -4,8 +4,10 @@ from pathlib import Path
 
 from dotenv import find_dotenv
 
-from quantum.infrastructure.config.environment.current import is_production
-from quantum.infrastructure.config.environment.types import EnvResolutionResult
+from quantum.infrastructure.config.environment.foundation.current import is_production
+from quantum.infrastructure.config.environment.foundation.types import (
+    EnvResolutionResult,
+)
 
 
 def _resolve_explicit_env_file(

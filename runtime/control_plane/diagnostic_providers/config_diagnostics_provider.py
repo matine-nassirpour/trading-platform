@@ -10,14 +10,20 @@ from runtime.control_plane.diagnostic_providers.time_provider_dependency import 
     TimeProviderDependency,
 )
 
-from quantum.infrastructure.config.environment.loader import _load_env_files
-from quantum.infrastructure.config.environment.model_router import (
+from quantum.infrastructure.config.environment.foundation.normalization import (
+    normalize_env_keys,
+)
+from quantum.infrastructure.config.environment.foundation.policy import (
+    is_env_routing_strict,
+)
+from quantum.infrastructure.config.environment.loading.loader import _load_env_files
+from quantum.infrastructure.config.environment.loading.model_router import (
     EnvironmentModelRouter,
 )
-from quantum.infrastructure.config.environment.namespace import extract_application_env
-from quantum.infrastructure.config.environment.normalization import normalize_env_keys
-from quantum.infrastructure.config.environment.policy import is_env_routing_strict
-from quantum.infrastructure.config.environment.resolver import resolve_env
+from quantum.infrastructure.config.environment.resolution.namespace import (
+    extract_application_env,
+)
+from quantum.infrastructure.config.environment.resolution.resolver import resolve_env
 from quantum.infrastructure.config.models.core import CoreSettings
 from quantum.infrastructure.config.models.logging import LoggingSettings
 from quantum.infrastructure.config.models.mt5 import MT5Settings

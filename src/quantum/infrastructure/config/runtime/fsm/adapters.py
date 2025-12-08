@@ -5,12 +5,16 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from quantum.infrastructure.config.environment.loader import load_env_from_resolved
-from quantum.infrastructure.config.environment.model_router import (
+from quantum.infrastructure.config.environment.foundation.types import (
+    EnvResolutionResult,
+)
+from quantum.infrastructure.config.environment.loading.loader import (
+    load_env_from_resolved,
+)
+from quantum.infrastructure.config.environment.loading.model_router import (
     EnvironmentModelRouter,
 )
-from quantum.infrastructure.config.environment.resolver import resolve_env
-from quantum.infrastructure.config.environment.types import EnvResolutionResult
+from quantum.infrastructure.config.environment.resolution.resolver import resolve_env
 from quantum.infrastructure.config.models.core import CoreSettings
 from quantum.infrastructure.config.models.logging import LoggingSettings
 from quantum.infrastructure.config.models.mt5 import MT5Settings
