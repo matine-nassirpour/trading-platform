@@ -1,13 +1,11 @@
 from __future__ import annotations
 
+from types import MappingProxyType
 from typing import Final
 
-from quantum.infrastructure.config.environment.core.normalization import (
-    normalize_env_keys,
-)
 from quantum.infrastructure.config.environment.system.snapshot import get_frozen_env
 
-_ENV_CACHE: Final[dict[str, str]] = normalize_env_keys(get_frozen_env())
+_ENV_CACHE: Final = MappingProxyType(dict(get_frozen_env()))
 
 
 def get_current_env() -> str:

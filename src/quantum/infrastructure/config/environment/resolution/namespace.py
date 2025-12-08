@@ -10,7 +10,10 @@ from quantum.infrastructure.config.environment.core.prefixes import (
 
 
 def extract_application_env(
-    env: Mapping[str, str], *, models: Mapping[str, type[BaseModel]]
+    env: Mapping[str, str],
+    *,
+    models: Mapping[str, type[BaseModel]],
+    reserved: set[str] | None = None,
 ) -> dict[str, str]:
     """
     Extract only environment variables relevant to the application namespace.
@@ -26,7 +29,10 @@ def extract_application_env(
     """
 
     prefixes = derive_prefixes_from_models(models=models)
+    reserved = reserved or set()
 
     return {
-        k: v for k, v in env.items() if any(k.startswith(prefix) for prefix in prefixes)
+        k: v
+        for k, v in env.items()
+        if k in reserved or any(k.startswith(prefix) for prefix in prefixes)
     }

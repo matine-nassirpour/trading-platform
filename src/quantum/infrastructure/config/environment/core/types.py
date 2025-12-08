@@ -7,13 +7,11 @@ from pathlib import Path
 @dataclass(frozen=True, slots=True)
 class EnvResolutionResult:
     """
-    Pure result of environment resolution (no disk read, no parsing).
+    Pure, immutable environment resolution result.
 
-    Guarantees:
-        • base_dir is a valid directory path
-        • env_file is either a valid file Path or None
-        • Contains zero actual environment data
-        • Fully deterministic and hashable
+    Preconditions (enforced by callers):
+        • base_dir: a valid directory
+        • env_file: valid file or None
     """
 
     base_dir: Path

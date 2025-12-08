@@ -4,14 +4,7 @@ from typing import Final
 
 
 class _StrictEnvironmentPolicy:
-    """
-    Immutable, safety-grade configuration for environment variable strictness.
-
-    Guarantees:
-        • Fully immutable (no attribute reassignment possible)
-        • Deterministic global read-only policy
-        • Aligned with safety-critical constraints
-    """
+    """Immutable policy for environment strictness."""
 
     __slots__ = ("__strict",)
 
@@ -22,7 +15,7 @@ class _StrictEnvironmentPolicy:
     def strict(self) -> bool:
         return self.__strict
 
-    def __setattr__(self, key, value) -> None:  # Absolute immutability
+    def __setattr__(self, key, value) -> None:
         raise TypeError(f"{self.__class__.__name__} is immutable.")
 
 

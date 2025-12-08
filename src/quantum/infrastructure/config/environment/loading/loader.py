@@ -19,11 +19,14 @@ from quantum.infrastructure.config.environment.system.snapshot import get_frozen
 from quantum.infrastructure.config.runtime.registry import CONFIG_MODELS
 from quantum.infrastructure.config.runtime.state.config_state import ConfigStateManager
 
+RESERVED_ENV_KEYS = {"quantum_env"}  # must come only from OS
+
 
 def _load_env_files(base_dir: Path, env_file: Path | None) -> dict[str, str]:
     """
-    Load .env and layered non-production files.
-    PURE FILE READ ONLY. Does not merge OS env.
+    File-only loader.
+    Uses current_env only to select layered files.
+    Never merges OS env here.
     """
 
     current_env = get_current_env()
@@ -53,8 +56,8 @@ def _load_env_files(base_dir: Path, env_file: Path | None) -> dict[str, str]:
 def load_env_from_resolved(
     resolution: EnvResolutionResult,
     *,
-    root_param,
-    env_file_param,
+    root_param: str | Path | None,
+    env_file_param: str | Path | None,
 ) -> dict[str, str]:
     """
     IMPURE loader (1 call only), but deterministic and cached.
@@ -82,11 +85,20 @@ def load_env_from_resolved(
         )
     )
 
-    os_env = normalize_env_keys(get_frozen_env())
+    # Remove forbidden/restricted keys (quantum_env must come only from OS)
+    for key in RESERVED_ENV_KEYS:
+        file_env.pop(key, None)
+
+    os_env = get_frozen_env()  # already normalized, immutable
 
     # Final merge = user-defined .env overrides OS snapshot
     merged = {**os_env, **file_env}
-    effective = extract_application_env(merged, models=CONFIG_MODELS.models)
+
+    effective = extract_application_env(
+        merged,
+        models=CONFIG_MODELS.models,
+        reserved=RESERVED_ENV_KEYS,
+    )
 
     state.update(
         base_dir=resolution.base_dir,

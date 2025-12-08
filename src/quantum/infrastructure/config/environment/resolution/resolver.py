@@ -15,8 +15,8 @@ def _resolve_explicit_env_file(
         return None
 
     p = Path(env_file)
-    if not p.exists():
-        raise FileNotFoundError(f"Explicit env file does not exist: '{p}'")
+    if not p.exists() or not p.is_file():
+        raise FileNotFoundError(f"Explicit env file is not a regular file: '{p}'")
 
     return EnvResolutionResult(base_dir=p.parent, env_file=p)
 
@@ -28,7 +28,7 @@ def _resolve_production(root: str | Path | None) -> EnvResolutionResult | None:
     if not root:
         raise RuntimeError(
             "Production requires explicit root or env_file. "
-            "Implicit .env discovery is forbidden in production."
+            "Implicit .env discovery is forbidden."
         )
 
     r = Path(root)
@@ -36,9 +36,9 @@ def _resolve_production(root: str | Path | None) -> EnvResolutionResult | None:
         raise NotADirectoryError(f"Invalid root directory: '{r}'")
 
     env_path = r / ".env"
-    if not env_path.exists():
+    if not env_path.exists() or not env_path.is_file():
         raise FileNotFoundError(
-            f"Production expected '{env_path}', but file is missing."
+            f"Production expected '{env_path}', but file is missing or not a file."
         )
 
     return EnvResolutionResult(base_dir=r, env_file=env_path)
@@ -49,8 +49,7 @@ def _resolve_non_production(root: str | Path | None) -> EnvResolutionResult:
         r = Path(root)
         if not r.is_dir():
             raise NotADirectoryError(
-                f"Invalid root directory passed in development mode: '{r}'. "
-                f"Non-production root must be a valid directory."
+                f"Invalid root directory passed in development mode: '{r}'."
             )
         return EnvResolutionResult(base_dir=r, env_file=None)
 
