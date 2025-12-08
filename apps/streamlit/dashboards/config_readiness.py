@@ -69,22 +69,6 @@ def fetch_full_config_diagnostics(admin_cfg: AdminHTTPConfig) -> dict | None:
         return None
 
 
-def fetch_fsm_diagnostics(admin_cfg: AdminHTTPConfig) -> dict | None:
-    if not admin_cfg.enabled or not admin_cfg.base_url:
-        return None
-
-    url = (
-        admin_cfg.endpoints.get("fsm_diagnostics")
-        or f"{admin_cfg.base_url}/fsm-diagnostics"
-    )
-
-    try:
-        r = requests.get(url, timeout=2)
-        return r.json()
-    except Exception:
-        return None
-
-
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Sections                                                                   │
 # ╰────────────────────────────────────────────────────────────────────────────╯
@@ -221,41 +205,6 @@ def render_full_config_diagnostics(diag: dict):
         st.json(diag.get("final_settings", {}))
 
 
-def render_fsm_diagnostics(diag: dict):
-    st.header("🔀 FSM Transition Diagnostics")
-
-    st.write(f"Total transitions: **{diag.get('transition_count', 0)}**")
-    st.write(f"Timestamp UTC: {diag.get('timestamp_utc')}")
-
-    ready = diag.get("ready_state", {})
-    with st.expander("📌 Ready State"):
-        st.json(ready)
-
-    transitions = diag.get("transitions", [])
-    with st.expander("📜 Transition Records"):
-        for t in transitions:
-            st.markdown(f"### Transition #{t.get('index')}")
-            st.json(t)
-
-    with st.expander("⏱ Summary Table"):
-        if transitions:
-            st.dataframe(
-                [
-                    {
-                        "index": t["index"],
-                        "from": t["from"],
-                        "to": t["to"],
-                        "duration_ms": t["duration_ms"],
-                        "t_start_utc": t["t_start_utc"],
-                        "t_end_utc": t["t_end_utc"],
-                    }
-                    for t in transitions
-                ]
-            )
-        else:
-            st.info("No transitions recorded.")
-
-
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Main Page Renderer                                                         │
 # ╰────────────────────────────────────────────────────────────────────────────╯
@@ -322,19 +271,12 @@ def render_page() -> None:
         st.divider()
     else:
         st.warning("Unable to fetch Config Diagnostics.")
-    st.divider()
+        st.divider()
 
     full_diag = fetch_full_config_diagnostics(admin_cfg)
     if full_diag is not None:
-        st.divider()
         render_full_config_diagnostics(full_diag)
+        st.divider()
     else:
         st.warning("Unable to fetch full configuration diagnostics.")
-    st.divider()
-
-    fsm_diag = fetch_fsm_diagnostics(admin_cfg)
-    if fsm_diag is not None:
         st.divider()
-        render_fsm_diagnostics(fsm_diag)
-    else:
-        st.warning("Unable to fetch FSM diagnostics.")

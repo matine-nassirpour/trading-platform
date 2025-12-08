@@ -11,9 +11,6 @@ from runtime.control_plane.diagnostic_providers.config_readiness_provider import
 from runtime.control_plane.diagnostic_providers.config_state_diagnostics_provider import (
     ConfigStateDiagnosticsProvider,
 )
-from runtime.control_plane.diagnostic_providers.fsm_diagnostics_provider import (
-    FSMDiagnosticsProvider,
-)
 from runtime.control_plane.diagnostic_providers.health_provider import HealthProvider
 
 
@@ -41,16 +38,6 @@ def handle_config_diagnostics(request: web.Request) -> web.Response:
 
 def handle_full_config_diagnostics(request: web.Request) -> web.Response:
     payload = ConfigDiagnosticsProvider.get_full_diagnostics()
-    canonical = canonical_json(payload)
-    return web.Response(
-        body=canonical.encode("utf-8"),
-        content_type="application/json",
-        status=200,
-    )
-
-
-def handle_fsm_diagnostics(request: web.Request) -> web.Response:
-    payload = FSMDiagnosticsProvider.get_fsm_diagnostics()
     canonical = canonical_json(payload)
     return web.Response(
         body=canonical.encode("utf-8"),
@@ -122,7 +109,6 @@ def handle_runtime_metadata(request: web.Request) -> web.Response:
                 "runtime_metadata": f"{base_url}/runtime-metadata",
                 "config_diagnostics": f"{base_url}/config-diagnostics",
                 "config_diagnostics_full": f"{base_url}/config-diagnostics-full",
-                "fsm_diagnostics": f"{base_url}/fsm-diagnostics",
             },
         },
     }
