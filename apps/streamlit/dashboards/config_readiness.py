@@ -53,22 +53,6 @@ def fetch_config_diagnostics(admin_cfg: AdminHTTPConfig) -> dict | None:
         return None
 
 
-def fetch_full_config_diagnostics(admin_cfg: AdminHTTPConfig) -> dict | None:
-    if not admin_cfg.enabled or not admin_cfg.base_url:
-        return None
-
-    url = (
-        admin_cfg.endpoints.get("config_diagnostics_full")
-        or f"{admin_cfg.base_url}/config-diagnostics-full"
-    )
-
-    try:
-        r = requests.get(url, timeout=2)
-        return r.json()
-    except Exception:
-        return None
-
-
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Sections                                                                   │
 # ╰────────────────────────────────────────────────────────────────────────────╯
@@ -183,28 +167,6 @@ def render_config_state_diagnostics(diagnostics: dict):
         st.json(diagnostics.get("lock_info"))
 
 
-def render_full_config_diagnostics(diag: dict):
-    st.header("🧬 Full Configuration Diagnostics")
-
-    with st.expander("📌 Readiness Snapshot"):
-        st.json(diag.get("readiness", {}))
-
-    with st.expander("🧱 ConfigState Snapshot"):
-        st.json(diag.get("config_state", {}))
-
-    with st.expander("📚 Environment Resolution"):
-        st.json(diag.get("env_resolution", {}))
-
-    with st.expander("📄 Environment Loading"):
-        st.json(diag.get("env_loading", {}))
-
-    with st.expander("🗺️ Model Routing"):
-        st.json(diag.get("routing", {}))
-
-    with st.expander("⚙️ Final Validated Settings"):
-        st.json(diag.get("final_settings", {}))
-
-
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Main Page Renderer                                                         │
 # ╰────────────────────────────────────────────────────────────────────────────╯
@@ -271,12 +233,4 @@ def render_page() -> None:
         st.divider()
     else:
         st.warning("Unable to fetch Config Diagnostics.")
-        st.divider()
-
-    full_diag = fetch_full_config_diagnostics(admin_cfg)
-    if full_diag is not None:
-        render_full_config_diagnostics(full_diag)
-        st.divider()
-    else:
-        st.warning("Unable to fetch full configuration diagnostics.")
         st.divider()

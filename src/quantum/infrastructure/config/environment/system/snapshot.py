@@ -2,14 +2,11 @@ from __future__ import annotations
 
 import os
 import threading
+import unicodedata
 
 from collections.abc import Mapping
 from types import MappingProxyType
 from typing import Final
-
-from quantum.infrastructure.config.environment.core.normalization import (
-    normalize_env_keys,
-)
 
 
 class FrozenEnvironment:
@@ -34,8 +31,13 @@ class FrozenEnvironment:
             pid = os.getpid()
 
             if cls._pid != pid or cls._snapshot is None:
-                normalized = normalize_env_keys(os.environ)
-                cls._snapshot = MappingProxyType(dict(normalized))
+                raw = dict(os.environ)
+                normalized = {
+                    unicodedata.normalize("NFKC", k).lower().strip(): v
+                    for k, v in raw.items()
+                }
+
+                cls._snapshot = MappingProxyType(normalized)
                 cls._pid = pid
 
             return cls._snapshot

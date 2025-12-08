@@ -2,9 +2,6 @@ from datetime import UTC, datetime
 
 from aiohttp import web
 from runtime.control_plane.canonicalization.canonical_json import canonical_json
-from runtime.control_plane.diagnostic_providers.config_diagnostics_provider import (
-    ConfigDiagnosticsProvider,
-)
 from runtime.control_plane.diagnostic_providers.config_readiness_provider import (
     ConfigReadinessProvider,
 )
@@ -29,16 +26,6 @@ def handle_config_diagnostics(request: web.Request) -> web.Response:
     payload = ConfigStateDiagnosticsProvider.as_dict()
     canonical = canonical_json(payload)
 
-    return web.Response(
-        body=canonical.encode("utf-8"),
-        content_type="application/json",
-        status=200,
-    )
-
-
-def handle_full_config_diagnostics(request: web.Request) -> web.Response:
-    payload = ConfigDiagnosticsProvider.get_full_diagnostics()
-    canonical = canonical_json(payload)
     return web.Response(
         body=canonical.encode("utf-8"),
         content_type="application/json",
@@ -108,7 +95,6 @@ def handle_runtime_metadata(request: web.Request) -> web.Response:
                 "config_readiness": f"{base_url}/config-readiness",
                 "runtime_metadata": f"{base_url}/runtime-metadata",
                 "config_diagnostics": f"{base_url}/config-diagnostics",
-                "config_diagnostics_full": f"{base_url}/config-diagnostics-full",
             },
         },
     }
