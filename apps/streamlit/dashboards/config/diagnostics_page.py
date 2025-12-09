@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import streamlit as st
 
-from apps.streamlit.dashboards.config.readiness_service import fetch_ready_config_state
-from apps.streamlit.dashboards.config.readiness_view import (
+from apps.streamlit.dashboards.config.diagnostics_service import (
+    fetch_ready_config_state,
+)
+from apps.streamlit.dashboards.config.diagnostics_view import (
     banner_connectivity_error,
     banner_non_ready_state,
     banner_protocol_error,

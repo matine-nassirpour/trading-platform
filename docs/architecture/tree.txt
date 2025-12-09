@@ -4,9 +4,9 @@ trading-platform/
 │   │   ├── dashboards/
 │   │   │   ├── config/
 │   │   │   │   ├── __init__.py
-│   │   │   │   ├── readiness_page.py
-│   │   │   │   ├── readiness_service.py
-│   │   │   │   └── readiness_view.py
+│   │   │   │   ├── diagnostics_page.py
+│   │   │   │   ├── diagnostics_service.py
+│   │   │   │   └── diagnostics_view.py
 │   │   │   └── __init__.py
 │   │   ├── __init__.py
 │   │   ├── app.py
@@ -56,8 +56,7 @@ trading-platform/
 │   │   │   └── canonical_json.py
 │   │   ├── diagnostic_providers/
 │   │   │   ├── __init__.py
-│   │   │   ├── config_readiness_provider.py
-│   │   │   ├── config_state_diagnostics_provider.py
+│   │   │   ├── config_diagnostics_provider.py
 │   │   │   ├── health_provider.py
 │   │   │   └── time_provider_dependency.py
 │   │   └── __init__.py
