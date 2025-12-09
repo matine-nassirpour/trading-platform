@@ -8,15 +8,18 @@ from typing import Any
 
 def _normalize(value: Any, *, _seen: set[int] | None = None) -> Any:
     """
-    Convert recursively any object into a JSON-serializable structure.
+    Normalize any Python object into a fully JSON-serializable structure.
 
-    Handles:
-        • Sequences / Sets / FrozenSets → list
-        • MappingProxyType → dict
-        • Mapping → dict
-        • Path → str
-        • Pydantic models → model_dump()
-        • Arbitrary objects → vars() / str()
+    Notes
+    -----
+    • Cycle detection uses a 'visited set':
+        - A repeated reference is represented as the string "<CYCLE>".
+        - This covers both true cycles and shared-object references.
+        - This is intentional and documented for diagnostics.
+
+    • No attempt is made to preserve object identity or reference graphs.
+
+    • This function MUST remain side-effect-free and deterministic.
     """
 
     if _seen is None:
@@ -38,8 +41,8 @@ def _normalize(value: Any, *, _seen: set[int] | None = None) -> Any:
     if isinstance(value, (list, tuple)):
         return [_normalize(v, _seen=_seen) for v in value]
 
+    # Sets (sorted deterministically)
     if isinstance(value, (set, frozenset)):
-        # Sort using stringified representation for deterministic ordering
         return sorted(
             (_normalize(v, _seen=_seen) for v in value),
             key=lambda x: json.dumps(x, sort_keys=True),
@@ -67,8 +70,8 @@ def _normalize(value: Any, *, _seen: set[int] | None = None) -> Any:
     if hasattr(value, "__dict__"):
         return _normalize(vars(value), _seen=_seen)
 
-    # Final fallback to stable string
-    return str(value)
+    # Final fallback to stable repr
+    return repr(value)
 
 
 def canonical_json(data: object) -> str:

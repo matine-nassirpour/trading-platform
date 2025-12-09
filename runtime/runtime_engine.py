@@ -57,6 +57,11 @@ class RuntimeEngine:
         self._shutdown_requested = asyncio.Event()
         self._fsm = RuntimeStateMachine()
 
+        # Track partial startup success
+        self._http_started = False
+        self._bus_initialized = False
+        self._app_started = False
+
     # --------------------------------------------------------------------------
     # Public API
     # --------------------------------------------------------------------------
@@ -79,22 +84,41 @@ class RuntimeEngine:
             await asyncio.sleep(0.05)  # Cooperative scheduling
 
     async def _do_shutdown(self) -> None:
-        LOGGER.debug("[Runtime Engine] Stopping application orchestrator.")
-        with self._suppress_cancel():
-            await self._app.stop()
+        """
+        Deterministic, idempotent shutdown.
+        Each subsystem is only shut down if it was successfully started.
+        """
+        LOGGER.info("[Runtime Engine] Executing orderly shutdown sequence.")
 
-        LOGGER.debug("[Runtime Engine] Closing event bus.")
-        with self._suppress_cancel():
-            await self._event_bus.close()
+        # APP orchestrator
+        if self._app_started:
+            LOGGER.debug("[Runtime Engine] Stopping app orchestrator.")
+            with self._suppress_cancel():
+                await self._app.stop()
 
-        LOGGER.debug("[Runtime Engine] Stopping HTTP supervisor server.")
-        await self._admin_http_server.stop()
+        # EVENT BUS
+        if self._bus_initialized:
+            LOGGER.debug("[Runtime Engine] Closing event bus.")
+            with self._suppress_cancel():
+                await self._event_bus.close()
+
+        # HTTP SERVER
+        if self._http_started:
+            LOGGER.debug("[Runtime Engine] Stopping admin HTTP server")
+            with self._suppress_cancel():
+                await self._admin_http_server.stop()
 
     async def _shutdown(self) -> None:
-        try:
-            self._fsm.transition(RuntimeState.STOPPING)
-        except RuntimeInvalidStateError as exc:
-            LOGGER.error("Illegal shutdown transition: %s", exc)
+        """
+        FSM-consistent shutdown entrypoint.
+        Ensures a single STOPPING transition.
+        """
+        # Transition only if needed
+        if self._fsm.state != RuntimeState.STOPPING:
+            try:
+                self._fsm.transition(RuntimeState.STOPPING)
+            except RuntimeInvalidStateError as exc:
+                LOGGER.error("Illegal shutdown transition: %s", exc)
 
         LOGGER.info("[Runtime Engine] Graceful shutdown starting.")
 
@@ -112,7 +136,6 @@ class RuntimeEngine:
     class _suppress_cancel:
         """
         Suppress CancelledError inside a context.
-
         Ensures deterministic shutdown even if tasks were cancelled.
         """
 
@@ -127,32 +150,33 @@ class RuntimeEngine:
     # Public API
     # --------------------------------------------------------------------------
     async def start(self) -> None:
-        """Start and run the Quantum Runtime Engine."""
+        """
+        Deterministic startup pipeline with rollback.
+        """
 
         if self._fsm.state != RuntimeState.STOPPED:
             raise RuntimeInvalidStateError(
                 f"RuntimeEngine.start() illegal in state {self._fsm.state.value}"
             )
 
+        # STARTING
         self._fsm.transition(RuntimeState.STARTING)
         LOGGER.info("[Runtime Engine] Starting Quantum Runtime Engine.")
 
         try:
+            # 1. Start admin HTTP server
             await self._admin_http_server.start()
-            try:
-                await self._event_bus.initialize()
-                try:
-                    await self._app.start()
-                except Exception:
-                    # rollback event bus
-                    with self._suppress_cancel():
-                        await self._event_bus.close()
-                    raise
-            except Exception:
-                # rollback HTTP server
-                await self._admin_http_server.stop()
-                raise
+            self._http_started = True
 
+            # 2. Initialize event bus
+            await self._event_bus.initialize()
+            self._bus_initialized = True
+
+            # 3. Start application orchestrator
+            await self._app.start()
+            self._app_started = True
+
+            # RUNNING
             self._fsm.transition(RuntimeState.RUNNING)
             LOGGER.info("[Runtime Engine] Runtime is now operational.")
 
@@ -163,18 +187,20 @@ class RuntimeEngine:
 
         except Exception:
             LOGGER.exception("[Runtime Engine] Fatal error during startup.")
-            self._fsm.transition(RuntimeState.STOPPING)
             await self._shutdown()
             raise
 
     async def request_shutdown(self) -> None:
-        if self._fsm.state not in {RuntimeState.RUNNING, RuntimeState.STARTING}:
+        """
+        Asynchronous external shutdown request.
+        Idempotent.
+        """
+        if self._fsm.state not in {RuntimeState.STARTING, RuntimeState.RUNNING}:
             LOGGER.warning(
                 "[Runtime Engine] Shutdown request ignored (state: %s).",
                 self._fsm.state.value,
             )
             return
 
-        LOGGER.warning("[Runtime Engine] Shutdown requested.")
+        LOGGER.warning("[Runtime Engine] Shutdown requested")
         self._shutdown_requested.set()
-        await self._admin_http_server.stop()

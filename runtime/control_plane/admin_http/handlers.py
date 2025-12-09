@@ -1,31 +1,30 @@
-from datetime import UTC, datetime
-
 from aiohttp import web
 from runtime.control_plane.canonicalization.canonical_json import canonical_json
 from runtime.control_plane.diagnostic_providers.config_diagnostics_provider import (
     ConfigDiagnosticsProvider,
 )
 from runtime.control_plane.diagnostic_providers.health_provider import HealthProvider
+from runtime.control_plane.diagnostic_providers.time_provider_dependency import (
+    TimeProviderDependency,
+)
+
+NO_CACHE_HEADERS = {
+    "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+    "Pragma": "no-cache",
+    "Expires": "0",
+}
 
 
-def handle_config_diagnostics(request: web.Request) -> web.Response:
-    state = ConfigDiagnosticsProvider.get_diagnostics()
-    canonical = canonical_json(state)
-
-    return web.Response(
-        body=canonical.encode("utf-8"),
-        content_type="application/json",
-        status=200,
-    )
-
-
-def handle_health(request: web.Request) -> web.Response:
-    payload = HealthProvider.get_health()
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Internal Helpers                                                           │
+# ╰────────────────────────────────────────────────────────────────────────────╯
+def _response(payload: dict, status: int = 200) -> web.Response:
     canonical = canonical_json(payload)
     return web.Response(
         body=canonical.encode("utf-8"),
         content_type="application/json",
-        status=200,
+        headers=NO_CACHE_HEADERS,
+        status=status,
     )
 
 
@@ -42,12 +41,12 @@ def _build_admin_base_url(request: web.Request) -> str:
         - No trailing slash (except for root "/").
     """
     scheme = request.scheme
-    host = request.host  # already includes host:port
+    host = request.host
 
     base_path = request.app.get("admin_base_path", "/") or "/"
     base_path = base_path.strip()
 
-    if base_path == "" or base_path == "/":
+    if base_path in ("", "/"):
         return f"{scheme}://{host}"
 
     if not base_path.startswith("/"):
@@ -59,6 +58,9 @@ def _build_admin_base_url(request: web.Request) -> str:
     return f"{scheme}://{host}{base_path}"
 
 
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Handlers                                                                   │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 def handle_runtime_metadata(request: web.Request) -> web.Response:
     """
     Expose minimal runtime metadata for external clients (e.g. Streamlit UI).
@@ -70,10 +72,11 @@ def handle_runtime_metadata(request: web.Request) -> web.Response:
     No configuration models are exposed here.
     """
     base_url = _build_admin_base_url(request)
+    time_provider = TimeProviderDependency.get()
 
     payload = {
         "status": "ok",
-        "timestamp_utc": datetime.now(UTC).isoformat(),
+        "timestamp_utc": time_provider.now_utc().isoformat(),
         "admin_http": {
             "base_url": base_url,
             "endpoints": {
@@ -85,9 +88,25 @@ def handle_runtime_metadata(request: web.Request) -> web.Response:
         },
     }
 
-    canonical = canonical_json(payload)
-    return web.Response(
-        body=canonical.encode("utf-8"),
-        content_type="application/json",
-        status=200,
-    )
+    return _response(payload, status=200)
+
+
+def handle_health(request: web.Request) -> web.Response:
+    payload = HealthProvider.get_health()
+    return _response(payload, status=200)
+
+
+def handle_config_diagnostics(request: web.Request) -> web.Response:
+    diag = ConfigDiagnosticsProvider.get_diagnostics()
+
+    if diag is None:
+        return _response(
+            {
+                "status": "not_ready",
+                "reason": "Configuration system not initialized",
+                "timestamp_utc": TimeProviderDependency.get().now_utc().isoformat(),
+            },
+            status=503,
+        )
+
+    return _response(diag, status=200)
