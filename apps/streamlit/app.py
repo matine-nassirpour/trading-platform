@@ -1,6 +1,6 @@
 import streamlit as st
 
-from apps.streamlit.dashboards.config_readiness import render_page
+from apps.streamlit.dashboards.config.readiness_page import render_config_dashboard
 
 
 def main() -> None:
@@ -20,7 +20,7 @@ def main() -> None:
     )
 
     if selection == "Observability Core":
-        render_page()
+        render_config_dashboard()
 
 
 if __name__ == "__main__":
