@@ -6,7 +6,7 @@ from enum import Enum
 from types import MappingProxyType
 from typing import Any
 
-FSM_SCHEMA_VERSION: int = 1
+FSM_SCHEMA_VERSION = "2025.1"
 
 
 class ConfigLifecycleStatus(str, Enum):

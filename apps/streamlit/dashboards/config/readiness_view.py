@@ -4,9 +4,20 @@ import socket
 import textwrap
 
 from collections.abc import Mapping
+from datetime import datetime
 from typing import Any
 
 import streamlit as st
+
+
+def _format_timestamp(ts: str | None) -> str:
+    if not ts:
+        return "n/a"
+    try:
+        dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+        return dt.strftime("%Y-%m-%d %H:%M:%S UTC")
+    except Exception:
+        return ts  # fallback
 
 
 def render_fsm_status_card(
@@ -16,12 +27,13 @@ def render_fsm_status_card(
     fingerprint = ready_config_state.get("fingerprint", "n/a")
     fsm_version = ready_config_state.get("schema_version", "n/a")
     timestamp = ready_config_state.get("timestamp_utc", "n/a")
+    formated_timestamp = _format_timestamp(timestamp)
 
     colors = {
         "READY": ("#0fa958", "white"),
         "ERROR": ("#c2392d", "white"),
     }
-    bg_color, text_color = colors.get(status, "orange")
+    bg_color, text_color = colors.get(status, ("orange", "black"))
 
     summary_messages = {
         "READY": "The runtime configuration is valid, healthy and operational.",
@@ -53,7 +65,7 @@ def render_fsm_status_card(
             label="Fingerprint (SHA-256, truncated)", value=fingerprint[:16] + "…"
         )
     with col3:
-        st.metric(label="Timestamp (UTC)", value=str(timestamp))
+        st.metric(label="Timestamp (UTC)", value=formated_timestamp)
 
     with st.expander("Full fingerprint (SHA-256)"):
         st.code(fingerprint, language="text")
@@ -81,7 +93,7 @@ def render_runtime_overview(ready_json: Mapping[str, Any]) -> None:
 
     snapshot = ready_json.get("loader_snapshot", {})
 
-    cash_health = {
+    cache_health = {
         "cache_matches_params": ready_json.get("cache_matches_params"),
         "has_valid_cache": ready_json.get("has_valid_cache"),
     }
@@ -92,15 +104,15 @@ def render_runtime_overview(ready_json: Mapping[str, Any]) -> None:
     with st.expander("System Identity", expanded=True):
         st.json(system)
 
-    with st.expander("Loader Snapshot", expanded=True):
+    with st.expander(
+        "Configuration Loader Snapshot (Process-Local State)", expanded=True
+    ):
         st.json(snapshot)
 
-    with st.expander("Cash Health", expanded=True):
-        st.json(cash_health)
+    with st.expander("Configuration Cache Integrity", expanded=True):
+        st.json(cache_health)
 
-    with st.expander(
-        "Reserved Env Keys (controlled exclusively by the OS)", expanded=True
-    ):
+    with st.expander("Reserved Environment Keys (OS-Controlled)", expanded=True):
         st.json(ready_json.get("reserved_keys"))
 
 
