@@ -27,22 +27,3 @@ def fetch_ready_config_state() -> tuple[dict | None, AdminHTTPConfig]:
         return data, admin_cfg
     except Exception:
         return None, admin_cfg
-
-
-def fetch_config_diagnostics(admin_cfg: AdminHTTPConfig) -> dict | None:
-    """
-    Fetch diagnostics for the configuration state, if available.
-    """
-    if not admin_cfg.enabled or not admin_cfg.base_url:
-        return None
-
-    url = (
-        admin_cfg.endpoints.get("config_diagnostics")
-        or f"{admin_cfg.base_url}/config-diagnostics"
-    )
-
-    try:
-        r = requests.get(url, timeout=1)
-        return r.json()
-    except Exception:
-        return None

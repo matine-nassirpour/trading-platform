@@ -2,29 +2,15 @@ from datetime import UTC, datetime
 
 from aiohttp import web
 from runtime.control_plane.canonicalization.canonical_json import canonical_json
-from runtime.control_plane.diagnostic_providers.config_readiness_provider import (
-    ConfigReadinessProvider,
-)
-from runtime.control_plane.diagnostic_providers.config_state_diagnostics_provider import (
-    ConfigStateDiagnosticsProvider,
+from runtime.control_plane.diagnostic_providers.config_diagnostics_provider import (
+    ConfigDiagnosticsProvider,
 )
 from runtime.control_plane.diagnostic_providers.health_provider import HealthProvider
 
 
-def handle_config_readiness(request: web.Request) -> web.Response:
-    state = ConfigReadinessProvider.get_ready_state()
-    canonical = canonical_json(state)
-
-    return web.Response(
-        body=canonical.encode("utf-8"),
-        content_type="application/json",
-        status=200,
-    )
-
-
 def handle_config_diagnostics(request: web.Request) -> web.Response:
-    payload = ConfigStateDiagnosticsProvider.as_dict()
-    canonical = canonical_json(payload)
+    state = ConfigDiagnosticsProvider.get_diagnostics()
+    canonical = canonical_json(state)
 
     return web.Response(
         body=canonical.encode("utf-8"),

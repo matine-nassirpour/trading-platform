@@ -2,16 +2,12 @@ from __future__ import annotations
 
 import streamlit as st
 
-from apps.streamlit.dashboards.config.readiness_service import (
-    fetch_config_diagnostics,
-    fetch_ready_config_state,
-)
+from apps.streamlit.dashboards.config.readiness_service import fetch_ready_config_state
 from apps.streamlit.dashboards.config.readiness_view import (
     banner_connectivity_error,
     banner_non_ready_state,
     banner_protocol_error,
     render_configuration_settings,
-    render_diagnostics,
     render_environment,
     render_fsm_status_card,
     render_runtime_overview,
@@ -58,12 +54,11 @@ def render_config_dashboard() -> None:
     # Tabs: structured deep-dive
     # --------------------------------------------------------------------------
     st.divider()
-    overview_tab, config_tab, env_tab, diag_tab, raw_tab = st.tabs(
+    overview_tab, config_tab, env_tab, raw_tab = st.tabs(
         [
             "Overview",
             "Configuration",
             "Environment & Metadata",
-            "Diagnostics",
             "Raw JSON",
         ]
     )
@@ -76,10 +71,6 @@ def render_config_dashboard() -> None:
 
     with env_tab:
         render_environment(env, metadata)
-
-    with diag_tab:
-        diagnostics = fetch_config_diagnostics(admin_cfg)
-        render_diagnostics(diagnostics)
 
     with raw_tab:
         st.subheader("Raw `ready_config_state` payload")

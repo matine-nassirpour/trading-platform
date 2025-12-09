@@ -62,7 +62,6 @@ def render_fsm_status_card(
 def render_runtime_overview(ready_json: Mapping[str, Any]) -> None:
     st.subheader("🧩 Runtime Overview")
 
-    snap = ready_json.get("runtime_snapshot", {})
     settings = ready_json.get("ready_state", {}).get("settings", {})
     core = settings.get("core", {})
 
@@ -74,17 +73,35 @@ def render_runtime_overview(ready_json: Mapping[str, Any]) -> None:
         "instance_id": core.get("quantum_instance_id", "unknown"),
     }
 
-    overview = {
-        "application": identity,
-        "runtime": snap,
-        "system": {
-            "hostname": socket.gethostname(),
-            "os": platform.platform(),
-            "cpu_count": os.cpu_count(),
-        },
+    system = {
+        "hostname": socket.gethostname(),
+        "os": platform.platform(),
+        "cpu_count": os.cpu_count(),
     }
 
-    st.json(overview)
+    snapshot = ready_json.get("loader_snapshot", {})
+
+    cash_health = {
+        "cache_matches_params": ready_json.get("cache_matches_params"),
+        "has_valid_cache": ready_json.get("has_valid_cache"),
+    }
+
+    with st.expander("Application Identity", expanded=True):
+        st.json(identity)
+
+    with st.expander("System Identity", expanded=True):
+        st.json(system)
+
+    with st.expander("Loader Snapshot", expanded=True):
+        st.json(snapshot)
+
+    with st.expander("Cash Health", expanded=True):
+        st.json(cash_health)
+
+    with st.expander(
+        "Reserved Env Keys (controlled exclusively by the OS)", expanded=True
+    ):
+        st.json(ready_json.get("reserved_keys"))
 
 
 def render_configuration_settings(settings: Mapping[str, Any]) -> None:
@@ -111,42 +128,6 @@ def render_environment(env: Mapping[str, Any], metadata: Mapping[str, Any]) -> N
 
     with st.expander("Metadata"):
         st.json(metadata)
-
-
-def render_diagnostics(diagnostics: Mapping[str, Any]):
-    st.subheader("🛠️ Config State Diagnostics")
-
-    with st.expander("Process Information"):
-        st.json(
-            {
-                "pid_current": diagnostics.get("pid_current"),
-                "pid_recorded": diagnostics.get("pid_recorded"),
-                "fork_detected": diagnostics.get("fork_detected"),
-            }
-        )
-
-    with st.expander("Configuration Parameters"):
-        st.json(
-            {
-                "base_dir": diagnostics.get("base_dir"),
-                "env_file": diagnostics.get("env_file"),
-                "root_param": diagnostics.get("root_param"),
-                "env_file_param": diagnostics.get("env_file_param"),
-            }
-        )
-
-    with st.expander("Cache Status"):
-        st.json(
-            {
-                "cache_size": diagnostics.get("cache_size"),
-                "cache_matches_params": diagnostics.get("cache_matches_params"),
-                "has_valid_cache": diagnostics.get("has_valid_cache"),
-                "reload_count": diagnostics.get("reload_count"),
-            }
-        )
-
-    with st.expander("Lock Information"):
-        st.json(diagnostics.get("lock_info"))
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
