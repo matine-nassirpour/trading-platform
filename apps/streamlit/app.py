@@ -11,6 +11,7 @@ def main() -> None:
     )
 
     st.sidebar.title("Quantum Control Plane")
+
     selection = st.sidebar.radio(
         "Sections",
         [

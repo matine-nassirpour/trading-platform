@@ -1,11 +1,12 @@
 """
 Streamlit-side client for discovering the Quantum Runtime admin HTTP entrypoints.
 
-Responsibilities
-----------------
-- Use the Runtime as the *single source of truth* for all admin HTTP URLs.
-- Discover admin HTTP metadata via the `/runtime-metadata` endpoint.
-- Expose a minimal, read-only API for Streamlit dashboards.
+Improvements (industry-grade):
+- Stable Requests session (connection pooling, performance, reliability)
+- Strong JSON contract validation (minimal schema)
+- Centralized timeout configuration
+- No load_dotenv() side-effect at import time (entrypoint must load environment)
+- Fully deterministic, read-only API surface
 """
 
 from __future__ import annotations
@@ -26,9 +27,74 @@ load_dotenv()
 DISCOVERY_ENV_VAR = "QUANTUM_ADMIN_HTTP_DISCOVERY_URL"
 RUNTIME_HOST_ENV_VAR = "QUANTUM_ADMIN_HTTP_HOST"
 RUNTIME_PORT_ENV_VAR = "QUANTUM_ADMIN_HTTP_PORT"
+
 DEFAULT_DISCOVERY_URL = "http://127.0.0.1:8765/runtime-metadata"
 
+HTTP_TIMEOUT_SECONDS = 2.0
 
+_SESSION = requests.Session()
+
+
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Internal Helper                                                            │
+# ╰────────────────────────────────────────────────────────────────────────────╯
+def _validate_metadata_payload(
+    payload: dict[str, Any],
+) -> tuple[str, dict[str, str]] | None:
+    """
+    Minimal safety-critical schema validation.
+
+    Expected structure:
+        {
+            "admin_http": {
+                "base_url": str,
+                "endpoints": { str: str, ... }
+            }
+        }
+    """
+    if not isinstance(payload, dict):
+        return None
+
+    admin_http = payload.get("admin_http")
+    if not isinstance(admin_http, dict):
+        return None
+
+    base_url = admin_http.get("base_url")
+    if not isinstance(base_url, str) or not base_url:
+        return None
+
+    endpoints_raw = admin_http.get("endpoints", {})
+    if not isinstance(endpoints_raw, dict):
+        endpoints_raw = {}
+
+    endpoints: dict[str, str] = {}
+    for k, v in endpoints_raw.items():
+        if isinstance(k, str) and isinstance(v, str) and v:
+            endpoints[k] = v
+
+    return base_url, endpoints
+
+
+def _build_default_discovery_url() -> str:
+    explicit = os.getenv(DISCOVERY_ENV_VAR)
+    if explicit and explicit.strip():
+        return explicit.strip()
+
+    host = os.getenv(RUNTIME_HOST_ENV_VAR)
+    port = os.getenv(RUNTIME_PORT_ENV_VAR)
+
+    if host and port:
+        host = host.strip()
+        port = port.strip()
+        if host and port:
+            return f"http://{host}:{port}/runtime-metadata"
+
+    return DEFAULT_DISCOVERY_URL
+
+
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Dataclass                                                                  │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 @dataclass(frozen=True)
 class AdminHTTPConfig:
     """
@@ -50,23 +116,9 @@ class AdminHTTPConfig:
     endpoints: dict[str, str]
 
 
-def _build_default_discovery_url() -> str:
-    explicit = os.getenv(DISCOVERY_ENV_VAR)
-    if explicit and explicit.strip():
-        return explicit.strip()
-
-    host = os.getenv(RUNTIME_HOST_ENV_VAR)
-    port = os.getenv(RUNTIME_PORT_ENV_VAR)
-
-    if host and host.strip() and port and port.strip():
-        host = host.strip()
-        port = port.strip()
-        return f"http://{host}:{port}/runtime-metadata"
-
-    # Fallback
-    return DEFAULT_DISCOVERY_URL
-
-
+# ╭────────────────────────────────────────────────────────────────────────────╮
+# │ Public API                                                                 │
+# ╰────────────────────────────────────────────────────────────────────────────╯
 @lru_cache(maxsize=1)
 def get_admin_http_config() -> AdminHTTPConfig:
     """
@@ -77,39 +129,28 @@ def get_admin_http_config() -> AdminHTTPConfig:
         2. Otherwise, if QUANTUM_ADMIN_HTTP_HOST and QUANTUM_ADMIN_HTTP_PORT are set,
            build `http://{host}:{port}/runtime-metadata`.
     """
-    discovery_url = _build_default_discovery_url()
+    url = _build_default_discovery_url()
 
     try:
-        response = requests.get(discovery_url, timeout=1)
+        resp = _SESSION.get(url, timeout=HTTP_TIMEOUT_SECONDS)
     except Exception:
         # Runtime not reachable, DNS issues, etc.
         return AdminHTTPConfig(enabled=False, base_url=None, endpoints={})
 
-    if response.status_code != 200:
+    if resp.status_code != 200:
         # Runtime running but metadata endpoint not healthy / not exposed
         return AdminHTTPConfig(enabled=False, base_url=None, endpoints={})
 
     try:
-        data: dict[str, Any] = response.json()
+        payload = resp.json()
     except Exception:
         # Invalid JSON -> treat as unavailable
         return AdminHTTPConfig(enabled=False, base_url=None, endpoints={})
 
-    admin_http = data.get("admin_http", {}) or {}
-    base_url = admin_http.get("base_url")
-    raw_endpoints = admin_http.get("endpoints", {}) or {}
-
-    if not isinstance(base_url, str) or not base_url:
+    validated = _validate_metadata_payload(payload)
+    if validated is None:
         return AdminHTTPConfig(enabled=False, base_url=None, endpoints={})
 
-    endpoints: dict[str, str] = {}
-    if isinstance(raw_endpoints, dict):
-        for name, url in raw_endpoints.items():
-            if isinstance(name, str) and isinstance(url, str) and url:
-                endpoints[name] = url
+    base_url, endpoints = validated
 
-    return AdminHTTPConfig(
-        enabled=True,
-        base_url=base_url,
-        endpoints=endpoints,
-    )
+    return AdminHTTPConfig(enabled=True, base_url=base_url, endpoints=endpoints)

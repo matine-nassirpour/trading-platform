@@ -17,9 +17,9 @@ from apps.streamlit.dashboards.config.diagnostics_view import (
 
 
 def render_config_dashboard() -> None:
-    ready_json, admin_cfg = fetch_ready_config_state()
-
     st.title("🏁 Quantum Runtime – Configuration Readiness")
+
+    ready_json, admin_cfg = fetch_ready_config_state()
 
     # --------------------------------------------------------------------------
     # Connectivity / availability banner
@@ -35,34 +35,29 @@ def render_config_dashboard() -> None:
         return
 
     ready_state = ready_json.get("ready_state")
-    if ready_state is None:
+    if not isinstance(ready_state, dict):
         banner_protocol_error(payload=ready_json)
         return
 
     # READY path (canonical structure)
-    env = ready_state.get("env", {}) or {}
-    settings = ready_state.get("settings", {}) or {}
-    metadata = ready_state.get("metadata", {}) or {}
+    env = ready_state.get("env") or {}
+    settings = ready_state.get("settings") or {}
+    metadata = ready_state.get("metadata") or {}
 
     # --------------------------------------------------------------------------
-    # Header: core status & identity
+    # Header: Config FSM
     # --------------------------------------------------------------------------
     render_fsm_status_card(
         ready_config_state=ready_json,
         ready_state=ready_state,
     )
+    st.divider()
 
     # --------------------------------------------------------------------------
     # Tabs: structured deep-dive
     # --------------------------------------------------------------------------
-    st.divider()
     overview_tab, config_tab, env_tab, raw_tab = st.tabs(
-        [
-            "Overview",
-            "Configuration",
-            "Environment & Metadata",
-            "Raw JSON",
-        ]
+        ["Overview", "Configuration", "Environment & Metadata", "Raw JSON"]
     )
 
     with overview_tab:
