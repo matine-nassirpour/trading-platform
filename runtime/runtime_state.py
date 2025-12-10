@@ -27,11 +27,11 @@ class RuntimeStateMachine:
         - Provide a strictly pure, side-effect-free API.
     """
 
-    _ALLOWED: dict[RuntimeState, set[RuntimeState]] = {
-        RuntimeState.STOPPED: {RuntimeState.STARTING},
-        RuntimeState.STARTING: {RuntimeState.RUNNING, RuntimeState.STOPPING},
-        RuntimeState.RUNNING: {RuntimeState.STOPPING},
-        RuntimeState.STOPPING: {RuntimeState.STOPPED},
+    _ALLOWED: dict[RuntimeState, frozenset[RuntimeState]] = {
+        RuntimeState.STOPPED: frozenset({RuntimeState.STARTING}),
+        RuntimeState.STARTING: frozenset({RuntimeState.RUNNING, RuntimeState.STOPPING}),
+        RuntimeState.RUNNING: frozenset({RuntimeState.STOPPING}),
+        RuntimeState.STOPPING: frozenset({RuntimeState.STOPPED}),
     }
 
     def __init__(self) -> None:
@@ -42,7 +42,7 @@ class RuntimeStateMachine:
         return self._state
 
     def transition(self, new_state: RuntimeState) -> None:
-        allowed = self._ALLOWED.get(self._state, set())
+        allowed = self._ALLOWED.get(self._state, frozenset())
 
         if new_state not in allowed:
             raise RuntimeInvalidStateError(

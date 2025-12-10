@@ -6,6 +6,37 @@ from types import MappingProxyType
 from typing import Any
 
 
+def _stable_object_fallback(obj: object) -> dict[str, Any]:
+    """
+    Stable, deterministic fallback for custom objects.
+
+    Produces a minimal structure:
+        {
+            "__type__": "qualified.type.Name",
+            "__fields__": { ... normalized fields ... } | None
+        }
+
+    • Never includes memory addresses.
+    • Never relies on repr().
+    • Ensures cross-run determinism for canonicalization.
+    """
+
+    typename = f"{obj.__class__.__module__}.{obj.__class__.__qualname__}"
+
+    if hasattr(obj, "__dict__"):
+        raw = vars(obj)
+        # Raw dict → will be normalized later
+        return {
+            "__type__": typename,
+            "__fields__": raw,
+        }
+
+    return {
+        "__type__": typename,
+        "__fields__": None,
+    }
+
+
 def _normalize(value: Any, *, _seen: set[int] | None = None) -> Any:
     """
     Normalize any Python object into a fully JSON-serializable structure.
@@ -41,22 +72,18 @@ def _normalize(value: Any, *, _seen: set[int] | None = None) -> Any:
     if isinstance(value, (list, tuple)):
         return [_normalize(v, _seen=_seen) for v in value]
 
-    # Sets (sorted deterministically)
+    # Sets → sorted list
     if isinstance(value, (set, frozenset)):
         return sorted(
             (_normalize(v, _seen=_seen) for v in value),
             key=lambda x: json.dumps(x, sort_keys=True),
         )
 
-    # MappingProxyType and general Mapping
-    if isinstance(value, MappingProxyType) or isinstance(value, Mapping):
-        # Normalize keys → canonical string keys
-        normalized_items = [
-            (str(k), _normalize(v, _seen=_seen)) for k, v in value.items()
-        ]
-        # Ensure deterministic ordering
-        normalized_items.sort(key=lambda kv: kv[0])
-        return {k: v for k, v in normalized_items}
+    # Mappings
+    if isinstance(value, (MappingProxyType, Mapping)):
+        items = [(str(k), _normalize(v, _seen=_seen)) for k, v in value.items()]
+        items.sort(key=lambda kv: kv[0])
+        return {k: v for k, v in items}
 
     # Path → string
     if isinstance(value, Path):
@@ -68,10 +95,10 @@ def _normalize(value: Any, *, _seen: set[int] | None = None) -> Any:
 
     # Objects with __dict__
     if hasattr(value, "__dict__"):
-        return _normalize(vars(value), _seen=_seen)
+        return _normalize(_stable_object_fallback(value), _seen=_seen)
 
-    # Final fallback to stable repr
-    return repr(value)
+    # Final fallback: stable type-based fallback
+    return _stable_object_fallback(value)
 
 
 def canonical_json(data: object) -> str:
