@@ -43,7 +43,6 @@ class LoggingInitializerImpl:
                 log_fsync=config.log_fsync,
                 log_max_bytes=config.log_max_bytes,
                 log_warn_bytes=config.log_warn_bytes,
-                enable_partition_handler=config.log_dir is not None,
             )
 
             init_logging(bundle)

@@ -39,7 +39,7 @@ class LoggingRuntimeBundle:
     log_warn_bytes: int
 
     # Handlers
-    enable_partition_handler: bool
+    enable_partition_handler: bool = True
     enable_console_handler: bool = True
     enable_pretty_console: bool = True
 

@@ -71,19 +71,16 @@ class LifecycleService:
 
         This method performs:
             1. Reset gauges
-            2. Refresh build info
-            3. Initialize tracing
-            4. Initialize logging
-            5. Probe sinks
-            6. Initialize metrics
-            7. Aggregate health
+            2. Initialize tracing
+            3. Initialize logging
+            4. Initialize metrics
+            5. Aggregate health
         """
         if self._initialized and not force:
             self._logger.debug("[Observability] Already initialized — skipping.")
             return True
 
         registry = self._deps.health_registry
-        # diagnostics = self._deps.diagnostics
 
         # Reset health state
         registry.reset_all()
