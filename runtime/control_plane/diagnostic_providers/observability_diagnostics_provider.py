@@ -58,13 +58,9 @@ class ObservabilityDiagnosticProvider:
         """
         try:
             diag = get_diagnostics()
-        except Exception:
-            return {"error": "diagnostics_not_available"}
+            if diag is None:
+                return {"error": "diagnostics_not_installed"}
 
-        if diag is None:
-            return {"error": "diagnostics_not_installed"}
-
-        try:
             return diag.get_summary_report()
         except Exception as exc:
             return {"error": f"diagnostics_unavailable: {exc.__class__.__name__}"}
