@@ -7,9 +7,8 @@ from apps.streamlit.dashboards.observability.diagnostics_service import (
 )
 from apps.streamlit.dashboards.observability.diagnostics_view import (
     render_diagnostics_section,
-    render_header,
+    render_health_matrix,
     render_raw_json,
-    render_subsystem_status,
 )
 
 
@@ -29,8 +28,6 @@ def render_observability_dashboard() -> None:
         )
         return
 
-    # Render sections
-    render_header(snapshot)
-    render_subsystem_status(snapshot)
+    render_health_matrix(snapshot)
     render_diagnostics_section(snapshot)
     render_raw_json(snapshot)
