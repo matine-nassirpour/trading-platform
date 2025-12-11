@@ -62,7 +62,7 @@ def render_fsm_status_card(
         st.metric(label="FSM Schema Version", value=str(fsm_version))
     with col2:
         st.metric(
-            label="Fingerprint (SHA-256, truncated)", value=fingerprint[:16] + "…"
+            label="Fingerprint (SHA-256, truncated)", value=fingerprint[:19] + "…"
         )
     with col3:
         st.metric(label="Timestamp (UTC)", value=formated_timestamp)

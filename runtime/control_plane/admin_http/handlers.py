@@ -4,6 +4,9 @@ from runtime.control_plane.diagnostic_providers.config_diagnostics_provider impo
     ConfigDiagnosticsProvider,
 )
 from runtime.control_plane.diagnostic_providers.health_provider import HealthProvider
+from runtime.control_plane.diagnostic_providers.observability_diagnostics_provider import (
+    ObservabilityDiagnosticProvider,
+)
 from runtime.control_plane.diagnostic_providers.time_provider_dependency import (
     TimeProviderDependency,
 )
@@ -84,6 +87,7 @@ def handle_runtime_metadata(request: web.Request) -> web.Response:
                 "config_readiness": f"{base_url}/config-readiness",
                 "runtime_metadata": f"{base_url}/runtime-metadata",
                 "config_diagnostics": f"{base_url}/config-diagnostics",
+                "observability_diagnostics": f"{base_url}/observability-diagnostics",
             },
         },
     }
@@ -104,6 +108,22 @@ def handle_config_diagnostics(request: web.Request) -> web.Response:
             {
                 "status": "not_ready",
                 "reason": "Configuration system not initialized",
+                "timestamp_utc": TimeProviderDependency.get().now_utc().isoformat(),
+            },
+            status=503,
+        )
+
+    return _response(diag, status=200)
+
+
+def handle_observability_diagnostics(request: web.Request) -> web.Response:
+    diag = ObservabilityDiagnosticProvider.diagnostics_as_dict()
+
+    if diag is None:
+        return _response(
+            {
+                "status": "degraded",
+                "reason": "Observability system not initialized",
                 "timestamp_utc": TimeProviderDependency.get().now_utc().isoformat(),
             },
             status=503,

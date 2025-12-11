@@ -28,6 +28,9 @@ from quantum.infrastructure.observability.bootstrap.lifecycle.protocols.metrics_
 from quantum.infrastructure.observability.bootstrap.lifecycle.protocols.tracing_initializer import (
     TracingInitializer,
 )
+from quantum.infrastructure.observability.bootstrap.runtime_status_provider import (
+    ObservabilityRuntimeStatusProvider,
+)
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
@@ -69,6 +72,11 @@ def create_observability_dependencies() -> ObservabilityDependencies:
 
     health_registry = build_health_registry(prefix="quantum")
     diagnostics = build_bootstrap_diagnostics(prefix="quantum")
+
+    ObservabilityRuntimeStatusProvider.install(
+        health=health_registry,
+        diagnostics=diagnostics,
+    )
 
     return ObservabilityDependencies(
         logging_initializer=LoggingInitializerImpl(),

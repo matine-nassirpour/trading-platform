@@ -17,7 +17,7 @@ from apps.streamlit.dashboards.config.diagnostics_view import (
 
 
 def render_config_dashboard() -> None:
-    st.title("🏁 Quantum Runtime – Configuration Readiness")
+    st.title("🛠️ Configuration Dashboard")
 
     ready_json, admin_cfg = fetch_ready_config_state()
 
