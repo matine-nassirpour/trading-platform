@@ -28,9 +28,6 @@ from quantum.infrastructure.observability.bootstrap.lifecycle.protocols.metrics_
 from quantum.infrastructure.observability.bootstrap.lifecycle.protocols.tracing_initializer import (
     TracingInitializer,
 )
-from quantum.infrastructure.observability.bootstrap.runtime_status_provider import (
-    ObservabilityRuntimeStatusProvider,
-)
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
@@ -39,13 +36,7 @@ from quantum.infrastructure.observability.bootstrap.runtime_status_provider impo
 @dataclass(frozen=True)
 class ObservabilityDependencies:
     """
-    Immutable composition bundle for all observability services.
-
-    This is the *only* place where implementations are selected.
-    No other module decides which concrete classes to use.
-
-    This dramatically increases modularity, testability, and long-term
-    maintainability (10+ years).
+    Pure Composition Root for Observability.
     """
 
     logging_initializer: LoggingInitializer
@@ -72,11 +63,6 @@ def create_observability_dependencies() -> ObservabilityDependencies:
 
     health_registry = build_health_registry(prefix="quantum")
     diagnostics = build_bootstrap_diagnostics(prefix="quantum")
-
-    ObservabilityRuntimeStatusProvider.install(
-        health=health_registry,
-        diagnostics=diagnostics,
-    )
 
     return ObservabilityDependencies(
         logging_initializer=LoggingInitializerImpl(),

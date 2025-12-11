@@ -7,11 +7,12 @@ from runtime.control_plane.diagnostic_providers.time_provider_dependency import 
     TimeProviderDependency,
 )
 
-from quantum.infrastructure.observability.bootstrap.runtime_status_provider import (
-    ObservabilityRuntimeStatusProvider,
-)
 from quantum.infrastructure.observability.context.context_attributes_provider import (
     ContextAttributesProvider,
+)
+from quantum.infrastructure.observability.runtime.observability_api import (
+    get_diagnostics,
+    get_health_registry,
 )
 
 
@@ -19,7 +20,7 @@ from quantum.infrastructure.observability.context.context_attributes_provider im
 class ObservabilitySnapshot:
     """
     Immutable snapshot of the entire Observability health state.
-    This object is serializable and can be safely exposed to external systems.
+    Safe for serialization and external system exposure.
     """
 
     timestamp_utc: str
@@ -50,9 +51,18 @@ class ObservabilityDiagnosticProvider:
     # Internal helpers
     # --------------------------------------------------------------------------
     @staticmethod
-    def _safe_get_diag(diag) -> dict[str, Any]:
+    def _safe_get_diags() -> dict[str, Any]:
+        """
+        Attempt to retrieve bootstrap diagnostics.
+        Always safe, never propagates exceptions.
+        """
+        try:
+            diag = get_diagnostics()
+        except Exception:
+            return {"error": "diagnostics_not_available"}
+
         if diag is None:
-            return {"error": "bootstrap_diagnostics_not_installed"}
+            return {"error": "diagnostics_not_installed"}
 
         try:
             return diag.get_summary_report()
@@ -63,18 +73,23 @@ class ObservabilityDiagnosticProvider:
     # Public API
     # --------------------------------------------------------------------------
     @staticmethod
-    def get_diagnostics() -> ObservabilitySnapshot | None:
-        health = ObservabilityRuntimeStatusProvider.get_health_registry()
-        diag = ObservabilityRuntimeStatusProvider.get_bootstrap_diagnostics()
+    def get_diagnostics_snapshot() -> ObservabilitySnapshot | None:
+        """
+        Produce a complete diagnostics snapshot.
+        Returns None if Observability was never initialized.
+        NEVER raises.
+        """
 
-        if health is None:
+        try:
+            health = get_health_registry()
+        except Exception:
             # Observability not initialized
             return None
 
         time_provider = TimeProviderDependency.get()
         ctx = ContextAttributesProvider.get()
 
-        diag_summary = ObservabilityDiagnosticProvider._safe_get_diag(diag)
+        diagnostics_summary = ObservabilityDiagnosticProvider._safe_get_diags()
 
         return ObservabilitySnapshot(
             timestamp_utc=time_provider.now_utc().isoformat(),
@@ -86,12 +101,12 @@ class ObservabilityDiagnosticProvider:
             metrics_http_ok=health.is_metrics_http_ok(),
             run_id=ctx.run_id,
             correlation_id=ctx.correlation_id,
-            diagnostics=diag_summary,
+            diagnostics=diagnostics_summary,
         )
 
     @staticmethod
     def diagnostics_as_dict() -> dict[str, Any] | None:
-        snap = ObservabilityDiagnosticProvider.get_diagnostics()
+        snap = ObservabilityDiagnosticProvider.get_diagnostics_snapshot()
         if snap is None:
             return None
         return asdict(snap)

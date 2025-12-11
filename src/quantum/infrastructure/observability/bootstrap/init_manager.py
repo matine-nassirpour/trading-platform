@@ -19,25 +19,16 @@ from quantum.infrastructure.observability.bootstrap.lifecycle.configs.tracing_co
 from quantum.infrastructure.observability.bootstrap.lifecycle.dependencies import (
     create_observability_dependencies,
 )
-from quantum.infrastructure.observability.bootstrap.lifecycle.lifecycle import (
-    LifecycleService,
-)
 from quantum.infrastructure.observability.context.context_attributes_provider import (
     ContextAttributesProvider,
 )
 from quantum.infrastructure.observability.context.run_id import generate_run_id
+from quantum.infrastructure.observability.runtime.runtime_context import (
+    _RuntimeContextHolder,
+)
 
 LOGGER: Final = logging.getLogger(__name__)
-
-
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Internal state                                                             │
-# ╰────────────────────────────────────────────────────────────────────────────╯
-_initialized = False
 _init_lock = threading.Lock()
-
-_lifecycle: LifecycleService | None = None
-_dependencies = create_observability_dependencies()
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
@@ -51,38 +42,38 @@ def init_observability(
     force: bool = False,
 ) -> bool:
     """
-    High-level initialization entry point for the Observability stack.
+    Deterministic initialization entrypoint for the Observability stack.
 
-    This function does NOT load configuration:
-      The caller (runtime or application entry point) must already have
-      constructed the Value Objects through its own configuration logic.
+    Responsibilities:
+        • Ensures run_id exists
+        • Installs ObservabilityRuntimeContext once (composition root)
+        • Delegates init to LifecycleService
+        • No global mutable state → certifiable + testable
 
-    This ensures total separation from ConfigManager and makes this module
-    fully Clean Architecture compliant.
+    Returns:
+        bool — True if pipeline is operational, False otherwise.
     """
-    global _initialized, _lifecycle
+    deps = create_observability_dependencies()
 
     with _init_lock:
-        if _initialized and not force:
-            LOGGER.debug("[Observability] Already initialized — skipping.")
-            return True
-
         # Ensure a run_id exists for correlation context
         ctx = ContextAttributesProvider.get()
         if ctx.run_id is None:
             generate_run_id()
 
-        if _lifecycle is None:
-            _lifecycle = LifecycleService(_dependencies)
+        # Install immutable runtime context exactly once
+        _RuntimeContextHolder.install(deps=deps)
 
-        ok = _lifecycle.initialize(
+        # Perform initialization through deterministic LifecycleService
+        runtime_ctx = _RuntimeContextHolder.get()
+
+        ok = runtime_ctx.lifecycle.initialize(
             logging_config=logging_config,
             tracing_config=tracing_config,
             metrics_config=metrics_config,
             force=force,
         )
 
-        _initialized = ok
         return ok
 
 
@@ -94,21 +85,18 @@ def shutdown_observability(
 ) -> None:
     """
     Clean shutdown of the entire observability pipeline.
-
-    This version does NOT clear configuration caches because this module
-    no longer touches ConfigManager or global config.
     """
-    global _initialized, _lifecycle
+    try:
+        runtime_ctx = _RuntimeContextHolder.get()
+    except RuntimeError:
+        return
 
-    if _lifecycle is not None:
-        _lifecycle.shutdown(
-            close_logging=close_logging,
-            shutdown_tracing=shutdown_tracing,
-            set_gauges_down=set_gauges_down,
-        )
-
-    _initialized = False
-    LOGGER.info("[Observability] Stack shutdown complete.")
+    runtime_ctx.lifecycle.shutdown(
+        close_logging=close_logging,
+        shutdown_tracing=shutdown_tracing,
+        set_gauges_down=set_gauges_down,
+    )
+    LOGGER.info("[Observability] Shutdown complete.")
 
 
 @contextmanager
@@ -119,7 +107,7 @@ def observability_session(
     metrics_config: MetricsConfig,
     force: bool = False,
 ) -> Iterator[None]:
-    """Context manager for deterministic init/shutdown."""
+    """High-level deterministic context manager."""
     init_observability(
         logging_config=logging_config,
         tracing_config=tracing_config,
