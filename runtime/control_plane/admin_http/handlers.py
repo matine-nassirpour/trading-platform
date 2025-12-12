@@ -102,7 +102,7 @@ def handle_health(request: web.Request) -> web.Response:
 
 
 def handle_config_diagnostics(request: web.Request) -> web.Response:
-    diag = ConfigDiagnosticsProvider.get_diagnostics()
+    diag = ConfigDiagnosticsProvider.diagnostics_as_dict()
 
     if diag is None:
         return _response(

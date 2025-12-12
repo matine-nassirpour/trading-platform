@@ -20,14 +20,15 @@ def _format_timestamp(ts: str | None) -> str:
         return ts  # fallback
 
 
-def render_fsm_status_card(
-    *, ready_config_state: Mapping[str, Any], ready_state: Mapping[str, Any]
-) -> None:
-    status = (ready_state.get("status") or "UNKNOWN").upper()
-    fingerprint = ready_config_state.get("fingerprint", "n/a")
-    fsm_version = ready_config_state.get("schema_version", "n/a")
-    timestamp = ready_config_state.get("timestamp_utc", "n/a")
-    formated_timestamp = _format_timestamp(timestamp)
+def render_fsm_status_card(diagnostics: Mapping[str, Any]) -> None:
+    ready = diagnostics.get("ready", False)
+    ready_state = diagnostics.get("ready_state") or {}
+
+    status = (ready_state.get("status", "READY" if ready else "ERROR")).upper()
+    fingerprint = diagnostics.get("fingerprint", "n/a")
+    fsm_version = diagnostics.get("schema_version", "n/a")
+    timestamp = diagnostics.get("timestamp_utc")
+    formatted_timestamp = _format_timestamp(timestamp)
 
     colors = {
         "READY": ("#0fa958", "white"),
@@ -37,9 +38,9 @@ def render_fsm_status_card(
 
     summary_messages = {
         "READY": "The runtime configuration is valid, healthy and operational.",
-        "ERROR": "The runtime is NOT ready. Manual intervention is required.",
+        "ERROR": "The runtime configuration is NOT ready.",
     }
-    summary = summary_messages.get(status, "UNKNOWN")
+    summary = summary_messages.get(status, "UNKNOWN STATE")
 
     st.markdown(
         f"""
@@ -59,23 +60,26 @@ def render_fsm_status_card(
 
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.metric(label="FSM Schema Version", value=str(fsm_version))
+        st.metric("FSM Schema Version", str(fsm_version))
     with col2:
-        st.metric(
-            label="Fingerprint (SHA-256, truncated)", value=fingerprint[:19] + "…"
-        )
+        if fingerprint and fingerprint != "n/a":
+            st.metric("Fingerprint (SHA-256, truncated)", fingerprint[:19] + "…")
+        else:
+            st.metric("Fingerprint", "n/a")
     with col3:
-        st.metric(label="Timestamp (UTC)", value=formated_timestamp)
+        st.metric("Timestamp (UTC)", formatted_timestamp)
 
-    with st.expander("Full fingerprint (SHA-256)"):
-        st.code(fingerprint, language="text")
+    if fingerprint and fingerprint != "n/a":
+        with st.expander("Full fingerprint (SHA-256)"):
+            st.code(fingerprint, language="text")
 
 
-def render_runtime_overview(ready_json: Mapping[str, Any]) -> None:
+def render_runtime_overview(diagnostics: Mapping[str, Any]) -> None:
     st.subheader("🧩 Runtime Overview")
 
-    settings = ready_json.get("ready_state", {}).get("settings", {})
-    core = settings.get("core", {})
+    ready_state = diagnostics.get("ready_state") or {}
+    settings = ready_state.get("settings") or {}
+    core = settings.get("core") or {}
 
     identity = {
         "service_name": core.get("quantum_app_name"),
@@ -91,11 +95,11 @@ def render_runtime_overview(ready_json: Mapping[str, Any]) -> None:
         "cpu_count": os.cpu_count(),
     }
 
-    snapshot = ready_json.get("loader_snapshot", {})
+    snapshot = diagnostics.get("loader_snapshot") or {}
 
     cache_health = {
-        "cache_matches_params": ready_json.get("cache_matches_params"),
-        "has_valid_cache": ready_json.get("has_valid_cache"),
+        "cache_matches_params": diagnostics.get("cache_matches_params"),
+        "has_valid_cache": diagnostics.get("has_valid_cache"),
     }
 
     with st.expander("Application Identity", expanded=True):
@@ -113,7 +117,7 @@ def render_runtime_overview(ready_json: Mapping[str, Any]) -> None:
         st.json(cache_health)
 
     with st.expander("Reserved Environment Keys (OS-Controlled)", expanded=True):
-        st.json(ready_json.get("reserved_keys"))
+        st.json(diagnostics.get("reserved_env_keys") or {})
 
 
 def render_configuration_settings(settings: Mapping[str, Any]) -> None:
@@ -165,22 +169,22 @@ def banner_connectivity_error() -> None:
             """))
 
 
-def banner_non_ready_state(*, status_code: int, payload: Mapping[str, Any]) -> None:
-    reason = payload.get("reason", "Runtime is not in READY state.")
+def banner_non_ready_state(*, status_code: int, diagnostics: Mapping[str, Any]) -> None:
+    reason = diagnostics.get("reason", "Runtime is not in READY state.")
 
     st.error(
         f"❌ Quantum Runtime is not READY (HTTP {status_code}).\n\n"
         f"Reason: **{reason}**"
     )
     with st.expander("Raw response payload"):
-        st.json(payload)
+        st.json(diagnostics)
 
 
-def banner_protocol_error(*, payload: Mapping[str, Any]) -> None:
+def banner_protocol_error(*, diagnostics: Mapping[str, Any]) -> None:
     st.error(
         "❌ Protocol error: response payload does not contain the expected `ready_state` key.\n\n"
         "This likely indicates a version mismatch between the Runtime and the dashboard, "
         "or a breaking change in the `/config-diagnostics` contract."
     )
     with st.expander("Raw response payload"):
-        st.json(payload)
+        st.json(diagnostics)
