@@ -95,17 +95,8 @@ def render_overall_status(snapshot: Mapping[str, Any]) -> None:
 
 
 def render_header(snapshot: Mapping[str, Any]) -> None:
-    timestamp = snapshot["timestamp_utc"]
-    formated_timestamp = _format_timestamp(timestamp)
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.write(f"**Timestamp (UTC):** `{formated_timestamp}`")
-
-    with col2:
-        st.write(f"**run_id:** `{snapshot['run_id']}`")
-        st.write(f"**correlation_id:** `{snapshot['correlation_id']}`")
+    st.write(f"**run_id:** `{snapshot['run_id']}`")
+    st.write(f"**correlation_id:** `{snapshot['correlation_id']}`")
 
     st.divider()
 

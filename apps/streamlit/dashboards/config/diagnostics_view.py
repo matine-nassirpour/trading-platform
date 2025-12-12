@@ -4,20 +4,9 @@ import socket
 import textwrap
 
 from collections.abc import Mapping
-from datetime import datetime
 from typing import Any
 
 import streamlit as st
-
-
-def _format_timestamp(ts: str | None) -> str:
-    if not ts:
-        return "n/a"
-    try:
-        dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
-        return dt.strftime("%Y-%m-%d %H:%M:%S UTC")
-    except Exception:
-        return ts  # fallback
 
 
 def render_fsm_status_card(diagnostics: Mapping[str, Any]) -> None:
@@ -27,8 +16,6 @@ def render_fsm_status_card(diagnostics: Mapping[str, Any]) -> None:
     status = (ready_state.get("status", "READY" if ready else "ERROR")).upper()
     fingerprint = diagnostics.get("fingerprint", "n/a")
     fsm_version = diagnostics.get("schema_version", "n/a")
-    timestamp = diagnostics.get("timestamp_utc")
-    formatted_timestamp = _format_timestamp(timestamp)
 
     colors = {
         "READY": ("#0fa958", "white"),
@@ -58,16 +45,14 @@ def render_fsm_status_card(diagnostics: Mapping[str, Any]) -> None:
         unsafe_allow_html=True,
     )
 
-    col1, col2, col3 = st.columns(3)
+    col1, col2 = st.columns(2)
     with col1:
         st.metric("FSM Schema Version", str(fsm_version))
     with col2:
         if fingerprint and fingerprint != "n/a":
-            st.metric("Fingerprint (SHA-256, truncated)", fingerprint[:19] + "…")
+            st.metric("Fingerprint (SHA-256, truncated)", fingerprint[:23] + "…")
         else:
             st.metric("Fingerprint", "n/a")
-    with col3:
-        st.metric("Timestamp (UTC)", formatted_timestamp)
 
     if fingerprint and fingerprint != "n/a":
         with st.expander("Full fingerprint (SHA-256)"):

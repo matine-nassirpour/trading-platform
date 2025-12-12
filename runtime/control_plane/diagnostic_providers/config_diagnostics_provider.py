@@ -1,10 +1,6 @@
 from dataclasses import dataclass
 from typing import Any
 
-from runtime.control_plane.diagnostic_providers.time_provider_dependency import (
-    TimeProviderDependency,
-)
-
 from quantum.infrastructure.config.environment.policy.constants import RESERVED_ENV_KEYS
 from quantum.infrastructure.config.environment.system.snapshot import get_frozen_env
 from quantum.infrastructure.config.runtime.fsm.model import FSM_SCHEMA_VERSION
@@ -23,7 +19,6 @@ class ConfigDiagnosticsSnapshot:
     - Missing or unavailable data is represented explicitly.
     """
 
-    timestamp_utc: str
     schema_version: str
 
     ready: bool
@@ -105,18 +100,11 @@ class ConfigDiagnosticsProvider:
     # Public API
     # --------------------------------------------------------------------------
     @staticmethod
-    def get_diagnostics_snapshot() -> ConfigDiagnosticsSnapshot:
+    def get_snapshot() -> ConfigDiagnosticsSnapshot:
         """
         Produce a complete, immutable diagnostics snapshot.
         NEVER raises.
         """
-
-        try:
-            time_provider = TimeProviderDependency.get()
-            timestamp = time_provider.now_utc().isoformat()
-        except Exception:
-            # Absolute last-resort fallback — should never happen in practice
-            timestamp = "unknown"
 
         ready, ready_state, fingerprint = (
             ConfigDiagnosticsProvider._safe_get_ready_state()
@@ -128,12 +116,9 @@ class ConfigDiagnosticsProvider:
 
         reserved_env = ConfigDiagnosticsProvider._safe_get_reserved_env()
 
-        error = None
-        if not ready:
-            error = "configuration_not_ready"
+        error = None if ready else "configuration_not_ready"
 
         return ConfigDiagnosticsSnapshot(
-            timestamp_utc=timestamp,
             schema_version=FSM_SCHEMA_VERSION,
             ready=ready,
             fingerprint=fingerprint,
@@ -155,12 +140,11 @@ class ConfigDiagnosticsProvider:
         )
 
     @staticmethod
-    def diagnostics_as_dict() -> dict[str, Any]:
+    def as_dict(snapshot: ConfigDiagnosticsSnapshot) -> dict[str, Any]:
         """
         Canonical dict representation for JSON exposure.
         NEVER raises.
         """
-        snap = ConfigDiagnosticsProvider.get_diagnostics_snapshot()
 
         def _safe_dict(value: Any) -> Any:
             if isinstance(value, dict):
@@ -170,14 +154,13 @@ class ConfigDiagnosticsProvider:
             return value
 
         return {
-            "timestamp_utc": snap.timestamp_utc,
-            "schema_version": snap.schema_version,
-            "ready": snap.ready,
-            "fingerprint": snap.fingerprint,
-            "ready_state": _safe_dict(snap.ready_state),
-            "loader_snapshot": _safe_dict(snap.loader_snapshot),
-            "reserved_env_keys": _safe_dict(snap.reserved_env_keys),
-            "cache_matches_params": snap.cache_matches_params,
-            "has_valid_cache": snap.has_valid_cache,
-            "error": snap.error,
+            "schema_version": snapshot.schema_version,
+            "ready": snapshot.ready,
+            "fingerprint": snapshot.fingerprint,
+            "ready_state": _safe_dict(snapshot.ready_state),
+            "loader_snapshot": _safe_dict(snapshot.loader_snapshot),
+            "reserved_env_keys": _safe_dict(snapshot.reserved_env_keys),
+            "cache_matches_params": snapshot.cache_matches_params,
+            "has_valid_cache": snapshot.has_valid_cache,
+            "error": snapshot.error,
         }

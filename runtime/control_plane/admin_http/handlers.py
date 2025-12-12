@@ -7,9 +7,6 @@ from runtime.control_plane.diagnostic_providers.health_provider import HealthPro
 from runtime.control_plane.diagnostic_providers.observability_diagnostics_provider import (
     ObservabilityDiagnosticProvider,
 )
-from runtime.control_plane.diagnostic_providers.time_provider_dependency import (
-    TimeProviderDependency,
-)
 from runtime.control_plane.version import ADMIN_HTTP_API_VERSION
 
 NO_CACHE_HEADERS = {
@@ -76,11 +73,9 @@ def handle_runtime_metadata(request: web.Request) -> web.Response:
     No configuration models are exposed here.
     """
     base_url = _build_admin_base_url(request)
-    time_provider = TimeProviderDependency.get()
 
     payload = {
         "status": "ok",
-        "timestamp_utc": time_provider.now_utc().isoformat(),
         "api_version": ADMIN_HTTP_API_VERSION,
         "admin_http": {
             "base_url": base_url,
@@ -102,30 +97,30 @@ def handle_health(request: web.Request) -> web.Response:
 
 
 def handle_config_diagnostics(request: web.Request) -> web.Response:
-    diag = ConfigDiagnosticsProvider.diagnostics_as_dict()
+    snapshot = ConfigDiagnosticsProvider.get_snapshot()
+    payload = ConfigDiagnosticsProvider.as_dict(snapshot)
 
-    if diag is None:
-        return _response(
-            {
-                "status": "not_ready",
-                "reason": "Configuration system not initialized",
-                "timestamp_utc": TimeProviderDependency.get().now_utc().isoformat(),
-            },
-            status=503,
-        )
+    if snapshot.ready:
+        return _response(payload, status=200)
 
-    return _response(diag, status=200)
+    # Not ready → Service Unavailable
+    return _response(
+        {
+            **payload,
+            "status": "not_ready",
+        },
+        status=503,
+    )
 
 
 def handle_observability_diagnostics(request: web.Request) -> web.Response:
-    diag = ObservabilityDiagnosticProvider.diagnostics_as_dict()
+    diag = ObservabilityDiagnosticProvider.as_dict()
 
     if diag is None:
         return _response(
             {
                 "status": "degraded",
                 "reason": "Observability system not initialized",
-                "timestamp_utc": TimeProviderDependency.get().now_utc().isoformat(),
             },
             status=503,
         )

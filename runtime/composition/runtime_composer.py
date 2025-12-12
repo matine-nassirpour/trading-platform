@@ -20,7 +20,6 @@ import logging
 
 from typing import Final
 
-from quantum.application.ports.outbound.time_provider_port import TimeProviderPort
 from quantum.infrastructure.config.models.core import CoreSettings
 from quantum.infrastructure.config.models.logging import LoggingSettings
 from quantum.infrastructure.config.models.mt5 import MT5Settings
@@ -44,7 +43,6 @@ from quantum.infrastructure.observability.bootstrap.lifecycle.configs.tracing_co
 from quantum.infrastructure.observability.foundation.config.identity_runtime_bundle import (
     IdentityRuntimeBundle,
 )
-from quantum.infrastructure.time.time_provider_adapter import SystemTimeProviderAdapter
 
 LOGGER: Final = logging.getLogger("quantum.runtime.composer")
 
@@ -68,13 +66,11 @@ class QuantumRuntime:
         logging_settings: LoggingSettings,
         tracing_settings: TracingSettings,
         mt5_settings: MT5Settings,
-        time_provider: TimeProviderPort,
     ) -> None:
         self._core = core_settings
         self._logging_cfg = logging_settings
         self._tracing_cfg = tracing_settings
         self._mt5_cfg = mt5_settings
-        self._time_provider = time_provider
 
         self._observability_initialized = False
 
@@ -169,10 +165,6 @@ class QuantumRuntime:
         return self._make_identity()
 
     @property
-    def time_provider(self) -> TimeProviderPort:
-        return self._time_provider
-
-    @property
     def core_settings(self) -> CoreSettings:
         """
         Expose validated core settings for deployment-shell / runtime system wiring.
@@ -216,5 +208,4 @@ def compose_runtime(
         logging_settings=logging_settings,
         tracing_settings=tracing_settings,
         mt5_settings=mt5_settings,
-        time_provider=SystemTimeProviderAdapter(),
     )

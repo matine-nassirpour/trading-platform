@@ -3,10 +3,6 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 from typing import Any
 
-from runtime.control_plane.diagnostic_providers.time_provider_dependency import (
-    TimeProviderDependency,
-)
-
 from quantum.infrastructure.observability.context.context_attributes_provider import (
     ContextAttributesProvider,
 )
@@ -17,13 +13,12 @@ from quantum.infrastructure.observability.runtime.observability_api import (
 
 
 @dataclass(frozen=True)
-class ObservabilitySnapshot:
+class ObservabilityDiagnosticsSnapshot:
     """
     Immutable snapshot of the entire Observability health state.
     Safe for serialization and external system exposure.
     """
 
-    timestamp_utc: str
     pipeline_up: bool
     logging_ok: bool
     logging_sink_up: bool
@@ -69,7 +64,7 @@ class ObservabilityDiagnosticProvider:
     # Public API
     # --------------------------------------------------------------------------
     @staticmethod
-    def get_diagnostics_snapshot() -> ObservabilitySnapshot | None:
+    def get_snapshot() -> ObservabilityDiagnosticsSnapshot | None:
         """
         Produce a complete diagnostics snapshot.
         Returns None if Observability was never initialized.
@@ -82,13 +77,11 @@ class ObservabilityDiagnosticProvider:
             # Observability not initialized
             return None
 
-        time_provider = TimeProviderDependency.get()
         ctx = ContextAttributesProvider.get()
 
         diagnostics_summary = ObservabilityDiagnosticProvider._safe_get_diags()
 
-        return ObservabilitySnapshot(
-            timestamp_utc=time_provider.now_utc().isoformat(),
+        return ObservabilityDiagnosticsSnapshot(
             pipeline_up=health.is_pipeline_up(),
             logging_ok=health.is_logging_ok(),
             logging_sink_up=health.is_logging_sink_up(),
@@ -101,8 +94,8 @@ class ObservabilityDiagnosticProvider:
         )
 
     @staticmethod
-    def diagnostics_as_dict() -> dict[str, Any] | None:
-        snap = ObservabilityDiagnosticProvider.get_diagnostics_snapshot()
+    def as_dict() -> dict[str, Any] | None:
+        snap = ObservabilityDiagnosticProvider.get_snapshot()
         if snap is None:
             return None
         return asdict(snap)
