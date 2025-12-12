@@ -10,6 +10,7 @@ from runtime.control_plane.diagnostic_providers.observability_diagnostics_provid
 from runtime.control_plane.diagnostic_providers.time_provider_dependency import (
     TimeProviderDependency,
 )
+from runtime.control_plane.version import ADMIN_HTTP_API_VERSION
 
 NO_CACHE_HEADERS = {
     "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
@@ -80,11 +81,11 @@ def handle_runtime_metadata(request: web.Request) -> web.Response:
     payload = {
         "status": "ok",
         "timestamp_utc": time_provider.now_utc().isoformat(),
+        "api_version": ADMIN_HTTP_API_VERSION,
         "admin_http": {
             "base_url": base_url,
             "endpoints": {
                 "health": f"{base_url}/healthz",
-                "config_readiness": f"{base_url}/config-readiness",
                 "runtime_metadata": f"{base_url}/runtime-metadata",
                 "config_diagnostics": f"{base_url}/config-diagnostics",
                 "observability_diagnostics": f"{base_url}/observability-diagnostics",

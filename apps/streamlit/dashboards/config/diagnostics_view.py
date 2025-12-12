@@ -148,7 +148,7 @@ def render_environment(env: Mapping[str, Any], metadata: Mapping[str, Any]) -> N
 def banner_connectivity_error() -> None:
     """
     Render the banner for the case where the admin HTTP is not reachable
-    or the `/config-readiness` endpoint could not be queried successfully.
+    or the `/config-diagnostics` endpoint could not be queried successfully.
     """
     st.error(textwrap.dedent("""
             ❌ Admin HTTP control-plane is not available.
@@ -180,7 +180,7 @@ def banner_protocol_error(*, payload: Mapping[str, Any]) -> None:
     st.error(
         "❌ Protocol error: response payload does not contain the expected `ready_state` key.\n\n"
         "This likely indicates a version mismatch between the Runtime and the dashboard, "
-        "or a breaking change in the `/config-readiness` contract."
+        "or a breaking change in the `/config-diagnostics` contract."
     )
     with st.expander("Raw response payload"):
         st.json(payload)

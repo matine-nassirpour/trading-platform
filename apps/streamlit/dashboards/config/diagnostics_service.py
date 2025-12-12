@@ -23,7 +23,7 @@ def fetch_ready_config_state() -> tuple[Mapping[str, Any] | None, AdminHTTPConfi
 
     url = (
         admin_cfg.endpoints.get("config_readiness")
-        or f"{admin_cfg.base_url}/config-readiness"
+        or f"{admin_cfg.base_url}/config-diagnostics"
     )
 
     try:
