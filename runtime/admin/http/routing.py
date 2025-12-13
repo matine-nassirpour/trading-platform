@@ -1,5 +1,5 @@
 from aiohttp import web
-from runtime.control_plane.admin_http.handlers import (
+from runtime.admin.http.handlers import (
     handle_config_diagnostics,
     handle_health,
     handle_observability_diagnostics,

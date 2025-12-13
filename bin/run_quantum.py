@@ -25,9 +25,9 @@ import sys
 
 from typing import Final
 
-from runtime.composition.composer import compose_runtime
-from runtime.composition.system import build_runtime_system
-from runtime.kernel.shutdown import ShutdownCoordinator
+from runtime.assembly.system_factory import build_runtime_system
+from runtime.bootstrap.runtime_context import compose_runtime
+from runtime.shutdown.coordinator import ShutdownCoordinator
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Early Stage Minimal Logger                                                 │

@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from runtime.composition.composer import QuantumRuntime
-from runtime.control_plane.admin_http.server import (
+from runtime.admin.http.server import (
     NullRuntimeSupervisorHTTPServer,
     RuntimeSupervisorHTTPServer,
 )
-from runtime.kernel.engine import RuntimeEngine
+from runtime.bootstrap.runtime_context import QuantumRuntime
+from runtime.lifecycle.engine import RuntimeEngine
 
 from quantum.application.ports.inbound.application_runtime_port import (
     ApplicationRuntimePort,
@@ -30,6 +30,8 @@ class RuntimeSystem:
         - Hold the immutable runtime context (configuration, identity, observability)
         - Hold the fully constructed runtime engine
         - Act as a clear handoff boundary to the deployment shell (`bin/`)
+
+    This object has no lifecycle responsibility; it is a pure aggregate.
     """
 
     runtime: QuantumRuntime

@@ -5,7 +5,7 @@ import logging
 
 from typing import Final, Protocol
 
-from runtime.kernel.state import (
+from runtime.lifecycle.state_machine import (
     RuntimeInvalidStateError,
     RuntimeState,
     RuntimeStateMachine,

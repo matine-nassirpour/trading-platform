@@ -46,38 +46,44 @@ trading-platform/
 │       ├── log_schema_v1.json
 │       └── README.md
 ├── runtime/
-│   ├── composition/
-│   │   ├── __init__.py
-│   │   ├── composer.py
-│   │   └── system.py
-│   ├── control_plane/
-│   │   ├── admin_http/
-│   │   │   ├── __init__.py
-│   │   │   ├── auth_middleware.py
-│   │   │   ├── handlers.py
-│   │   │   ├── routing.py
-│   │   │   └── server.py
-│   │   ├── canonicalization/
-│   │   │   ├── __init__.py
-│   │   │   └── canonical_json.py
-│   │   ├── diagnostic_providers/
-│   │   │   ├── __init__.py
-│   │   │   ├── config_diagnostics_provider.py
-│   │   │   ├── health_provider.py
-│   │   │   └── observability_diagnostics_provider.py
-│   │   ├── security/
+│   ├── admin/
+│   │   ├── auth/
 │   │   │   ├── __init__.py
 │   │   │   ├── auth_port.py
 │   │   │   ├── bearer_auth.py
 │   │   │   └── models.py
+│   │   ├── contracts/
+│   │   │   ├── __init__.py
+│   │   │   └── version.py
+│   │   ├── diagnostics/
+│   │   │   ├── __init__.py
+│   │   │   ├── config.py
+│   │   │   ├── health.py
+│   │   │   └── observability.py
+│   │   ├── http/
+│   │   │   ├── __init__.py
+│   │   │   ├── auth_middleware.py
+│   │   │   ├── handlers.py
+│   │   │   ├── http_forwarding.py
+│   │   │   ├── routing.py
+│   │   │   └── server.py
+│   │   └── __init__.py
+│   ├── assembly/
 │   │   ├── __init__.py
-│   │   ├── http_forwarding.py
-│   │   └── version.py
-│   ├── kernel/
+│   │   └── system_factory.py
+│   ├── bootstrap/
+│   │   ├── __init__.py
+│   │   └── runtime_context.py
+│   ├── contracts/
+│   │   ├── __init__.py
+│   │   └── canonical_json.py
+│   ├── lifecycle/
 │   │   ├── __init__.py
 │   │   ├── engine.py
-│   │   ├── shutdown.py
-│   │   └── state.py
+│   │   └── state_machine.py
+│   ├── shutdown/
+│   │   ├── __init__.py
+│   │   └── coordinator.py
 │   └── __init__.py
 ├── scripts/
 │   ├── generate_assurance_report.py

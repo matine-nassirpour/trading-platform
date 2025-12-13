@@ -1,19 +1,15 @@
 from aiohttp import web
-from runtime.control_plane.admin_http.auth_middleware import require_scope
-from runtime.control_plane.canonicalization.canonical_json import canonical_json
-from runtime.control_plane.diagnostic_providers.config_diagnostics_provider import (
-    ConfigDiagnosticsProvider,
-)
-from runtime.control_plane.diagnostic_providers.health_provider import HealthProvider
-from runtime.control_plane.diagnostic_providers.observability_diagnostics_provider import (
-    ObservabilityDiagnosticProvider,
-)
-from runtime.control_plane.http_forwarding import (
+from runtime.admin.auth.models import AdminScope
+from runtime.admin.contracts.version import ADMIN_HTTP_API_VERSION
+from runtime.admin.diagnostics.config import ConfigDiagnosticsProvider
+from runtime.admin.diagnostics.health import HealthProvider
+from runtime.admin.diagnostics.observability import ObservabilityDiagnosticProvider
+from runtime.admin.http.auth_middleware import require_scope
+from runtime.admin.http.http_forwarding import (
     TrustedProxyPolicy,
     resolve_forwarded_request_info,
 )
-from runtime.control_plane.security.models import AdminScope
-from runtime.control_plane.version import ADMIN_HTTP_API_VERSION
+from runtime.contracts.canonical_json import canonical_json
 
 NO_CACHE_HEADERS = {
     "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",

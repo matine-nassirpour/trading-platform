@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from aiohttp import web
-from runtime.control_plane.security.auth_port import AdminAuthPort
-from runtime.control_plane.security.models import AdminScope
+from runtime.admin.auth.auth_port import AdminAuthPort
+from runtime.admin.auth.models import AdminScope
 
 
 @web.middleware

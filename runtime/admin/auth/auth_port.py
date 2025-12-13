@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from runtime.control_plane.security.models import AdminPrincipal
+from runtime.admin.auth.models import AdminPrincipal
 
 
 class AdminAuthPort(Protocol):

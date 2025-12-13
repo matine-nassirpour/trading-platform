@@ -4,8 +4,8 @@ import hmac
 
 from typing import Final
 
-from runtime.control_plane.security.auth_port import AdminAuthPort
-from runtime.control_plane.security.models import AdminPrincipal, AdminScope
+from runtime.admin.auth.auth_port import AdminAuthPort
+from runtime.admin.auth.models import AdminPrincipal, AdminScope
 
 
 class StaticBearerTokenAuth(AdminAuthPort):

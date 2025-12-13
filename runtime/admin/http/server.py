@@ -1,11 +1,11 @@
 import logging
 
 from aiohttp import web
-from runtime.control_plane.admin_http.auth_middleware import admin_auth_middleware
-from runtime.control_plane.admin_http.routing import build_routes
-from runtime.control_plane.http_forwarding import TrustedProxyPolicy
-from runtime.control_plane.security.bearer_auth import StaticBearerTokenAuth
-from runtime.control_plane.security.models import AdminScope
+from runtime.admin.auth.bearer_auth import StaticBearerTokenAuth
+from runtime.admin.auth.models import AdminScope
+from runtime.admin.http.auth_middleware import admin_auth_middleware
+from runtime.admin.http.http_forwarding import TrustedProxyPolicy
+from runtime.admin.http.routing import build_routes
 
 LOGGER = logging.getLogger("quantum.runtime.control_plane.admin_http.server")
 
