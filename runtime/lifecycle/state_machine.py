@@ -10,20 +10,20 @@ class RuntimeState(Enum):
     STOPPING = "stopping"
 
 
-class RuntimeInvalidStateError(RuntimeError):
+class RuntimeLifecycleViolation(RuntimeError):
     """
     Raised when the RuntimeEngine attempts an illegal state transition.
     """
 
 
-class RuntimeStateMachine:
+class RuntimeLifecycleStateMachine:
     """
     Deterministic, minimal, certifiable runtime lifecycle FSM.
 
     Responsibilities:
         - Maintain the engine’s authoritative lifecycle state.
         - Enforce legal transitions (STOPPED → STARTING → RUNNING → STOPPING → STOPPED).
-        - Reject illegal transitions with RuntimeInvalidStateError.
+        - Reject illegal transitions with RuntimeLifecycleViolation.
         - Provide a strictly pure, side-effect-free API.
     """
 
@@ -46,7 +46,7 @@ class RuntimeStateMachine:
 
     def transition(self, new_state: RuntimeState) -> None:
         if not self.can_transition(new_state):
-            raise RuntimeInvalidStateError(
+            raise RuntimeLifecycleViolation(
                 f"Illegal state transition: {self._state.value} → {new_state.value}"
             )
         self._state = new_state

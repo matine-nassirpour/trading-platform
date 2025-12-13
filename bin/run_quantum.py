@@ -25,8 +25,8 @@ import sys
 
 from typing import Final
 
-from runtime.assembly.system_factory import build_runtime_system
-from runtime.bootstrap.runtime_context import compose_runtime
+from runtime.assembly.system_factory import assemble_runtime
+from runtime.bootstrap.runtime_context import bootstrap_runtime_context
 from runtime.shutdown.coordinator import ShutdownCoordinator
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
@@ -48,7 +48,7 @@ async def main_async() -> int:
 
     # 1. Build runtime (config + observability)
     try:
-        runtime = compose_runtime()
+        runtime = bootstrap_runtime_context()
     except Exception as exc:
         LOGGER.exception("Fatal composition error: %s", exc)
         return 2
@@ -63,7 +63,7 @@ async def main_async() -> int:
         return 3
 
     # 3. Build the fully-wired runtime system (engine + internal transports)
-    system = build_runtime_system(runtime)
+    system = assemble_runtime(runtime)
     engine = system.engine
 
     # register POSIX signals in the current asyncio loop

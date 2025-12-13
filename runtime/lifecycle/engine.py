@@ -6,9 +6,9 @@ import logging
 from typing import Final, Protocol
 
 from runtime.lifecycle.state_machine import (
-    RuntimeInvalidStateError,
+    RuntimeLifecycleStateMachine,
+    RuntimeLifecycleViolation,
     RuntimeState,
-    RuntimeStateMachine,
 )
 
 from quantum.application.ports.inbound.application_runtime_port import (
@@ -19,7 +19,7 @@ from quantum.application.ports.outbound.event_bus_port import EventBusPort
 LOGGER: Final = logging.getLogger("quantum.runtime.engine")
 
 
-class AdminHTTPServerPort(Protocol):
+class AdminControlPlanePort(Protocol):
     """
     Minimal administrative HTTP server port.
     This is an OS-/transport-level concern.
@@ -30,15 +30,20 @@ class AdminHTTPServerPort(Protocol):
     async def stop(self) -> None: ...
 
 
-class RuntimeEngine:
+class RuntimeLifecycleEngine:
     """
-    Quantum Runtime Engine (asynchronous)
+    Deterministic runtime lifecycle controller.
 
     Responsibilities:
     • Deterministic orchestration of the runtime lifecycle.
     • Strict lifecycle FSM (STOPPED → STARTING → RUNNING → STOPPING → STOPPED).
     • Drives event bus + application orchestrator + admin HTTP supervisor.
     • Zero domain knowledge; fully DIP-compliant.
+
+    Contains:
+    - NO business logic
+    - NO configuration logic
+    - NO transport-specific knowledge
     """
 
     def __init__(
@@ -46,7 +51,7 @@ class RuntimeEngine:
         *,
         app_service: ApplicationRuntimePort,
         event_bus: EventBusPort,
-        admin_http_server: AdminHTTPServerPort,
+        admin_http_server: AdminControlPlanePort,
         graceful_shutdown_timeout: float = 5.0,
     ) -> None:
         self._app = app_service
@@ -55,7 +60,7 @@ class RuntimeEngine:
         self._graceful_timeout = graceful_shutdown_timeout
 
         self._shutdown_requested = asyncio.Event()
-        self._fsm = RuntimeStateMachine()
+        self._fsm = RuntimeLifecycleStateMachine()
 
         # Track partial startup success
         self._http_started = False
@@ -121,7 +126,7 @@ class RuntimeEngine:
             if current in {RuntimeState.STARTING, RuntimeState.RUNNING}:
                 try:
                     self._fsm.transition(RuntimeState.STOPPING)
-                except RuntimeInvalidStateError as exc:
+                except RuntimeLifecycleViolation as exc:
                     LOGGER.error("FSM violation during shutdown: %s", exc)
 
             LOGGER.info("[Runtime Engine] Graceful shutdown starting.")
@@ -162,7 +167,7 @@ class RuntimeEngine:
     # --------------------------------------------------------------------------
     async def start(self) -> None:
         if self._fsm.state != RuntimeState.STOPPED:
-            raise RuntimeInvalidStateError(
+            raise RuntimeLifecycleViolation(
                 f"RuntimeEngine.start() illegal in state {self._fsm.state.value}"
             )
 

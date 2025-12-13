@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 from aiohttp import web
-from runtime.admin.auth.auth_port import AdminAuthPort
+from runtime.admin.auth.auth_port import AdminControlPlaneAuthPort
 from runtime.admin.auth.models import AdminScope
 
 
 @web.middleware
-async def admin_auth_middleware(request: web.Request, handler):
-    auth: AdminAuthPort = request.app["admin_auth"]
+async def admin_control_plane_auth_middleware(request: web.Request, handler):
+    auth: AdminControlPlaneAuthPort = request.app["admin_auth"]
 
     principal = auth.authenticate(request.headers.get("Authorization"))
     if principal is None:
@@ -17,7 +17,7 @@ async def admin_auth_middleware(request: web.Request, handler):
     return await handler(request)
 
 
-def require_scope(scope: AdminScope):
+def require_admin_scope(scope: AdminScope):
     async def _guard(request: web.Request):
         principal = request["admin_principal"]
         if scope not in principal.scopes:

@@ -58,7 +58,7 @@ def _parse_log_level(level: str) -> int:
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Runtime Object                                                             │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-class QuantumRuntime:
+class RuntimeContext:
     def __init__(
         self,
         *,
@@ -175,9 +175,9 @@ class QuantumRuntime:
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Composition Root                                                           │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-def compose_runtime(
+def bootstrap_runtime_context(
     *, root: str | None = None, env_file: str | None = None
-) -> QuantumRuntime:
+) -> RuntimeContext:
     """
     Main Composition Root of the whole software system.
 
@@ -203,7 +203,7 @@ def compose_runtime(
     tracing_settings = ConfigManager.load_tracing_cached()
     mt5_settings = ConfigManager.load_mt5_cached()
 
-    return QuantumRuntime(
+    return RuntimeContext(
         core_settings=core,
         logging_settings=logging_settings,
         tracing_settings=tracing_settings,

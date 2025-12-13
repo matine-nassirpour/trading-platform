@@ -1,11 +1,11 @@
 import logging
 
 from aiohttp import web
-from runtime.admin.auth.bearer_auth import StaticBearerTokenAuth
+from runtime.admin.auth.bearer_auth import AdminControlPlaneBearerTokenAuth
 from runtime.admin.auth.models import AdminScope
-from runtime.admin.http.auth_middleware import admin_auth_middleware
+from runtime.admin.http.auth_middleware import admin_control_plane_auth_middleware
 from runtime.admin.http.http_forwarding import TrustedProxyPolicy
-from runtime.admin.http.routing import build_routes
+from runtime.admin.http.routing import define_admin_http_routes
 
 LOGGER = logging.getLogger("quantum.runtime.control_plane.admin_http.server")
 
@@ -36,7 +36,7 @@ def _normalize_base_path(base_path: str) -> str:
     return bp
 
 
-def _build_admin_app(
+def _build_admin_http_app(
     *,
     base_path: str,
     auth_token: str,
@@ -51,10 +51,10 @@ def _build_admin_app(
         - Register authorization backend
         - Register routes only (no logic)
     """
-    app = web.Application(middlewares=[admin_auth_middleware])
+    app = web.Application(middlewares=[admin_control_plane_auth_middleware])
 
     app["admin_base_path"] = base_path
-    app["admin_auth"] = StaticBearerTokenAuth(
+    app["admin_auth"] = AdminControlPlaneBearerTokenAuth(
         token=auth_token,
         token_id="admin",
         scopes=scopes,
@@ -63,23 +63,21 @@ def _build_admin_app(
     # Explicit proxy trust policy
     app["trusted_proxy_policy"] = TrustedProxyPolicy(enabled=trust_proxy_headers)
 
-    app.add_routes(build_routes())
+    app.add_routes(define_admin_http_routes())
     return app
 
 
-class RuntimeSupervisorHTTPServer:
+class AdminHttpControlPlaneServer:
     """
-    Minimal, deterministic, secured admin HTTP server.
+    HTTP-based administrative control-plane adapter.
 
-    Responsibility:
-        - HTTP transport only
-        - Lifecycle (start/stop)
-        - Security enforcement via middleware
+    Responsibilities:
+    - Expose admin endpoints over HTTP
+    - Enforce authentication and authorization
+    - Integrate with the runtime lifecycle via a control-plane port
 
-    This class contains:
-        - NO business logic
-        - NO application logic
-        - NO domain knowledge
+    NO business logic
+    No lifecycle policy.
     """
 
     def __init__(
@@ -121,7 +119,7 @@ class RuntimeSupervisorHTTPServer:
 
         root_app = web.Application()
 
-        admin_app = _build_admin_app(
+        admin_app = _build_admin_http_app(
             base_path=self._base_path,
             auth_token=self._auth_token,
             scopes=scopes,
@@ -160,10 +158,10 @@ class RuntimeSupervisorHTTPServer:
         LOGGER.info("[HTTP Server] Admin control-plane stopped.")
 
 
-class NullRuntimeSupervisorHTTPServer:
+class NullAdminControlPlaneServer:
     """
-    No-op implementation for the admin HTTP server.
-    Used when the admin HTTP control-plane is disabled by configuration.
+    No-op admin control-plane implementation.
+    Used when the admin control-plane is disabled by configuration.
     """
 
     @staticmethod

@@ -30,7 +30,7 @@ class ObservabilityDiagnosticsSnapshot:
     diagnostics: dict[str, Any]
 
 
-class ObservabilityDiagnosticProvider:
+class ObservabilityDiagnosticsProvider:
     """
     Pure diagnostic provider with NO dependency on web frameworks.
 
@@ -79,7 +79,7 @@ class ObservabilityDiagnosticProvider:
 
         ctx = ContextAttributesProvider.get()
 
-        diagnostics_summary = ObservabilityDiagnosticProvider._safe_get_diags()
+        diagnostics_summary = ObservabilityDiagnosticsProvider._safe_get_diags()
 
         return ObservabilityDiagnosticsSnapshot(
             pipeline_up=health.is_pipeline_up(),
@@ -95,7 +95,7 @@ class ObservabilityDiagnosticProvider:
 
     @staticmethod
     def as_dict() -> dict[str, Any] | None:
-        snap = ObservabilityDiagnosticProvider.get_snapshot()
+        snap = ObservabilityDiagnosticsProvider.get_snapshot()
         if snap is None:
             return None
         return asdict(snap)

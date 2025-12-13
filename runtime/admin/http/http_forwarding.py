@@ -51,7 +51,7 @@ def _parse_forwarded_header(value: str) -> dict[str, str]:
     return result
 
 
-def resolve_forwarded_request_info(
+def resolve_admin_http_request_identity(
     *,
     scheme: str,
     host: str,

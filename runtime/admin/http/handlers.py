@@ -3,11 +3,11 @@ from runtime.admin.auth.models import AdminScope
 from runtime.admin.contracts.version import ADMIN_HTTP_API_VERSION
 from runtime.admin.diagnostics.config import ConfigDiagnosticsProvider
 from runtime.admin.diagnostics.health import HealthProvider
-from runtime.admin.diagnostics.observability import ObservabilityDiagnosticProvider
-from runtime.admin.http.auth_middleware import require_scope
+from runtime.admin.diagnostics.observability import ObservabilityDiagnosticsProvider
+from runtime.admin.http.auth_middleware import require_admin_scope
 from runtime.admin.http.http_forwarding import (
     TrustedProxyPolicy,
-    resolve_forwarded_request_info,
+    resolve_admin_http_request_identity,
 )
 from runtime.contracts.canonical_json import canonical_json
 
@@ -40,7 +40,7 @@ def _build_admin_base_url(request: web.Request) -> str:
 
     policy: TrustedProxyPolicy = request.app["trusted_proxy_policy"]
 
-    info = resolve_forwarded_request_info(
+    info = resolve_admin_http_request_identity(
         scheme=request.scheme,
         host=request.host,
         headers=request.headers,
@@ -65,7 +65,7 @@ def _build_admin_base_url(request: web.Request) -> str:
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Handlers                                                                   │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-async def handle_runtime_metadata(request: web.Request) -> web.Response:
+async def get_admin_runtime_metadata(request: web.Request) -> web.Response:
     """
     Expose minimal runtime metadata for external clients (e.g. Streamlit UI).
 
@@ -75,7 +75,7 @@ async def handle_runtime_metadata(request: web.Request) -> web.Response:
 
     No configuration models are exposed here.
     """
-    await require_scope(AdminScope.METADATA)(request)
+    await require_admin_scope(AdminScope.METADATA)(request)
 
     base_url = _build_admin_base_url(request)
 
@@ -96,15 +96,15 @@ async def handle_runtime_metadata(request: web.Request) -> web.Response:
     return _response(payload, status=200)
 
 
-async def handle_health(request: web.Request) -> web.Response:
-    await require_scope(AdminScope.HEALTH)(request)
+async def get_admin_health_status(request: web.Request) -> web.Response:
+    await require_admin_scope(AdminScope.HEALTH)(request)
 
     payload = HealthProvider.get_health()
     return _response(payload, status=200)
 
 
-async def handle_config_diagnostics(request: web.Request) -> web.Response:
-    await require_scope(AdminScope.CONFIG_DIAGNOSTICS)(request)
+async def get_admin_config_diagnostics(request: web.Request) -> web.Response:
+    await require_admin_scope(AdminScope.CONFIG_DIAGNOSTICS)(request)
 
     snapshot = ConfigDiagnosticsProvider.get_snapshot()
     payload = ConfigDiagnosticsProvider.as_dict(snapshot)
@@ -115,10 +115,10 @@ async def handle_config_diagnostics(request: web.Request) -> web.Response:
     return _response({**payload, "status": "not_ready"}, status=503)
 
 
-async def handle_observability_diagnostics(request: web.Request) -> web.Response:
-    await require_scope(AdminScope.OBSERVABILITY_DIAGNOSTICS)(request)
+async def get_admin_observability_diagnostics(request: web.Request) -> web.Response:
+    await require_admin_scope(AdminScope.OBSERVABILITY_DIAGNOSTICS)(request)
 
-    diagnostics = ObservabilityDiagnosticProvider.as_dict()
+    diagnostics = ObservabilityDiagnosticsProvider.as_dict()
 
     if diagnostics is None:
         return _response(

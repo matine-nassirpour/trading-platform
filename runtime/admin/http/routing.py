@@ -1,16 +1,25 @@
 from aiohttp import web
 from runtime.admin.http.handlers import (
-    handle_config_diagnostics,
-    handle_health,
-    handle_observability_diagnostics,
-    handle_runtime_metadata,
+    get_admin_config_diagnostics,
+    get_admin_health_status,
+    get_admin_observability_diagnostics,
+    get_admin_runtime_metadata,
 )
 
 
-def build_routes() -> list[web.RouteDef]:
+def define_admin_http_routes() -> list[web.RouteDef]:
+    """
+    Declare the HTTP routes exposed by the admin control-plane.
+
+    This function:
+    - declares routes only
+    - contains no logic
+    - performs no side effects
+    """
+
     return [
-        web.get("/healthz", handle_health),
-        web.get("/runtime-metadata", handle_runtime_metadata),
-        web.get("/config-diagnostics", handle_config_diagnostics),
-        web.get("/observability-diagnostics", handle_observability_diagnostics),
+        web.get("/healthz", get_admin_health_status),
+        web.get("/runtime-metadata", get_admin_runtime_metadata),
+        web.get("/config-diagnostics", get_admin_config_diagnostics),
+        web.get("/observability-diagnostics", get_admin_observability_diagnostics),
     ]
