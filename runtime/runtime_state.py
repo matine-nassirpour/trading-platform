@@ -41,12 +41,24 @@ class RuntimeStateMachine:
     def state(self) -> RuntimeState:
         return self._state
 
-    def transition(self, new_state: RuntimeState) -> None:
-        allowed = self._ALLOWED.get(self._state, frozenset())
+    def can_transition(self, new_state: RuntimeState) -> bool:
+        return new_state in self._ALLOWED.get(self._state, frozenset())
 
-        if new_state not in allowed:
+    def transition(self, new_state: RuntimeState) -> None:
+        if not self.can_transition(new_state):
             raise RuntimeInvalidStateError(
                 f"Illegal state transition: {self._state.value} → {new_state.value}"
             )
-
         self._state = new_state
+
+    def force_stop(self) -> None:
+        """
+        Force the FSM into STOPPED state.
+
+        This method is ONLY intended for shutdown finalization when:
+        - partial startup occurred
+        - an unexpected exception disrupted the normal lifecycle
+
+        This preserves global system safety and convergence guarantees.
+        """
+        self._state = RuntimeState.STOPPED

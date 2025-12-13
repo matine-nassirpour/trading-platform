@@ -62,6 +62,8 @@ class RuntimeEngine:
         self._bus_initialized = False
         self._app_started = False
 
+        self._shutdown_lock = asyncio.Lock()
+
     # --------------------------------------------------------------------------
     # Public API
     # --------------------------------------------------------------------------
@@ -74,14 +76,10 @@ class RuntimeEngine:
     # --------------------------------------------------------------------------
     async def _main_loop(self) -> None:
         """
-        Main cooperative loop of the runtime engine.
-
-        Responsibilities:
-        - keep the runtime responsive
-        - handle graceful cancellation
+        Block until a shutdown is requested.
+        No busy looping.
         """
-        while not self._shutdown_requested.is_set():
-            await asyncio.sleep(0.05)  # Cooperative scheduling
+        await self._shutdown_requested.wait()
 
     async def _do_shutdown(self) -> None:
         """
@@ -92,7 +90,7 @@ class RuntimeEngine:
 
         # APP orchestrator
         if self._app_started:
-            LOGGER.debug("[Runtime Engine] Stopping app orchestrator.")
+            LOGGER.debug("[Runtime Engine] Stopping application orchestrator.")
             with self._suppress_cancel():
                 await self._app.stop()
 
@@ -104,7 +102,7 @@ class RuntimeEngine:
 
         # HTTP SERVER
         if self._http_started:
-            LOGGER.debug("[Runtime Engine] Stopping admin HTTP server")
+            LOGGER.debug("[Runtime Engine] Stopping admin HTTP server.")
             with self._suppress_cancel():
                 await self._admin_http_server.stop()
 
@@ -113,22 +111,36 @@ class RuntimeEngine:
         FSM-consistent shutdown entrypoint.
         Ensures a single STOPPING transition.
         """
-        # Transition only if needed
-        if self._fsm.state != RuntimeState.STOPPING:
+        async with self._shutdown_lock:
+            current = self._fsm.state
+
+            if current == RuntimeState.STOPPED:
+                LOGGER.debug("[Runtime Engine] Shutdown requested but already stopped.")
+                return
+
+            if current in {RuntimeState.STARTING, RuntimeState.RUNNING}:
+                try:
+                    self._fsm.transition(RuntimeState.STOPPING)
+                except RuntimeInvalidStateError as exc:
+                    LOGGER.error("FSM violation during shutdown: %s", exc)
+
+            LOGGER.info("[Runtime Engine] Graceful shutdown starting.")
+
             try:
-                self._fsm.transition(RuntimeState.STOPPING)
-            except RuntimeInvalidStateError as exc:
-                LOGGER.error("Illegal shutdown transition: %s", exc)
-
-        LOGGER.info("[Runtime Engine] Graceful shutdown starting.")
-
-        try:
-            await asyncio.wait_for(self._do_shutdown(), timeout=self._graceful_timeout)
-        except TimeoutError:
-            LOGGER.error("[Runtime Engine] Forced shutdown (timeout exceeded).")
-
-        self._fsm.transition(RuntimeState.STOPPED)
-        LOGGER.info("[Runtime Engine] Shutdown complete.")
+                await asyncio.wait_for(
+                    self._do_shutdown(),
+                    timeout=self._graceful_timeout,
+                )
+            except TimeoutError:
+                # Raised by asyncio.wait_for() on graceful shutdown timeout
+                LOGGER.error(
+                    "[Runtime Engine] Forced shutdown: timeout exceeded (%.2fs).",
+                    self._graceful_timeout,
+                )
+            finally:
+                # Absolute convergence guarantee
+                self._fsm.force_stop()
+                LOGGER.info("[Runtime Engine] Shutdown complete.")
 
     # --------------------------------------------------------------------------
     # Utilities
@@ -143,17 +155,12 @@ class RuntimeEngine:
             return None
 
         def __exit__(self, exc_type, exc, tb) -> bool:
-            # Convert CancelledError to “handled”
             return exc_type is asyncio.CancelledError
 
     # --------------------------------------------------------------------------
     # Public API
     # --------------------------------------------------------------------------
     async def start(self) -> None:
-        """
-        Deterministic startup pipeline with rollback.
-        """
-
         if self._fsm.state != RuntimeState.STOPPED:
             raise RuntimeInvalidStateError(
                 f"RuntimeEngine.start() illegal in state {self._fsm.state.value}"
@@ -195,12 +202,16 @@ class RuntimeEngine:
         Asynchronous external shutdown request.
         Idempotent.
         """
-        if self._fsm.state not in {RuntimeState.STARTING, RuntimeState.RUNNING}:
-            LOGGER.warning(
-                "[Runtime Engine] Shutdown request ignored (state: %s).",
+        if self._fsm.state not in {
+            RuntimeState.STARTING,
+            RuntimeState.RUNNING,
+            RuntimeState.STOPPING,
+        }:
+            LOGGER.debug(
+                "[Runtime Engine] Shutdown request ignored (state=%s).",
                 self._fsm.state.value,
             )
             return
 
-        LOGGER.warning("[Runtime Engine] Shutdown requested")
+        LOGGER.warning("[Runtime Engine] Shutdown requested.")
         self._shutdown_requested.set()
