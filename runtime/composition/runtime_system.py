@@ -23,9 +23,10 @@ class RuntimeSystem:
     """
     Aggregates the fully wired runtime engine and its associated runtime context.
 
-    This type is intentionally small and explicit:
-    - `runtime` → configuration, identity, observability lifecycle
-    - `engine`  → async orchestration of the running system
+    Responsibilities:
+        - Hold the immutable runtime context (configuration, identity, observability)
+        - Hold the fully constructed runtime engine
+        - Act as a clear handoff boundary to the deployment shell (`bin/`)
     """
 
     runtime: QuantumRuntime
@@ -34,31 +35,34 @@ class RuntimeSystem:
 
 def build_runtime_system(runtime: QuantumRuntime) -> RuntimeSystem:
     """
-    Build the fully wired runtime system (engine + internal transports).
+    Build the fully wired runtime system.
 
     Responsibilities:
-    - Instantiate the event bus adapter.
-    - Instantiate the application orchestrator.
-    - Instantiate the admin HTTP supervisor server, configured from CoreSettings.
-    - Instantiate the RuntimeEngine with all dependencies injected.
+        - Instantiate infrastructure adapters required at runtime
+        - Instantiate the application orchestrator
+        - Instantiate the secured admin HTTP control-plane (or a null implementation)
+        - Inject all dependencies into the RuntimeEngine
 
-    This function lives in the `runtime/` layer, i.e. outside the Clean Architecture
-    core, and is therefore allowed to import infrastructure-level adapters.
+    Architectural Notes:
+        - This function is part of the external composition root.
+        - It is allowed to import infrastructure-level adapters.
+        - No business logic or domain rules are permitted here.
     """
     core_cfg = runtime.core_settings
 
-    # Event bus
+    # Event Bus
     event_bus: EventBusPort = AsyncioEventBusAdapter()
 
-    # Application orchestrator
+    # Application Orchestrator
     orchestrator = ApplicationOrchestrator(event_bus=event_bus)
 
-    # Admin HTTP supervisor (control-plane entrypoint)
+    # Admin HTTP Control-Plane
     if core_cfg.quantum_admin_http_enabled:
         admin_http_server = RuntimeSupervisorHTTPServer(
             host=core_cfg.quantum_admin_http_host,
             port=core_cfg.quantum_admin_http_port,
             base_path=core_cfg.quantum_admin_http_base_path,
+            auth_token=core_cfg.quantum_admin_http_token,
         )
     else:
         admin_http_server = NullRuntimeSupervisorHTTPServer()

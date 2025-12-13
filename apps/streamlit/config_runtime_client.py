@@ -27,12 +27,21 @@ load_dotenv()
 DISCOVERY_ENV_VAR = "QUANTUM_ADMIN_HTTP_DISCOVERY_URL"
 RUNTIME_HOST_ENV_VAR = "QUANTUM_ADMIN_HTTP_HOST"
 RUNTIME_PORT_ENV_VAR = "QUANTUM_ADMIN_HTTP_PORT"
+ADMIN_HTTP_TOKEN_ENV_VAR = "QUANTUM_ADMIN_HTTP_TOKEN"
 
 DEFAULT_DISCOVERY_URL = "http://127.0.0.1:8765/runtime-metadata"
 
 HTTP_TIMEOUT_SECONDS = 2.0
 
 _SESSION = requests.Session()
+
+_token = os.getenv(ADMIN_HTTP_TOKEN_ENV_VAR)
+if _token:
+    _SESSION.headers.update(
+        {
+            "Authorization": f"Bearer {_token}",
+        }
+    )
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮

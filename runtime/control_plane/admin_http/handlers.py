@@ -1,4 +1,5 @@
 from aiohttp import web
+from runtime.control_plane.admin_http.auth_middleware import require_scope
 from runtime.control_plane.canonicalization.canonical_json import canonical_json
 from runtime.control_plane.diagnostic_providers.config_diagnostics_provider import (
     ConfigDiagnosticsProvider,
@@ -7,6 +8,7 @@ from runtime.control_plane.diagnostic_providers.health_provider import HealthPro
 from runtime.control_plane.diagnostic_providers.observability_diagnostics_provider import (
     ObservabilityDiagnosticProvider,
 )
+from runtime.control_plane.security.models import AdminScope
 from runtime.control_plane.version import ADMIN_HTTP_API_VERSION
 
 NO_CACHE_HEADERS = {
@@ -62,7 +64,7 @@ def _build_admin_base_url(request: web.Request) -> str:
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Handlers                                                                   │
 # ╰────────────────────────────────────────────────────────────────────────────╯
-def handle_runtime_metadata(request: web.Request) -> web.Response:
+async def handle_runtime_metadata(request: web.Request) -> web.Response:
     """
     Expose minimal runtime metadata for external clients (e.g. Streamlit UI).
 
@@ -72,6 +74,8 @@ def handle_runtime_metadata(request: web.Request) -> web.Response:
 
     No configuration models are exposed here.
     """
+    await require_scope(AdminScope.METADATA)(request)
+
     base_url = _build_admin_base_url(request)
 
     payload = {
@@ -91,32 +95,31 @@ def handle_runtime_metadata(request: web.Request) -> web.Response:
     return _response(payload, status=200)
 
 
-def handle_health(request: web.Request) -> web.Response:
+async def handle_health(request: web.Request) -> web.Response:
+    await require_scope(AdminScope.HEALTH)(request)
+
     payload = HealthProvider.get_health()
     return _response(payload, status=200)
 
 
-def handle_config_diagnostics(request: web.Request) -> web.Response:
+async def handle_config_diagnostics(request: web.Request) -> web.Response:
+    await require_scope(AdminScope.CONFIG_DIAGNOSTICS)(request)
+
     snapshot = ConfigDiagnosticsProvider.get_snapshot()
     payload = ConfigDiagnosticsProvider.as_dict(snapshot)
 
     if snapshot.ready:
         return _response(payload, status=200)
 
-    # Not ready → Service Unavailable
-    return _response(
-        {
-            **payload,
-            "status": "not_ready",
-        },
-        status=503,
-    )
+    return _response({**payload, "status": "not_ready"}, status=503)
 
 
-def handle_observability_diagnostics(request: web.Request) -> web.Response:
-    diag = ObservabilityDiagnosticProvider.as_dict()
+async def handle_observability_diagnostics(request: web.Request) -> web.Response:
+    await require_scope(AdminScope.OBSERVABILITY_DIAGNOSTICS)(request)
 
-    if diag is None:
+    diagnostics = ObservabilityDiagnosticProvider.as_dict()
+
+    if diagnostics is None:
         return _response(
             {
                 "status": "degraded",
@@ -125,4 +128,4 @@ def handle_observability_diagnostics(request: web.Request) -> web.Response:
             status=503,
         )
 
-    return _response(diag, status=200)
+    return _response(diagnostics, status=200)

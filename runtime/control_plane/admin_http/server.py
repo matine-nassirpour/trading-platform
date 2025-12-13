@@ -1,7 +1,10 @@
 import logging
 
 from aiohttp import web
+from runtime.control_plane.admin_http.auth_middleware import admin_auth_middleware
 from runtime.control_plane.admin_http.routing import build_routes
+from runtime.control_plane.security.bearer_auth import StaticBearerTokenAuth
+from runtime.control_plane.security.models import AdminScope
 
 LOGGER = logging.getLogger("quantum.runtime.control_plane.admin_http.server")
 
@@ -19,7 +22,7 @@ def _normalize_base_path(base_path: str) -> str:
         return "/"
 
     bp = base_path.strip()
-    if bp == "" or bp == "/":
+    if bp in ("", "/"):
         return "/"
 
     if not bp.startswith("/"):
@@ -32,21 +35,65 @@ def _normalize_base_path(base_path: str) -> str:
     return bp
 
 
+def _build_admin_app(
+    *,
+    base_path: str,
+    auth_token: str,
+    scopes: frozenset[AdminScope],
+) -> web.Application:
+    """
+    Build the secured admin HTTP application.
+
+    Responsibilities:
+        - Install authentication middleware
+        - Register authorization backend
+        - Register routes only (no logic)
+    """
+    app = web.Application(middlewares=[admin_auth_middleware])
+
+    app["admin_base_path"] = base_path
+    app["admin_auth"] = StaticBearerTokenAuth(
+        token=auth_token,
+        token_id="admin",
+        scopes=scopes,
+    )
+
+    app.add_routes(build_routes())
+    return app
+
+
 class RuntimeSupervisorHTTPServer:
     """
-    Minimal, deterministic, low-criticality HTTP server.
-    Responsibility: Transport ONLY.
+    Minimal, deterministic, secured admin HTTP server.
+
+    Responsibility:
+        - HTTP transport only
+        - Lifecycle (start/stop)
+        - Security enforcement via middleware
+
+    This class contains:
+        - NO business logic
+        - NO application logic
+        - NO domain knowledge
     """
 
     def __init__(
         self,
+        *,
         host: str = "127.0.0.1",
         port: int = 8765,
         base_path: str = "/",
+        auth_token: str,
     ) -> None:
+        if not auth_token:
+            raise ValueError(
+                "Admin HTTP auth token must be provided when admin HTTP is enabled"
+            )
+
         self._host = host
         self._port = port
         self._base_path = _normalize_base_path(base_path)
+        self._auth_token = auth_token
 
         self._runner: web.AppRunner | None = None
         self._site: web.TCPSite | None = None
@@ -56,28 +103,36 @@ class RuntimeSupervisorHTTPServer:
             LOGGER.warning("[HTTP Server] RuntimeSupervisor server already started.")
             return
 
-        app = web.Application()
-        # Expose the normalized base path for handlers that need to build URLs.
-        app["admin_base_path"] = self._base_path
+        scopes = frozenset(
+            {
+                AdminScope.HEALTH,
+                AdminScope.METADATA,
+                AdminScope.CONFIG_DIAGNOSTICS,
+                AdminScope.OBSERVABILITY_DIAGNOSTICS,
+            }
+        )
 
-        routes = build_routes()
+        root_app = web.Application()
+
+        admin_app = _build_admin_app(
+            base_path=self._base_path,
+            auth_token=self._auth_token,
+            scopes=scopes,
+        )
 
         if self._base_path == "/":
-            app.add_routes(routes)
+            root_app = admin_app
         else:
-            subapp = web.Application()
-            subapp["admin_base_path"] = self._base_path
-            subapp.add_routes(routes)
-            app.add_subapp(self._base_path, subapp)
+            root_app.add_subapp(self._base_path, admin_app)
 
-        self._runner = web.AppRunner(app)
+        self._runner = web.AppRunner(root_app)
         await self._runner.setup()
 
         self._site = web.TCPSite(self._runner, self._host, self._port)
         await self._site.start()
 
         LOGGER.info(
-            "[HTTP Server] RuntimeSupervisor Server started at http://%s:%s%s",
+            "[HTTP Server] Admin control-plane started at http://%s:%s%s",
             self._host,
             self._port,
             "" if self._base_path == "/" else self._base_path,
@@ -94,24 +149,23 @@ class RuntimeSupervisorHTTPServer:
         self._runner = None
         self._site = None
 
-        LOGGER.info("[HTTP Server] RuntimeSupervisor server stopped.")
+        LOGGER.info("[HTTP Server] Admin control-plane stopped.")
 
 
 class NullRuntimeSupervisorHTTPServer:
     """
     No-op implementation for the admin HTTP server.
-
-    Used when the admin HTTP entrypoint is disabled via configuration.
-    Satisfies the AdminHTTPServerPort protocol expected by RuntimeEngine.
+    Used when the admin HTTP control-plane is disabled by configuration.
     """
 
     @staticmethod
     async def start() -> None:
         LOGGER.info(
-            "[HTTP Server] Admin HTTP server is DISABLED by configuration. "
-            "No HTTP control-plane will be exposed."
+            "[HTTP Server] Admin HTTP control-plane is DISABLED by configuration."
         )
 
     @staticmethod
     async def stop() -> None:
-        LOGGER.info("[HTTP Server] Admin HTTP server disabled — nothing to stop.")
+        LOGGER.info(
+            "[HTTP Server] Admin HTTP control-plane disabled — nothing to stop."
+        )

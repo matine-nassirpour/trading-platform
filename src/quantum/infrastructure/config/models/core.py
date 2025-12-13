@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 
 from quantum.infrastructure.config.models.base.base_settings import BaseConfigSettings
 from quantum.infrastructure.config.models.base.mixins import PublicSettingsMixin
@@ -44,10 +44,15 @@ class CoreSettings(BaseConfigSettings, PublicSettingsMixin):
     # --------------------------------------------------------------------------
     # Admin HTTP Runtime EntryPoint
     # --------------------------------------------------------------------------
-    quantum_admin_http_enabled: bool = Field(True)
+    quantum_admin_http_enabled: bool = Field(False)
     quantum_admin_http_host: str = Field("127.0.0.1")
     quantum_admin_http_port: int = 8765
     quantum_admin_http_base_path: str = Field("/")
+    quantum_admin_http_token: str | None = Field(
+        default=None,
+        repr=False,  # CRITICAL: never displayed
+        description="Bearer token for admin HTTP control-plane authentication.",
+    )
 
     # --------------------------------------------------------------------------
     # Execution policy
@@ -81,3 +86,13 @@ class CoreSettings(BaseConfigSettings, PublicSettingsMixin):
             field="quantum_env",
             model="CoreSettings",
         )
+
+    @model_validator(mode="after")
+    def _validate_admin_http_security(self):
+        if self.quantum_admin_http_enabled:
+            if not self.quantum_admin_http_token:
+                raise ValueError(
+                    "quantum_admin_http_token is required when "
+                    "quantum_admin_http_enabled is true"
+                )
+        return self
