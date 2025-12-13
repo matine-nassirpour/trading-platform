@@ -12,7 +12,7 @@ LOGGER: Final = logging.getLogger("quantum.application.app_service")
 
 class ApplicationOrchestrator:
     """
-    Root of the Application Layer.
+    Root of the Application Layer. Implementation of the ApplicationRuntimePort.
 
     Responsibilities
     ----------------

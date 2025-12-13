@@ -53,6 +53,14 @@ class CoreSettings(BaseConfigSettings, PublicSettingsMixin):
         repr=False,  # CRITICAL: never displayed
         description="Bearer token for admin HTTP control-plane authentication.",
     )
+    quantum_admin_http_trust_proxy: bool = Field(
+        default=False,
+        description=(
+            "Trust Forwarded / X-Forwarded-* headers for admin HTTP base URL "
+            "resolution. MUST be enabled only when running behind a trusted "
+            "reverse proxy or ingress."
+        ),
+    )
 
     # --------------------------------------------------------------------------
     # Execution policy

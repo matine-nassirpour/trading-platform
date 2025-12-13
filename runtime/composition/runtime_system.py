@@ -9,6 +9,9 @@ from runtime.control_plane.admin_http.server import (
 )
 from runtime.runtime_engine import RuntimeEngine
 
+from quantum.application.ports.inbound.application_runtime_port import (
+    ApplicationRuntimePort,
+)
 from quantum.application.ports.outbound.event_bus_port import EventBusPort
 from quantum.application.services.application_orchestrator import (
     ApplicationOrchestrator,
@@ -54,7 +57,7 @@ def build_runtime_system(runtime: QuantumRuntime) -> RuntimeSystem:
     event_bus: EventBusPort = AsyncioEventBusAdapter()
 
     # Application Orchestrator
-    orchestrator = ApplicationOrchestrator(event_bus=event_bus)
+    orchestrator: ApplicationRuntimePort = ApplicationOrchestrator(event_bus=event_bus)
 
     # Admin HTTP Control-Plane
     if core_cfg.quantum_admin_http_enabled:
@@ -63,6 +66,7 @@ def build_runtime_system(runtime: QuantumRuntime) -> RuntimeSystem:
             port=core_cfg.quantum_admin_http_port,
             base_path=core_cfg.quantum_admin_http_base_path,
             auth_token=core_cfg.quantum_admin_http_token,
+            trust_proxy_headers=core_cfg.quantum_admin_http_trust_proxy,
         )
     else:
         admin_http_server = NullRuntimeSupervisorHTTPServer()

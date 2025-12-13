@@ -3,6 +3,7 @@ import logging
 from aiohttp import web
 from runtime.control_plane.admin_http.auth_middleware import admin_auth_middleware
 from runtime.control_plane.admin_http.routing import build_routes
+from runtime.control_plane.http_forwarding import TrustedProxyPolicy
 from runtime.control_plane.security.bearer_auth import StaticBearerTokenAuth
 from runtime.control_plane.security.models import AdminScope
 
@@ -40,6 +41,7 @@ def _build_admin_app(
     base_path: str,
     auth_token: str,
     scopes: frozenset[AdminScope],
+    trust_proxy_headers: bool,
 ) -> web.Application:
     """
     Build the secured admin HTTP application.
@@ -57,6 +59,9 @@ def _build_admin_app(
         token_id="admin",
         scopes=scopes,
     )
+
+    # Explicit proxy trust policy
+    app["trusted_proxy_policy"] = TrustedProxyPolicy(enabled=trust_proxy_headers)
 
     app.add_routes(build_routes())
     return app
@@ -84,6 +89,7 @@ class RuntimeSupervisorHTTPServer:
         port: int = 8765,
         base_path: str = "/",
         auth_token: str,
+        trust_proxy_headers: bool = False,
     ) -> None:
         if not auth_token:
             raise ValueError(
@@ -94,6 +100,7 @@ class RuntimeSupervisorHTTPServer:
         self._port = port
         self._base_path = _normalize_base_path(base_path)
         self._auth_token = auth_token
+        self._trust_proxy_headers = trust_proxy_headers
 
         self._runner: web.AppRunner | None = None
         self._site: web.TCPSite | None = None
@@ -118,6 +125,7 @@ class RuntimeSupervisorHTTPServer:
             base_path=self._base_path,
             auth_token=self._auth_token,
             scopes=scopes,
+            trust_proxy_headers=self._trust_proxy_headers,
         )
 
         if self._base_path == "/":

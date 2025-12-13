@@ -11,10 +11,10 @@ from runtime.runtime_state import (
     RuntimeStateMachine,
 )
 
-from quantum.application.ports.outbound.event_bus_port import EventBusPort
-from quantum.application.services.application_orchestrator import (
-    ApplicationOrchestrator,
+from quantum.application.ports.inbound.application_runtime_port import (
+    ApplicationRuntimePort,
 )
+from quantum.application.ports.outbound.event_bus_port import EventBusPort
 
 LOGGER: Final = logging.getLogger("quantum.runtime.engine")
 
@@ -44,7 +44,7 @@ class RuntimeEngine:
     def __init__(
         self,
         *,
-        app_service: ApplicationOrchestrator,
+        app_service: ApplicationRuntimePort,
         event_bus: EventBusPort,
         admin_http_server: AdminHTTPServerPort,
         graceful_shutdown_timeout: float = 5.0,

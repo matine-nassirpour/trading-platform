@@ -27,6 +27,7 @@ from typing import Final
 
 from runtime.composition.runtime_composer import compose_runtime
 from runtime.composition.runtime_system import build_runtime_system
+from runtime.runtime_shutdown import ShutdownCoordinator
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Early Stage Minimal Logger                                                 │
@@ -58,30 +59,33 @@ async def main_async() -> int:
         try:
             runtime.shutdown_observability()
         except Exception:
-            LOGGER.exception("Error while rolling back observability init")
+            LOGGER.exception("Error during observability rollback.")
         return 3
 
     # 3. Build the fully-wired runtime system (engine + internal transports)
     system = build_runtime_system(runtime)
     engine = system.engine
 
-    # 4. Register POSIX signals in the current asyncio loop
+    # register POSIX signals in the current asyncio loop
     loop = asyncio.get_running_loop()
 
-    def _handle_sigterm() -> None:
-        LOGGER.warning("[Runtime] SIGTERM received — requesting shutdown")
-        asyncio.create_task(engine.request_shutdown())
+    # 4. Deterministic shutdown coordinator
+    shutdown = ShutdownCoordinator(loop=loop)
 
-    def _handle_sigint() -> None:
-        LOGGER.warning("[Runtime] SIGINT received — requesting shutdown")
-        asyncio.create_task(engine.request_shutdown())
+    def _on_sigterm() -> None:
+        LOGGER.warning("[Signal] SIGTERM received — requesting shutdown")
+        shutdown.request(engine.request_shutdown)
+
+    def _on_sigint() -> None:
+        LOGGER.warning("[Signal] SIGINT received — requesting shutdown")
+        shutdown.request(engine.request_shutdown)
 
     try:
-        loop.add_signal_handler(signal.SIGTERM, _handle_sigterm)
-        loop.add_signal_handler(signal.SIGINT, _handle_sigint)
+        loop.add_signal_handler(signal.SIGTERM, _on_sigterm)
+        loop.add_signal_handler(signal.SIGINT, _on_sigint)
     except NotImplementedError:
         # Windows fallback
-        LOGGER.warning("Signal handlers not available on this platform.")
+        LOGGER.warning("Signal handlers not supported on this platform.")
 
     # 5. Start the runtime engine (async)
     try:

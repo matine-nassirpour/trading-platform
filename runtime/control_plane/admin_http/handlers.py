@@ -8,6 +8,10 @@ from runtime.control_plane.diagnostic_providers.health_provider import HealthPro
 from runtime.control_plane.diagnostic_providers.observability_diagnostics_provider import (
     ObservabilityDiagnosticProvider,
 )
+from runtime.control_plane.http_forwarding import (
+    TrustedProxyPolicy,
+    resolve_forwarded_request_info,
+)
 from runtime.control_plane.security.models import AdminScope
 from runtime.control_plane.version import ADMIN_HTTP_API_VERSION
 
@@ -35,22 +39,23 @@ def _build_admin_base_url(request: web.Request) -> str:
     """
     Build the effective admin base URL as seen by the client.
 
-    Uses:
-        - request.scheme  (http / https)
-        - request.host    (host:port from Host header)
-        - request.app["admin_base_path"]  (injected by the HTTP server)
-
-    Guarantees:
-        - No trailing slash (except for root "/").
+    Proxy-aware, deterministic, and secure.
     """
-    scheme = request.scheme
-    host = request.host
+
+    policy: TrustedProxyPolicy = request.app["trusted_proxy_policy"]
+
+    info = resolve_forwarded_request_info(
+        scheme=request.scheme,
+        host=request.host,
+        headers=request.headers,
+        trusted_proxy_policy=policy,
+    )
 
     base_path = request.app.get("admin_base_path", "/") or "/"
     base_path = base_path.strip()
 
     if base_path in ("", "/"):
-        return f"{scheme}://{host}"
+        return f"{info.scheme}://{info.host}"
 
     if not base_path.startswith("/"):
         base_path = "/" + base_path
@@ -58,7 +63,7 @@ def _build_admin_base_url(request: web.Request) -> str:
     if len(base_path) > 1 and base_path.endswith("/"):
         base_path = base_path[:-1]
 
-    return f"{scheme}://{host}{base_path}"
+    return f"{info.scheme}://{info.host}{base_path}"
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
