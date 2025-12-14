@@ -10,14 +10,14 @@ SRC := src/$(PKG)
 
 .DEFAULT_GOAL := help
 
-.PHONY: help fmt-check fmt lint typecheck bandit pre-commit test verify-coverage assurance-report audit contracts check-ci clean ui tree log-schema contracts-ts
+.PHONY: help fmt-check fmt lint typecheck bandit pre-commit test verify-coverage assurance-report audit contracts check-ci clean ui tree log-schema contracts-ts contracts-json-schema
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
 # │ Help                                                                       │
 # ╰────────────────────────────────────────────────────────────────────────────╯
 help: ## Display structured list of available Make targets
-	@Write-Host "╭──────────────────────────────────────────────────────────────────────────────╮"
+	@Write-Host "`n╭──────────────────────────────────────────────────────────────────────────────╮"
 	@Write-Host "│                  QUANTUM PLATFORM — MAKE COMMANDS OVERVIEW                   │"
 	@Write-Host "╰──────────────────────────────────────────────────────────────────────────────╯"
 	@(Get-Content '$(MAKEFILE_LIST)' | Select-String '^\S+:.*?## ' | ForEach-Object {$$t = ($$_.Line -replace ':.*',''); $$d = ($$_.Line -split '## ')[1]; Write-Host ("  {0,-20} {1}" -f $$t, $$d) -ForegroundColor Gray})
@@ -81,12 +81,12 @@ contracts: ## Enforce architectural boundaries (Import Linter)
 	@poetry run lint-imports --config assurance/architecture/.importlinter
 
 check-ci: ## Run full CI-equivalent validation suite
-	@Write-Host "`n╭──────────────────────────────────────────────────────────────────────────────╮" -ForegroundColor Cyan
-	@Write-Host "│ CI VALIDATION SUITE — FULL PIPELINE EXECUTION                                │ " -ForegroundColor Cyan
-	@Write-Host "╰──────────────────────────────────────────────────────────────────────────────╯`n" -ForegroundColor Cyan
+	@Write-Host "`n╭──────────────────────────────────────────────────────────────────────────────╮"
+	@Write-Host "│ CI VALIDATION SUITE — FULL PIPELINE EXECUTION                                │ "
+	@Write-Host "╰──────────────────────────────────────────────────────────────────────────────╯`n"
 	@$(MAKE) pre-commit
 	@$(MAKE) test
-	@Write-Host "`n✔ All CI checks passed successfully.`n" -ForegroundColor Green
+	@Write-Host "`n✔ All CI checks passed successfully." -ForegroundColor Green
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
@@ -102,7 +102,7 @@ tree: ## Generate documentation of directory structure
 	@New-Item -ItemType Directory -Force -Path 'docs/architecture' | Out-Null
 	@Write-Host "`n▶ Generating architecture directory tree ..." -ForegroundColor Cyan
 	@poetry run python scripts/print_tree.py . --output docs/architecture/tree.txt --respect-gitignore --max-depth 10
-	@Write-Host "`n✔ Architecture tree generated: docs/architecture/tree.txt`n"  -ForegroundColor Green
+	@Write-Host "[OK] Architecture tree generated: docs/architecture/tree.txt"  -ForegroundColor Green
 
 log-schema: ## Generate canonical JSON schema for LogPayload
 	@Write-Host "Generating LogPayloadV1 schema..."
@@ -110,6 +110,10 @@ log-schema: ## Generate canonical JSON schema for LogPayload
 	@$$env:PYTHONPATH = 'src;.'; poetry run python scripts/generate_log_schema.py
 	@Write-Host "Schema generated at docs/observability/log_schema_v1.json"
 
-contracts-ts:
+contracts-ts: ## Generate TypeScript interfaces from Python contracts
 	@Write-Host "`n▶ Generating TypeScript contracts..." -ForegroundColor Cyan
-	@@poetry run python -m scripts.generate_ts_contracts
+	@poetry run python -m scripts.generate_ts_contracts
+
+contracts-json-schema: ## Generate JSON Schema artifacts from Python contracts
+	@Write-Host "`n▶ Generating JSON Schema contracts..." -ForegroundColor Cyan
+	@poetry run python -m scripts.generate_json_schema

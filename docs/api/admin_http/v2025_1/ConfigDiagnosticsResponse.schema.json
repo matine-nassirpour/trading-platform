@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "type": "string"
+    },
+    "ready": {
+      "type": "boolean"
+    },
+    "fingerprint": {
+      "type": "object"
+    },
+    "ready_state": {
+      "type": "object"
+    },
+    "loader_snapshot": {
+      "type": "object"
+    },
+    "reserved_env_keys": {
+      "type": "object"
+    },
+    "cache_matches_params": {
+      "type": "object"
+    },
+    "has_valid_cache": {
+      "type": "object"
+    },
+    "error": {
+      "type": "object"
+    }
+  },
+  "required": [
+    "schema_version",
+    "ready",
+    "fingerprint",
+    "ready_state",
+    "loader_snapshot",
+    "reserved_env_keys",
+    "cache_matches_params",
+    "has_valid_cache",
+    "error"
+  ],
+  "additionalProperties": false
+}

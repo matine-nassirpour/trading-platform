@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "pipeline_up": {
+      "type": "boolean"
+    },
+    "logging_ok": {
+      "type": "boolean"
+    },
+    "logging_sink_up": {
+      "type": "boolean"
+    },
+    "tracing_ok": {
+      "type": "boolean"
+    },
+    "tracing_up": {
+      "type": "boolean"
+    },
+    "metrics_http_ok": {
+      "type": "boolean"
+    },
+    "run_id": {
+      "type": "object"
+    },
+    "correlation_id": {
+      "type": "object"
+    },
+    "diagnostics": {
+      "type": "object"
+    }
+  },
+  "required": [
+    "pipeline_up",
+    "logging_ok",
+    "logging_sink_up",
+    "tracing_ok",
+    "tracing_up",
+    "metrics_http_ok",
+    "run_id",
+    "correlation_id",
+    "diagnostics"
+  ],
+  "additionalProperties": false
+}

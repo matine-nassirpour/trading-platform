@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "status": {
+      "type": "string"
+    },
+    "api_version": {
+      "type": "string"
+    },
+    "admin_http": {
+      "type": "object"
+    }
+  },
+  "required": [
+    "status",
+    "api_version",
+    "admin_http"
+  ],
+  "additionalProperties": false
+}

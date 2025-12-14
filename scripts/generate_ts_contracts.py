@@ -24,7 +24,11 @@ from contracts.admin_http.v2025_1.health import HealthResponse
 from contracts.admin_http.v2025_1.observability_diagnostics import (
     ObservabilityDiagnosticsResponse,
 )
-from contracts.admin_http.v2025_1.runtime_metadata import RuntimeMetadataResponse
+from contracts.admin_http.v2025_1.runtime_metadata import (
+    AdminEndpoints,
+    AdminHttpDescriptor,
+    RuntimeMetadataResponse,
+)
 from contracts.core.base import ContractModel
 from contracts.generators.typescript import generate_ts_interface
 
@@ -34,6 +38,8 @@ OUTPUT_DIR.mkdir(exist_ok=True)
 OUTPUT_FILE = OUTPUT_DIR / "contracts_admin_v2025_1.ts"
 
 CONTRACTS: Iterable[type[ContractModel]] = [
+    AdminEndpoints,
+    AdminHttpDescriptor,
     RuntimeMetadataResponse,
     HealthResponse,
     ConfigDiagnosticsResponse,
