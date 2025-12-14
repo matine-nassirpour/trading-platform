@@ -2,6 +2,9 @@
 .idea
 .vscode/
 
+# Generated artifacts (temporary, non-authoritative)
+.generated/
+
 # Local observability artifacts (runtime logs & audit records).
 _logs/
 _audit/
