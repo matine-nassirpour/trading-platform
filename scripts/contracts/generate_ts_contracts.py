@@ -65,7 +65,7 @@ def main() -> int:
 
     OUTPUT_FILE.write_text("\n".join(lines), encoding="utf-8")
 
-    print(f"[OK] Generated temporary TypeScript contracts at: {OUTPUT_FILE}")
+    print(f"[OK] Generated TypeScript contracts at: {OUTPUT_FILE}")
     return 0
 
 

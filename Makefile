@@ -112,8 +112,8 @@ log-schema: ## Generate canonical JSON schema for LogPayload
 
 contracts-ts: ## Generate TypeScript interfaces from Python contracts
 	@Write-Host "`n▶ Generating TypeScript contracts..." -ForegroundColor Cyan
-	@poetry run python -m scripts.generate_ts_contracts
+	@poetry run python -m scripts.contracts.generate_ts_contracts
 
 contracts-json-schema: ## Generate JSON Schema artifacts from Python contracts
 	@Write-Host "`n▶ Generating JSON Schema contracts..." -ForegroundColor Cyan
-	@poetry run python -m scripts.generate_json_schema
+	@poetry run python -m scripts.contracts.generate_json_schema
