@@ -53,12 +53,12 @@ class CoreSettings(BaseConfigSettings, PublicSettingsMixin):
         repr=False,  # CRITICAL: never displayed
         description="Bearer token for admin HTTP control-plane authentication.",
     )
-    quantum_admin_http_trust_proxy: bool = Field(
-        default=False,
+    quantum_admin_http_trusted_proxies: list[str] = Field(
+        default_factory=list,
         description=(
-            "Trust Forwarded / X-Forwarded-* headers for admin HTTP base URL "
-            "resolution. MUST be enabled only when running behind a trusted "
-            "reverse proxy or ingress."
+            "List of trusted reverse proxy IPs or CIDR blocks. "
+            "Only requests originating from these addresses may supply "
+            "Forwarded / X-Forwarded-* headers for admin HTTP URL resolution."
         ),
     )
 
@@ -80,6 +80,13 @@ class CoreSettings(BaseConfigSettings, PublicSettingsMixin):
     quantum_exec_backoff_max: float = Field(
         default=5.0,
         description="Maximum backoff (seconds) between retries.",
+    )
+
+    quantum_shutdown_timeout: float = Field(
+        default=10.0,
+        description="Graceful shutdown timeout (seconds) for the runtime engine.",
+        ge=0.1,
+        le=120.0,
     )
 
     # --------------------------------------------------------------------------
@@ -104,3 +111,24 @@ class CoreSettings(BaseConfigSettings, PublicSettingsMixin):
                     "quantum_admin_http_enabled is true"
                 )
         return self
+
+    @field_validator("quantum_admin_http_trusted_proxies", mode="before")
+    @classmethod
+    def _parse_trusted_proxies(cls, v):
+        """
+        Accept:
+        - unset           → default_factory=list
+        - empty string    → []
+        - comma-separated → list[str]
+        - list[str]       → list[str]
+        """
+        if v is None:
+            return []
+
+        if isinstance(v, str):
+            v = v.strip()
+            if not v:
+                return []
+            return [item.strip() for item in v.split(",") if item.strip()]
+
+        return v

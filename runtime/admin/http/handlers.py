@@ -44,6 +44,7 @@ def _build_admin_base_url(request: web.Request) -> str:
         scheme=request.scheme,
         host=request.host,
         headers=request.headers,
+        peer_ip=request.remote or "",
         trusted_proxy_policy=policy,
     )
 

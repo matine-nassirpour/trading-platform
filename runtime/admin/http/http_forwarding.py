@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from collections.abc import Mapping
+import ipaddress
+
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 
 
@@ -19,17 +21,27 @@ class ForwardedRequestInfo:
 
 class TrustedProxyPolicy:
     """
-    Defines whether proxy headers are trusted.
+    Defines whether proxy headers are trusted, based on peer IP validation.
 
-    This is an explicit security boundary.
+    Security guarantees:
+    - Headers are trusted ONLY if the request originates from an allowed proxy.
+    - Zero trust by default.
     """
 
-    def __init__(self, *, enabled: bool) -> None:
-        self._enabled = enabled
+    def __init__(self, *, allowed_proxies: Iterable[str] | None = None) -> None:
+        self._allowed_networks = (
+            frozenset(ipaddress.ip_network(n) for n in allowed_proxies)
+            if allowed_proxies
+            else frozenset()
+        )
 
-    @property
-    def enabled(self) -> bool:
-        return self._enabled
+    def is_trusted_peer(self, peer_ip: str) -> bool:
+        try:
+            ip = ipaddress.ip_address(peer_ip)
+        except ValueError:
+            return False
+
+        return any(ip in net for net in self._allowed_networks)
 
 
 def _parse_forwarded_header(value: str) -> dict[str, str]:
@@ -56,6 +68,7 @@ def resolve_admin_http_request_identity(
     scheme: str,
     host: str,
     headers: Mapping[str, str],
+    peer_ip: str,
     trusted_proxy_policy: TrustedProxyPolicy,
 ) -> ForwardedRequestInfo:
     """
@@ -70,18 +83,18 @@ def resolve_admin_http_request_identity(
         → Always use direct request attributes.
     """
 
-    if not trusted_proxy_policy.enabled:
+    if not trusted_proxy_policy.is_trusted_peer(peer_ip):
         return ForwardedRequestInfo(scheme=scheme, host=host)
 
     # RFC 7239 Forwarded
     forwarded = headers.get("Forwarded")
     if forwarded:
         parsed = _parse_forwarded_header(forwarded)
-        proto = parsed.get("proto")
-        fwd_host = parsed.get("host")
-
-        if proto and fwd_host:
-            return ForwardedRequestInfo(scheme=proto, host=fwd_host)
+        if "proto" in parsed and "host" in parsed:
+            return ForwardedRequestInfo(
+                scheme=parsed["proto"],
+                host=parsed["host"],
+            )
 
     # X-Forwarded-*
     xf_proto = headers.get("X-Forwarded-Proto")

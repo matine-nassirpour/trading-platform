@@ -1,5 +1,7 @@
 import logging
 
+from collections.abc import Iterable
+
 from aiohttp import web
 from runtime.admin.auth.bearer_auth import AdminControlPlaneBearerTokenAuth
 from runtime.admin.auth.models import AdminScope
@@ -41,7 +43,7 @@ def _build_admin_http_app(
     base_path: str,
     auth_token: str,
     scopes: frozenset[AdminScope],
-    trust_proxy_headers: bool,
+    trusted_proxy_cidrs: Iterable[str] | None,
 ) -> web.Application:
     """
     Build the secured admin HTTP application.
@@ -61,7 +63,9 @@ def _build_admin_http_app(
     )
 
     # Explicit proxy trust policy
-    app["trusted_proxy_policy"] = TrustedProxyPolicy(enabled=trust_proxy_headers)
+    app["trusted_proxy_policy"] = TrustedProxyPolicy(
+        allowed_proxies=trusted_proxy_cidrs
+    )
 
     app.add_routes(define_admin_http_routes())
     return app
@@ -87,7 +91,7 @@ class AdminHttpControlPlaneServer:
         port: int = 8765,
         base_path: str = "/",
         auth_token: str,
-        trust_proxy_headers: bool = False,
+        trusted_proxy_cidrs: Iterable[str] | None = None,
     ) -> None:
         if not auth_token:
             raise ValueError(
@@ -98,14 +102,16 @@ class AdminHttpControlPlaneServer:
         self._port = port
         self._base_path = _normalize_base_path(base_path)
         self._auth_token = auth_token
-        self._trust_proxy_headers = trust_proxy_headers
+        self._trusted_proxy_cidrs = (
+            tuple(trusted_proxy_cidrs) if trusted_proxy_cidrs else None
+        )
 
         self._runner: web.AppRunner | None = None
         self._site: web.TCPSite | None = None
 
     async def start(self) -> None:
         if self._runner is not None:
-            LOGGER.warning("[HTTP Server] RuntimeSupervisor server already started.")
+            LOGGER.warning("[HTTP Server] Admin control-plane server already started.")
             return
 
         scopes = frozenset(
@@ -123,7 +129,7 @@ class AdminHttpControlPlaneServer:
             base_path=self._base_path,
             auth_token=self._auth_token,
             scopes=scopes,
-            trust_proxy_headers=self._trust_proxy_headers,
+            trusted_proxy_cidrs=self._trusted_proxy_cidrs,
         )
 
         if self._base_path == "/":

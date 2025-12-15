@@ -19,7 +19,10 @@ async def admin_control_plane_auth_middleware(request: web.Request, handler):
 
 def require_admin_scope(scope: AdminScope):
     async def _guard(request: web.Request):
-        principal = request["admin_principal"]
+        principal = request.get("admin_principal")
+        if principal is None:
+            raise web.HTTPUnauthorized()
+
         if scope not in principal.scopes:
             raise web.HTTPForbidden(reason="Insufficient scope")
 

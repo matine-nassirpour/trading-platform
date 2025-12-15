@@ -3,6 +3,9 @@ from __future__ import annotations
 import asyncio
 import threading
 
+from collections.abc import Callable, Coroutine
+from typing import Any
+
 
 class ShutdownCoordinator:
     """
@@ -21,7 +24,7 @@ class ShutdownCoordinator:
         self._shutdown_requested = False
         self._task: asyncio.Task[None] | None = None
 
-    def request(self, coro: callable[[], asyncio.Future[None]]) -> None:
+    def request(self, coro: Callable[[], Coroutine[Any, Any, None]]) -> None:
         """
         Request shutdown.
 
