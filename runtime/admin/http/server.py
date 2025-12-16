@@ -6,6 +6,7 @@ from aiohttp import web
 from runtime.admin.auth.bearer_auth import AdminControlPlaneBearerTokenAuth
 from runtime.admin.auth.models import AdminScope
 from runtime.admin.http.auth_middleware import admin_control_plane_auth_middleware
+from runtime.admin.http.cors_middleware import admin_control_plane_cors_middleware
 from runtime.admin.http.http_forwarding import TrustedProxyPolicy
 from runtime.admin.http.routing import define_admin_http_routes
 
@@ -53,7 +54,16 @@ def _build_admin_http_app(
         - Register authorization backend
         - Register routes only (no logic)
     """
-    app = web.Application(middlewares=[admin_control_plane_auth_middleware])
+    app = web.Application(
+        middlewares=[
+            admin_control_plane_cors_middleware(
+                allowed_origins={
+                    "http://localhost:4200",
+                }
+            ),
+            admin_control_plane_auth_middleware,
+        ]
+    )
 
     app["admin_base_path"] = base_path
     app["admin_auth"] = AdminControlPlaneBearerTokenAuth(
