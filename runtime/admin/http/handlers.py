@@ -119,7 +119,7 @@ async def get_admin_config_diagnostics(request: web.Request) -> web.Response:
     snapshot = ConfigDiagnosticsProvider.get_snapshot()
     payload = ConfigDiagnosticsPresenter.present(snapshot)
 
-    if snapshot.ready:
+    if snapshot.is_consumable:
         return _response(payload, status=200)
 
     return _response({**payload, "status": "not_ready"}, status=503)

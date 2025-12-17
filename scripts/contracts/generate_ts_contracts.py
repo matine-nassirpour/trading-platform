@@ -19,7 +19,10 @@ import sys
 from collections.abc import Iterable
 from pathlib import Path
 
-from contracts.admin_http.v2025_1.config_diagnostics import ConfigDiagnosticsResponse
+from contracts.admin_http.v2025_1.config_diagnostics import (
+    ConfigDiagnosticsResponse,
+    ConfigReadyStateSnapshot,
+)
 from contracts.admin_http.v2025_1.health import HealthResponse
 from contracts.admin_http.v2025_1.observability_diagnostics import (
     ObservabilityDiagnosticsResponse,
@@ -42,6 +45,7 @@ CONTRACTS: Iterable[type[ContractModel]] = [
     AdminHttpDescriptor,
     RuntimeMetadataResponse,
     HealthResponse,
+    ConfigReadyStateSnapshot,
     ConfigDiagnosticsResponse,
     ObservabilityDiagnosticsResponse,
 ]

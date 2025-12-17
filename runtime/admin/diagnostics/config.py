@@ -21,7 +21,7 @@ class ConfigDiagnosticsSnapshot:
 
     schema_version: str
 
-    ready: bool
+    is_consumable: bool
     fingerprint: str | None
 
     ready_state: dict[str, Any] | None
@@ -106,7 +106,7 @@ class ConfigDiagnosticsProvider:
         NEVER raises.
         """
 
-        ready, ready_state, fingerprint = (
+        is_consumable, ready_state, fingerprint = (
             ConfigDiagnosticsProvider._safe_get_ready_state()
         )
 
@@ -116,11 +116,11 @@ class ConfigDiagnosticsProvider:
 
         reserved_env = ConfigDiagnosticsProvider._safe_get_reserved_env()
 
-        error = None if ready else "configuration_not_ready"
+        error = None if is_consumable else "configuration_not_ready"
 
         return ConfigDiagnosticsSnapshot(
             schema_version=FSM_SCHEMA_VERSION,
-            ready=ready,
+            is_consumable=is_consumable,
             fingerprint=fingerprint,
             ready_state=(
                 {

@@ -5,6 +5,23 @@ from contracts.core.base import ContractModel
 
 
 @dataclass(frozen=True)
+class ConfigReadyStateSnapshot(ContractModel):
+    """
+    Explicit snapshot of the consumable READY configuration state.
+
+    This structure is:
+    - diagnostics-only
+    - immutable
+    - fully specified for contract generation
+    """
+
+    fsm_status: str
+    env: dict[str, str] | None
+    settings: dict[str, Any] | None
+    metadata: dict[str, Any]
+
+
+@dataclass(frozen=True)
 class ConfigDiagnosticsResponse(ContractModel):
     """
     External, versioned contract for configuration diagnostics exposure.
@@ -14,9 +31,9 @@ class ConfigDiagnosticsResponse(ContractModel):
     """
 
     schema_version: str
-    ready: bool
+    is_consumable: bool
     fingerprint: str | None
-    ready_state: dict[str, Any] | None
+    ready_state: ConfigReadyStateSnapshot | None
     loader_snapshot: dict[str, Any] | None
     reserved_env_keys: dict[str, str | None]
     cache_matches_params: bool | None
