@@ -38,7 +38,7 @@ from contracts.generators.typescript import generate_ts_interface
 OUTPUT_DIR = Path(".generated")
 OUTPUT_DIR.mkdir(exist_ok=True)
 
-OUTPUT_FILE = OUTPUT_DIR / "contracts_admin_v2025_1.ts"
+OUTPUT_FILE = OUTPUT_DIR / "contracts-admin-v2025-1.ts"
 
 CONTRACTS: Iterable[type[ContractModel]] = [
     AdminEndpoints,
