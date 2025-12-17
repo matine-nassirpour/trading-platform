@@ -1,5 +1,6 @@
 from aiohttp import web
 from runtime.admin.auth.models import AdminScope
+from runtime.admin.contracts.system_status import SystemStatus
 from runtime.admin.contracts.version import ADMIN_HTTP_API_VERSION
 from runtime.admin.diagnostics.config import ConfigDiagnosticsProvider
 from runtime.admin.diagnostics.health import HealthProvider
@@ -10,6 +11,7 @@ from runtime.admin.http.http_forwarding import (
     resolve_admin_http_request_identity,
 )
 from runtime.contracts.canonical_json import canonical_json
+from runtime.lifecycle.system_status_projection import system_status_from_runtime_state
 
 NO_CACHE_HEADERS = {
     "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
@@ -80,8 +82,11 @@ async def get_admin_runtime_metadata(request: web.Request) -> web.Response:
 
     base_url = _build_admin_base_url(request)
 
+    engine = request.app["runtime_engine"]
+    system_status: SystemStatus = system_status_from_runtime_state(engine.state)
+
     payload = {
-        "status": "ok",
+        "status": system_status.value,
         "api_version": ADMIN_HTTP_API_VERSION,
         "admin_http": {
             "base_url": base_url,

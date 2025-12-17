@@ -9,6 +9,7 @@ from runtime.admin.http.auth_middleware import admin_control_plane_auth_middlewa
 from runtime.admin.http.cors_middleware import admin_control_plane_cors_middleware
 from runtime.admin.http.http_forwarding import TrustedProxyPolicy
 from runtime.admin.http.routing import define_admin_http_routes
+from runtime.lifecycle.runtime_state_port import RuntimeStatePort
 
 LOGGER = logging.getLogger("quantum.runtime.control_plane.admin_http.server")
 
@@ -45,6 +46,7 @@ def _build_admin_http_app(
     auth_token: str,
     scopes: frozenset[AdminScope],
     trusted_proxy_cidrs: Iterable[str] | None,
+    runtime_engine: RuntimeStatePort,
 ) -> web.Application:
     """
     Build the secured admin HTTP application.
@@ -64,6 +66,9 @@ def _build_admin_http_app(
             admin_control_plane_auth_middleware,
         ]
     )
+
+    # Inject runtime engine (READ-ONLY access)
+    app["runtime_engine"] = runtime_engine
 
     app["admin_base_path"] = base_path
     app["admin_auth"] = AdminControlPlaneBearerTokenAuth(
@@ -102,6 +107,7 @@ class AdminHttpControlPlaneServer:
         base_path: str = "/",
         auth_token: str,
         trusted_proxy_cidrs: Iterable[str] | None = None,
+        runtime_engine: RuntimeStatePort | None = None,
     ) -> None:
         if not auth_token:
             raise ValueError(
@@ -115,9 +121,25 @@ class AdminHttpControlPlaneServer:
         self._trusted_proxy_cidrs = (
             tuple(trusted_proxy_cidrs) if trusted_proxy_cidrs else None
         )
+        self._runtime_engine = runtime_engine
 
         self._runner: web.AppRunner | None = None
         self._site: web.TCPSite | None = None
+
+    def bind_runtime_engine(self, engine: RuntimeStatePort) -> None:
+        """
+        Bind the runtime engine AFTER full construction.
+
+        This method:
+        - Is idempotent
+        - Is explicitly named
+        - Preserves engine immutability
+        - Is composition-root only
+        """
+        if self._runtime_engine is not None:
+            raise RuntimeError("Runtime engine already bound")
+
+        self._runtime_engine = engine
 
     async def start(self) -> None:
         if self._runner is not None:
@@ -140,6 +162,7 @@ class AdminHttpControlPlaneServer:
             auth_token=self._auth_token,
             scopes=scopes,
             trusted_proxy_cidrs=self._trusted_proxy_cidrs,
+            runtime_engine=self._runtime_engine,
         )
 
         if self._base_path == "/":

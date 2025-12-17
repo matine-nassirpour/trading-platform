@@ -69,6 +69,7 @@ def assemble_runtime(runtime: RuntimeContext) -> AssembledRuntime:
             base_path=core_cfg.quantum_admin_http_base_path,
             auth_token=core_cfg.quantum_admin_http_token,
             trusted_proxy_cidrs=core_cfg.quantum_admin_http_trusted_proxies,
+            runtime_engine=None,
         )
     else:
         admin_http_server = NullAdminControlPlaneServer()
@@ -80,5 +81,8 @@ def assemble_runtime(runtime: RuntimeContext) -> AssembledRuntime:
         admin_http_server=admin_http_server,
         graceful_shutdown_timeout=core_cfg.quantum_shutdown_timeout,
     )
+
+    if isinstance(admin_http_server, AdminHttpControlPlaneServer):
+        admin_http_server.bind_runtime_engine(engine)
 
     return AssembledRuntime(runtime=runtime, engine=engine)

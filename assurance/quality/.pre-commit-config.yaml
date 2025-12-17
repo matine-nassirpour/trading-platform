@@ -38,11 +38,13 @@ repos:
 #          "-c", "assurance/security/bandit.yaml"
 #        ]
 
-  - repo: https://github.com/pypa/pip-audit
-    rev: v2.10.0
+  - repo: local
     hooks:
       - id: pip-audit
-        args: ["--strict", "--skip-editable"]
+        name: pip-audit (poetry)
+        entry: poetry run pip-audit -l --skip-editable
+        language: system
+        pass_filenames: false
 
   - repo: https://github.com/asottile/pyupgrade
     rev: v3.21.2
