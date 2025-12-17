@@ -54,12 +54,12 @@ async def main_async() -> int:
         return 2
 
     # 2. Initialize observability stack
-    if not runtime.initialize_observability():
+    if not runtime.observability.initialize():
         LOGGER.error("Observability startup failed")
         try:
-            runtime.shutdown_observability()
-        except Exception:
-            LOGGER.exception("Error during observability rollback.")
+            runtime.observability.shutdown()
+        except Exception as exc:
+            LOGGER.exception("Error during observability rollback: %s.", exc)
         return 3
 
     # 3. Build the fully-wired runtime system (engine + internal transports)
@@ -93,7 +93,7 @@ async def main_async() -> int:
     finally:
         # 6. Shutdown observability
         LOGGER.info("[Runtime] Shutting down observability")
-        system.runtime.shutdown_observability()
+        system.runtime.observability.shutdown()
 
     LOGGER.info("Quantum runtime exited cleanly.")
     return 0

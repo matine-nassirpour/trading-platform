@@ -53,7 +53,7 @@ def assemble_runtime(runtime: RuntimeContext) -> AssembledRuntime:
         - It is allowed to import infrastructure-level adapters.
         - No business logic or domain rules are permitted here.
     """
-    core_cfg = runtime.core_settings
+    core_cfg = runtime.config.core
 
     # Event Bus
     event_bus: EventBusPort = AsyncioEventBusAdapter()
