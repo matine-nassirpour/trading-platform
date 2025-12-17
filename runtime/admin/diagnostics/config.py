@@ -138,29 +138,3 @@ class ConfigDiagnosticsProvider:
             has_valid_cache=has_valid_cache,
             error=error,
         )
-
-    @staticmethod
-    def as_dict(snapshot: ConfigDiagnosticsSnapshot) -> dict[str, Any]:
-        """
-        Canonical dict representation for JSON exposure.
-        NEVER raises.
-        """
-
-        def _safe_dict(value: Any) -> Any:
-            if isinstance(value, dict):
-                return {k: _safe_dict(v) for k, v in value.items()}
-            if isinstance(value, (list, tuple)):
-                return [_safe_dict(v) for v in value]
-            return value
-
-        return {
-            "schema_version": snapshot.schema_version,
-            "ready": snapshot.ready,
-            "fingerprint": snapshot.fingerprint,
-            "ready_state": _safe_dict(snapshot.ready_state),
-            "loader_snapshot": _safe_dict(snapshot.loader_snapshot),
-            "reserved_env_keys": _safe_dict(snapshot.reserved_env_keys),
-            "cache_matches_params": snapshot.cache_matches_params,
-            "has_valid_cache": snapshot.has_valid_cache,
-            "error": snapshot.error,
-        }
