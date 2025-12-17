@@ -6,6 +6,13 @@ from contracts.core.base import ContractModel
 
 @dataclass(frozen=True)
 class ConfigDiagnosticsResponse(ContractModel):
+    """
+    External, versioned contract for configuration diagnostics exposure.
+    This model defines the stable API surface exposed to external clients.
+
+    Any backward-incompatible change requires a new contract version.
+    """
+
     schema_version: str
     ready: bool
     fingerprint: str | None
