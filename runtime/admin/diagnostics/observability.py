@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from typing import Any
 
 from quantum.infrastructure.observability.context.context_attributes_provider import (
@@ -92,10 +92,3 @@ class ObservabilityDiagnosticsProvider:
             correlation_id=ctx.correlation_id,
             diagnostics=diagnostics_summary,
         )
-
-    @staticmethod
-    def as_dict() -> dict[str, Any] | None:
-        snap = ObservabilityDiagnosticsProvider.get_snapshot()
-        if snap is None:
-            return None
-        return asdict(snap)

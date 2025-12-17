@@ -12,6 +12,10 @@ from runtime.admin.http.http_forwarding import (
 )
 from runtime.contracts.canonical_json import canonical_json
 from runtime.lifecycle.system_status_projection import system_status_from_runtime_state
+from runtime.presentation.config_diagnostics_presenter import ConfigDiagnosticsPresenter
+from runtime.presentation.observability_diagnostics_presenter import (
+    ObservabilityDiagnosticsPresenter,
+)
 
 NO_CACHE_HEADERS = {
     "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
@@ -113,7 +117,7 @@ async def get_admin_config_diagnostics(request: web.Request) -> web.Response:
     await require_admin_scope(AdminScope.CONFIG_DIAGNOSTICS)(request)
 
     snapshot = ConfigDiagnosticsProvider.get_snapshot()
-    payload = ConfigDiagnosticsProvider.as_dict(snapshot)
+    payload = ConfigDiagnosticsPresenter.present(snapshot)
 
     if snapshot.ready:
         return _response(payload, status=200)
@@ -124,9 +128,9 @@ async def get_admin_config_diagnostics(request: web.Request) -> web.Response:
 async def get_admin_observability_diagnostics(request: web.Request) -> web.Response:
     await require_admin_scope(AdminScope.OBSERVABILITY_DIAGNOSTICS)(request)
 
-    diagnostics = ObservabilityDiagnosticsProvider.as_dict()
+    snapshot = ObservabilityDiagnosticsProvider.get_snapshot()
 
-    if diagnostics is None:
+    if snapshot is None:
         return _response(
             {
                 "status": "degraded",
@@ -135,4 +139,5 @@ async def get_admin_observability_diagnostics(request: web.Request) -> web.Respo
             status=503,
         )
 
-    return _response(diagnostics, status=200)
+    payload = ObservabilityDiagnosticsPresenter.present(snapshot)
+    return _response(payload, status=200)
