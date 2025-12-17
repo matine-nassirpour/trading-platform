@@ -5,17 +5,17 @@
     "status": {
       "type": "string"
     },
-    "api_version": {
+    "apiVersion": {
       "type": "string"
     },
-    "admin_http": {
+    "adminHttp": {
       "type": "object"
     }
   },
   "required": [
     "status",
-    "api_version",
-    "admin_http"
+    "apiVersion",
+    "adminHttp"
   ],
   "additionalProperties": false
 }

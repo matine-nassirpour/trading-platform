@@ -3,6 +3,7 @@ from types import UnionType
 from typing import Any, Union, get_args, get_origin
 
 from contracts.core.base import ContractModel
+from contracts.generators.naming import snake_to_lower_camel
 
 
 class TypeScriptGenerationError(RuntimeError):
@@ -97,6 +98,7 @@ def generate_ts_interface(model: type[ContractModel]) -> str:
     Generate a strict, readonly TypeScript interface from a ContractModel.
 
     Guarantees:
+    - snake_case → lowerCamelCase field names
     - No `any`
     - Deterministic output
     - Angular-compatible
@@ -108,8 +110,9 @@ def generate_ts_interface(model: type[ContractModel]) -> str:
     lines: list[str] = [f"export interface {model.__name__} {{"]
 
     for f in fields(model):
+        field_name = snake_to_lower_camel(f.name)
         ts_type = _map_type(f.type)
-        lines.append(f"  readonly {f.name}: {ts_type};")
+        lines.append(f"  readonly {field_name}: {ts_type};")
 
     lines.append("}")
     return "\n".join(lines)
