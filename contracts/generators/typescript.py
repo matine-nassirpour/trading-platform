@@ -1,4 +1,5 @@
 from dataclasses import fields, is_dataclass
+from enum import Enum
 from types import UnionType
 from typing import Any, Union, get_args, get_origin
 
@@ -82,6 +83,11 @@ def _map_type(tp: Any) -> str:
     collection = _map_collection(tp)
     if collection is not None:
         return collection
+
+    # Contractual Enum → string literal union
+    if isinstance(tp, type) and issubclass(tp, Enum):
+        values = [repr(member.value) for member in tp]
+        return " | ".join(values)
 
     # Nested ContractModel
     if isinstance(tp, type) and issubclass(tp, ContractModel):

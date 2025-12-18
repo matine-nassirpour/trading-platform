@@ -5,13 +5,12 @@ from runtime.lifecycle.state_machine import RuntimeState
 def system_status_from_runtime_state(state: RuntimeState) -> SystemStatus:
     """
     Project the internal runtime lifecycle state
-    into a stable, external SystemStatus.
+    into the external contractual SystemStatus.
 
-    Mapping:
-        RUNNING   → UP
-        STARTING  → DEGRADED
-        STOPPING  → DEGRADED
-        STOPPED   → DOWN
+    This function is:
+    - deterministic
+    - total (covers all states)
+    - contract-aligned
     """
     if state is RuntimeState.RUNNING:
         return SystemStatus.UP
