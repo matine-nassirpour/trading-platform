@@ -3,7 +3,7 @@ from enum import Enum
 from types import UnionType
 from typing import Any, Union, get_args, get_origin
 
-from contracts.core.base import ContractModel
+from contracts.core.model import ContractModel
 
 
 def _strip_optional(tp: Any) -> Any:

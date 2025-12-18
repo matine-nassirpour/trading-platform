@@ -1,13 +1,20 @@
 from collections.abc import Iterable
 from enum import Enum
 
-from contracts.core.base import ContractModel
+from contracts.core.model import ContractModel
 from contracts.core.versioning import ContractVersion
-
-from .config_diagnostics import ConfigDiagnosticsResponse, ConfigReadyStateSnapshot
-from .health import HealthResponse, HealthStatus
-from .observability_diagnostics import ObservabilityDiagnosticsResponse
-from .runtime_metadata import (
+from contracts.surfaces.admin_http.v2025_1.config_diagnostics.models import (
+    ConfigDiagnosticsResponse,
+    ConfigReadyStateSnapshot,
+)
+from contracts.surfaces.admin_http.v2025_1.health.models import (
+    HealthResponse,
+    HealthStatus,
+)
+from contracts.surfaces.admin_http.v2025_1.observability_diagnostics.models import (
+    ObservabilityDiagnosticsResponse,
+)
+from contracts.surfaces.admin_http.v2025_1.runtime_metadata.models import (
     VERSION,
     AdminEndpoints,
     AdminHttpDescriptor,

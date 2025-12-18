@@ -6,15 +6,19 @@ import sys
 from collections.abc import Iterable
 from pathlib import Path
 
-from contracts.admin_http.v2025_1.config_diagnostics import ConfigDiagnosticsResponse
-from contracts.admin_http.v2025_1.health import HealthResponse
-from contracts.admin_http.v2025_1.observability_diagnostics import (
+from contracts.core.model import ContractModel
+from contracts.generators.json_schema.generate import generate_json_schema
+from contracts.surfaces.admin_http.v2025_1.config_diagnostics.models import (
+    ConfigDiagnosticsResponse,
+)
+from contracts.surfaces.admin_http.v2025_1.health.models import HealthResponse
+from contracts.surfaces.admin_http.v2025_1.observability_diagnostics.models import (
     ObservabilityDiagnosticsResponse,
 )
-from contracts.admin_http.v2025_1.registry import CONTRACT_VERSION, MODELS
-from contracts.admin_http.v2025_1.runtime_metadata import RuntimeMetadataResponse
-from contracts.core.base import ContractModel
-from contracts.generators.json_schema import generate_json_schema
+from contracts.surfaces.admin_http.v2025_1.registry import CONTRACT_VERSION, MODELS
+from contracts.surfaces.admin_http.v2025_1.runtime_metadata.models import (
+    RuntimeMetadataResponse,
+)
 
 OUTPUT_DIR = Path(f"docs/api/admin_http/v{CONTRACT_VERSION}")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)

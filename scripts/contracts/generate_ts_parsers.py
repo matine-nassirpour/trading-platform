@@ -6,8 +6,8 @@ from pathlib import Path
 from types import UnionType
 from typing import Any, Union, get_args, get_origin
 
-from contracts.admin_http.v2025_1.registry import CONTRACT_VERSION, MODELS
-from contracts.generators.typescript_parser import generate_ts_parser
+from contracts.generators.typescript.parsers import generate_ts_parser
+from contracts.surfaces.admin_http.v2025_1.registry import CONTRACT_VERSION, MODELS
 
 OUTPUT_DIR = Path(".generated")
 OUTPUT_DIR.mkdir(exist_ok=True)

@@ -4,9 +4,13 @@ import sys
 
 from pathlib import Path
 
-from contracts.admin_http.v2025_1.registry import CONTRACT_VERSION, ENUMS, MODELS
-from contracts.generators.typescript import generate_ts_interface
-from contracts.generators.typescript_enum import generate_ts_enum
+from contracts.generators.typescript.enums import generate_ts_enum
+from contracts.generators.typescript.interfaces import generate_ts_interface
+from contracts.surfaces.admin_http.v2025_1.registry import (
+    CONTRACT_VERSION,
+    ENUMS,
+    MODELS,
+)
 
 OUTPUT_DIR = Path(".generated")
 OUTPUT_DIR.mkdir(exist_ok=True)

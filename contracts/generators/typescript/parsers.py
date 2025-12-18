@@ -3,8 +3,8 @@ from enum import Enum
 from types import UnionType
 from typing import Any, Union, get_args, get_origin
 
-from contracts.core.base import ContractModel
-from contracts.generators.naming import snake_to_lower_camel
+from contracts.core.model import ContractModel
+from contracts.generators.shared.naming import snake_to_lower_camel
 
 
 class TypeScriptParserGenerationError(RuntimeError):

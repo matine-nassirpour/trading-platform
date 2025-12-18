@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Any
 
-from contracts.core.base import ContractModel
+from contracts.core.model import ContractModel
 
 
 @dataclass(frozen=True)
