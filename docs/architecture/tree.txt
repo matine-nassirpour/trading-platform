@@ -39,6 +39,7 @@ trading-platform/
 │   │   │   ├── config_diagnostics.py
 │   │   │   ├── health.py
 │   │   │   ├── observability_diagnostics.py
+│   │   │   ├── registry.py
 │   │   │   └── runtime_metadata.py
 │   │   └── __init__.py
 │   ├── core/
@@ -48,13 +49,20 @@ trading-platform/
 │   ├── generators/
 │   │   ├── __init__.py
 │   │   ├── json_schema.py
-│   │   └── typescript.py
+│   │   ├── naming.py
+│   │   ├── typescript.py
+│   │   ├── typescript_enum.py
+│   │   └── typescript_parser.py
 │   └── __init__.py
 ├── docs/
 │   ├── api/
 │   │   └── admin_http/
-│   │       └── v2025_1/
+│   │       └── v2025.1/
+│   │           ├── AdminEndpoints.schema.json
+│   │           ├── AdminHttpDescriptor.schema.json
+│   │           ├── ApiVersionDescriptor.schema.json
 │   │           ├── ConfigDiagnosticsResponse.schema.json
+│   │           ├── ConfigReadyStateSnapshot.schema.json
 │   │           ├── HealthResponse.schema.json
 │   │           ├── ObservabilityDiagnosticsResponse.schema.json
 │   │           └── RuntimeMetadataResponse.schema.json
@@ -79,6 +87,7 @@ trading-platform/
 │   │   │   └── models.py
 │   │   ├── contracts/
 │   │   │   ├── __init__.py
+│   │   │   ├── system_status.py
 │   │   │   └── version.py
 │   │   ├── diagnostics/
 │   │   │   ├── __init__.py
@@ -88,6 +97,7 @@ trading-platform/
 │   │   ├── http/
 │   │   │   ├── __init__.py
 │   │   │   ├── auth_middleware.py
+│   │   │   ├── cors_middleware.py
 │   │   │   ├── handlers.py
 │   │   │   ├── http_forwarding.py
 │   │   │   ├── routing.py
@@ -97,6 +107,11 @@ trading-platform/
 │   │   ├── __init__.py
 │   │   └── system_factory.py
 │   ├── bootstrap/
+│   │   ├── contexts/
+│   │   │   ├── __init__.py
+│   │   │   ├── config.py
+│   │   │   ├── identity.py
+│   │   │   └── observability.py
 │   │   ├── __init__.py
 │   │   └── runtime_context.py
 │   ├── contracts/
@@ -105,7 +120,14 @@ trading-platform/
 │   ├── lifecycle/
 │   │   ├── __init__.py
 │   │   ├── engine.py
-│   │   └── state_machine.py
+│   │   ├── runtime_state_port.py
+│   │   ├── state_machine.py
+│   │   └── system_status_projection.py
+│   ├── presentation/
+│   │   ├── __init__.py
+│   │   ├── config_diagnostics_presenter.py
+│   │   ├── observability_diagnostics_presenter.py
+│   │   └── safety.py
 │   ├── shutdown/
 │   │   ├── __init__.py
 │   │   └── coordinator.py
@@ -113,7 +135,8 @@ trading-platform/
 ├── scripts/
 │   ├── contracts/
 │   │   ├── generate_json_schema.py
-│   │   └── generate_ts_contracts.py
+│   │   ├── generate_ts_contracts.py
+│   │   └── generate_ts_parsers.py
 │   ├── generate_assurance_report.py
 │   ├── generate_log_schema.py
 │   ├── print_tree.py
