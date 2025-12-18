@@ -49,7 +49,8 @@ def main() -> int:
         "// AUTO-GENERATED FILE — DO NOT EDIT MANUALLY\n"
         "// Source of truth: trading-platform/contracts/\n"
         "// Regenerate via: make parsed-ts-contracts\n"
-        "// -------------------------------------------------------------------\n"
+        "// -------------------------------------------------------------------\n\n"
+        "/* eslint-disable @typescript-eslint/no-unused-vars */\n"
     ]
 
     # Contract imports

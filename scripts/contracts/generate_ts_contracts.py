@@ -15,15 +15,14 @@ OUTPUT_FILE = OUTPUT_DIR / f"contracts-admin-v{CONTRACT_VERSION}.ts"
 
 
 def main() -> int:
-    lines: list[str] = []
-
-    lines.append(
+    lines: list[str] = [
         "// -------------------------------------------------------------------\n"
         "// AUTO-GENERATED FILE — DO NOT EDIT MANUALLY\n"
         "// Source of truth: trading-platform/contracts/\n"
         "// Regenerate via: make ts-contracts\n"
-        "// -------------------------------------------------------------------\n"
-    )
+        "// -------------------------------------------------------------------\n\n"
+        "/* eslint-disable @typescript-eslint/no-unused-vars */\n"
+    ]
 
     for enum in ENUMS:
         lines.append(generate_ts_enum(enum))
