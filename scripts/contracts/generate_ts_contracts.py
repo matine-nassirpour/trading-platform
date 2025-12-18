@@ -65,7 +65,7 @@ def main() -> int:
         "// -------------------------------------------------------------------\n"
         "// AUTO-GENERATED FILE — DO NOT EDIT MANUALLY\n"
         "// Source of truth: trading-platform/contracts/\n"
-        "// Regenerate via: make contracts-ts\n"
+        "// Regenerate via: make ts-contracts\n"
         "// -------------------------------------------------------------------\n"
     )
 

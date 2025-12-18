@@ -10,7 +10,7 @@ SRC := src/$(PKG)
 
 .DEFAULT_GOAL := help
 
-.PHONY: help fmt-check fmt lint typecheck bandit pre-commit test verify-coverage assurance-report audit contracts check-ci clean ui tree log-schema contracts-ts contracts-json-schema
+.PHONY: help fmt-check fmt lint typecheck bandit pre-commit test verify-coverage assurance-report audit contracts check-ci clean ui tree log-schema ts-contracts parsed-ts-contracts contracts-json-schema
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
@@ -110,9 +110,13 @@ log-schema: ## Generate canonical JSON schema for LogPayload
 	@$$env:PYTHONPATH = 'src;.'; poetry run python scripts/generate_log_schema.py
 	@Write-Host "Schema generated at docs/observability/log_schema_v1.json"
 
-contracts-ts: ## Generate TypeScript interfaces from Python contracts
+ts-contracts: ## Generate TypeScript interfaces from Python contracts
 	@Write-Host "`n▶ Generating TypeScript contracts..." -ForegroundColor Cyan
 	@poetry run python -m scripts.contracts.generate_ts_contracts
+
+parsed-ts-contracts: ## Generate TypeScript parsed contracts from Python contracts
+	@Write-Host "`n▶ Generating TypeScript contracts..." -ForegroundColor Cyan
+	@poetry run python -m scripts.contracts.generate_ts_parsers
 
 contracts-json-schema: ## Generate JSON Schema artifacts from Python contracts
 	@Write-Host "`n▶ Generating JSON Schema contracts..." -ForegroundColor Cyan
