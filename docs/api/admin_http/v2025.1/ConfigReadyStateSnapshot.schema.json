@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$ref": "#/$defs/ConfigReadyStateSnapshot",
+  "$defs": {
+    "ConfigReadyStateSnapshot": {
+      "type": "object",
+      "properties": {
+        "fsm_status": {
+          "type": "string"
+        },
+        "env": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "settings": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": {}
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "fsm_status",
+        "metadata"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

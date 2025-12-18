@@ -1,41 +1,17 @@
 import sys
 
-from collections.abc import Iterable
 from dataclasses import fields
 from enum import Enum
 from pathlib import Path
 from types import UnionType
 from typing import Any, Union, get_args, get_origin
 
-from contracts.admin_http.v2025_1.config_diagnostics import (
-    ConfigDiagnosticsResponse,
-    ConfigReadyStateSnapshot,
-)
-from contracts.admin_http.v2025_1.health import HealthResponse
-from contracts.admin_http.v2025_1.observability_diagnostics import (
-    ObservabilityDiagnosticsResponse,
-)
-from contracts.admin_http.v2025_1.runtime_metadata import (
-    AdminEndpoints,
-    AdminHttpDescriptor,
-    RuntimeMetadataResponse,
-)
-from contracts.core.base import ContractModel
+from contracts.admin_http.v2025_1.registry import CONTRACT_VERSION, MODELS
 from contracts.generators.typescript_parser import generate_ts_parser
 
 OUTPUT_DIR = Path(".generated")
 OUTPUT_DIR.mkdir(exist_ok=True)
-OUTPUT_FILE = OUTPUT_DIR / "contracts-admin-v2025-1.parser.ts"
-
-CONTRACTS: Iterable[type[ContractModel]] = [
-    AdminEndpoints,
-    AdminHttpDescriptor,
-    RuntimeMetadataResponse,
-    HealthResponse,
-    ConfigReadyStateSnapshot,
-    ConfigDiagnosticsResponse,
-    ObservabilityDiagnosticsResponse,
-]
+OUTPUT_FILE = OUTPUT_DIR / f"contracts-admin-v{CONTRACT_VERSION}.parser.ts"
 
 
 def _is_optional(tp: Any) -> bool:
@@ -49,8 +25,8 @@ def main() -> int:
     used_enums: set[type[Enum]] = set()
 
     # Scan all contracts
-    for contract in CONTRACTS:
-        for f in fields(contract):
+    for model in MODELS:
+        for f in fields(model):
             tp = f.type
             if _is_optional(tp):
                 inner = [a for a in get_args(tp) if a is not type(None)][0]
@@ -65,23 +41,21 @@ def main() -> int:
                 if isinstance(inner, type) and issubclass(inner, Enum):
                     used_enums.add(inner)
 
-    lines: list[str] = []
-
     # --------------------------------------------------------------------------
     # Header
     # --------------------------------------------------------------------------
-    lines.append(
+    lines: list[str] = [
         "// -------------------------------------------------------------------\n"
         "// AUTO-GENERATED FILE — DO NOT EDIT MANUALLY\n"
         "// Source of truth: trading-platform/contracts/\n"
         "// Regenerate via: make parsed-ts-contracts\n"
         "// -------------------------------------------------------------------\n"
-    )
+    ]
 
     # Contract imports
-    contract_names = ",\n  ".join(c.__name__ for c in CONTRACTS)
+    contract_names = ",\n  ".join(m.__name__ for m in MODELS)
     lines.append(
-        f"import {{\n  {contract_names}\n}} from './contracts-admin-v2025-1';\n"
+        f"import {{\n  {contract_names}\n}} from './contracts-admin-v{CONTRACT_VERSION}';\n"
     )
 
     # Enum imports
@@ -89,7 +63,9 @@ def main() -> int:
         enum_names = ", ".join(
             e.__name__ for e in sorted(used_enums, key=lambda e: e.__name__)
         )
-        lines.append(f"import {{ {enum_names} }} from './contracts-admin-v2025-1';\n")
+        lines.append(
+            f"import {{ {enum_names} }} from './contracts-admin-v{CONTRACT_VERSION}';\n"
+        )
 
     # --------------------------------------------------------------------------
     # Kernel
@@ -167,6 +143,30 @@ function expectOptionalRecordOfString(
   return expectRecordOfString(value, ctx);
 }
 
+function expectNumber(value: unknown, ctx: string): number {
+  if (typeof value !== 'number') {
+    throw new ContractParseError(`${ctx}: expected number`);
+  }
+  return value;
+}
+
+function expectOptionalNumber(value: unknown, ctx: string): number | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  return expectNumber(value, ctx);
+}
+
+function expectArray<T>(
+  value: unknown,
+  ctx: string,
+  parseItem: (v: unknown) => T,
+): ReadonlyArray<T> {
+  if (!Array.isArray(value)) {
+    throw new ContractParseError(`${ctx}: expected array`);
+  }
+  return value.map(parseItem);
+}
 """)
 
     if needs_optional_string:
@@ -195,9 +195,10 @@ function expectOptionalBoolean(value: unknown, ctx: string): boolean | null {
 }
 """)
 
-        for enum in sorted(used_enums, key=lambda e: e.__name__):
-            values = " && ".join(f"value !== {repr(member.value)}" for member in enum)
-            lines.append(f"""
+    # ENUM GUARDS — always generated if enums are used
+    for enum in sorted(used_enums, key=lambda e: e.__name__):
+        values = " && ".join(f"value !== {repr(member.value)}" for member in enum)
+        lines.append(f"""
 function expect{enum.__name__}(value: unknown, ctx: string): {enum.__name__} {{
   if (typeof value !== 'string' || ({values})) {{
     throw new ContractParseError(`${{ctx}}: invalid {enum.__name__}`);
@@ -209,8 +210,8 @@ function expect{enum.__name__}(value: unknown, ctx: string): {enum.__name__} {{
     # --------------------------------------------------------------------------
     # Parsers
     # --------------------------------------------------------------------------
-    for contract in CONTRACTS:
-        lines.append(generate_ts_parser(contract))
+    for model in MODELS:
+        lines.append(generate_ts_parser(model))
         lines.append("")
 
     OUTPUT_FILE.write_text("\n".join(lines), encoding="utf-8")

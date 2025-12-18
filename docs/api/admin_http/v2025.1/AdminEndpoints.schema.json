@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$ref": "#/$defs/AdminEndpoints",
+  "$defs": {
+    "AdminEndpoints": {
+      "type": "object",
+      "properties": {
+        "health": {
+          "type": "string"
+        },
+        "runtime_metadata": {
+          "type": "string"
+        },
+        "config_diagnostics": {
+          "type": "string"
+        },
+        "observability_diagnostics": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "health",
+        "runtime_metadata",
+        "config_diagnostics",
+        "observability_diagnostics"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

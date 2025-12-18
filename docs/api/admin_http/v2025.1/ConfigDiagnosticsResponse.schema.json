@@ -1,0 +1,138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$ref": "#/$defs/ConfigDiagnosticsResponse",
+  "$defs": {
+    "ConfigReadyStateSnapshot": {
+      "type": "object",
+      "properties": {
+        "fsm_status": {
+          "type": "string"
+        },
+        "env": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "settings": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": {}
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "fsm_status",
+        "metadata"
+      ],
+      "additionalProperties": false
+    },
+    "ConfigDiagnosticsResponse": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "type": "string"
+        },
+        "is_consumable": {
+          "type": "boolean"
+        },
+        "fingerprint": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "ready_state": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ConfigReadyStateSnapshot"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "loader_snapshot": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": {}
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reserved_env_keys": {
+          "type": "object",
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "cache_matches_params": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "has_valid_cache": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "schema_version",
+        "is_consumable",
+        "reserved_env_keys"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

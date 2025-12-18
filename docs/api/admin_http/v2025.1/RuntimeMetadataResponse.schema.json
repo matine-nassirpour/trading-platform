@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$ref": "#/$defs/RuntimeMetadataResponse",
+  "$defs": {
+    "ApiVersionDescriptor": {
+      "type": "object",
+      "properties": {
+        "year": {
+          "type": "integer"
+        },
+        "revision": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "year",
+        "revision"
+      ],
+      "additionalProperties": false
+    },
+    "AdminEndpoints": {
+      "type": "object",
+      "properties": {
+        "health": {
+          "type": "string"
+        },
+        "runtime_metadata": {
+          "type": "string"
+        },
+        "config_diagnostics": {
+          "type": "string"
+        },
+        "observability_diagnostics": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "health",
+        "runtime_metadata",
+        "config_diagnostics",
+        "observability_diagnostics"
+      ],
+      "additionalProperties": false
+    },
+    "AdminHttpDescriptor": {
+      "type": "object",
+      "properties": {
+        "base_url": {
+          "type": "string"
+        },
+        "endpoints": {
+          "$ref": "#/$defs/AdminEndpoints"
+        }
+      },
+      "required": [
+        "base_url",
+        "endpoints"
+      ],
+      "additionalProperties": false
+    },
+    "RuntimeMetadataResponse": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "UP",
+            "DEGRADED",
+            "DOWN"
+          ]
+        },
+        "api_version": {
+          "$ref": "#/$defs/ApiVersionDescriptor"
+        },
+        "admin_http": {
+          "$ref": "#/$defs/AdminHttpDescriptor"
+        }
+      },
+      "required": [
+        "status",
+        "api_version",
+        "admin_http"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

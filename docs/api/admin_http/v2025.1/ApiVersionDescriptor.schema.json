@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$ref": "#/$defs/ApiVersionDescriptor",
+  "$defs": {
+    "ApiVersionDescriptor": {
+      "type": "object",
+      "properties": {
+        "year": {
+          "type": "integer"
+        },
+        "revision": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "year",
+        "revision"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

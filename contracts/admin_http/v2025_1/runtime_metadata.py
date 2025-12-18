@@ -8,16 +8,15 @@ VERSION = ContractVersion(2025, 1)
 
 
 class SystemStatus(str, Enum):
-    """
-    Contractual external system status.
-
-    This enum is part of the ADMIN HTTP CONTRACT.
-    It MUST remain stable across minor revisions.
-    """
-
     UP = "UP"
     DEGRADED = "DEGRADED"
     DOWN = "DOWN"
+
+
+@dataclass(frozen=True)
+class ApiVersionDescriptor(ContractModel):
+    year: int
+    revision: int
 
 
 @dataclass(frozen=True)
@@ -37,5 +36,5 @@ class AdminHttpDescriptor(ContractModel):
 @dataclass(frozen=True)
 class RuntimeMetadataResponse(ContractModel):
     status: SystemStatus
-    api_version: str
+    api_version: ApiVersionDescriptor
     admin_http: AdminHttpDescriptor

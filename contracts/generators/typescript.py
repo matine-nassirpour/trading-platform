@@ -113,12 +113,21 @@ def generate_ts_interface(model: type[ContractModel]) -> str:
     if not is_dataclass(model):
         raise TypeError("Contract must be a dataclass")
 
+    seen: dict[str, str] = {}
     lines: list[str] = [f"export interface {model.__name__} {{"]
 
     for f in fields(model):
-        field_name = snake_to_lower_camel(f.name)
+        camel = snake_to_lower_camel(f.name)
+
+        if camel in seen:
+            raise TypeScriptGenerationError(
+                f"CamelCase collision in {model.__name__}: "
+                f"{seen[camel]!r} and {f.name!r} → {camel!r}"
+            )
+
+        seen[camel] = f.name
         ts_type = _map_type(f.type)
-        lines.append(f"  readonly {field_name}: {ts_type};")
+        lines.append(f"  readonly {camel}: {ts_type};")
 
     lines.append("}")
     return "\n".join(lines)

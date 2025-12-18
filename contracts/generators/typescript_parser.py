@@ -66,11 +66,7 @@ def _ts_expr_for_dict(snake: str, tp: Any, optional: bool) -> str:
     )
 
 
-def _ts_expr_for_field(snake: str, tp: Any) -> str:
-    optional = _is_optional(tp)
-    if optional:
-        tp = _strip_optional(tp)
-
+def _ts_expr_for_primitive(snake: str, tp: Any, optional: bool) -> str | None:
     if tp is str:
         return (
             f"expectOptionalString(o['{snake}'], '{snake}')"
@@ -85,22 +81,65 @@ def _ts_expr_for_field(snake: str, tp: Any) -> str:
             else f"expectBoolean(o['{snake}'], '{snake}')"
         )
 
-    if isinstance(tp, type) and issubclass(tp, Enum):
-        guard = f"expect{tp.__name__}"
-        if optional:
-            return (
-                f"o['{snake}'] === null || o['{snake}'] === undefined "
-                f"? null "
-                f": {guard}(o['{snake}'], '{snake}')"
-            )
-        return f"{guard}(o['{snake}'], '{snake}')"
-
-    if isinstance(tp, type) and issubclass(tp, ContractModel):
+    if tp in (int, float):
         return (
-            f"o['{snake}'] ? parse{tp.__name__}(o['{snake}']) : null"
+            f"expectOptionalNumber(o['{snake}'], '{snake}')"
             if optional
-            else f"parse{tp.__name__}(o['{snake}'])"
+            else f"expectNumber(o['{snake}'], '{snake}')"
         )
+
+    return None
+
+
+def _ts_expr_for_enum(snake: str, tp: Any, optional: bool) -> str | None:
+    if not (isinstance(tp, type) and issubclass(tp, Enum)):
+        return None
+
+    guard = f"expect{tp.__name__}"
+    if optional:
+        return (
+            f"o['{snake}'] === null || o['{snake}'] === undefined "
+            f"? null "
+            f": {guard}(o['{snake}'], '{snake}')"
+        )
+    return f"{guard}(o['{snake}'], '{snake}')"
+
+
+def _ts_expr_for_list(snake: str, tp: Any) -> str | None:
+    if get_origin(tp) is not list:
+        return None
+
+    (item,) = get_args(tp)
+    return f"expectArray(o['{snake}'], '{snake}', parse{item.__name__})"
+
+
+def _ts_expr_for_contract(snake: str, tp: Any, optional: bool) -> str | None:
+    if not (isinstance(tp, type) and issubclass(tp, ContractModel)):
+        return None
+
+    if optional:
+        return f"o['{snake}'] ? parse{tp.__name__}(o['{snake}']) : null"
+    return f"parse{tp.__name__}(o['{snake}'])"
+
+
+def _ts_expr_for_field(snake: str, tp: Any) -> str:
+    optional = _is_optional(tp)
+    if optional:
+        tp = _strip_optional(tp)
+
+    for handler in (
+        _ts_expr_for_primitive,
+        _ts_expr_for_enum,
+        _ts_expr_for_list,
+        _ts_expr_for_contract,
+    ):
+        expr = (
+            handler(snake, tp, optional)
+            if handler != _ts_expr_for_list
+            else handler(snake, tp)
+        )
+        if expr is not None:
+            return expr
 
     if _is_dict(tp):
         return _ts_expr_for_dict(snake, tp, optional)
