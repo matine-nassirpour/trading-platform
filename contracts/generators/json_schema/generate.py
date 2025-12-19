@@ -55,14 +55,12 @@ def _schema_for_enum(tp: Any) -> dict[str, Any] | None:
         return None
 
     values = [member.value for member in tp]
-
     if not values:
         raise TypeError(f"Enum {tp.__name__} has no values")
 
-    # Enforce string-based enums only
     if not all(isinstance(v, str) for v in values):
         raise TypeError(
-            f"Invalid contract enum {tp.__name__}: " f"all enum values must be strings"
+            f"Invalid contract enum {tp.__name__}: all enum values must be strings"
         )
 
     return {
@@ -86,6 +84,7 @@ def _schema_for_dict(tp: Any, defs: dict[str, Any]) -> dict[str, Any] | None:
         key, value = get_args(tp)
         if key is not str:
             raise TypeError("Only dict[str, T] is allowed in contracts")
+
         return {
             "type": "object",
             "additionalProperties": _schema_for_type(value, defs),
@@ -101,6 +100,8 @@ def _schema_for_contract(
         return None
 
     name = tp.__name__
+
+    # Already defined → reference
     if name in defs:
         return {"$ref": f"#/$defs/{name}"}
 
@@ -134,11 +135,11 @@ def _schema_for_json_value(tp: Any, defs: dict[str, Any]) -> dict[str, Any] | No
             {"type": "string"},
             {
                 "type": "array",
-                "items": {"$ref": "#/definitions/JsonValue"},
+                "items": {"$ref": "#/$defs/JsonValue"},
             },
             {
                 "type": "object",
-                "additionalProperties": {"$ref": "#/definitions/JsonValue"},
+                "additionalProperties": {"$ref": "#/$defs/JsonValue"},
             },
         ]
     }
@@ -188,7 +189,10 @@ def generate_json_schema(model: type[ContractModel]) -> dict[str, Any]:
         raise TypeError("Contract must be a dataclass")
 
     defs: dict[str, Any] = {}
+
+    # Pre-register JsonValue for recursive references
     defs["JsonValue"] = _schema_for_json_value(JsonValue, defs)
+
     root = _schema_for_contract(model, defs)
 
     return {

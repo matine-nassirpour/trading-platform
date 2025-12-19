@@ -18,6 +18,10 @@ def _is_optional(tp: Any) -> bool:
 
 
 def _strip_optional(tp: Any) -> Any:
+    # Defensive: JsonValue is never Optional
+    if tp is JsonValue:
+        return tp
+
     args = [a for a in get_args(tp) if a is not type(None)]
     if len(args) != 1:
         raise TypeScriptParserGenerationError(f"Invalid Optional type: {tp!r}")
@@ -43,6 +47,7 @@ def _dict_value_type(tp: Any) -> Any:
 def _ts_expr_for_dict(snake: str, tp: Any, optional: bool) -> str:
     value_tp = _dict_value_type(tp)
 
+    # dict[str, Any]
     if value_tp is Any:
         return (
             f"o['{snake}'] === null || o['{snake}'] === undefined "
@@ -52,6 +57,7 @@ def _ts_expr_for_dict(snake: str, tp: Any, optional: bool) -> str:
             else f"expectObject(o['{snake}'], '{snake}')"
         )
 
+    # dict[str, str]
     if value_tp is str:
         return (
             f"expectOptionalRecordOfString(o['{snake}'], '{snake}')"
@@ -59,8 +65,21 @@ def _ts_expr_for_dict(snake: str, tp: Any, optional: bool) -> str:
             else f"expectRecordOfString(o['{snake}'], '{snake}')"
         )
 
-    if _is_optional(value_tp) and _strip_optional(value_tp) is str:
-        return f"expectRecordOfOptionalString(o['{snake}'], '{snake}')"
+    # dict[str, Optional[str]]
+    if _is_optional(value_tp):
+        inner = _strip_optional(value_tp)
+        if inner is str:
+            return f"expectRecordOfOptionalString(o['{snake}'], '{snake}')"
+
+    # dict[str, JsonValue]
+    if value_tp is JsonValue:
+        return (
+            f"o['{snake}'] === null || o['{snake}'] === undefined "
+            f"? null "
+            f": parseJsonObject(o['{snake}'], '{snake}')"
+            if optional
+            else f"parseJsonObject(o['{snake}'], '{snake}')"
+        )
 
     raise TypeScriptParserGenerationError(
         f"Unsupported dict value type: {value_tp!r} (field {snake})"

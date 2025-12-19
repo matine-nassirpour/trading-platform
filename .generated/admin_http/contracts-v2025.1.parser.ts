@@ -15,9 +15,11 @@ import {
   ConfigReadyStateSnapshot,
   ConfigDiagnosticsResponse,
   ObservabilityDiagnosticsResponse
-} from './contracts-admin-v2025.1';
+} from './contracts-v2025.1';
 
-import { HealthStatus, SystemStatus } from './contracts-admin-v2025.1';
+import { JsonValue } from '../core/json-value';
+
+import { HealthStatus, SystemStatus } from './contracts-v2025.1';
 
 
 export class ContractParseError extends Error {
@@ -157,6 +159,51 @@ function expectArrayOfEnum<T extends string>(
   return expectArray(value, ctx, (v, itemCtx) => guard(v, itemCtx));
 }
 
+function parseJsonValue(value: unknown, ctx: string): JsonValue {
+  if (
+    value === null ||
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean'
+  ) {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((v, i) =>
+      parseJsonValue(v, `${ctx}[${i}]`)
+    );
+  }
+
+  if (typeof value === 'object') {
+    const o = value as Record<string, unknown>;
+    const result: Record<string, JsonValue> = {};
+    for (const [k, v] of Object.entries(o)) {
+      result[k] = parseJsonValue(v, `${ctx}.${k}`);
+    }
+    return result;
+  }
+
+  throw new ContractParseError(`${ctx}: invalid JsonValue`);
+}
+
+function parseJsonObject(
+  value: unknown,
+  ctx: string,
+): Readonly<Record<string, JsonValue>> {
+  const parsed = parseJsonValue(value, ctx);
+
+  if (
+    parsed === null ||
+    typeof parsed !== 'object' ||
+    Array.isArray(parsed)
+  ) {
+    throw new ContractParseError(`${ctx}: expected JSON object`);
+  }
+
+  return parsed as Readonly<Record<string, JsonValue>>;
+}
+
 
 function expectOptionalString(value: unknown, ctx: string): string | null {
   if (value === null || value === undefined) {
@@ -248,8 +295,8 @@ export function parseConfigReadyStateSnapshot(raw: unknown): ConfigReadyStateSna
   return {
     fsmStatus: expectString(o['fsm_status'], 'fsm_status'),
     env: expectOptionalRecordOfString(o['env'], 'env'),
-    settings: o['settings'] === null || o['settings'] === undefined ? null : expectObject(o['settings'], 'settings'),
-    metadata: expectObject(o['metadata'], 'metadata'),
+    settings: o['settings'] === null || o['settings'] === undefined ? null : parseJsonObject(o['settings'], 'settings'),
+    metadata: parseJsonObject(o['metadata'], 'metadata'),
   };
 }
 
@@ -261,7 +308,7 @@ export function parseConfigDiagnosticsResponse(raw: unknown): ConfigDiagnosticsR
     isConsumable: expectBoolean(o['is_consumable'], 'is_consumable'),
     fingerprint: expectOptionalString(o['fingerprint'], 'fingerprint'),
     readyState: o['ready_state'] === null || o['ready_state'] === undefined ? null : parseConfigReadyStateSnapshot(o['ready_state']),
-    loaderSnapshot: o['loader_snapshot'] === null || o['loader_snapshot'] === undefined ? null : expectObject(o['loader_snapshot'], 'loader_snapshot'),
+    loaderSnapshot: o['loader_snapshot'] === null || o['loader_snapshot'] === undefined ? null : parseJsonObject(o['loader_snapshot'], 'loader_snapshot'),
     reservedEnvKeys: expectRecordOfOptionalString(o['reserved_env_keys'], 'reserved_env_keys'),
     cacheMatchesParams: expectOptionalBoolean(o['cache_matches_params'], 'cache_matches_params'),
     hasValidCache: expectOptionalBoolean(o['has_valid_cache'], 'has_valid_cache'),
@@ -281,6 +328,6 @@ export function parseObservabilityDiagnosticsResponse(raw: unknown): Observabili
     metricsHttpOk: expectBoolean(o['metrics_http_ok'], 'metrics_http_ok'),
     runId: expectOptionalString(o['run_id'], 'run_id'),
     correlationId: expectOptionalString(o['correlation_id'], 'correlation_id'),
-    diagnostics: expectObject(o['diagnostics'], 'diagnostics'),
+    diagnostics: parseJsonObject(o['diagnostics'], 'diagnostics'),
   };
 }

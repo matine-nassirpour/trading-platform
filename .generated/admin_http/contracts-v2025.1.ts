@@ -6,6 +6,8 @@
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
+import { JsonValue } from '../core/json-value';
+
 export type SystemStatus = 'UP' | 'DEGRADED' | 'DOWN';
 
 export type HealthStatus = 'OK' | 'DEGRADED' | 'FAILING';
@@ -40,8 +42,8 @@ export interface HealthResponse {
 export interface ConfigReadyStateSnapshot {
   readonly fsmStatus: string;
   readonly env: Readonly<Record<string, string>> | null;
-  readonly settings: Readonly<Record<string, unknown>> | null;
-  readonly metadata: Readonly<Record<string, unknown>>;
+  readonly settings: Readonly<Record<string, JsonValue>> | null;
+  readonly metadata: Readonly<Record<string, JsonValue>>;
 }
 
 export interface ConfigDiagnosticsResponse {
@@ -49,7 +51,7 @@ export interface ConfigDiagnosticsResponse {
   readonly isConsumable: boolean;
   readonly fingerprint: string | null;
   readonly readyState: ConfigReadyStateSnapshot | null;
-  readonly loaderSnapshot: Readonly<Record<string, unknown>> | null;
+  readonly loaderSnapshot: Readonly<Record<string, JsonValue>> | null;
   readonly reservedEnvKeys: Readonly<Record<string, string | null>>;
   readonly cacheMatchesParams: boolean | null;
   readonly hasValidCache: boolean | null;
@@ -65,5 +67,5 @@ export interface ObservabilityDiagnosticsResponse {
   readonly metricsHttpOk: boolean;
   readonly runId: string | null;
   readonly correlationId: string | null;
-  readonly diagnostics: Readonly<Record<string, unknown>>;
+  readonly diagnostics: Readonly<Record<string, JsonValue>>;
 }
