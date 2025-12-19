@@ -50,12 +50,24 @@ def _schema_for_primitive(tp: Any) -> dict[str, Any] | None:
 
 
 def _schema_for_enum(tp: Any) -> dict[str, Any] | None:
-    if isinstance(tp, type) and issubclass(tp, Enum):
-        return {
-            "type": "string",
-            "enum": [m.value for m in tp],
-        }
-    return None
+    if not (isinstance(tp, type) and issubclass(tp, Enum)):
+        return None
+
+    values = [member.value for member in tp]
+
+    if not values:
+        raise TypeError(f"Enum {tp.__name__} has no values")
+
+    # Enforce string-based enums only
+    if not all(isinstance(v, str) for v in values):
+        raise TypeError(
+            f"Invalid contract enum {tp.__name__}: " f"all enum values must be strings"
+        )
+
+    return {
+        "type": "string",
+        "enum": values,
+    }
 
 
 def _schema_for_list(tp: Any, defs: dict[str, Any]) -> dict[str, Any] | None:

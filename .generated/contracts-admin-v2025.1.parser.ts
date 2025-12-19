@@ -114,7 +114,36 @@ function expectArray<T>(
   if (!Array.isArray(value)) {
     throw new ContractParseError(`${ctx}: expected array`);
   }
-  return value.map(parseItem);
+  return value.map((v, i) => parseItem(v));
+}
+
+function expectArrayOfString(
+  value: unknown,
+  ctx: string,
+): ReadonlyArray<string> {
+  return expectArray(value, ctx, (v) => expectString(v, ctx));
+}
+
+function expectArrayOfNumber(
+  value: unknown,
+  ctx: string,
+): ReadonlyArray<number> {
+  return expectArray(value, ctx, (v) => expectNumber(v, ctx));
+}
+
+function expectArrayOfBoolean(
+  value: unknown,
+  ctx: string,
+): ReadonlyArray<boolean> {
+  return expectArray(value, ctx, (v) => expectBoolean(v, ctx));
+}
+
+function expectArrayOfEnum<T extends string>(
+  value: unknown,
+  ctx: string,
+  guard: (v: unknown, ctx: string) => T,
+): ReadonlyArray<T> {
+  return expectArray(value, ctx, (v) => guard(v, ctx));
 }
 
 
@@ -220,7 +249,7 @@ export function parseConfigDiagnosticsResponse(raw: unknown): ConfigDiagnosticsR
     schemaVersion: expectString(o['schema_version'], 'schema_version'),
     isConsumable: expectBoolean(o['is_consumable'], 'is_consumable'),
     fingerprint: expectOptionalString(o['fingerprint'], 'fingerprint'),
-    readyState: o['ready_state'] ? parseConfigReadyStateSnapshot(o['ready_state']) : null,
+    readyState: o['ready_state'] === null || o['ready_state'] === undefined ? null : parseConfigReadyStateSnapshot(o['ready_state']),
     loaderSnapshot: o['loader_snapshot'] === null || o['loader_snapshot'] === undefined ? null : expectObject(o['loader_snapshot'], 'loader_snapshot'),
     reservedEnvKeys: expectRecordOfOptionalString(o['reserved_env_keys'], 'reserved_env_keys'),
     cacheMatchesParams: expectOptionalBoolean(o['cache_matches_params'], 'cache_matches_params'),

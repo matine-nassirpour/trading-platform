@@ -109,8 +109,41 @@ def _ts_expr_for_list(snake: str, tp: Any) -> str | None:
     if get_origin(tp) is not list:
         return None
 
-    (item,) = get_args(tp)
-    return f"expectArray(o['{snake}'], '{snake}', parse{item.__name__})"
+    (item_type,) = get_args(tp)
+
+    if _is_optional(item_type):
+        raise TypeScriptParserGenerationError(
+            f"list[Optional[T]] is not allowed in contracts (field {snake})"
+        )
+
+    # list[str]
+    if item_type is str:
+        return f"expectArrayOfString(o['{snake}'], '{snake}')"
+
+    # list[int] / list[float]
+    if item_type in (int, float):
+        return f"expectArrayOfNumber(o['{snake}'], '{snake}')"
+
+    # list[bool]
+    if item_type is bool:
+        return f"expectArrayOfBoolean(o['{snake}'], '{snake}')"
+
+    # list[Enum]
+    if isinstance(item_type, type) and issubclass(item_type, Enum):
+        return (
+            f"expectArrayOfEnum("
+            f"o['{snake}'], '{snake}', expect{item_type.__name__}"
+            f")"
+        )
+
+    # list[ContractModel]
+    if isinstance(item_type, type) and issubclass(item_type, ContractModel):
+        return f"expectArray(o['{snake}'], '{snake}', parse{item_type.__name__})"
+
+    raise TypeScriptParserGenerationError(
+        f"Unsupported list item type in contract: list[{item_type!r}] "
+        f"(field {snake})"
+    )
 
 
 def _ts_expr_for_contract(snake: str, tp: Any, optional: bool) -> str | None:
@@ -118,7 +151,12 @@ def _ts_expr_for_contract(snake: str, tp: Any, optional: bool) -> str | None:
         return None
 
     if optional:
-        return f"o['{snake}'] ? parse{tp.__name__}(o['{snake}']) : null"
+        return (
+            f"o['{snake}'] === null || o['{snake}'] === undefined "
+            f"? null "
+            f": parse{tp.__name__}(o['{snake}'])"
+        )
+
     return f"parse{tp.__name__}(o['{snake}'])"
 
 

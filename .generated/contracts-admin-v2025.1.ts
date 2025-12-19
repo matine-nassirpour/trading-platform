@@ -28,13 +28,13 @@ export interface AdminHttpDescriptor {
 }
 
 export interface RuntimeMetadataResponse {
-  readonly status: 'UP' | 'DEGRADED' | 'DOWN';
+  readonly status: SystemStatus;
   readonly apiVersion: ApiVersionDescriptor;
   readonly adminHttp: AdminHttpDescriptor;
 }
 
 export interface HealthResponse {
-  readonly status: 'OK' | 'DEGRADED' | 'FAILING';
+  readonly status: HealthStatus;
 }
 
 export interface ConfigReadyStateSnapshot {

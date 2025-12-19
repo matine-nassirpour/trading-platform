@@ -2,7 +2,8 @@ from dataclasses import dataclass
 from enum import Enum
 
 from contracts.core.model import ContractModel
-from contracts.core.versioning import ContractVersion
+from contracts.core.version.model import ApiVersionDescriptor
+from contracts.core.version.versioning import ContractVersion
 
 VERSION = ContractVersion(2025, 1)
 
@@ -11,12 +12,6 @@ class SystemStatus(str, Enum):
     UP = "UP"
     DEGRADED = "DEGRADED"
     DOWN = "DOWN"
-
-
-@dataclass(frozen=True)
-class ApiVersionDescriptor(ContractModel):
-    year: int
-    revision: int
 
 
 @dataclass(frozen=True)

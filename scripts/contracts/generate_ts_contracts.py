@@ -6,7 +6,7 @@ from pathlib import Path
 
 from contracts.generators.typescript.enums import generate_ts_enum
 from contracts.generators.typescript.interfaces import generate_ts_interface
-from contracts.surfaces.admin_http.v2025_1.registry import (
+from contracts.surfaces.admin_http.v2025_1.manifest import (
     CONTRACT_VERSION,
     ENUMS,
     MODELS,

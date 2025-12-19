@@ -7,7 +7,7 @@ from types import UnionType
 from typing import Any, Union, get_args, get_origin
 
 from contracts.generators.typescript.parsers import generate_ts_parser
-from contracts.surfaces.admin_http.v2025_1.registry import CONTRACT_VERSION, MODELS
+from contracts.surfaces.admin_http.v2025_1.manifest import CONTRACT_VERSION, MODELS
 
 OUTPUT_DIR = Path(".generated")
 OUTPUT_DIR.mkdir(exist_ok=True)
@@ -166,7 +166,36 @@ function expectArray<T>(
   if (!Array.isArray(value)) {
     throw new ContractParseError(`${ctx}: expected array`);
   }
-  return value.map(parseItem);
+  return value.map((v, i) => parseItem(v));
+}
+
+function expectArrayOfString(
+  value: unknown,
+  ctx: string,
+): ReadonlyArray<string> {
+  return expectArray(value, ctx, (v) => expectString(v, ctx));
+}
+
+function expectArrayOfNumber(
+  value: unknown,
+  ctx: string,
+): ReadonlyArray<number> {
+  return expectArray(value, ctx, (v) => expectNumber(v, ctx));
+}
+
+function expectArrayOfBoolean(
+  value: unknown,
+  ctx: string,
+): ReadonlyArray<boolean> {
+  return expectArray(value, ctx, (v) => expectBoolean(v, ctx));
+}
+
+function expectArrayOfEnum<T extends string>(
+  value: unknown,
+  ctx: string,
+  guard: (v: unknown, ctx: string) => T,
+): ReadonlyArray<T> {
+  return expectArray(value, ctx, (v) => guard(v, ctx));
 }
 """)
 

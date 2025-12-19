@@ -22,8 +22,20 @@ class ContractVersion:
     revision: int
 
     def __post_init__(self) -> None:
-        if self.year < 2025:
-            raise ValueError("ContractVersion.year must be >= 2025")
+        # Year must be a valid, modern calendar year (epoch-based lower bound)
+        if not isinstance(self.year, int):
+            raise TypeError("ContractVersion.year must be an int")
+
+        if self.year < 1970:
+            raise ValueError(
+                "ContractVersion.year must be >= 1970 "
+                "(Unix epoch lower bound for modern systems)"
+            )
+
+        # Revision must be a positive integer
+        if not isinstance(self.revision, int):
+            raise TypeError("ContractVersion.revision must be an int")
+
         if self.revision < 1:
             raise ValueError("ContractVersion.revision must be >= 1")
 

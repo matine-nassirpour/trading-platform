@@ -84,10 +84,9 @@ def _map_type(tp: Any) -> str:
     if collection is not None:
         return collection
 
-    # Contractual Enum → string literal union
+    # Contractual Enum → named TypeScript type
     if isinstance(tp, type) and issubclass(tp, Enum):
-        values = [repr(member.value) for member in tp]
-        return " | ".join(values)
+        return tp.__name__
 
     # Nested ContractModel
     if isinstance(tp, type) and issubclass(tp, ContractModel):
