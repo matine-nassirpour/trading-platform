@@ -124,7 +124,7 @@ class ConfigDiagnosticsProvider:
             fingerprint=fingerprint,
             ready_state=(
                 {
-                    "status": ready_state.status.value,
+                    "fsm_status": ready_state.status.value,
                     "env": ready_state.env,
                     "settings": ready_state.settings,
                     "metadata": ready_state.metadata,
