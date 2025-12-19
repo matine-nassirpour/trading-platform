@@ -109,33 +109,44 @@ function expectOptionalNumber(value: unknown, ctx: string): number | null {
 function expectArray<T>(
   value: unknown,
   ctx: string,
-  parseItem: (v: unknown) => T,
+  parseItem: (v: unknown, ctx: string) => T,
 ): ReadonlyArray<T> {
   if (!Array.isArray(value)) {
     throw new ContractParseError(`${ctx}: expected array`);
   }
-  return value.map((v, i) => parseItem(v));
+
+  return value.map((v, i) => {
+    try {
+      return parseItem(v, `${ctx}[${i}]`);
+    } catch (e) {
+      if (e instanceof ContractParseError) {
+        throw e;
+      }
+      throw new ContractParseError(`${ctx}[${i}]: ${String(e)}`);
+    }
+  });
 }
+
 
 function expectArrayOfString(
   value: unknown,
   ctx: string,
 ): ReadonlyArray<string> {
-  return expectArray(value, ctx, (v) => expectString(v, ctx));
+  return expectArray(value, ctx, (v, itemCtx) => expectString(v, itemCtx));
 }
 
 function expectArrayOfNumber(
   value: unknown,
   ctx: string,
 ): ReadonlyArray<number> {
-  return expectArray(value, ctx, (v) => expectNumber(v, ctx));
+  return expectArray(value, ctx, (v, itemCtx) => expectNumber(v, itemCtx));
 }
 
 function expectArrayOfBoolean(
   value: unknown,
   ctx: string,
 ): ReadonlyArray<boolean> {
-  return expectArray(value, ctx, (v) => expectBoolean(v, ctx));
+  return expectArray(value, ctx, (v, itemCtx) => expectBoolean(v, itemCtx));
 }
 
 function expectArrayOfEnum<T extends string>(
@@ -143,7 +154,7 @@ function expectArrayOfEnum<T extends string>(
   ctx: string,
   guard: (v: unknown, ctx: string) => T,
 ): ReadonlyArray<T> {
-  return expectArray(value, ctx, (v) => guard(v, ctx));
+  return expectArray(value, ctx, (v, itemCtx) => guard(v, itemCtx));
 }
 
 

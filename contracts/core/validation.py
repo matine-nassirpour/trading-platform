@@ -5,6 +5,9 @@ from enum import Enum
 from types import UnionType
 from typing import Any, Union, get_args, get_origin
 
+STRICT_CONTRACT_MODE = True
+_ENUM_STRING_CACHE: dict[type[Enum], bool] = {}
+
 
 class ContractViolation(RuntimeError):
     """Raised when an object violates its declared contract."""
@@ -56,14 +59,18 @@ def _validate_enum(value: Any, expected_type: Any, path: str) -> bool:
     if not (isinstance(expected_type, type) and issubclass(expected_type, Enum)):
         return False
 
-    # Enforce string-based enums globally
-    for member in expected_type:
-        if not isinstance(member.value, str):
-            raise ContractViolation(
-                f"{path}: enum {expected_type.__name__} is invalid — "
-                f"all enum values must be strings"
-            )
+    # Structural validation (cached)
+    cached = _ENUM_STRING_CACHE.get(expected_type)
+    if cached is None:
+        for member in expected_type:
+            if not isinstance(member.value, str):
+                raise ContractViolation(
+                    f"{path}: enum {expected_type.__name__} is invalid — "
+                    f"all enum values must be strings"
+                )
+        _ENUM_STRING_CACHE[expected_type] = True
 
+    # Instance validation
     if not isinstance(value, expected_type):
         raise ContractViolation(
             f"{path}: expected enum {expected_type.__name__}, got {value!r}"
@@ -124,8 +131,9 @@ def _validate_dict(value: Any, expected_type: Any, path: str) -> bool:
 
 
 def _validate_value(value: Any, expected_type: Any, path: str) -> None:
-    # Any means fully opaque — including None
     if expected_type is Any:
+        if STRICT_CONTRACT_MODE:
+            raise ContractViolation(f"{path}: Any is forbidden in strict contracts")
         return
 
     if _is_optional(expected_type):

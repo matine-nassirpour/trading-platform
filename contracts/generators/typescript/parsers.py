@@ -138,7 +138,7 @@ def _ts_expr_for_list(snake: str, tp: Any) -> str | None:
 
     # list[ContractModel]
     if isinstance(item_type, type) and issubclass(item_type, ContractModel):
-        return f"expectArray(o['{snake}'], '{snake}', parse{item_type.__name__})"
+        return f"expectArray(o['{snake}'], '{snake}', (v, ctx) => parse{item_type.__name__}(v))"
 
     raise TypeScriptParserGenerationError(
         f"Unsupported list item type in contract: list[{item_type!r}] "

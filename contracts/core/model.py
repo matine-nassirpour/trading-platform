@@ -5,6 +5,7 @@ from enum import Enum
 from typing import Any
 
 from contracts.core.validation import validate_contract
+from contracts.core.wire_format import assert_snake_case
 
 
 def _serialize(value: Any) -> Any:
@@ -35,6 +36,7 @@ class ContractModel:
     - immutability
     - explicit fields
     - deterministic serialization
+    - strict snake_case wire format
     - runtime contract validation
     """
 
@@ -44,6 +46,7 @@ class ContractModel:
     def to_dict(self) -> dict[str, Any]:
         result: dict[str, Any] = {}
         for f in fields(self):
+            assert_snake_case(f.name)
             value = getattr(self, f.name)
             result[f.name] = _serialize(value)
         return result

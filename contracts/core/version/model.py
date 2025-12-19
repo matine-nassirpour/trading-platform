@@ -28,5 +28,5 @@ class ApiVersionDescriptor(ContractModel):
         # Enforce consistency with ContractVersion invariants
         try:
             ContractVersion(year=self.year, revision=self.revision)
-        except Exception as exc:
+        except (TypeError, ValueError) as exc:
             raise ContractViolation(f"Invalid ApiVersionDescriptor: {exc}") from exc

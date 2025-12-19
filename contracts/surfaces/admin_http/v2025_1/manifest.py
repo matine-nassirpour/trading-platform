@@ -4,6 +4,7 @@ from enum import Enum
 from typing import Final
 
 from contracts.core.model import ContractModel
+from contracts.core.version.model import ApiVersionDescriptor
 from contracts.core.version.versioning import ContractVersion
 from contracts.surfaces.admin_http.v2025_1.config_diagnostics.models import (
     ConfigDiagnosticsResponse,
@@ -19,7 +20,6 @@ from contracts.surfaces.admin_http.v2025_1.observability_diagnostics.models impo
 from contracts.surfaces.admin_http.v2025_1.runtime_metadata.models import (
     AdminEndpoints,
     AdminHttpDescriptor,
-    ApiVersionDescriptor,
     RuntimeMetadataResponse,
     SystemStatus,
 )
@@ -62,7 +62,7 @@ def _validate_manifest() -> None:
         if not issubclass(model, ContractModel):
             raise TypeError(f"Invalid model in manifest: {model!r}")
 
-    # Deterministic ordering guarantee (defensive)
+    # Deterministic ordering guarantee
     if len(set(ENUMS)) != len(ENUMS):
         raise ValueError("Duplicate enum detected in ENUMS")
 
