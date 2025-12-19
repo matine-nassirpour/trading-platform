@@ -15,8 +15,16 @@ def _strip_optional(tp: Any) -> Any:
 
 
 def _is_optional(tp: Any) -> bool:
+    # JsonValue is a special recursive union, not an Optional
+    if tp is JsonValue:
+        return False
+
     origin = get_origin(tp)
-    return (origin is Union or origin is UnionType) and type(None) in get_args(tp)
+    return (
+        (origin is Union or origin is UnionType)
+        and type(None) in get_args(tp)
+        and len(get_args(tp)) == 2
+    )
 
 
 def _schema_for_optional(tp: Any, defs: dict[str, Any]) -> dict[str, Any] | None:
@@ -172,6 +180,7 @@ def _schema_for_type(tp: Any, defs: dict[str, Any]) -> dict[str, Any]:
             if handler
             in (
                 _schema_for_optional,
+                _schema_for_json_value,
                 _schema_for_list,
                 _schema_for_dict,
                 _schema_for_contract,

@@ -34,9 +34,18 @@ trading-platform/
 │   └── run_quantum.py
 ├── contracts/
 │   ├── core/
+│   │   ├── types/
+│   │   │   ├── __init__.py
+│   │   │   └── json.py
+│   │   ├── version/
+│   │   │   ├── __init__.py
+│   │   │   ├── mapping.py
+│   │   │   ├── model.py
+│   │   │   └── versioning.py
 │   │   ├── __init__.py
 │   │   ├── model.py
-│   │   └── versioning.py
+│   │   ├── validation.py
+│   │   └── wire_format.py
 │   ├── generators/
 │   │   ├── json_schema/
 │   │   │   ├── __init__.py
@@ -46,6 +55,7 @@ trading-platform/
 │   │   │   └── naming.py
 │   │   ├── typescript/
 │   │   │   ├── __init__.py
+│   │   │   ├── core.py
 │   │   │   ├── enums.py
 │   │   │   ├── interfaces.py
 │   │   │   └── parsers.py
@@ -66,7 +76,7 @@ trading-platform/
 │   │   │   │   │   ├── __init__.py
 │   │   │   │   │   └── models.py
 │   │   │   │   ├── __init__.py
-│   │   │   │   └── registry.py
+│   │   │   │   └── manifest.py
 │   │   │   └── __init__.py
 │   │   └── __init__.py
 │   └── __init__.py
