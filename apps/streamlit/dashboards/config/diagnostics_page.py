@@ -30,11 +30,11 @@ def render_config_dashboard() -> None:
 
     status_code = diagnostics.pop("_http_status_code", 200)
 
-    if not isinstance(diagnostics.get("ready"), bool):
+    if not isinstance(diagnostics.get("is_consumable"), bool):
         banner_protocol_error(diagnostics=diagnostics)
         return
 
-    if not diagnostics.get("ready", False):
+    if not diagnostics.get("is_consumable", False):
         banner_non_ready_state(
             status_code=status_code,
             diagnostics=diagnostics,

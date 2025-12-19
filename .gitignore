@@ -3,7 +3,7 @@
 .vscode/
 
 # Generated artifacts (temporary, non-authoritative)
-.generated/
+#.generated/
 
 # Local observability artifacts (runtime logs & audit records).
 _logs/

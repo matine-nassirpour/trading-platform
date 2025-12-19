@@ -10,10 +10,10 @@ import streamlit as st
 
 
 def render_fsm_status_card(diagnostics: Mapping[str, Any]) -> None:
-    ready = diagnostics.get("ready", False)
+    ready = diagnostics.get("is_consumable", False)
     ready_state = diagnostics.get("ready_state") or {}
 
-    status = (ready_state.get("status", "READY" if ready else "ERROR")).upper()
+    status = (ready_state.get("fsm_status", "READY" if ready else "ERROR")).upper()
     fingerprint = diagnostics.get("fingerprint", "n/a")
     fsm_version = diagnostics.get("schema_version", "n/a")
 

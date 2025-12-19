@@ -3,8 +3,9 @@ from enum import Enum
 from types import UnionType
 from typing import Any, Union, get_args, get_origin
 
-from contracts.core.base import ContractModel
-from contracts.generators.naming import snake_to_lower_camel
+from contracts.core.model import ContractModel
+from contracts.core.types.json import JsonValue
+from contracts.generators.shared.naming import snake_to_lower_camel
 
 
 class TypeScriptGenerationError(RuntimeError):
@@ -38,6 +39,28 @@ def _strip_optional(tp: Any) -> Any:
     return args[0]
 
 
+def _map_optional(tp: Any) -> str | None:
+    if not _is_optional(tp):
+        return None
+
+    inner = _strip_optional(tp)
+
+    # Optional[JsonValue] is normalized to JsonValue
+    if inner is JsonValue:
+        return "JsonValue"
+
+    return f"{_map_type(inner)} | null"
+
+
+def _map_union_forbidden(tp: Any) -> None:
+    origin = get_origin(tp)
+    if origin is Union or origin is UnionType:
+        raise TypeScriptGenerationError(
+            f"Union types are forbidden in contracts "
+            f"(except Optional[T] and JsonValue), got {tp!r}"
+        )
+
+
 def _map_primitive(tp: Any) -> str | None:
     if tp is str:
         return "string"
@@ -68,30 +91,44 @@ def _map_collection(tp: Any) -> str | None:
     return None
 
 
+def _map_named_type(tp: Any) -> str | None:
+    # Enum → named TS union
+    if isinstance(tp, type) and issubclass(tp, Enum):
+        return tp.__name__
+
+    # Nested ContractModel
+    if isinstance(tp, type) and issubclass(tp, ContractModel):
+        return tp.__name__
+
+    return None
+
+
 def _map_type(tp: Any) -> str:
     """
     Map a Python type annotation to a strict TypeScript type.
     """
 
-    if _is_optional(tp):
-        return f"{_map_type(_strip_optional(tp))} | null"
+    if tp is JsonValue:
+        return "JsonValue"
+
+    optional = _map_optional(tp)
+    if optional is not None:
+        return optional
+
+    _map_union_forbidden(tp)
 
     primitive = _map_primitive(tp)
     if primitive is not None:
         return primitive
 
+    # list[...] / dict[...]
     collection = _map_collection(tp)
     if collection is not None:
         return collection
 
-    # Contractual Enum → string literal union
-    if isinstance(tp, type) and issubclass(tp, Enum):
-        values = [repr(member.value) for member in tp]
-        return " | ".join(values)
-
-    # Nested ContractModel
-    if isinstance(tp, type) and issubclass(tp, ContractModel):
-        return tp.__name__
+    named = _map_named_type(tp)
+    if named is not None:
+        return named
 
     # Fallback — forbidden implicit openness
     raise TypeScriptGenerationError(

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from enum import Enum
 
-from contracts.core.base import ContractModel
+from contracts.core.model import ContractModel
 
 
 class HealthStatus(str, Enum):

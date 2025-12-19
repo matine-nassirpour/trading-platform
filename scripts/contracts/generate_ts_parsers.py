@@ -6,12 +6,14 @@ from pathlib import Path
 from types import UnionType
 from typing import Any, Union, get_args, get_origin
 
-from contracts.admin_http.v2025_1.registry import CONTRACT_VERSION, MODELS
-from contracts.generators.typescript_parser import generate_ts_parser
+from contracts.generators.typescript.parsers import generate_ts_parser
+from contracts.surfaces.admin_http.v2025_1.manifest import CONTRACT_VERSION, MODELS
 
 OUTPUT_DIR = Path(".generated")
-OUTPUT_DIR.mkdir(exist_ok=True)
-OUTPUT_FILE = OUTPUT_DIR / f"contracts-admin-v{CONTRACT_VERSION}.parser.ts"
+SURFACE_DIR = OUTPUT_DIR / "admin_http"
+SURFACE_DIR.mkdir(parents=True, exist_ok=True)
+
+OUTPUT_FILE = SURFACE_DIR / f"contracts-v{CONTRACT_VERSION}.parser.ts"
 
 
 def _is_optional(tp: Any) -> bool:
@@ -56,8 +58,10 @@ def main() -> int:
     # Contract imports
     contract_names = ",\n  ".join(m.__name__ for m in MODELS)
     lines.append(
-        f"import {{\n  {contract_names}\n}} from './contracts-admin-v{CONTRACT_VERSION}';\n"
+        f"import {{\n  {contract_names}\n}} from './contracts-v{CONTRACT_VERSION}';\n"
     )
+
+    lines.append("import { JsonValue } from '../core/json-value';\n")
 
     # Enum imports
     if used_enums:
@@ -65,7 +69,7 @@ def main() -> int:
             e.__name__ for e in sorted(used_enums, key=lambda e: e.__name__)
         )
         lines.append(
-            f"import {{ {enum_names} }} from './contracts-admin-v{CONTRACT_VERSION}';\n"
+            f"import {{ {enum_names} }} from './contracts-v{CONTRACT_VERSION}';\n"
         )
 
     # --------------------------------------------------------------------------
@@ -161,12 +165,97 @@ function expectOptionalNumber(value: unknown, ctx: string): number | null {
 function expectArray<T>(
   value: unknown,
   ctx: string,
-  parseItem: (v: unknown) => T,
+  parseItem: (v: unknown, ctx: string) => T,
 ): ReadonlyArray<T> {
   if (!Array.isArray(value)) {
     throw new ContractParseError(`${ctx}: expected array`);
   }
-  return value.map(parseItem);
+
+  return value.map((v, i) => {
+    try {
+      return parseItem(v, `${ctx}[${i}]`);
+    } catch (e) {
+      if (e instanceof ContractParseError) {
+        throw e;
+      }
+      throw new ContractParseError(`${ctx}[${i}]: ${String(e)}`);
+    }
+  });
+}
+
+
+function expectArrayOfString(
+  value: unknown,
+  ctx: string,
+): ReadonlyArray<string> {
+  return expectArray(value, ctx, (v, itemCtx) => expectString(v, itemCtx));
+}
+
+function expectArrayOfNumber(
+  value: unknown,
+  ctx: string,
+): ReadonlyArray<number> {
+  return expectArray(value, ctx, (v, itemCtx) => expectNumber(v, itemCtx));
+}
+
+function expectArrayOfBoolean(
+  value: unknown,
+  ctx: string,
+): ReadonlyArray<boolean> {
+  return expectArray(value, ctx, (v, itemCtx) => expectBoolean(v, itemCtx));
+}
+
+function expectArrayOfEnum<T extends string>(
+  value: unknown,
+  ctx: string,
+  guard: (v: unknown, ctx: string) => T,
+): ReadonlyArray<T> {
+  return expectArray(value, ctx, (v, itemCtx) => guard(v, itemCtx));
+}
+
+function parseJsonValue(value: unknown, ctx: string): JsonValue {
+  if (
+    value === null ||
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean'
+  ) {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((v, i) =>
+      parseJsonValue(v, `${ctx}[${i}]`)
+    );
+  }
+
+  if (typeof value === 'object') {
+    const o = value as Record<string, unknown>;
+    const result: Record<string, JsonValue> = {};
+    for (const [k, v] of Object.entries(o)) {
+      result[k] = parseJsonValue(v, `${ctx}.${k}`);
+    }
+    return result;
+  }
+
+  throw new ContractParseError(`${ctx}: invalid JsonValue`);
+}
+
+function parseJsonObject(
+  value: unknown,
+  ctx: string,
+): Readonly<Record<string, JsonValue>> {
+  const parsed = parseJsonValue(value, ctx);
+
+  if (
+    parsed === null ||
+    typeof parsed !== 'object' ||
+    Array.isArray(parsed)
+  ) {
+    throw new ContractParseError(`${ctx}: expected JSON object`);
+  }
+
+  return parsed as Readonly<Record<string, JsonValue>>;
 }
 """)
 

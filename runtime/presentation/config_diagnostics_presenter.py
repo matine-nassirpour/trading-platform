@@ -26,7 +26,7 @@ class ConfigDiagnosticsPresenter:
 
         return {
             "schema_version": snapshot.schema_version,
-            "ready": snapshot.is_consumable,
+            "is_consumable": snapshot.is_consumable,
             "fingerprint": snapshot.fingerprint,
             "ready_state": safe_expose(snapshot.ready_state),
             "loader_snapshot": safe_expose(snapshot.loader_snapshot),

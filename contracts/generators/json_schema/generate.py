@@ -3,7 +3,8 @@ from enum import Enum
 from types import UnionType
 from typing import Any, Union, get_args, get_origin
 
-from contracts.core.base import ContractModel
+from contracts.core.model import ContractModel
+from contracts.core.types.json import JsonValue
 
 
 def _strip_optional(tp: Any) -> Any:
@@ -14,8 +15,16 @@ def _strip_optional(tp: Any) -> Any:
 
 
 def _is_optional(tp: Any) -> bool:
+    # JsonValue is a special recursive union, not an Optional
+    if tp is JsonValue:
+        return False
+
     origin = get_origin(tp)
-    return (origin is Union or origin is UnionType) and type(None) in get_args(tp)
+    return (
+        (origin is Union or origin is UnionType)
+        and type(None) in get_args(tp)
+        and len(get_args(tp)) == 2
+    )
 
 
 def _schema_for_optional(tp: Any, defs: dict[str, Any]) -> dict[str, Any] | None:
@@ -50,12 +59,22 @@ def _schema_for_primitive(tp: Any) -> dict[str, Any] | None:
 
 
 def _schema_for_enum(tp: Any) -> dict[str, Any] | None:
-    if isinstance(tp, type) and issubclass(tp, Enum):
-        return {
-            "type": "string",
-            "enum": [m.value for m in tp],
-        }
-    return None
+    if not (isinstance(tp, type) and issubclass(tp, Enum)):
+        return None
+
+    values = [member.value for member in tp]
+    if not values:
+        raise TypeError(f"Enum {tp.__name__} has no values")
+
+    if not all(isinstance(v, str) for v in values):
+        raise TypeError(
+            f"Invalid contract enum {tp.__name__}: all enum values must be strings"
+        )
+
+    return {
+        "type": "string",
+        "enum": values,
+    }
 
 
 def _schema_for_list(tp: Any, defs: dict[str, Any]) -> dict[str, Any] | None:
@@ -73,6 +92,7 @@ def _schema_for_dict(tp: Any, defs: dict[str, Any]) -> dict[str, Any] | None:
         key, value = get_args(tp)
         if key is not str:
             raise TypeError("Only dict[str, T] is allowed in contracts")
+
         return {
             "type": "object",
             "additionalProperties": _schema_for_type(value, defs),
@@ -88,6 +108,8 @@ def _schema_for_contract(
         return None
 
     name = tp.__name__
+
+    # Already defined → reference
     if name in defs:
         return {"$ref": f"#/$defs/{name}"}
 
@@ -109,9 +131,43 @@ def _schema_for_contract(
     return {"$ref": f"#/$defs/{name}"}
 
 
+def _schema_for_json_value(tp: Any, defs: dict[str, Any]) -> dict[str, Any] | None:
+    if tp is not JsonValue:
+        return None
+
+    return {
+        "anyOf": [
+            {"type": "null"},
+            {"type": "boolean"},
+            {"type": "number"},
+            {"type": "string"},
+            {
+                "type": "array",
+                "items": {"$ref": "#/$defs/JsonValue"},
+            },
+            {
+                "type": "object",
+                "additionalProperties": {"$ref": "#/$defs/JsonValue"},
+            },
+        ]
+    }
+
+
+def _schema_for_forbidden_union(tp: Any) -> dict[str, Any] | None:
+    origin = get_origin(tp)
+    if origin is Union or origin is UnionType:
+        raise TypeError(
+            f"Union types are forbidden in contracts "
+            f"(except Optional[T] and JsonValue), got {tp!r}"
+        )
+    return None
+
+
 def _schema_for_type(tp: Any, defs: dict[str, Any]) -> dict[str, Any]:
     for handler in (
         _schema_for_optional,
+        _schema_for_json_value,
+        _schema_for_forbidden_union,
         _schema_for_any,
         _schema_for_primitive,
         _schema_for_enum,
@@ -124,6 +180,7 @@ def _schema_for_type(tp: Any, defs: dict[str, Any]) -> dict[str, Any]:
             if handler
             in (
                 _schema_for_optional,
+                _schema_for_json_value,
                 _schema_for_list,
                 _schema_for_dict,
                 _schema_for_contract,
@@ -141,6 +198,10 @@ def generate_json_schema(model: type[ContractModel]) -> dict[str, Any]:
         raise TypeError("Contract must be a dataclass")
 
     defs: dict[str, Any] = {}
+
+    # Pre-register JsonValue for recursive references
+    defs["JsonValue"] = _schema_for_json_value(JsonValue, defs)
+
     root = _schema_for_contract(model, defs)
 
     return {

@@ -4,9 +4,8 @@ from dataclasses import dataclass, fields
 from enum import Enum
 from typing import Any
 
-
-class ContractViolation(RuntimeError):
-    """Raised when an object violates its declared contract."""
+from contracts.core.validation import validate_contract
+from contracts.core.wire_format import assert_snake_case
 
 
 def _serialize(value: Any) -> Any:
@@ -23,7 +22,7 @@ def _serialize(value: Any) -> Any:
         return [_serialize(v) for v in value]
 
     if isinstance(value, dict):
-        return {str(k): _serialize(v) for k, v in value.items()}
+        return {k: _serialize(v) for k, v in value.items()}
 
     return value
 
@@ -37,11 +36,17 @@ class ContractModel:
     - immutability
     - explicit fields
     - deterministic serialization
+    - strict snake_case wire format
+    - runtime contract validation
     """
+
+    def __post_init__(self) -> None:
+        validate_contract(self)
 
     def to_dict(self) -> dict[str, Any]:
         result: dict[str, Any] = {}
         for f in fields(self):
+            assert_snake_case(f.name)
             value = getattr(self, f.name)
             result[f.name] = _serialize(value)
         return result
