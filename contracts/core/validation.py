@@ -5,6 +5,8 @@ from enum import Enum
 from types import UnionType
 from typing import Any, Union, get_args, get_origin
 
+from contracts.core.types.json import JsonValue
+
 STRICT_CONTRACT_MODE = True
 _ENUM_STRING_CACHE: dict[type[Enum], bool] = {}
 
@@ -16,6 +18,11 @@ class ContractViolation(RuntimeError):
 def _is_optional(tp: Any) -> bool:
     origin = get_origin(tp)
     return (origin is Union or origin is UnionType) and type(None) in get_args(tp)
+
+
+def _is_union(tp: Any) -> bool:
+    origin = get_origin(tp)
+    return origin is Union or origin is UnionType
 
 
 def _strip_optional(tp: Any) -> Any:
@@ -130,6 +137,65 @@ def _validate_dict(value: Any, expected_type: Any, path: str) -> bool:
     return True
 
 
+def _validate_json_value_recursive(value: Any, path: str) -> None:
+    if value is None:
+        return
+
+    if isinstance(value, (str, int, float, bool)):
+        return
+
+    if isinstance(value, list):
+        for idx, item in enumerate(value):
+            _validate_json_value_recursive(item, f"{path}[{idx}]")
+        return
+
+    if isinstance(value, dict):
+        for k, v in value.items():
+            if not isinstance(k, str):
+                raise ContractViolation(f"{path}: JsonObject keys must be strings")
+            _validate_json_value_recursive(v, f"{path}.{k}")
+        return
+
+    raise ContractViolation(f"{path}: invalid JsonValue ({type(value).__name__})")
+
+
+def _validate_json_value(value: Any, expected_type: Any, path: str) -> bool:
+    if expected_type is not JsonValue:
+        return False
+
+    _validate_json_value_recursive(value, path)
+    return True
+
+
+def _validate_union(value: Any, expected_type: Any, path: str) -> bool:
+    """
+    Validate Union types.
+
+    Allowed unions:
+    - Optional[T]  (Union[T, None])
+    - JsonValue    (handled elsewhere)
+    """
+
+    if not _is_union(expected_type):
+        return False
+
+    args = get_args(expected_type)
+
+    # Case 1 — Optional[T] → already handled upstream
+    if type(None) in args:
+        return False  # let Optional logic handle it
+
+    # Case 2 — JsonValue → handled by JsonValue validator
+    if expected_type is JsonValue:
+        return False
+
+    # Otherwise: forbidden
+    raise ContractViolation(
+        f"{path}: Union types are forbidden in contracts "
+        f"(except Optional[T] and JsonValue), got {expected_type!r}"
+    )
+
+
 def _validate_value(value: Any, expected_type: Any, path: str) -> None:
     if expected_type is Any:
         if STRICT_CONTRACT_MODE:
@@ -149,6 +215,8 @@ def _validate_value(value: Any, expected_type: Any, path: str) -> None:
         _validate_contract_model,
         _validate_list,
         _validate_dict,
+        _validate_json_value,
+        _validate_union,
     )
 
     for validator in validators:

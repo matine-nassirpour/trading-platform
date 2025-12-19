@@ -4,6 +4,7 @@ from types import UnionType
 from typing import Any, Union, get_args, get_origin
 
 from contracts.core.model import ContractModel
+from contracts.core.types.json import JsonValue
 
 
 def _strip_optional(tp: Any) -> Any:
@@ -121,9 +122,43 @@ def _schema_for_contract(
     return {"$ref": f"#/$defs/{name}"}
 
 
+def _schema_for_json_value(tp: Any, defs: dict[str, Any]) -> dict[str, Any] | None:
+    if tp is not JsonValue:
+        return None
+
+    return {
+        "anyOf": [
+            {"type": "null"},
+            {"type": "boolean"},
+            {"type": "number"},
+            {"type": "string"},
+            {
+                "type": "array",
+                "items": {"$ref": "#/definitions/JsonValue"},
+            },
+            {
+                "type": "object",
+                "additionalProperties": {"$ref": "#/definitions/JsonValue"},
+            },
+        ]
+    }
+
+
+def _schema_for_forbidden_union(tp: Any) -> dict[str, Any] | None:
+    origin = get_origin(tp)
+    if origin is Union or origin is UnionType:
+        raise TypeError(
+            f"Union types are forbidden in contracts "
+            f"(except Optional[T] and JsonValue), got {tp!r}"
+        )
+    return None
+
+
 def _schema_for_type(tp: Any, defs: dict[str, Any]) -> dict[str, Any]:
     for handler in (
         _schema_for_optional,
+        _schema_for_json_value,
+        _schema_for_forbidden_union,
         _schema_for_any,
         _schema_for_primitive,
         _schema_for_enum,
@@ -153,6 +188,7 @@ def generate_json_schema(model: type[ContractModel]) -> dict[str, Any]:
         raise TypeError("Contract must be a dataclass")
 
     defs: dict[str, Any] = {}
+    defs["JsonValue"] = _schema_for_json_value(JsonValue, defs)
     root = _schema_for_contract(model, defs)
 
     return {

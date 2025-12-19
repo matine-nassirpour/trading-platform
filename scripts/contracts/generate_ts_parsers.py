@@ -208,6 +208,34 @@ function expectArrayOfEnum<T extends string>(
 ): ReadonlyArray<T> {
   return expectArray(value, ctx, (v, itemCtx) => guard(v, itemCtx));
 }
+
+function parseJsonValue(value: unknown, ctx: string): JsonValue {
+  if (
+    value === null ||
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean'
+  ) {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((v, i) =>
+      parseJsonValue(v, `${ctx}[${i}]`)
+    );
+  }
+
+  if (typeof value === 'object') {
+    const o = value as Record<string, unknown>;
+    const result: Record<string, JsonValue> = {};
+    for (const [k, v] of Object.entries(o)) {
+      result[k] = parseJsonValue(v, `${ctx}.${k}`);
+    }
+    return result;
+  }
+
+  throw new ContractParseError(`${ctx}: invalid JsonValue`);
+}
 """)
 
     if needs_optional_string:

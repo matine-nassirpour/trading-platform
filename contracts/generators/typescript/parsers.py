@@ -4,6 +4,7 @@ from types import UnionType
 from typing import Any, Union, get_args, get_origin
 
 from contracts.core.model import ContractModel
+from contracts.core.types.json import JsonValue
 from contracts.generators.shared.naming import snake_to_lower_camel
 
 
@@ -164,6 +165,22 @@ def _ts_expr_for_field(snake: str, tp: Any) -> str:
     optional = _is_optional(tp)
     if optional:
         tp = _strip_optional(tp)
+
+    if tp is JsonValue:
+        if optional:
+            return (
+                f"o['{snake}'] === null || o['{snake}'] === undefined "
+                f"? null "
+                f": parseJsonValue(o['{snake}'], '{snake}')"
+            )
+        return f"parseJsonValue(o['{snake}'], '{snake}')"
+
+    origin = get_origin(tp)
+    if origin is Union or origin is UnionType:
+        raise TypeScriptParserGenerationError(
+            f"Union types are forbidden in contracts "
+            f"(except Optional[T] and JsonValue), got {tp!r}"
+        )
 
     for handler in (
         _ts_expr_for_primitive,

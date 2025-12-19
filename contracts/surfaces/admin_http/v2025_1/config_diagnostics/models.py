@@ -1,7 +1,7 @@
 from dataclasses import dataclass
-from typing import Any
 
 from contracts.core.model import ContractModel
+from contracts.core.types.json import JsonValue
 
 
 @dataclass(frozen=True)
@@ -17,8 +17,8 @@ class ConfigReadyStateSnapshot(ContractModel):
 
     fsm_status: str
     env: dict[str, str] | None
-    settings: dict[str, Any] | None
-    metadata: dict[str, Any]
+    settings: dict[str, JsonValue] | None
+    metadata: dict[str, JsonValue]
 
 
 @dataclass(frozen=True)
@@ -34,7 +34,7 @@ class ConfigDiagnosticsResponse(ContractModel):
     is_consumable: bool
     fingerprint: str | None
     ready_state: ConfigReadyStateSnapshot | None
-    loader_snapshot: dict[str, Any] | None
+    loader_snapshot: dict[str, JsonValue] | None
     reserved_env_keys: dict[str, str | None]
     cache_matches_params: bool | None
     has_valid_cache: bool | None

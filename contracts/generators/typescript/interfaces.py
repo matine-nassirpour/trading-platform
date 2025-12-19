@@ -4,6 +4,7 @@ from types import UnionType
 from typing import Any, Union, get_args, get_origin
 
 from contracts.core.model import ContractModel
+from contracts.core.types.json import JsonValue
 from contracts.generators.shared.naming import snake_to_lower_camel
 
 
@@ -73,18 +74,30 @@ def _map_type(tp: Any) -> str:
     Map a Python type annotation to a strict TypeScript type.
     """
 
+    # Optional[T] → T | null
     if _is_optional(tp):
         return f"{_map_type(_strip_optional(tp))} | null"
+
+    origin = get_origin(tp)
+    if origin is Union or origin is UnionType:
+        raise TypeScriptGenerationError(
+            f"Union types are forbidden in contracts "
+            f"(except Optional[T] and JsonValue), got {tp!r}"
+        )
 
     primitive = _map_primitive(tp)
     if primitive is not None:
         return primitive
 
+    # list[...] / dict[...]
     collection = _map_collection(tp)
     if collection is not None:
         return collection
 
-    # Contractual Enum → named TypeScript type
+    if tp is JsonValue:
+        return "JsonValue"
+
+    # Enum → named TS union
     if isinstance(tp, type) and issubclass(tp, Enum):
         return tp.__name__
 

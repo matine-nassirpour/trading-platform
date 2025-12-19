@@ -1,7 +1,7 @@
 from dataclasses import dataclass
-from typing import Any
 
 from contracts.core.model import ContractModel
+from contracts.core.types.json import JsonValue
 
 
 @dataclass(frozen=True)
@@ -14,4 +14,4 @@ class ObservabilityDiagnosticsResponse(ContractModel):
     metrics_http_ok: bool
     run_id: str | None
     correlation_id: str | None
-    diagnostics: dict[str, Any]
+    diagnostics: dict[str, JsonValue]
