@@ -1,9 +1,7 @@
 from __future__ import annotations
 
+from contracts.core.version.model import ApiVersionDescriptor
 from contracts.core.version.versioning import ContractVersion
-from contracts.surfaces.admin_http.v2025_1.runtime_metadata.models import (
-    ApiVersionDescriptor,
-)
 
 
 def contract_version_to_api_descriptor(
@@ -26,7 +24,6 @@ def api_descriptor_to_contract_version(
 ) -> ContractVersion:
     """
     Convert a wire-level ApiVersionDescriptor back to a ContractVersion.
-    This function exists mainly for validation, tooling and tests.
     """
     if not isinstance(descriptor, ApiVersionDescriptor):
         raise TypeError("descriptor must be an ApiVersionDescriptor")

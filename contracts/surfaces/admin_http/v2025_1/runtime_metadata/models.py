@@ -3,9 +3,6 @@ from enum import Enum
 
 from contracts.core.model import ContractModel
 from contracts.core.version.model import ApiVersionDescriptor
-from contracts.core.version.versioning import ContractVersion
-
-VERSION = ContractVersion(2025, 1)
 
 
 class SystemStatus(str, Enum):

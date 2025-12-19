@@ -56,28 +56,31 @@ def _validate_enum(value: Any, expected_type: Any, path: str) -> bool:
     if not (isinstance(expected_type, type) and issubclass(expected_type, Enum)):
         return False
 
+    # Enforce string-based enums globally
+    for member in expected_type:
+        if not isinstance(member.value, str):
+            raise ContractViolation(
+                f"{path}: enum {expected_type.__name__} is invalid — "
+                f"all enum values must be strings"
+            )
+
     if not isinstance(value, expected_type):
         raise ContractViolation(
             f"{path}: expected enum {expected_type.__name__}, got {value!r}"
         )
+
     return True
 
 
-def _safe_isinstance(value: Any, tp: Any) -> bool:
-    if not isinstance(tp, type):
-        return False
-    if getattr(tp, "_is_protocol", False):
-        raise ContractViolation(
-            f"Protocol {tp.__name__} cannot be used for runtime validation"
-        )
-    return isinstance(value, tp)
+def _validate_contract_model(value: Any, expected_type: Any, path: str) -> bool:
+    from contracts.core.model import ContractModel
 
-
-def _validate_dataclass(value: Any, expected_type: Any, path: str) -> bool:
-    if not (isinstance(expected_type, type) and is_dataclass(expected_type)):
+    if not (
+        isinstance(expected_type, type) and issubclass(expected_type, ContractModel)
+    ):
         return False
 
-    if not _safe_isinstance(value, expected_type):
+    if not isinstance(value, expected_type):
         raise ContractViolation(
             f"{path}: expected {expected_type.__name__}, got {type(value).__name__}"
         )
@@ -121,6 +124,10 @@ def _validate_dict(value: Any, expected_type: Any, path: str) -> bool:
 
 
 def _validate_value(value: Any, expected_type: Any, path: str) -> None:
+    # Any means fully opaque — including None
+    if expected_type is Any:
+        return
+
     if _is_optional(expected_type):
         _validate_optional(value, expected_type, path)
         return
@@ -131,7 +138,7 @@ def _validate_value(value: Any, expected_type: Any, path: str) -> None:
     validators = (
         _validate_primitive,
         _validate_enum,
-        _validate_dataclass,
+        _validate_contract_model,
         _validate_list,
         _validate_dict,
     )
@@ -139,9 +146,6 @@ def _validate_value(value: Any, expected_type: Any, path: str) -> None:
     for validator in validators:
         if validator(value, expected_type, path):
             return
-
-    if expected_type is Any:
-        return
 
     raise ContractViolation(f"{path}: unsupported contract type {expected_type!r}")
 
