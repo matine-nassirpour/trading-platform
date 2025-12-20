@@ -6,7 +6,7 @@
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
-import { JsonValue } from '../core/json-value';
+import { JsonValue } from '../../shared/json-value.contract';
 
 export type SystemStatus = 'UP' | 'DEGRADED' | 'DOWN';
 

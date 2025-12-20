@@ -15,11 +15,11 @@ import {
   ConfigReadyStateSnapshot,
   ConfigDiagnosticsResponse,
   ObservabilityDiagnosticsResponse
-} from './contracts-v2025.1';
+} from './admin-http.contract';
 
-import { JsonValue } from '../core/json-value';
+import { JsonValue } from '../../shared/json-value.contract';
 
-import { HealthStatus, SystemStatus } from './contracts-v2025.1';
+import { HealthStatus, SystemStatus } from './admin-http.contract';
 
 
 export class ContractParseError extends Error {

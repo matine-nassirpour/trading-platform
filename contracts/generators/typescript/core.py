@@ -55,10 +55,10 @@ def generate_ts_json_value(output_dir: Path) -> Path:
     - shared across all contract surfaces
     - generated exactly once
     """
-    core_dir = output_dir / "core"
+    core_dir = output_dir / "shared"
     core_dir.mkdir(parents=True, exist_ok=True)
 
-    output_file = core_dir / "json-value.ts"
+    output_file = core_dir / "json-value.contract.ts"
     output_file.write_text(
         HEADER + "\n" + JSON_VALUE_TS,
         encoding="utf-8",
