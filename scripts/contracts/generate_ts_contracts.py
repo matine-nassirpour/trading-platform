@@ -17,7 +17,7 @@ from contracts.surfaces.admin_http.v2025_1.manifest import (
 )
 
 OUTPUT_DIR = Path(".generated")
-SURFACE_DIR = OUTPUT_DIR / "admin-http" / f"v{CONTRACT_VERSION}"
+SURFACE_DIR = OUTPUT_DIR / "control-plane-http" / f"v{CONTRACT_VERSION}"
 SURFACE_DIR.mkdir(parents=True, exist_ok=True)
 
 OUTPUT_FILE = SURFACE_DIR / "admin-http.contract.ts"
