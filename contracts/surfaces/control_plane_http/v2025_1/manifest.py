@@ -6,25 +6,25 @@ from typing import Final
 from contracts.core.model import ContractModel
 from contracts.core.version.model import ApiVersionDescriptor
 from contracts.core.version.versioning import ContractVersion
-from contracts.surfaces.admin_http.v2025_1.config_diagnostics.models import (
+from contracts.surfaces.control_plane_http.v2025_1.config_diagnostics.models import (
     ConfigDiagnosticsResponse,
     ConfigReadyStateSnapshot,
 )
-from contracts.surfaces.admin_http.v2025_1.health.models import (
+from contracts.surfaces.control_plane_http.v2025_1.health.models import (
     HealthResponse,
     HealthStatus,
 )
-from contracts.surfaces.admin_http.v2025_1.observability_diagnostics.models import (
+from contracts.surfaces.control_plane_http.v2025_1.observability_diagnostics.models import (
     ObservabilityDiagnosticsResponse,
 )
-from contracts.surfaces.admin_http.v2025_1.runtime_metadata.models import (
+from contracts.surfaces.control_plane_http.v2025_1.runtime_metadata.models import (
     AdminEndpoints,
     AdminHttpDescriptor,
     RuntimeMetadataResponse,
     SystemStatus,
 )
 
-SURFACE_NAME: Final[str] = "admin_http"
+SURFACE_NAME: Final[str] = "control_plane_http"
 
 CONTRACT_VERSION: Final[ContractVersion] = ContractVersion(
     year=2025,

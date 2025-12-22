@@ -7,4 +7,4 @@ exposed by the runtime control-plane.
 Any backward-incompatible change MUST bump this version.
 """
 
-ADMIN_HTTP_API_VERSION: str = "2025.1"
+CONTROL_PLANE_HTTP_API_VERSION: str = "2025.1"

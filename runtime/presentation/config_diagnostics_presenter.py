@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from runtime.admin.diagnostics.config import ConfigDiagnosticsSnapshot
+from runtime.control_plane.diagnostics.config import ConfigDiagnosticsSnapshot
 from runtime.presentation.safety import safe_expose
 
 

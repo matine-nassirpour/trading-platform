@@ -1,5 +1,5 @@
 """
-Streamlit-side client for discovering the Quantum Runtime admin HTTP entrypoints.
+Streamlit-side client for discovering the Quantum Runtime control_plane HTTP entrypoints.
 
 Improvements (industry-grade):
 - Stable Requests session (connection pooling, performance, reliability)
@@ -55,7 +55,7 @@ def _validate_metadata_payload(
 
     Expected structure:
         {
-            "admin_http": {
+            "control_plane_http": {
                 "base_url": str,
                 "endpoints": { str: str, ... }
             }
@@ -64,7 +64,7 @@ def _validate_metadata_payload(
     if not isinstance(payload, dict):
         return None
 
-    admin_http = payload.get("admin_http")
+    admin_http = payload.get("control_plane_http")
     if not isinstance(admin_http, dict):
         return None
 
@@ -107,14 +107,14 @@ def _build_default_discovery_url() -> str:
 @dataclass(frozen=True)
 class AdminHTTPConfig:
     """
-    Runtime-discovered view of the admin HTTP control-plane.
+    Runtime-discovered view of the control_plane HTTP control-plane.
 
     Fields:
         enabled:
             True  -> metadata successfully discovered and base_url available
-            False -> admin HTTP not reachable (runtime down, disabled, or misconfigured)
+            False -> control_plane HTTP not reachable (runtime down, disabled, or misconfigured)
         base_url:
-            The effective admin HTTP base URL (e.g. "http://127.0.0.1:8765" or
+            The effective control_plane HTTP base URL (e.g. "http://127.0.0.1:8765" or
             "https://example.com/admin"). None if disabled/unreachable.
         endpoints:
             Mapping of logical endpoint names to fully-qualified URLs.
@@ -131,7 +131,7 @@ class AdminHTTPConfig:
 @lru_cache(maxsize=1)
 def get_admin_http_config() -> AdminHTTPConfig:
     """
-    Discover the Runtime admin HTTP configuration via the `/runtime-metadata` endpoint.
+    Discover the Runtime control_plane HTTP configuration via the `/runtime-metadata` endpoint.
 
     Discovery strategy:
         1. Use QUANTUM_ADMIN_HTTP_DISCOVERY_URL if set (highest priority).

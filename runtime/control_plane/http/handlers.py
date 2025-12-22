@@ -1,16 +1,18 @@
 from aiohttp import web
-from runtime.admin.auth.models import AdminScope
-from runtime.admin.contracts.system_status import SystemStatus
-from runtime.admin.contracts.version import ADMIN_HTTP_API_VERSION
-from runtime.admin.diagnostics.config import ConfigDiagnosticsProvider
-from runtime.admin.diagnostics.health import HealthProvider
-from runtime.admin.diagnostics.observability import ObservabilityDiagnosticsProvider
-from runtime.admin.http.auth_middleware import require_admin_scope
-from runtime.admin.http.http_forwarding import (
+from runtime.contracts.canonical_json import canonical_json
+from runtime.control_plane.auth.models import AdminScope
+from runtime.control_plane.contracts.system_status import SystemStatus
+from runtime.control_plane.contracts.version import CONTROL_PLANE_HTTP_API_VERSION
+from runtime.control_plane.diagnostics.config import ConfigDiagnosticsProvider
+from runtime.control_plane.diagnostics.health import HealthProvider
+from runtime.control_plane.diagnostics.observability import (
+    ObservabilityDiagnosticsProvider,
+)
+from runtime.control_plane.http.auth_middleware import require_admin_scope
+from runtime.control_plane.http.http_forwarding import (
     TrustedProxyPolicy,
     resolve_admin_http_request_identity,
 )
-from runtime.contracts.canonical_json import canonical_json
 from runtime.lifecycle.system_status_projection import system_status_from_runtime_state
 from runtime.presentation.config_diagnostics_presenter import ConfigDiagnosticsPresenter
 from runtime.presentation.observability_diagnostics_presenter import (
@@ -39,7 +41,7 @@ def _response(payload: dict, status: int = 200) -> web.Response:
 
 def _build_admin_base_url(request: web.Request) -> str:
     """
-    Build the effective admin base URL as seen by the client.
+    Build the effective control_plane base URL as seen by the client.
 
     Proxy-aware, deterministic, and secure.
     """
@@ -77,8 +79,8 @@ async def get_admin_runtime_metadata(request: web.Request) -> web.Response:
     Expose minimal runtime metadata for external clients (e.g. Streamlit UI).
 
     This endpoint is the *single source of truth* for:
-        - The effective admin HTTP base URL
-        - The well-known admin endpoints
+        - The effective control_plane HTTP base URL
+        - The well-known control_plane endpoints
 
     No configuration models are exposed here.
     """
@@ -91,8 +93,8 @@ async def get_admin_runtime_metadata(request: web.Request) -> web.Response:
 
     payload = {
         "status": system_status.value,
-        "api_version": ADMIN_HTTP_API_VERSION,
-        "admin_http": {
+        "api_version": CONTROL_PLANE_HTTP_API_VERSION,
+        "control_plane_http": {
             "base_url": base_url,
             "endpoints": {
                 "health": f"{base_url}/healthz",

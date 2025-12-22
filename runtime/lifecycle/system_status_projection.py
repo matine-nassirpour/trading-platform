@@ -1,4 +1,4 @@
-from runtime.admin.contracts.system_status import SystemStatus
+from runtime.control_plane.contracts.system_status import SystemStatus
 from runtime.lifecycle.state_machine import RuntimeState
 
 

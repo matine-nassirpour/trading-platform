@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from runtime.admin.http.server import (
+from runtime.bootstrap.runtime_context import RuntimeContext
+from runtime.control_plane.http.server import (
     AdminHttpControlPlaneServer,
     NullAdminControlPlaneServer,
 )
-from runtime.bootstrap.runtime_context import RuntimeContext
 from runtime.lifecycle.engine import RuntimeLifecycleEngine
 
 from quantum.application.ports.inbound.application_runtime_port import (
@@ -45,7 +45,7 @@ def assemble_runtime(runtime: RuntimeContext) -> AssembledRuntime:
     Responsibilities:
         - Instantiate infrastructure adapters required at runtime
         - Instantiate the application orchestrator
-        - Instantiate the secured admin HTTP control-plane (or a null implementation)
+        - Instantiate the secured control_plane HTTP control-plane (or a null implementation)
         - Inject all dependencies into the RuntimeEngine
 
     Architectural Notes:

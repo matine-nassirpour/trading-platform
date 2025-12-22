@@ -4,8 +4,8 @@ import hmac
 
 from typing import Final
 
-from runtime.admin.auth.auth_port import AdminControlPlaneAuthPort
-from runtime.admin.auth.models import AdminPrincipal, AdminScope
+from runtime.control_plane.auth.auth_port import AdminControlPlaneAuthPort
+from runtime.control_plane.auth.models import AdminPrincipal, AdminScope
 
 
 class AdminControlPlaneBearerTokenAuth(AdminControlPlaneAuthPort):
@@ -21,7 +21,7 @@ class AdminControlPlaneBearerTokenAuth(AdminControlPlaneAuthPort):
         self,
         *,
         token: str,
-        token_id: str = "admin",
+        token_id: str = "control_plane",
         scopes: frozenset[AdminScope],
     ) -> None:
         self._token: Final = token

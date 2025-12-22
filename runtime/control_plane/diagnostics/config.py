@@ -14,7 +14,7 @@ class ConfigDiagnosticsSnapshot:
     Immutable, canonical snapshot of the configuration subsystem state.
 
     Contract:
-    - Safe for external exposure (dashboards, admin APIs).
+    - Safe for external exposure (dashboards, control_plane APIs).
     - NEVER raises during construction.
     - Missing or unavailable data is represented explicitly.
     """

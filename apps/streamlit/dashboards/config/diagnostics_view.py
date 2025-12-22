@@ -136,7 +136,7 @@ def render_environment(env: Mapping[str, Any], metadata: Mapping[str, Any]) -> N
 # ╰────────────────────────────────────────────────────────────────────────────╯
 def banner_connectivity_error() -> None:
     """
-    Render the banner for the case where the admin HTTP is not reachable
+    Render the banner for the case where the control_plane HTTP is not reachable
     or the `/config-diagnostics` endpoint could not be queried successfully.
     """
     st.error(textwrap.dedent("""
@@ -145,12 +145,12 @@ def banner_connectivity_error() -> None:
             The Quantum Runtime may be:
             - down,
             - unreachable from this environment,
-            - or the admin HTTP control-plane may be disabled.
+            - or the control_plane HTTP control-plane may be disabled.
 
             Please verify:
             - the Runtime process status,
             - network connectivity between Streamlit and the Runtime,
-            - admin HTTP configuration (host, port, discovery URL).
+            - control_plane HTTP configuration (host, port, discovery URL).
             """))
 
 

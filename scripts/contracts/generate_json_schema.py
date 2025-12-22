@@ -7,9 +7,12 @@ from pathlib import Path
 
 from contracts.core.model import ContractModel
 from contracts.generators.json_schema.generate import generate_json_schema
-from contracts.surfaces.admin_http.v2025_1.manifest import CONTRACT_VERSION, MODELS
+from contracts.surfaces.control_plane_http.v2025_1.manifest import (
+    CONTRACT_VERSION,
+    MODELS,
+)
 
-OUTPUT_DIR = Path(f"docs/api/admin_http/v{CONTRACT_VERSION}")
+OUTPUT_DIR = Path(f"docs/api/control_plane_http/v{CONTRACT_VERSION}")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 

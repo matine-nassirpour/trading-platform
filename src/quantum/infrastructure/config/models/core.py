@@ -58,7 +58,7 @@ class CoreSettings(BaseConfigSettings, PublicSettingsMixin):
         description=(
             "List of trusted reverse proxy IPs or CIDR blocks. "
             "Only requests originating from these addresses may supply "
-            "Forwarded / X-Forwarded-* headers for admin HTTP URL resolution."
+            "Forwarded / X-Forwarded-* headers for control plane HTTP URL resolution."
         ),
     )
 

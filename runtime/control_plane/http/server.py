@@ -3,15 +3,19 @@ import logging
 from collections.abc import Iterable
 
 from aiohttp import web
-from runtime.admin.auth.bearer_auth import AdminControlPlaneBearerTokenAuth
-from runtime.admin.auth.models import AdminScope
-from runtime.admin.http.auth_middleware import admin_control_plane_auth_middleware
-from runtime.admin.http.cors_middleware import admin_control_plane_cors_middleware
-from runtime.admin.http.http_forwarding import TrustedProxyPolicy
-from runtime.admin.http.routing import define_admin_http_routes
+from runtime.control_plane.auth.bearer_auth import AdminControlPlaneBearerTokenAuth
+from runtime.control_plane.auth.models import AdminScope
+from runtime.control_plane.http.auth_middleware import (
+    admin_control_plane_auth_middleware,
+)
+from runtime.control_plane.http.cors_middleware import (
+    admin_control_plane_cors_middleware,
+)
+from runtime.control_plane.http.http_forwarding import TrustedProxyPolicy
+from runtime.control_plane.http.routing import define_admin_http_routes
 from runtime.lifecycle.runtime_state_port import RuntimeStatePort
 
-LOGGER = logging.getLogger("quantum.runtime.control_plane.admin_http.server")
+LOGGER = logging.getLogger("quantum.runtime.control_plane.http.server")
 
 
 def _normalize_base_path(base_path: str) -> str:
@@ -49,7 +53,7 @@ def _build_admin_http_app(
     runtime_engine: RuntimeStatePort,
 ) -> web.Application:
     """
-    Build the secured admin HTTP application.
+    Build the secured control_plane HTTP application.
 
     Responsibilities:
         - Install authentication middleware
@@ -73,7 +77,7 @@ def _build_admin_http_app(
     app["admin_base_path"] = base_path
     app["admin_auth"] = AdminControlPlaneBearerTokenAuth(
         token=auth_token,
-        token_id="admin",
+        token_id="control_plane",
         scopes=scopes,
     )
 
@@ -91,7 +95,7 @@ class AdminHttpControlPlaneServer:
     HTTP-based administrative control-plane adapter.
 
     Responsibilities:
-    - Expose admin endpoints over HTTP
+    - Expose control_plane endpoints over HTTP
     - Enforce authentication and authorization
     - Integrate with the runtime lifecycle via a control-plane port
 
@@ -111,7 +115,7 @@ class AdminHttpControlPlaneServer:
     ) -> None:
         if not auth_token:
             raise ValueError(
-                "Admin HTTP auth token must be provided when admin HTTP is enabled"
+                "Admin HTTP auth token must be provided when control_plane HTTP is enabled"
             )
 
         self._host = host
@@ -199,8 +203,8 @@ class AdminHttpControlPlaneServer:
 
 class NullAdminControlPlaneServer:
     """
-    No-op admin control-plane implementation.
-    Used when the admin control-plane is disabled by configuration.
+    No-op control_plane control-plane implementation.
+    Used when the control_plane control-plane is disabled by configuration.
     """
 
     @staticmethod

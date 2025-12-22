@@ -37,7 +37,7 @@ class RuntimeLifecycleEngine:
     Responsibilities:
     • Deterministic orchestration of the runtime lifecycle.
     • Strict lifecycle FSM (STOPPED → STARTING → RUNNING → STOPPING → STOPPED).
-    • Drives event bus + application orchestrator + admin HTTP supervisor.
+    • Drives event bus + application orchestrator + control_plane HTTP supervisor.
     • Zero domain knowledge; fully DIP-compliant.
 
     Contains:
@@ -107,7 +107,7 @@ class RuntimeLifecycleEngine:
 
         # HTTP SERVER
         if self._http_started:
-            LOGGER.debug("[Runtime Engine] Stopping admin HTTP server.")
+            LOGGER.debug("[Runtime Engine] Stopping control_plane HTTP server.")
             with self._suppress_cancel():
                 await self._admin_http_server.stop()
 
@@ -176,7 +176,7 @@ class RuntimeLifecycleEngine:
         LOGGER.info("[Runtime Engine] Starting Quantum Runtime Engine.")
 
         try:
-            # 1. Start admin HTTP server
+            # 1. Start control_plane HTTP server
             await self._admin_http_server.start()
             self._http_started = True
 

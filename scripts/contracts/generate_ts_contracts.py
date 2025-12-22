@@ -10,7 +10,7 @@ from contracts.core.types.json import JsonValue
 from contracts.generators.typescript.core import generate_ts_json_value
 from contracts.generators.typescript.enums import generate_ts_enum
 from contracts.generators.typescript.interfaces import generate_ts_interface
-from contracts.surfaces.admin_http.v2025_1.manifest import (
+from contracts.surfaces.control_plane_http.v2025_1.manifest import (
     CONTRACT_VERSION,
     ENUMS,
     MODELS,
@@ -20,7 +20,7 @@ OUTPUT_DIR = Path(".generated")
 SURFACE_DIR = OUTPUT_DIR / "control-plane-http" / f"v{CONTRACT_VERSION}"
 SURFACE_DIR.mkdir(parents=True, exist_ok=True)
 
-OUTPUT_FILE = SURFACE_DIR / "admin-http.contract.ts"
+OUTPUT_FILE = SURFACE_DIR / "contract.ts"
 
 
 def _uses_json_value() -> bool:

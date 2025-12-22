@@ -1,6 +1,8 @@
 from typing import Any
 
-from runtime.admin.diagnostics.observability import ObservabilityDiagnosticsSnapshot
+from runtime.control_plane.diagnostics.observability import (
+    ObservabilityDiagnosticsSnapshot,
+)
 from runtime.presentation.safety import safe_expose
 
 

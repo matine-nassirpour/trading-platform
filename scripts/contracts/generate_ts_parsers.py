@@ -7,13 +7,16 @@ from types import UnionType
 from typing import Any, Union, get_args, get_origin
 
 from contracts.generators.typescript.parsers import generate_ts_parser
-from contracts.surfaces.admin_http.v2025_1.manifest import CONTRACT_VERSION, MODELS
+from contracts.surfaces.control_plane_http.v2025_1.manifest import (
+    CONTRACT_VERSION,
+    MODELS,
+)
 
 OUTPUT_DIR = Path(".generated")
 SURFACE_DIR = OUTPUT_DIR / "control-plane-http" / f"v{CONTRACT_VERSION}"
 SURFACE_DIR.mkdir(parents=True, exist_ok=True)
 
-OUTPUT_FILE = SURFACE_DIR / "admin-http.parser.ts"
+OUTPUT_FILE = SURFACE_DIR / "parser.ts"
 
 
 def _is_optional(tp: Any) -> bool:
@@ -57,7 +60,7 @@ def main() -> int:
 
     # Contract imports
     contract_names = ",\n  ".join(m.__name__ for m in MODELS)
-    lines.append(f"import {{\n  {contract_names}\n}} from './admin-http.contract';\n")
+    lines.append(f"import {{\n  {contract_names}\n}} from './contract';\n")
 
     lines.append("import { JsonValue } from '../../shared/json-value.contract';\n")
 
@@ -66,7 +69,7 @@ def main() -> int:
         enum_names = ", ".join(
             e.__name__ for e in sorted(used_enums, key=lambda e: e.__name__)
         )
-        lines.append(f"import {{ {enum_names} }} from './admin-http.contract';\n")
+        lines.append(f"import {{ {enum_names} }} from './contract';\n")
 
     # --------------------------------------------------------------------------
     # Kernel
