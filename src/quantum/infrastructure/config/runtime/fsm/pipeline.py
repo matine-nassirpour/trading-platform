@@ -32,7 +32,7 @@ class ConfigFSMPipeline:
         self,
         state: ConfigFSMState,
         *,
-        metadata: dict | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> ConfigFSMState:
         """
         Pure step resolving env path (logical abstraction).
@@ -48,7 +48,7 @@ class ConfigFSMPipeline:
         state: ConfigFSMState,
         *,
         env: Mapping[str, str],
-        metadata: dict | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> ConfigFSMState:
         """
         Pure step loading effective environment.
@@ -66,7 +66,7 @@ class ConfigFSMPipeline:
         *,
         env: Mapping[str, str],
         settings: Mapping[str, Any],
-        metadata: dict | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> ConfigFSMState:
         """
         Pure step constructing raw config model (dict form).
@@ -85,7 +85,7 @@ class ConfigFSMPipeline:
         *,
         env: Mapping[str, str],
         settings: Mapping[str, Any],
-        metadata: dict | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> ConfigFSMState:
         """
         Pure step validating settings.
@@ -104,7 +104,7 @@ class ConfigFSMPipeline:
         *,
         env: Mapping[str, str],
         settings: Mapping[str, Any],
-        metadata: dict | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> ConfigFSMState:
         """
         Pure step producing frozen model.
@@ -123,7 +123,7 @@ class ConfigFSMPipeline:
         *,
         env: Mapping[str, str],
         settings: Mapping[str, Any],
-        metadata: dict | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> ConfigFSMState:
         """
         Final step: READY state.

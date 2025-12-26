@@ -21,9 +21,13 @@ from quantum.infrastructure.config.runtime.registry import CONFIG_MODELS
 from quantum.infrastructure.config.runtime.state.config_state import ConfigStateManager
 
 
+def _clean(raw: dict[str, str | None]) -> dict[str, str]:
+    return {k: v for k, v in raw.items() if v is not None}
+
+
 def _load_env_files(base_dir: Path, env_file: Path | None) -> dict[str, str]:
     """
-    File-only loader.
+    File-only loader, load .env files and return only concrete key/value pairs.
     Uses current_env only to select layered files.
     Never merges OS env here.
     """
@@ -33,11 +37,11 @@ def _load_env_files(base_dir: Path, env_file: Path | None) -> dict[str, str]:
 
     # Explicit file
     if env_file:
-        return dotenv_values(env_file) or {}
+        return _clean(dotenv_values(env_file) or {})
 
     # Production strict
     if prod_mode:
-        return dotenv_values(base_dir / ".env") or {}
+        return _clean(dotenv_values(base_dir / ".env") or {})
 
     # Non-production layered
     env_base = dotenv_values(base_dir / ".env") or {}

@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import os
 
+from collections.abc import Mapping
 from pathlib import Path
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -85,7 +87,9 @@ class DirectoryPathSpec(BaseModel):
     # --------------------------------------------------------------------------
     @model_validator(mode="before")
     @classmethod
-    def normalize_and_validate_raw(cls, data: dict | str | Path | None) -> dict:
+    def normalize_and_validate_raw(
+        cls, data: Mapping[str, Any] | str | Path | None
+    ) -> dict[str, Any]:
         if not isinstance(data, dict):
             raw_input = data
             data = {}

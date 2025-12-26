@@ -5,6 +5,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from pydantic import BaseModel
+
 from quantum.infrastructure.config.environment.core.types import EnvResolutionResult
 from quantum.infrastructure.config.environment.loading.loader import (
     load_env_from_resolved,
@@ -62,8 +64,8 @@ class ConfigFSMAdapters:
         state: ConfigFSMState,
         *,
         resolution: EnvResolutionResult,
-        root_param,
-        env_file_param,
+        root_param: str | Path | None,
+        env_file_param: str | Path | None,
     ) -> ConfigFSMState:
         env = load_env_from_resolved(
             resolution,
@@ -81,7 +83,7 @@ class ConfigFSMAdapters:
         *,
         env: Mapping[str, str],
     ) -> ConfigFSMState:
-        models = {
+        models: Mapping[str, type[BaseModel]] = {
             "core": CoreSettings,
             "logging": LoggingSettings,
             "tracing": TracingSettings,

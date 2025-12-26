@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass
+from typing import Any
 
 from quantum.infrastructure.config.runtime.fsm.model import (
     ConfigFSMState,
@@ -73,7 +74,7 @@ class ConfigFSMController:
         self,
         current: ConfigFSMState,
         *,
-        metadata: dict | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> ConfigFSMState:
         """Transition UNINITIALIZED → ENV_PATH_RESOLVED"""
         target = ConfigLifecycleStatus.ENV_PATH_RESOLVED
@@ -91,7 +92,7 @@ class ConfigFSMController:
         current: ConfigFSMState,
         *,
         env: dict[str, str],
-        metadata: dict | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> ConfigFSMState:
         """Transition ENV_PATH_RESOLVED → ENV_LOADED"""
         target = ConfigLifecycleStatus.ENV_LOADED
@@ -109,8 +110,8 @@ class ConfigFSMController:
         current: ConfigFSMState,
         *,
         env: dict[str, str],
-        settings: dict,
-        metadata: dict | None = None,
+        settings: dict[str, Any],
+        metadata: dict[str, Any] | None = None,
     ) -> ConfigFSMState:
         """Transition ENV_LOADED → MODEL_BUILT"""
         target = ConfigLifecycleStatus.MODEL_BUILT
@@ -128,8 +129,8 @@ class ConfigFSMController:
         current: ConfigFSMState,
         *,
         env: dict[str, str],
-        settings: dict,
-        metadata: dict | None = None,
+        settings: dict[str, Any],
+        metadata: dict[str, Any] | None = None,
     ) -> ConfigFSMState:
         """Transition MODEL_BUILT → MODEL_VALIDATED"""
         target = ConfigLifecycleStatus.MODEL_VALIDATED
@@ -147,8 +148,8 @@ class ConfigFSMController:
         current: ConfigFSMState,
         *,
         env: dict[str, str],
-        settings: dict,
-        metadata: dict | None = None,
+        settings: dict[str, Any],
+        metadata: dict[str, Any] | None = None,
     ) -> ConfigFSMState:
         """Transition MODEL_VALIDATED → MODEL_FROZEN"""
         target = ConfigLifecycleStatus.MODEL_FROZEN
@@ -166,8 +167,8 @@ class ConfigFSMController:
         current: ConfigFSMState,
         *,
         env: dict[str, str],
-        settings: dict,
-        metadata: dict | None = None,
+        settings: dict[str, Any],
+        metadata: dict[str, Any] | None = None,
     ) -> ConfigFSMState:
         """Transition MODEL_FROZEN → READY"""
         target = ConfigLifecycleStatus.READY
@@ -185,7 +186,7 @@ class ConfigFSMController:
         current: ConfigFSMState,
         message: str,
         *,
-        metadata: dict | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> ConfigFSMState:
         """Transition ANY → ERROR (always legal)"""
         # No need to call _ensure_transition: ERROR is always allowed

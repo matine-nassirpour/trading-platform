@@ -9,7 +9,7 @@ from typing import Any, Final
 _thread_local = threading.local()
 
 
-def _get_thread_scratchpad() -> dict:
+def _get_thread_scratchpad() -> dict[str, Any]:
     """
     Thread-local scratchpad used only for ephemeral diagnostics.
     Never authoritative. Never cached. Zero side effects.

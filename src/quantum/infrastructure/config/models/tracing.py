@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from typing import Any, Literal
 
 from pydantic import Field, field_validator, model_validator
@@ -62,7 +63,7 @@ class TracingSettings(BaseConfigSettings, PublicSettingsMixin):
     # Sensitive Fields
     # --------------------------------------------------------------------------
     @classmethod
-    def sensitive_fields(cls):
+    def sensitive_fields(cls) -> Iterable[str]:
         return ("quantum_trace_otlp_headers",)
 
     # --------------------------------------------------------------------------

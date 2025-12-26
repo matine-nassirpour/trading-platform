@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from typing import Any
 
 from pydantic import Field, field_validator, model_validator
@@ -100,12 +101,14 @@ class LoggingSettings(BaseConfigSettings, PublicSettingsMixin):
 
     @field_validator("quantum_audit_allowlist", mode="before")
     @classmethod
-    def parse_allowlist(cls, v):
+    def parse_allowlist(cls, v: str | Iterable[str] | None) -> frozenset[str]:
         if v is None or v == "":
             return frozenset()
+
         if isinstance(v, str):
             parts = [s.strip() for s in v.split(",") if s.strip()]
             return frozenset(parts)
+
         return frozenset(v)
 
     @field_validator("quantum_log_sample_info", mode="before")

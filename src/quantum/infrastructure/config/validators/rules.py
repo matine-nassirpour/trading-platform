@@ -5,6 +5,7 @@ import logging
 from typing import Final
 
 from quantum.infrastructure.config.validators.base import (
+    ValidationContext,
     ValidationResult,
     ValidationRule,
 )
@@ -24,7 +25,9 @@ class EnvironmentValidator(ValidationRule):
         )
         self._allowed = {"dev", "test", "staging", "prod"}
 
-    def __call__(self, value: str, *, context=None) -> ValidationResult:
+    def __call__(
+        self, value: str, *, context: ValidationContext | None = None
+    ) -> ValidationResult:
         if not value or not value.strip():
             return self.success("dev")
 
@@ -45,7 +48,9 @@ class LogLevelValidator(ValidationRule):
         )
         self._allowed = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}
 
-    def __call__(self, value: str, *, context=None) -> ValidationResult:
+    def __call__(
+        self, value: str, *, context: ValidationContext | None = None
+    ) -> ValidationResult:
         if not value:
             return self.success("INFO")
 
@@ -65,7 +70,9 @@ class TimezoneValidator(ValidationRule):
             description="Validate timezone specifier ('utc' or 'local').",
         )
 
-    def __call__(self, value: str, *, context=None) -> ValidationResult:
+    def __call__(
+        self, value: str, *, context: ValidationContext | None = None
+    ) -> ValidationResult:
         if value is None:
             return self.success("utc")
 
@@ -81,7 +88,9 @@ class OtlpProtocolValidator(ValidationRule):
         super().__init__("platform.tracing.otlp_protocol", "Validate OTLP protocol.")
         self._allowed = {"http", "grpc"}
 
-    def __call__(self, value: str, *, context=None) -> ValidationResult:
+    def __call__(
+        self, value: str, *, context: ValidationContext | None = None
+    ) -> ValidationResult:
         if not value:
             return self.success("http")
 
@@ -107,7 +116,9 @@ class CompressionValidator(ValidationRule):
         )
         self._allowed = {"gzip", "none"}
 
-    def __call__(self, value: str, *, context=None) -> ValidationResult:
+    def __call__(
+        self, value: str, *, context: ValidationContext | None = None
+    ) -> ValidationResult:
         if not value:
             return self.success("none")
 

@@ -6,16 +6,18 @@ from typing import Final
 class _StrictEnvironmentPolicy:
     """Immutable policy for environment strictness."""
 
-    __slots__ = ("__strict",)
+    __slots__ = ("_strict",)
+
+    _strict: bool
 
     def __init__(self, strict: bool) -> None:
-        object.__setattr__(self, "_StrictEnvironmentPolicy__strict", strict)
+        object.__setattr__(self, "_strict", strict)
 
     @property
     def strict(self) -> bool:
-        return self.__strict
+        return self._strict
 
-    def __setattr__(self, key, value) -> None:
+    def __setattr__(self, key: str, value: object) -> None:
         raise TypeError(f"{self.__class__.__name__} is immutable.")
 
 

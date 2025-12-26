@@ -1,12 +1,15 @@
 from __future__ import annotations
 
-from typing import Any
+from collections.abc import Iterable
+from typing import Any, TypeVar
 
 from pydantic import Field, field_validator, model_validator
 
 from quantum.infrastructure.config.models.base.base_settings import BaseConfigSettings
 from quantum.infrastructure.config.models.base.mixins import PublicSettingsMixin
 from quantum.infrastructure.config.validators.runtime import validate_field
+
+T = TypeVar("T", bound="CoreSettings")
 
 
 class CoreSettings(BaseConfigSettings, PublicSettingsMixin):
@@ -103,7 +106,7 @@ class CoreSettings(BaseConfigSettings, PublicSettingsMixin):
         )
 
     @model_validator(mode="after")
-    def _validate_admin_http_security(self):
+    def _validate_admin_http_security(self: T) -> T:
         if self.quantum_admin_http_enabled:
             if not self.quantum_admin_http_token:
                 raise ValueError(
@@ -114,7 +117,7 @@ class CoreSettings(BaseConfigSettings, PublicSettingsMixin):
 
     @field_validator("quantum_admin_http_trusted_proxies", mode="before")
     @classmethod
-    def _parse_trusted_proxies(cls, v):
+    def _parse_trusted_proxies(cls, v: str | Iterable[str] | None) -> list[str]:
         """
         Accept:
         - unset           → default_factory=list
@@ -131,4 +134,4 @@ class CoreSettings(BaseConfigSettings, PublicSettingsMixin):
                 return []
             return [item.strip() for item in v.split(",") if item.strip()]
 
-        return v
+        return list(v)

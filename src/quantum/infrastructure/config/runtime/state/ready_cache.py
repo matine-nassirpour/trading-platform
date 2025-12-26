@@ -5,7 +5,7 @@ import json
 import threading
 
 from collections.abc import Mapping
-from typing import Final
+from typing import Any, Final, TypeAlias
 
 from quantum.infrastructure.config.runtime.fsm.model import (
     FSM_SCHEMA_VERSION,
@@ -13,8 +13,11 @@ from quantum.infrastructure.config.runtime.fsm.model import (
     ConfigLifecycleStatus,
 )
 
+JsonPrimitive: TypeAlias = str | int | float | bool | None
+JsonValue: TypeAlias = JsonPrimitive | list["JsonValue"] | dict[str, "JsonValue"]
 
-def _normalize_json_safe(value):
+
+def _normalize_json_safe(value: Any) -> JsonValue:
     """
     Convert recursively any object into a JSON-serializable structure.
     - Path → str

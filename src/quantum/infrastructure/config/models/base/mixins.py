@@ -4,7 +4,7 @@ import dataclasses
 import uuid
 
 from collections.abc import Iterable, Mapping
-from typing import Any
+from typing import Any, cast
 
 from pydantic import BaseModel
 
@@ -44,7 +44,7 @@ def _to_safe_string(value: Any) -> str:
 
         # Datetime-like → ISO 8601
         if hasattr(value, "isoformat"):
-            return value.isoformat()
+            return cast(str, value.isoformat())
 
         # Decimal or others
         return str(value)
@@ -109,7 +109,10 @@ class PublicSettingsMixin:
         return dict(sorted(out.items()))
 
     def _sanitize_mapping(
-        self, value: Mapping, guid_cache: dict[int, uuid.UUID], visited: set[uuid.UUID]
+        self,
+        value: Mapping[Any, Any],
+        guid_cache: dict[int, uuid.UUID],
+        visited: set[uuid.UUID],
     ) -> dict[str, Any]:
         out = {}
         for k, v in value.items():
@@ -119,7 +122,10 @@ class PublicSettingsMixin:
         return dict(sorted(out.items()))
 
     def _sanitize_iterable(
-        self, value: Iterable, guid_cache: dict[int, uuid.UUID], visited: set[uuid.UUID]
+        self,
+        value: Iterable[Any],
+        guid_cache: dict[int, uuid.UUID],
+        visited: set[uuid.UUID],
     ) -> list[Any]:
         return [
             self._sanitize(v, guid_cache=guid_cache, visited=visited) for v in value
@@ -189,7 +195,7 @@ class PublicSettingsMixin:
         Sensitive keys are masked (not removed!) as "<redacted>".
         """
 
-        raw = self.model_dump()
+        raw = self.model_dump()  # type: ignore[attr-defined]
 
         local_sensitive = set(self.sensitive_fields())
 

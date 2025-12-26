@@ -23,7 +23,7 @@ def validate_no_unknown_environment_variables(
     """
     reserved = reserved or set()
 
-    allowed = set()
+    allowed: set[str] = set()
     for model_cls in models.values():
         allowed.update(model_cls.model_fields.keys())
 

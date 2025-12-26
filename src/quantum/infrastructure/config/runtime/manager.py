@@ -4,12 +4,13 @@ import logging
 
 from collections.abc import Mapping
 from pathlib import Path
-from typing import Any, Final
+from typing import Any, Final, cast
 
 from quantum.infrastructure.config.models.core import CoreSettings
 from quantum.infrastructure.config.models.logging import LoggingSettings
 from quantum.infrastructure.config.models.mt5 import MT5Settings
 from quantum.infrastructure.config.models.tracing import TracingSettings
+from quantum.infrastructure.config.runtime.fsm.model import ConfigFSMState
 from quantum.infrastructure.config.runtime.fsm.orchestrator import ConfigFSMOrchestrator
 from quantum.infrastructure.config.runtime.state.ready_cache import ReadyStateCache
 
@@ -41,7 +42,7 @@ class ConfigManager:
         *,
         root: str | Path | None = None,
         env_file: str | Path | None = None,
-    ):
+    ) -> ConfigFSMState:
         """
         Execute the full FSM lifecycle and return a READY state.
         This ALWAYS returns a ConfigFSMState in READY status.
@@ -55,7 +56,7 @@ class ConfigManager:
     # Internal helpers
     # --------------------------------------------------------------------------
     @staticmethod
-    def _get_ready_state() -> Any:
+    def _get_ready_state() -> ConfigFSMState:
         """
         Retrieve the current READY state from cache, or compute and store it.
 
@@ -73,7 +74,7 @@ class ConfigManager:
 
     @staticmethod
     def _extract_settings_group(
-        state,
+        state: ConfigFSMState,
         *,
         group: str,
     ) -> Mapping[str, Any]:
@@ -86,7 +87,13 @@ class ConfigManager:
         if group not in state.settings:
             raise KeyError(f"Settings group '{group}' not found in READY state.")
 
-        return state.settings[group]
+        value = state.settings[group]
+        if not isinstance(value, Mapping):
+            raise TypeError(
+                f"Settings group '{group}' is not a mapping (got {type(value).__name__})."
+            )
+
+        return cast(Mapping[str, Any], value)
 
     # --------------------------------------------------------------------------
     # Cached Loaders

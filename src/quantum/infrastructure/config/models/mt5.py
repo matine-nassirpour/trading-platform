@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
+
 from pydantic import Field, model_validator
 
 from quantum.infrastructure.config.models.base.base_settings import BaseConfigSettings
@@ -40,7 +42,7 @@ class MT5Settings(BaseConfigSettings, PublicSettingsMixin):
     # Sensitive Fields
     # --------------------------------------------------------------------------
     @classmethod
-    def sensitive_fields(cls):
+    def sensitive_fields(cls) -> Iterable[str]:
         return (
             "quantum_mt5_ftmo_password",
             "quantum_mt5_fundednext_password",
