@@ -1,17 +1,9 @@
 from decimal import Decimal
 
+from pydantic import Field
 
-class Price:
-    __slots__ = ("_value",)
+from quantum.domain.model.value_objects.base import ValueObject
 
-    def __init__(self, value: Decimal) -> None:
-        if value <= 0:
-            raise ValueError("Price must be strictly positive")
-        self._value = value
 
-    @property
-    def value(self) -> Decimal:
-        return self._value
-
-    def __eq__(self, other: object) -> bool:
-        return isinstance(other, Price) and self._value == other._value
+class Price(ValueObject):
+    value: Decimal = Field(..., gt=0, description="Strictly positive price")

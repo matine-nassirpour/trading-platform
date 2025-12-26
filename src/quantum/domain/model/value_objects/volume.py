@@ -1,14 +1,9 @@
 from decimal import Decimal
 
+from pydantic import Field
 
-class Volume:
-    __slots__ = ("_value",)
+from quantum.domain.model.value_objects.base import ValueObject
 
-    def __init__(self, value: Decimal) -> None:
-        if value <= 0:
-            raise ValueError("Volume must be strictly positive")
-        self._value = value
 
-    @property
-    def value(self) -> Decimal:
-        return self._value
+class Volume(ValueObject):
+    value: Decimal = Field(..., gt=0, description="Strictly positive volume")

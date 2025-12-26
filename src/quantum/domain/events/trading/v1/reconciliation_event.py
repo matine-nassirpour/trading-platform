@@ -1,7 +1,7 @@
 from typing import Any, ClassVar, Literal
 
 from quantum.domain.events.base import BaseEvent
-from quantum.domain.model.value_objects import EpochMs
+from quantum.domain.model.value_objects.time import EpochMs
 from quantum.domain.types.enums import App
 
 

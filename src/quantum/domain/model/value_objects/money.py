@@ -1,12 +1,9 @@
 from decimal import Decimal
 
+from pydantic import Field
 
-class Money:
-    __slots__ = ("_value",)
+from quantum.domain.model.value_objects.base import ValueObject
 
-    def __init__(self, value: Decimal) -> None:
-        self._value = value  # signed by design (PnL, fees)
 
-    @property
-    def value(self) -> Decimal:
-        return self._value
+class Money(ValueObject):
+    value: Decimal = Field(..., description="Signed monetary amount")
