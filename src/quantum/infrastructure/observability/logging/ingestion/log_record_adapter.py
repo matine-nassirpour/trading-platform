@@ -103,7 +103,7 @@ class LogRecordAdapter:
         # Resource block
         # ----------------------------------------------------------------------
         resource = ResourceDTO(
-            env=record.env,
+            env=record.env,  # type: ignore[attr-defined]
             instance_id=instance_id,
             service_name=getattr(record, "service_name", None),
             service_version=getattr(record, "service_version", None),
