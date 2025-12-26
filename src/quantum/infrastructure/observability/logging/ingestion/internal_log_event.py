@@ -49,7 +49,7 @@ class MessageDTO:
 class ResourceDTO:
     """Execution environment metadata."""
 
-    env: str | None
+    env: str
     instance_id: str
     service_name: str | None
     service_version: str | None

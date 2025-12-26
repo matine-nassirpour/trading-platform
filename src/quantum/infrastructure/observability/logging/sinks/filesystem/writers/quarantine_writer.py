@@ -4,7 +4,7 @@ import json
 import os
 
 from pathlib import Path
-from typing import Any
+from typing import IO, Any
 
 from quantum.infrastructure.observability.logging.sinks.filesystem.fsync_utils import (
     fsync_dir,
@@ -21,7 +21,7 @@ class QuarantineWriter:
         self._encoding = encoding
         self._fsync = fsync
 
-        self._fh = None
+        self._fh: IO[str] | None = None
         self._path: Path | None = None
 
     def open(self, path: Path) -> None:

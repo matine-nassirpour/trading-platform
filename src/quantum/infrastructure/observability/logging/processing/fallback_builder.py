@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 
-from collections.abc import Mapping
 from typing import Any, Final
 
 from quantum.infrastructure.observability.foundation.metrics.c0_metric_registry import (
@@ -16,6 +15,9 @@ from quantum.infrastructure.observability.logging.core.mapping.dto_to_contract i
 )
 from quantum.infrastructure.observability.logging.core.models.fallback_payload import (
     FallbackPayload,
+)
+from quantum.infrastructure.observability.logging.ingestion.internal_log_event import (
+    InternalLogEvent,
 )
 from quantum.infrastructure.observability.logging.ingestion.log_record_adapter import (
     LogRecordAdapter,
@@ -41,49 +43,6 @@ class FallbackBuilder:
         - Always deterministic
     """
 
-    @staticmethod
-    def build(
-        record: logging.LogRecord,
-        instance_id: str,
-        error: Exception,
-    ) -> FallbackPayload:
-        """
-        Attempt to produce a structured fallback payload.
-
-        MUST NEVER raise.
-        """
-
-        # ----------------------------------------------------------------------
-        # Try to extract the DTO (adapter never raises, but defensive)
-        # ----------------------------------------------------------------------
-        try:
-            dto = LogRecordAdapter.to_internal_event(record, instance_id)
-        except Exception:
-            _FALLBACK_BUILDER_FAILURES.inc()
-            return FallbackPayload(
-                message="fatal: adapter failed in fallback path",
-                fallback_reason="adapter_failure",
-                validation_error=str(error),
-            )
-
-        # ----------------------------------------------------------------------
-        # Try to map DTO → Contract V1 (pure mapping)
-        # ----------------------------------------------------------------------
-        try:
-            contract: LogEventContractV1 = map_dto_to_contract(dto)
-        except Exception:
-            _FALLBACK_MAPPING_ERRORS.inc()
-            return FallbackBuilder._fallback_from_dto(dto, error)
-
-        # ----------------------------------------------------------------------
-        # Convert Contract → FallbackPayload
-        # ----------------------------------------------------------------------
-        try:
-            return FallbackBuilder._fallback_from_contract(contract, error)
-        except Exception:
-            _FALLBACK_BUILDER_FAILURES.inc()
-            return FallbackBuilder._fallback_from_dto(dto, error)
-
     # --------------------------------------------------------------------------
     # Internal Helpers
     # --------------------------------------------------------------------------
@@ -93,11 +52,9 @@ class FallbackBuilder:
         Safely sanitize arbitrary attrs to JSON-safe structure.
         MUST NEVER RAISE.
         """
-        try:
-            if isinstance(attrs, Mapping):
-                return json_sanitize(dict(attrs))
-        except Exception:
-            pass
+        sanitized = json_sanitize(dict(attrs))
+        if isinstance(sanitized, dict):
+            return dict(sanitized)
         return {}
 
     @staticmethod
@@ -143,7 +100,7 @@ class FallbackBuilder:
 
     @staticmethod
     def _fallback_from_dto(
-        dto,
+        dto: InternalLogEvent,
         error: Exception,
     ) -> FallbackPayload:
         """
@@ -181,3 +138,49 @@ class FallbackBuilder:
             attrs=attrs,
             fallback_reason="contract_mapping_failure",
         )
+
+    # --------------------------------------------------------------------------
+    # Public API
+    # --------------------------------------------------------------------------
+    @staticmethod
+    def build(
+        record: logging.LogRecord,
+        instance_id: str,
+        error: Exception,
+    ) -> FallbackPayload:
+        """
+        Attempt to produce a structured fallback payload.
+
+        MUST NEVER raise.
+        """
+
+        # ----------------------------------------------------------------------
+        # Try to extract the DTO (adapter never raises, but defensive)
+        # ----------------------------------------------------------------------
+        try:
+            dto = LogRecordAdapter.to_internal_event(record, instance_id)
+        except Exception:
+            _FALLBACK_BUILDER_FAILURES.inc()
+            return FallbackPayload(
+                message="fatal: adapter failed in fallback path",
+                fallback_reason="adapter_failure",
+                validation_error=str(error),
+            )
+
+        # ----------------------------------------------------------------------
+        # Try to map DTO → Contract V1 (pure mapping)
+        # ----------------------------------------------------------------------
+        try:
+            contract: LogEventContractV1 = map_dto_to_contract(dto)
+        except Exception:
+            _FALLBACK_MAPPING_ERRORS.inc()
+            return FallbackBuilder._fallback_from_dto(dto, error)
+
+        # ----------------------------------------------------------------------
+        # Convert Contract → FallbackPayload
+        # ----------------------------------------------------------------------
+        try:
+            return FallbackBuilder._fallback_from_contract(contract, error)
+        except Exception:
+            _FALLBACK_BUILDER_FAILURES.inc()
+            return FallbackBuilder._fallback_from_dto(dto, error)

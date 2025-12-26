@@ -9,7 +9,7 @@ from quantum.infrastructure.observability.logging.pipeline.engine.argument_kind 
 
 
 class StepFactory(Protocol):
-    def __call__(self, bundle: Any | None = None) -> Any: ...
+    def __call__(self, bundle: Any) -> Any: ...
 
 
 @dataclass(frozen=True)

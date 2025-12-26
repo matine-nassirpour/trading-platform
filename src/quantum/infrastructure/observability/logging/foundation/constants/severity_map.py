@@ -24,15 +24,17 @@ SeverityMapType = Mapping[int, SeverityPair]
 ReverseTextMapType = Mapping[str, int]
 ReverseLevelMapType = Mapping[str, int]
 
-_CANONICAL_SEVERITY_MAP: Final[SeverityMapType] = MappingProxyType(
-    {
-        logging.NOTSET: ("TRACE", 1),
-        logging.DEBUG: ("DEBUG", 5),
-        logging.INFO: ("INFO", 9),
-        logging.WARNING: ("WARN", 13),
-        logging.ERROR: ("ERROR", 17),
-        logging.CRITICAL: ("FATAL", 21),
-    }
+_CANONICAL_SEVERITY_MAP: Final[SeverityMapType] = {
+    logging.NOTSET: ("TRACE", 1),
+    logging.DEBUG: ("DEBUG", 5),
+    logging.INFO: ("INFO", 9),
+    logging.WARNING: ("WARN", 13),
+    logging.ERROR: ("ERROR", 17),
+    logging.CRITICAL: ("FATAL", 21),
+}
+
+_SEVERITY_TEXTS: Final[frozenset[SeverityText]] = frozenset(
+    text for (text, _) in _CANONICAL_SEVERITY_MAP.values()
 )
 
 _REV_TEXT_TO_NUMBER: Final[ReverseTextMapType] = MappingProxyType(
@@ -73,6 +75,22 @@ def severity_number_from_text(text: str) -> int:
         return _REV_TEXT_TO_NUMBER[key]
     except KeyError:
         raise ValueError(f"Unknown severity text: {text!r}") from None
+
+
+def severity_text(text: str) -> SeverityText:
+    """
+    Validate and normalize a severity text.
+    Returns a SeverityText Literal or raises ValueError.
+    """
+    if not isinstance(text, str):
+        raise ValueError(f"severity text must be string, got {type(text).__name__}")
+
+    key = text.upper()
+    if key in _SEVERITY_TEXTS:
+        return key  # type: ignore[return-value]
+
+    _SEVERITY_MAPPING_ERRORS.inc()
+    raise ValueError(f"Unknown severity text: {text!r}")
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮

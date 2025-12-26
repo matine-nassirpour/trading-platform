@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 
 from pathlib import Path
+from typing import IO
 
 from quantum.infrastructure.observability.logging.sinks.filesystem.fsync_utils import (
     fsync_dir,
@@ -23,7 +24,7 @@ class SafeFileWriter:
         self._encoding = encoding
         self._fsync = fsync
 
-        self._fh = None
+        self._fh: IO[str] | None = None
         self._path: Path | None = None
         self._tmp_path: Path | None = None
         self._mode_atomic = False
@@ -104,6 +105,28 @@ class SafeFileWriter:
     # --------------------------------------------------------------------------
     # Closing → fsync → atomic replace
     # --------------------------------------------------------------------------
+    def _finalize_atomic_replace(self) -> None:
+        tmp = self._tmp_path
+        final = self._path
+
+        if tmp is None or final is None:
+            return  # degraded but safe
+
+        try:
+            os.replace(tmp, final)
+        except Exception:
+            # degraded mode: remove temp file if possible
+            try:
+                tmp.unlink(missing_ok=True)
+            except Exception:
+                pass
+
+            # atomicity failure is critical but NEVER raise
+            return
+
+        if self._fsync:
+            fsync_dir(final.parent)
+
     def close(self) -> None:
         """
         Flush → fsync → atomic replace(temp, final) → fsync directory.
@@ -121,20 +144,7 @@ class SafeFileWriter:
             self._fh.close()
 
             if self._mode_atomic:
-                try:
-                    os.replace(self._tmp_path, self._path)
-                except Exception:
-                    # degraded mode: remove temp file if possible
-                    try:
-                        self._tmp_path.unlink(missing_ok=True)
-                    except Exception:
-                        pass
-
-                    # atomicity failure is critical but NEVER raise
-                    return
-
-                if self._fsync:
-                    fsync_dir(self._path.parent)
+                self._finalize_atomic_replace()
 
         finally:
             self._fh = None

@@ -24,8 +24,8 @@ class _PrefixTrie:
 
     __slots__ = ("children", "terminal")
 
-    def __init__(self):
-        self.children = {}
+    def __init__(self) -> None:
+        self.children: dict[str, _PrefixTrie] = {}
         self.terminal = False
 
     def insert(self, prefix: str) -> None:

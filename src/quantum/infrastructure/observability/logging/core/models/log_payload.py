@@ -2,7 +2,8 @@ import datetime
 import re
 import uuid
 
-from typing import Any, Final
+from collections.abc import Mapping
+from typing import Any, Final, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -22,6 +23,8 @@ _HEX_RE: Final[re.Pattern[str]] = re.compile(r"^[0-9a-f]+$")
 _RFC3339_MS_UTC_RE: Final[re.Pattern[str]] = re.compile(
     r"^(\d{4})-(\d{2})-(\d{2})T" r"(\d{2}):(\d{2}):(\d{2})\.(\d{3})Z$"
 )
+
+T = TypeVar("T", bound="LogPayload")
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
@@ -98,7 +101,7 @@ class LogPayload(BaseModel):
     validation_error: str | None = None
 
     # ─── Flexible attributes
-    attrs: dict[str, Any] = Field(default_factory=dict)
+    attrs: Mapping[str, Any] = Field(default_factory=dict)
 
     # --------------------------------------------------------------------------
     # Model configuration
@@ -166,7 +169,7 @@ class LogPayload(BaseModel):
         return v
 
     @model_validator(mode="after")
-    def _validate_severity_pair(self):
+    def _validate_severity_pair(self: T) -> T:
         """
         Validate strict consistency between:
             - level (SeverityText)

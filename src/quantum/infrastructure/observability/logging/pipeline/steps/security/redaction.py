@@ -4,8 +4,9 @@ import json
 import logging
 import re
 
+from collections.abc import Mapping
 from contextlib import suppress
-from typing import Any, Final
+from typing import Any, Final, Protocol, cast
 
 from quantum.infrastructure.observability.foundation.metrics.c0_metric_registry import (
     define_counter,
@@ -44,6 +45,10 @@ _JWT_RE: Final[re.Pattern[str]] = re.compile(
 _HEX_TOKEN_RE: Final[re.Pattern[str]] = re.compile(r"\b[0-9a-fA-F]{40,}\b")
 
 _MAX_VALUE_LEN: Final[int] = 5_000
+
+
+class _RecordWithAttrs(Protocol):
+    attrs: Mapping[str, Any]
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
@@ -107,7 +112,8 @@ class RedactionStep(PipelineStep):
                 redacted = _redact_value(attrs)
                 record.attrs = redacted if isinstance(redacted, dict) else {}
 
-                after = json.dumps(record.attrs, ensure_ascii=False)
+                rec = cast(_RecordWithAttrs, cast(object, record))
+                after = json.dumps(rec.attrs, ensure_ascii=False)
 
                 if before is not None and after is not None and before != after:
                     modified = True

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 from quantum.infrastructure.observability.foundation.config.logging_runtime_bundle import (
     LoggingRuntimeBundle,
 )
@@ -15,10 +17,10 @@ from quantum.infrastructure.observability.logging.pipeline.engine.pipeline_confi
 from quantum.infrastructure.observability.logging.pipeline.engine.registry import (
     PIPELINE_STEP_REGISTRY,
 )
-from quantum.infrastructure.observability.logging.pipeline.steps.control.info_sampler import (
+from quantum.infrastructure.observability.logging.pipeline.state.info_sampler_state import (
     InfoSamplerState,
 )
-from quantum.infrastructure.observability.logging.pipeline.steps.control.rate_limit import (
+from quantum.infrastructure.observability.logging.pipeline.state.rate_limit_state import (
     RateLimitState,
 )
 
@@ -39,6 +41,7 @@ class LoggingPipelineFactory:
         rate_limit_state = RateLimitState(max_per_sec=bundle.ratelimit_rps)
 
         steps = []
+        arg: Any | None
 
         for step_def in PIPELINE_STEP_REGISTRY:
             # step enabled?

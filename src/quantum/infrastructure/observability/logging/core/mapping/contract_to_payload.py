@@ -7,6 +7,9 @@ from quantum.infrastructure.observability.logging.core.models.log_payload import
     ExceptionBlock,
     LogPayload,
 )
+from quantum.infrastructure.observability.logging.foundation.constants.severity_map import (
+    severity_text,
+)
 
 
 def map_contract_to_payload(contract: LogEventContractV1) -> LogPayload:
@@ -19,6 +22,7 @@ def map_contract_to_payload(contract: LogEventContractV1) -> LogPayload:
       - forensic-grade consistency
     """
 
+    level = severity_text(contract.severity.level)
     exc = contract.exception
 
     return LogPayload(
@@ -27,7 +31,7 @@ def map_contract_to_payload(contract: LogEventContractV1) -> LogPayload:
         ts_unix_ms=contract.timestamps.ts_unix_ms,
         ts_monotonic_ms=contract.timestamps.ts_monotonic_ms,
         # ─── severity
-        level=contract.severity.level,
+        level=level,
         severity_number=contract.severity.severity_number,
         # ─── message
         logger=contract.message.logger,

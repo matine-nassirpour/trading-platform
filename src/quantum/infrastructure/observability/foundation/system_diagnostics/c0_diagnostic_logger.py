@@ -37,6 +37,8 @@ class FinalDiagnosticLogger:
         logger.setLevel(C0_DIAGNOSTIC_LOG_LEVEL)
         logger.propagate = False
 
+        handler: logging.Handler
+
         # Handler construction: minimal and always available
         try:
             handler = logging.StreamHandler(sys.stderr)
