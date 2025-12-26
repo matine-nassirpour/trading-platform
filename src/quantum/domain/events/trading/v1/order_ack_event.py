@@ -1,8 +1,8 @@
 from typing import ClassVar
 
 from quantum.domain.events.base import BaseEvent
+from quantum.domain.model.value_objects import EpochMs, IntentId, OrderId, Symbol
 from quantum.domain.types.enums import App
-from quantum.domain.value_objects import EpochMs, IntentId, OrderId, Symbol
 
 
 class OrderAckEvent(BaseEvent):

@@ -2,8 +2,8 @@ from decimal import Decimal
 from typing import ClassVar, Literal
 
 from quantum.domain.events.base import BaseEvent
+from quantum.domain.model.value_objects import EpochMs, IntentId, PositionId, Symbol
 from quantum.domain.types.enums import App
-from quantum.domain.value_objects import EpochMs, IntentId, PositionId, Symbol
 
 
 class SlTpUpdateEvent(BaseEvent):

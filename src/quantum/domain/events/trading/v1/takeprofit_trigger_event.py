@@ -3,9 +3,7 @@ from __future__ import annotations
 from typing import ClassVar
 
 from quantum.domain.events.base import BaseEvent
-from quantum.domain.types.decimal_validators import PositiveDecimal
-from quantum.domain.types.enums import App, DealEntry, DealReason
-from quantum.domain.value_objects import (
+from quantum.domain.model.value_objects import (
     DealId,
     EpochMs,
     IntentId,
@@ -13,6 +11,8 @@ from quantum.domain.value_objects import (
     PositionId,
     Symbol,
 )
+from quantum.domain.types.decimal_validators import PositiveDecimal
+from quantum.domain.types.enums import App, DealEntry, DealReason
 
 
 class TakeProfitTriggerEvent(BaseEvent):

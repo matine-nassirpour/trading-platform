@@ -2,9 +2,9 @@ from decimal import Decimal
 from typing import ClassVar
 
 from quantum.domain.events.base import BaseEvent
+from quantum.domain.model.value_objects import IntentId, Symbol
 from quantum.domain.types.decimal_validators import PositiveDecimal
 from quantum.domain.types.enums import App, OrderType, TimeInForce
-from quantum.domain.value_objects import IntentId, Symbol
 
 
 class OrderIntentEvent(BaseEvent):

@@ -1,0 +1,32 @@
+from dataclasses import dataclass
+
+from quantum.domain.model.exceptions import InvalidStateTransition
+from quantum.domain.model.value_objects.identifiers import IntentId
+from quantum.domain.model.value_objects.price import Price
+from quantum.domain.model.value_objects.volume import Volume
+
+
+@dataclass
+class TradingIntent:
+    """
+    Aggregate Root.
+    A trading decision, immutable once sent.
+    """
+
+    intent_id: IntentId
+    symbol: str
+    volume: Volume
+    entry_price: Price | None
+    sl: Price | None
+    tp: Price | None
+
+    _submitted: bool = False
+
+    def submit(self) -> None:
+        if self._submitted:
+            raise InvalidStateTransition("Intent already submitted")
+        self._submitted = True
+
+    @property
+    def is_submitted(self) -> bool:
+        return self._submitted

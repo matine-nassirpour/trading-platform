@@ -1,8 +1,8 @@
 from typing import Any, ClassVar
 
 from quantum.domain.events.base import BaseEvent
+from quantum.domain.model.value_objects import EpochMs, IntentId, Symbol
 from quantum.domain.types.enums import App
-from quantum.domain.value_objects import EpochMs, IntentId, Symbol
 
 
 class OrderRejectEvent(BaseEvent):

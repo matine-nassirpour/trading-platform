@@ -1,5 +1,6 @@
 from pydantic import BaseModel, ConfigDict, Field
 
+from quantum.domain.model.value_objects import Symbol
 from quantum.domain.types.decimal_validators import PositiveDecimal
 from quantum.domain.types.enums import (
     OrderFillingType,
@@ -7,7 +8,6 @@ from quantum.domain.types.enums import (
     TimeInForce,
     TradeAction,
 )
-from quantum.domain.value_objects import Symbol
 
 
 class OrderRequest(BaseModel):
