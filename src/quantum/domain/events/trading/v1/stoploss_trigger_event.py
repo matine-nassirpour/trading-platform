@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import ClassVar
 
 from quantum.domain.events.base import BaseEvent
-from quantum.domain.serialization.schema_registry import register_event
 from quantum.domain.types.decimal_validators import PositiveDecimal
 from quantum.domain.types.enums import App, DealEntry, DealReason
 from quantum.domain.value_objects import (
@@ -16,7 +15,6 @@ from quantum.domain.value_objects import (
 )
 
 
-@register_event
 class StopLossTriggerEvent(BaseEvent):
     event_name: ClassVar[str] = "trading.stoploss_trigger"
     app: App = App.EA_MQL5

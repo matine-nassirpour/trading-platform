@@ -2,13 +2,11 @@ from decimal import Decimal
 from typing import ClassVar
 
 from quantum.domain.events.base import BaseEvent
-from quantum.domain.serialization.schema_registry import register_event
 from quantum.domain.types.decimal_validators import PositiveDecimal
 from quantum.domain.types.enums import App, OrderType, TimeInForce
 from quantum.domain.value_objects import IntentId, Symbol
 
 
-@register_event
 class OrderIntentEvent(BaseEvent):
     event_name: ClassVar[str] = "trading.order_intent"
     app: App

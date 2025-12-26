@@ -5,8 +5,8 @@
 #
 #  Purpose : Formal architectural governance contract for the Quantum Platform.
 #  Scope   : Applies to all Python packages within the 'quantum' namespace.
-#  Version : 2.2.0
-#  Updated : 2025-11-25
+#  Version : 2.3.0
+#  Updated : 2025-12-26
 #
 # ──────────────────────────────────────────────────────────────────────────────
 # 1. Mission
@@ -87,12 +87,12 @@ forbidden_modules =
     quantum.infrastructure
     quantum.interfaces
     quantum.application
-;    logging
-;    threading
-;    asyncio
-;    requests
-;    numpy
-;    pandas
+    logging
+    threading
+    asyncio
+    requests
+    numpy
+    pandas
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮

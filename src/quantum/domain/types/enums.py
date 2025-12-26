@@ -4,7 +4,7 @@ from enum import StrEnum
 class App(StrEnum):
     PYTHON_CORE = "python_core"
     EA_MQL5 = "ea_mql5"
-    STREAMLIT_UI = "streamlit_ui"
+    ANGULAR_UI = "angular_ui"
 
 
 class TradeAction(StrEnum):
