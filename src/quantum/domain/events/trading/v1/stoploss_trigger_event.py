@@ -13,7 +13,7 @@ from quantum.domain.model.value_objects.identifiers import (
 from quantum.domain.model.value_objects.price import Price
 from quantum.domain.model.value_objects.symbol import Symbol
 from quantum.domain.model.value_objects.time import EpochMs
-from quantum.domain.model.value_objects.volume import Volume
+from quantum.domain.model.value_objects.volume import PositiveVolume
 from quantum.domain.types.enums import App, DealEntry, DealReason
 
 
@@ -30,7 +30,7 @@ class StopLossTriggerEvent(BaseEvent):
 
     trigger_price: Price
     sl_price: Price
-    volume_closed: Volume
+    volume_closed: PositiveVolume
 
     trigger_epoch_ms: EpochMs
     deal_entry: DealEntry = DealEntry.OUT

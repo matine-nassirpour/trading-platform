@@ -4,7 +4,7 @@ from decimal import Decimal
 
 from quantum.domain.model.value_objects.money import Money
 from quantum.domain.model.value_objects.price import Price
-from quantum.domain.model.value_objects.volume import Volume
+from quantum.domain.model.value_objects.volume import PositiveVolume
 from quantum.domain.types.position_side import PositionSide
 
 
@@ -18,7 +18,7 @@ class PnLService:
     def compute_realized_pnl(
         entry_price: Price,
         exit_price: Price,
-        volume: Volume,
+        volume: PositiveVolume,
         side: PositionSide,
         currency: str,
     ) -> Money:

@@ -13,7 +13,7 @@ from quantum.domain.model.exceptions.validation_exceptions import (
 from quantum.domain.model.value_objects.identifiers import IntentId, OrderId
 from quantum.domain.model.value_objects.symbol import Symbol
 from quantum.domain.model.value_objects.time import EpochMs
-from quantum.domain.model.value_objects.volume import Volume
+from quantum.domain.model.value_objects.volume import NonNegativeVolume, PositiveVolume
 from quantum.domain.types.order_status import OrderStatus
 
 
@@ -33,9 +33,8 @@ class TradingIntent(AggregateRoot):
     orders: tuple[Order, ...] = ()
     submitted: bool = False
 
-    # --------------------------------------------------------------------------
-    # Invariants
-    # --------------------------------------------------------------------------
+    # --- Invariants -----------------------------------------------------------
+
     def _validate(self) -> None:
         # orders container integrity
         if not isinstance(self.orders, tuple):
@@ -53,9 +52,8 @@ class TradingIntent(AggregateRoot):
         if len(order_ids) != len(set(order_ids)):
             raise InvariantViolation("Duplicate OrderId detected in TradingIntent")
 
-    # --------------------------------------------------------------------------
-    # Commands
-    # --------------------------------------------------------------------------
+    # --- Commands -------------------------------------------------------------
+
     def submit(self, at: EpochMs, client_order_id: str) -> TradingIntent:
         if self.submitted:
             raise InvalidStateTransition("TradingIntent already submitted")
@@ -70,14 +68,18 @@ class TradingIntent(AggregateRoot):
 
         return replace(self, submitted=True)._raise(event)
 
-    def create_order(self, order_id: OrderId, volume: Volume) -> TradingIntent:
+    def create_order(
+        self,
+        order_id: OrderId,
+        volume: PositiveVolume,
+    ) -> TradingIntent:
         if not self.submitted:
             raise InvalidStateTransition("Cannot create order before submission")
 
         order = Order(
             order_id=order_id,
             requested_volume=volume,
-            filled_volume=Volume.zero(),
+            filled_volume=NonNegativeVolume.zero(),
             status=OrderStatus.PENDING,
         )
 

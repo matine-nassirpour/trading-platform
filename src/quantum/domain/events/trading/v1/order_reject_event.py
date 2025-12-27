@@ -4,9 +4,6 @@ from typing import ClassVar
 from quantum.domain.events.base import BaseEvent
 from quantum.domain.model.value_objects.execution_rejection import ExecutionRejection
 from quantum.domain.model.value_objects.identifiers import IntentId
-from quantum.domain.model.value_objects.order_request_snapshot import (
-    OrderRequestSnapshot,
-)
 from quantum.domain.model.value_objects.symbol import Symbol
 from quantum.domain.model.value_objects.time import EpochMs
 from quantum.domain.types.enums import App
@@ -20,5 +17,4 @@ class OrderRejectEvent(BaseEvent):
     symbol: Symbol
     reject_epoch_ms: EpochMs
     rejection: ExecutionRejection
-    request: OrderRequestSnapshot
     app: App = App.EA_MQL5

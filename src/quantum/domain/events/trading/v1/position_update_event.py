@@ -7,7 +7,7 @@ from quantum.domain.model.value_objects.money import Money
 from quantum.domain.model.value_objects.price import Price
 from quantum.domain.model.value_objects.symbol import Symbol
 from quantum.domain.model.value_objects.time import EpochMs
-from quantum.domain.model.value_objects.volume import Volume
+from quantum.domain.model.value_objects.volume import PositiveVolume
 from quantum.domain.types.enums import App
 
 
@@ -18,7 +18,7 @@ class PositionUpdateEvent(BaseEvent):
     symbol: Symbol
     position_id: PositionId
     intent_id: IntentId
-    volume: Volume
+    volume: PositiveVolume
     price_open: Price
     price_current: Price
     profit: Money  # Current PnL (unrealized)

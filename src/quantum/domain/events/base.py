@@ -1,5 +1,5 @@
 from abc import ABC
-from dataclasses import dataclass, fields
+from dataclasses import dataclass
 from datetime import datetime
 from typing import ClassVar
 
@@ -24,20 +24,3 @@ class BaseEvent(ABC):
     def __post_init__(self) -> None:
         if self.occurred_at.tzinfo is None:
             raise InvariantViolation("Event timestamp must be timezone-aware")
-
-    # --- Schema introspection -------------------------------------------------
-
-    @classmethod
-    def schema(cls) -> dict[str, str]:
-        """
-        Returns a stable, ordered representation of the event schema.
-        """
-        return {field.name: field.type.__name__ for field in fields(cls) if field.init}
-
-    @classmethod
-    def schema_id(cls) -> str:
-        """
-        Deterministic schema fingerprint.
-        """
-        items = sorted(cls.schema().items())
-        return "|".join(f"{k}:{v}" for k, v in items)

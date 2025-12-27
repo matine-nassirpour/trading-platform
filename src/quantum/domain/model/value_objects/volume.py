@@ -9,7 +9,15 @@ from quantum.domain.policies.monetary_policy import MonetaryPolicy
 
 
 @dataclass(frozen=True)
-class Volume(ValueObject):
+class PositiveVolume(ValueObject):
+    """
+    Volume strictly greater than zero.
+
+    Use cases:
+    - requested order volume
+    - initial position size
+    """
+
     value: Decimal
 
     def _validate(self) -> None:
@@ -19,10 +27,39 @@ class Volume(ValueObject):
         quantized = MonetaryPolicy.quantize_volume(self.value)
 
         if quantized <= Decimal("0"):
-            raise InvariantViolation("Volume must be strictly positive")
+            raise InvariantViolation("PositiveVolume must be strictly > 0")
 
         object.__setattr__(self, "value", quantized)
 
     @classmethod
-    def zero(cls) -> Volume:
+    def zero(cls) -> PositiveVolume:
         return cls(Decimal("0.0"))
+
+
+@dataclass(frozen=True)
+class NonNegativeVolume(ValueObject):
+    """
+    Volume greater than or equal to zero.
+
+    Use cases:
+    - filled volume
+    - partial fills
+    - closed volume
+    """
+
+    value: Decimal
+
+    def _validate(self) -> None:
+        if not isinstance(self.value, Decimal):
+            raise InvariantViolation("Volume value must be a Decimal")
+
+        quantized = MonetaryPolicy.quantize_volume(self.value)
+
+        if quantized < Decimal("0"):
+            raise InvariantViolation("NonNegativeVolume must be ≥ 0")
+
+        object.__setattr__(self, "value", quantized)
+
+    @classmethod
+    def zero(cls) -> NonNegativeVolume:
+        return cls(Decimal("0"))

@@ -10,7 +10,7 @@ from quantum.domain.model.value_objects.identifiers import PositionId
 from quantum.domain.model.value_objects.money import Money
 from quantum.domain.model.value_objects.price import Price
 from quantum.domain.model.value_objects.symbol import Symbol
-from quantum.domain.model.value_objects.volume import Volume
+from quantum.domain.model.value_objects.volume import PositiveVolume
 from quantum.domain.types.position_side import PositionSide
 
 
@@ -26,7 +26,7 @@ class Position(AggregateRoot):
     position_id: PositionId
     symbol: Symbol
     side: PositionSide
-    volume: Volume
+    volume: PositiveVolume
     entry_price: Price
     realized_pnl: Money
     closed: bool = False
@@ -60,7 +60,7 @@ class Position(AggregateRoot):
         position_id: PositionId,
         symbol: Symbol,
         side: PositionSide,
-        volume: Volume,
+        volume: PositiveVolume,
         entry_price: Price,
         currency: str = "USD",
     ) -> Position:
