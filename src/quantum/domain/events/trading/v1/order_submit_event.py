@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, ClassVar
+from typing import ClassVar
 
 from quantum.domain.events.base import BaseEvent
 from quantum.domain.model.value_objects.identifiers import IntentId
@@ -15,6 +15,5 @@ class OrderSubmitEvent(BaseEvent):
     client_order_id: str
     symbol: Symbol
     request_epoch_ms: EpochMs
-    request: dict[str, Any]  # snapshot of the MqlTradeRequest
     response_epoch_ms: EpochMs | None = None  # completed in the ACK
     app: App = App.EA_MQL5

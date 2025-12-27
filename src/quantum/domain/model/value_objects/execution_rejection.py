@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from quantum.domain.model.exceptions import InvariantViolation
 from quantum.domain.model.value_objects.base import ValueObject
 
 
@@ -10,4 +11,4 @@ class ExecutionRejection(ValueObject):
 
     def _validate(self) -> None:
         if not self.code:
-            raise ValueError("Rejection code must not be empty")
+            raise InvariantViolation("Rejection code must not be empty")
