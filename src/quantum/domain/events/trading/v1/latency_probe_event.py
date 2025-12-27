@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import ClassVar
 
 from quantum.domain.events.base import BaseEvent
@@ -6,6 +7,7 @@ from quantum.domain.model.value_objects.time import EpochMs
 from quantum.domain.types.enums import App, LatencyPhase
 
 
+@dataclass(frozen=True)
 class LatencyProbeEvent(BaseEvent):
     event_name: ClassVar[str] = "trading.latency_probe"
     app: App

@@ -33,15 +33,24 @@ class Order:
         self.status = OrderStatus.ACKED
 
     def register_fill(self, fill_volume: Volume) -> None:
-        if self.status not in (OrderStatus.ACKED, OrderStatus.PARTIALLY_FILLED):
-            raise InvalidStateTransition("Cannot fill order in this state")
+        if fill_volume.value <= 0:
+            raise InvalidStateTransition("Fill volume must be positive")
 
-        if self.filled_volume is None:
-            self.filled_volume = fill_volume
-        else:
-            self.filled_volume = Volume(self.filled_volume.value + fill_volume.value)
+        if self.status not in {OrderStatus.ACKED, OrderStatus.PARTIALLY_FILLED}:
+            raise InvalidStateTransition("Order not fillable in this state")
 
-        if self.filled_volume.value >= self.requested_volume.value:
-            self.status = OrderStatus.FILLED
-        else:
-            self.status = OrderStatus.PARTIALLY_FILLED
+        new_volume = (
+            fill_volume
+            if self.filled_volume is None
+            else Volume(self.filled_volume.value + fill_volume.value)
+        )
+
+        if new_volume.value > self.requested_volume.value:
+            raise InvalidStateTransition("Overfill detected")
+
+        self.filled_volume = new_volume
+        self.status = (
+            OrderStatus.FILLED
+            if new_volume.value == self.requested_volume.value
+            else OrderStatus.PARTIALLY_FILLED
+        )

@@ -9,6 +9,7 @@ from quantum.domain.model.value_objects.money import Money
 class RiskState:
     """
     Aggregate Root.
+    Encapsulates drawdown invariant.
     """
 
     max_drawdown: Decimal
@@ -16,7 +17,8 @@ class RiskState:
     kill_switch: bool = False
 
     def register_pnl(self, pnl: Money) -> None:
-        self.current_drawdown += min(Decimal("0"), pnl.value)
+        if pnl.value < 0:
+            self.current_drawdown += pnl.value
 
         if abs(self.current_drawdown) >= self.max_drawdown:
             self.kill_switch = True

@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from decimal import Decimal
 from typing import ClassVar
 
@@ -8,17 +9,15 @@ from quantum.domain.model.value_objects.time import EpochMs
 from quantum.domain.types.enums import App, DealEntry, DealReason
 
 
+@dataclass(frozen=True)
 class OrderFillEvent(BaseEvent):
     event_name: ClassVar[str] = "trading.order_fill"
-    app: App = App.EA_MQL5
 
-    # IDs
     intent_id: IntentId
     order_id: OrderId
     deal_id: DealId
     symbol: Symbol
 
-    # Current Fill
     price: Decimal
     volume: Decimal
     commission: Decimal
@@ -32,3 +31,4 @@ class OrderFillEvent(BaseEvent):
     reason: DealReason
     fill_epoch_ms: EpochMs  # t_fill (unix ms)
     partial: bool
+    app: App = App.EA_MQL5

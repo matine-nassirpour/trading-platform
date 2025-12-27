@@ -5,6 +5,7 @@ from quantum.domain.model.exceptions import InvalidStateTransition
 from quantum.domain.model.value_objects.identifiers import PositionId
 from quantum.domain.model.value_objects.money import Money
 from quantum.domain.model.value_objects.price import Price
+from quantum.domain.model.value_objects.symbol import Symbol
 from quantum.domain.model.value_objects.volume import Volume
 
 
@@ -15,7 +16,7 @@ class Position:
     """
 
     position_id: PositionId
-    symbol: str
+    symbol: Symbol
     volume: Volume
     entry_price: Price
     realized_pnl: Money = Money(Decimal("0"))
@@ -26,8 +27,8 @@ class Position:
         if self._closed:
             raise InvalidStateTransition("Position already closed")
 
-        pnl = (exit_price.value - self.entry_price.value) * self.volume.value
-        self.realized_pnl = Money(pnl)
+        pnl_value = (exit_price.value - self.entry_price.value) * self.volume.value
+        self.realized_pnl = Money(pnl_value, self.realized_pnl.currency)
         self._closed = True
 
     @property

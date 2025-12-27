@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from decimal import Decimal
 from typing import ClassVar, Literal
 
@@ -8,15 +9,16 @@ from quantum.domain.model.value_objects.time import EpochMs
 from quantum.domain.types.enums import App
 
 
+@dataclass(frozen=True)
 class SlTpUpdateEvent(BaseEvent):
     event_name: ClassVar[str] = "trading.sl_tp_update"
-    app: App = App.EA_MQL5
     symbol: Symbol
     position_id: PositionId
+    update_epoch_ms: EpochMs
+    reason: Literal["manual", "rule", "risk"]
     intent_id: IntentId | None = None
     old_sl: Decimal | None = None
     new_sl: Decimal | None = None
     old_tp: Decimal | None = None
     new_tp: Decimal | None = None
-    update_epoch_ms: EpochMs
-    reason: Literal["manual", "rule", "risk"]
+    app: App = App.EA_MQL5

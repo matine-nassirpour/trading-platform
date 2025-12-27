@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from decimal import Decimal
 from typing import ClassVar
 
@@ -7,6 +8,7 @@ from quantum.domain.model.value_objects.symbol import Symbol
 from quantum.domain.types.enums import App, OrderType, TimeInForce
 
 
+@dataclass(frozen=True)
 class OrderIntentEvent(BaseEvent):
     event_name: ClassVar[str] = "trading.order_intent"
     app: App

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Protocol, runtime_checkable
 
@@ -10,22 +11,23 @@ class _HasValue(Protocol):
 
 
 @dataclass(frozen=True)
-class ValueObject:
+class ValueObject(ABC):
     """
     Canonical base class for all Value Objects.
 
     Guarantees:
     - Immutability
     - Equality by value
-    - Hash ability
+    - Mandatory invariant validation
     """
 
     def __post_init__(self) -> None:
         self._validate()
 
+    @abstractmethod
     def _validate(self) -> None:
-        """Override in subclasses to enforce invariants."""
-        pass
+        """Must enforce all invariants. Mandatory."""
+        raise NotImplementedError
 
     def __str__(self) -> str:
         assert isinstance(self, _HasValue)

@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Any, ClassVar
 
 from quantum.domain.events.base import BaseEvent
@@ -7,9 +8,9 @@ from quantum.domain.model.value_objects.time import EpochMs
 from quantum.domain.types.enums import App
 
 
+@dataclass(frozen=True)
 class OrderRejectEvent(BaseEvent):
     event_name: ClassVar[str] = "trading.order_reject"
-    app: App = App.EA_MQL5
     intent_id: IntentId
     client_order_id: str
     symbol: Symbol
@@ -17,3 +18,4 @@ class OrderRejectEvent(BaseEvent):
     error_code: int  # RETCODE_*
     error_desc: str
     request_snapshot: dict[str, Any] | None = None
+    app: App = App.EA_MQL5

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from decimal import Decimal
 from typing import ClassVar
 
@@ -15,12 +16,12 @@ from quantum.domain.model.value_objects.time import EpochMs
 from quantum.domain.types.enums import App, DealEntry, DealReason
 
 
+@dataclass(frozen=True)
 class StopLossTriggerEvent(BaseEvent):
     event_name: ClassVar[str] = "trading.stoploss_trigger"
-    app: App = App.EA_MQL5
 
-    intent_id: IntentId | None = None
-    order_id: OrderId | None = None
+    intent_id: IntentId
+    order_id: OrderId
     deal_id: DealId
     position_id: PositionId
     symbol: Symbol
@@ -28,6 +29,7 @@ class StopLossTriggerEvent(BaseEvent):
     trigger_price: Decimal
     sl_price: Decimal
     volume_closed: Decimal
+    trigger_epoch_ms: EpochMs
+    app: App = App.EA_MQL5
     deal_entry: DealEntry = DealEntry.OUT
     reason: DealReason = DealReason.SL
-    trigger_epoch_ms: EpochMs
