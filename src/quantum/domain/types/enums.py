@@ -27,6 +27,9 @@ class OrderType(StrEnum):
     SELL_STOP_LIMIT = "sell_stop_limit"
     CLOSE_BY = "close_by"  # Order for closing a position by an opposite one
 
+    def requires_price(self) -> bool:
+        return self not in {OrderType.BUY, OrderType.SELL}
+
 
 class OrderFillingType(StrEnum):
     FOK = "fok"

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 from quantum.domain.events.base import BaseEvent
 
@@ -8,18 +8,19 @@ from quantum.domain.events.base import BaseEvent
 @dataclass(frozen=True)
 class AggregateRoot:
     """
-    Aggregate Root with domain event support.
+    Canonical Aggregate Root with immutable domain event support.
     """
 
-    _events: tuple[BaseEvent, ...] = field(default_factory=tuple, init=False)
+    _events: tuple[BaseEvent, ...] = field(
+        default_factory=tuple,
+        repr=False,
+        compare=False,
+        init=True,
+        kw_only=True,
+    )
 
     def _raise(self, event: BaseEvent):
-        return self.__class__(
-            **{
-                **self.__dict__,
-                "_events": self._events + (event,),
-            }
-        )
+        return replace(self, _events=self._events + (event,))
 
     @property
     def events(self) -> tuple[BaseEvent, ...]:

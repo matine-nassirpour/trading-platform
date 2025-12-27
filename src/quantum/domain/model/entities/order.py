@@ -15,14 +15,29 @@ class Order:
     filled_volume: Volume
     status: OrderStatus
 
+    def _validate(self) -> None:
+        if self.filled_volume.value < 0:
+            raise InvalidStateTransition("Filled volume cannot be negative")
+
+        if self.filled_volume.value > self.requested_volume.value:
+            raise InvalidStateTransition("Filled volume exceeds requested volume")
+
+        if (
+            self.status == OrderStatus.FILLED
+            and self.filled_volume != self.requested_volume
+        ):
+            raise InvalidStateTransition("FILLED order must have full volume")
+
+    def acknowledge(self) -> Order:
+        if self.status != OrderStatus.PENDING:
+            raise InvalidStateTransition("Only pending orders can be acknowledged")
+        return replace(self, status=OrderStatus.ACKED)
+
     def register_fill(self, volume: Volume) -> Order:
         if self.status not in {OrderStatus.ACKED, OrderStatus.PARTIALLY_FILLED}:
             raise InvalidStateTransition("Order not fillable")
 
         new_volume = Volume(self.filled_volume.value + volume.value)
-
-        if new_volume.value > self.requested_volume.value:
-            raise InvalidStateTransition("Overfill")
 
         status = (
             OrderStatus.FILLED

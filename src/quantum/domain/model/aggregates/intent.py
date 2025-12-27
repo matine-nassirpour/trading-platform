@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from datetime import UTC, datetime
 
 from quantum.domain.events.trading.v1.order_ack_event import OrderAckEvent
+from quantum.domain.events.trading.v1.order_submit_event import OrderSubmitEvent
 from quantum.domain.model.aggregates.base import AggregateRoot
 from quantum.domain.model.entities.order import Order
 from quantum.domain.model.exceptions import InvalidStateTransition
@@ -21,6 +21,20 @@ class TradingIntent(AggregateRoot):
     orders: tuple[Order, ...] = ()
     submitted: bool = False
 
+    def submit(self, at: EpochMs, client_order_id: str) -> TradingIntent:
+        if self.submitted:
+            raise InvalidStateTransition("Intent already submitted")
+
+        event = OrderSubmitEvent(
+            occurred_at=at.to_datetime(),
+            intent_id=self.intent_id,
+            client_order_id=client_order_id,
+            symbol=self.symbol,
+            request_epoch_ms=at,
+        )
+
+        return replace(self, submitted=True)._raise(event)
+
     def create_order(self, order_id: OrderId, volume: Volume) -> TradingIntent:
         if not self.submitted:
             raise InvalidStateTransition("Cannot create order before submission")
@@ -34,22 +48,26 @@ class TradingIntent(AggregateRoot):
 
         return replace(self, orders=self.orders + (order,))
 
-    def acknowledge_order(
-        self, order_id: OrderId, ack_epoch_ms: EpochMs
-    ) -> TradingIntent:
-        updated_orders = []
-        for order in self.orders:
-            if order.order_id == order_id:
-                updated_orders.append(order.with_acknowledged())
+    def acknowledge_order(self, order_id: OrderId, at: EpochMs) -> TradingIntent:
+        updated = []
+        found = False
+
+        for o in self.orders:
+            if o.order_id == order_id:
+                updated.append(o.acknowledge())
+                found = True
             else:
-                updated_orders.append(order)
+                updated.append(o)
+
+        if not found:
+            raise InvalidStateTransition("Order not found")
 
         event = OrderAckEvent(
-            occurred_at=datetime.now(UTC),
+            occurred_at=at.to_datetime(),
             intent_id=self.intent_id,
             order_id=order_id,
             symbol=self.symbol,
-            ack_epoch_ms=ack_epoch_ms,
+            ack_epoch_ms=at,
         )
 
-        return replace(self, orders=tuple(updated_orders))._raise(event)
+        return replace(self, orders=tuple(updated))._raise(event)
