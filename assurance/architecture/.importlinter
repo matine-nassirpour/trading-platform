@@ -93,6 +93,7 @@ forbidden_modules =
     requests
     numpy
     pandas
+    pydantic
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮

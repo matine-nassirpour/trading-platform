@@ -1,9 +1,9 @@
+from dataclasses import dataclass
 from decimal import Decimal
-
-from pydantic import Field
 
 from quantum.domain.model.value_objects.base import ValueObject
 
 
+@dataclass(frozen=True)
 class Money(ValueObject):
-    value: Decimal = Field(..., description="Signed monetary amount")
+    value: Decimal

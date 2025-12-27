@@ -1,21 +1,19 @@
 import re
 
-from typing import ClassVar
+from dataclasses import dataclass
 
-from pydantic import Field, field_validator
-
+from quantum.domain.model.exceptions import InvariantViolation
 from quantum.domain.model.value_objects.base import ValueObject
 
+_SYMBOL_RE = re.compile(r"^[A-Z0-9._\-]{3,20}$")
 
+
+@dataclass(frozen=True)
 class Symbol(ValueObject):
-    value: str = Field(..., description="Trading symbol")
+    value: str
 
-    _PATTERN: ClassVar[re.Pattern[str]] = re.compile(r"^[A-Z0-9._\-]{3,20}$")
-
-    @field_validator("value")
-    @classmethod
-    def _normalize(cls, v: str) -> str:
-        val = v.strip().upper()
-        if not cls._PATTERN.match(val):
-            raise ValueError(f"Invalid symbol format: {v}")
-        return val
+    def _validate(self) -> None:
+        v = self.value.strip().upper()
+        if not _SYMBOL_RE.match(v):
+            raise InvariantViolation(f"Invalid symbol: {self.value}")
+        object.__setattr__(self, "value", v)

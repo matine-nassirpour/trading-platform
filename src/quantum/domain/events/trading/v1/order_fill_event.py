@@ -5,7 +5,6 @@ from quantum.domain.events.base import BaseEvent
 from quantum.domain.model.value_objects.identifiers import DealId, IntentId, OrderId
 from quantum.domain.model.value_objects.symbol import Symbol
 from quantum.domain.model.value_objects.time import EpochMs
-from quantum.domain.types.decimal_validators import NonNegativeDecimal, PositiveDecimal
 from quantum.domain.types.enums import App, DealEntry, DealReason
 
 
@@ -20,14 +19,14 @@ class OrderFillEvent(BaseEvent):
     symbol: Symbol
 
     # Current Fill
-    price: PositiveDecimal
-    volume: PositiveDecimal
+    price: Decimal
+    volume: Decimal
     commission: Decimal
     swap: Decimal
     profit: Decimal
 
-    cum_volume: PositiveDecimal
-    leaves_volume: NonNegativeDecimal
+    cum_volume: Decimal
+    leaves_volume: Decimal
 
     deal_entry: DealEntry
     reason: DealReason

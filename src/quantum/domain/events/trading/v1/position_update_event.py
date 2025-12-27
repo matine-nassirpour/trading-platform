@@ -5,7 +5,6 @@ from quantum.domain.events.base import BaseEvent
 from quantum.domain.model.value_objects.identifiers import IntentId, PositionId
 from quantum.domain.model.value_objects.symbol import Symbol
 from quantum.domain.model.value_objects.time import EpochMs
-from quantum.domain.types.decimal_validators import PositiveDecimal
 from quantum.domain.types.enums import App
 
 
@@ -15,7 +14,7 @@ class PositionUpdateEvent(BaseEvent):
     symbol: Symbol
     position_id: PositionId
     intent_id: IntentId | None = None
-    volume: PositiveDecimal
+    volume: Decimal
     price_open: Decimal
     price_current: Decimal
     sl: Decimal | None = None

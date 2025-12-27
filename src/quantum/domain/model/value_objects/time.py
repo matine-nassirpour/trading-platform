@@ -1,19 +1,22 @@
-from datetime import UTC, datetime
+from __future__ import annotations
 
-from pydantic import Field
+from dataclasses import dataclass
+from datetime import datetime
 
+from quantum.domain.model.exceptions import InvariantViolation
 from quantum.domain.model.value_objects.base import ValueObject
 
 
+@dataclass(frozen=True)
 class EpochMs(ValueObject):
-    value: int = Field(..., ge=0, description="Unix epoch in milliseconds")
+    value: int
+
+    def _validate(self) -> None:
+        if self.value < 0:
+            raise InvariantViolation("EpochMs must be ≥ 0")
 
     @classmethod
-    def now(cls) -> "EpochMs":
-        return cls(value=int(datetime.now(tz=UTC).timestamp() * 1_000))
-
-    @classmethod
-    def from_datetime(cls, dt: datetime) -> "EpochMs":
+    def from_datetime(cls, dt: datetime) -> EpochMs:
         if dt.tzinfo is None:
-            raise ValueError("datetime must be timezone-aware")
-        return cls(value=int(dt.timestamp() * 1_000))
+            raise InvariantViolation("Datetime must be timezone-aware")
+        return cls(int(dt.timestamp() * 1000))
