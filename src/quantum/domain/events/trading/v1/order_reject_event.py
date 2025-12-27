@@ -1,8 +1,12 @@
 from dataclasses import dataclass
-from typing import Any, ClassVar
+from typing import ClassVar
 
 from quantum.domain.events.base import BaseEvent
+from quantum.domain.model.value_objects.execution_rejection import ExecutionRejection
 from quantum.domain.model.value_objects.identifiers import IntentId
+from quantum.domain.model.value_objects.order_request_snapshot import (
+    OrderRequestSnapshot,
+)
 from quantum.domain.model.value_objects.symbol import Symbol
 from quantum.domain.model.value_objects.time import EpochMs
 from quantum.domain.types.enums import App
@@ -12,10 +16,8 @@ from quantum.domain.types.enums import App
 class OrderRejectEvent(BaseEvent):
     event_name: ClassVar[str] = "trading.order_reject"
     intent_id: IntentId
-    client_order_id: str
     symbol: Symbol
     reject_epoch_ms: EpochMs
-    error_code: int  # RETCODE_*
-    error_desc: str
-    request_snapshot: dict[str, Any] | None = None
+    rejection: ExecutionRejection
+    request: OrderRequestSnapshot
     app: App = App.EA_MQL5

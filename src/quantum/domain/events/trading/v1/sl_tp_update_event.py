@@ -1,9 +1,9 @@
 from dataclasses import dataclass
-from decimal import Decimal
 from typing import ClassVar, Literal
 
 from quantum.domain.events.base import BaseEvent
 from quantum.domain.model.value_objects.identifiers import IntentId, PositionId
+from quantum.domain.model.value_objects.price import Price
 from quantum.domain.model.value_objects.symbol import Symbol
 from quantum.domain.model.value_objects.time import EpochMs
 from quantum.domain.types.enums import App
@@ -17,8 +17,8 @@ class SlTpUpdateEvent(BaseEvent):
     update_epoch_ms: EpochMs
     reason: Literal["manual", "rule", "risk"]
     intent_id: IntentId | None = None
-    old_sl: Decimal | None = None
-    new_sl: Decimal | None = None
-    old_tp: Decimal | None = None
-    new_tp: Decimal | None = None
+    old_sl: Price | None = None
+    new_sl: Price | None = None
+    old_tp: Price | None = None
+    new_tp: Price | None = None
     app: App = App.EA_MQL5

@@ -1,36 +1,56 @@
-from dataclasses import dataclass
+from __future__ import annotations
+
+from dataclasses import dataclass, replace
 from decimal import Decimal
 
+from quantum.domain.model.aggregates.base import AggregateRoot
 from quantum.domain.model.exceptions import InvalidStateTransition
 from quantum.domain.model.value_objects.identifiers import PositionId
 from quantum.domain.model.value_objects.money import Money
 from quantum.domain.model.value_objects.price import Price
 from quantum.domain.model.value_objects.symbol import Symbol
 from quantum.domain.model.value_objects.volume import Volume
+from quantum.domain.types.position_side import PositionSide
 
 
-@dataclass
-class Position:
-    """
-    Aggregate Root.
-    """
-
+@dataclass(frozen=True)
+class Position(AggregateRoot):
     position_id: PositionId
     symbol: Symbol
+    side: PositionSide
     volume: Volume
     entry_price: Price
-    realized_pnl: Money = Money(Decimal("0"))
+    realized_pnl: Money
+    closed: bool = False
 
-    _closed: bool = False
+    @staticmethod
+    def open(
+        position_id: PositionId,
+        symbol: Symbol,
+        side: PositionSide,
+        volume: Volume,
+        entry_price: Price,
+        currency: str = "USD",
+    ) -> Position:
+        return Position(
+            position_id=position_id,
+            symbol=symbol,
+            side=side,
+            volume=volume,
+            entry_price=entry_price,
+            realized_pnl=Money(Decimal("0"), currency),
+            closed=False,
+        )
 
-    def close(self, exit_price: Price) -> None:
-        if self._closed:
+    def close(self, exit_price: Price) -> Position:
+        if self.closed:
             raise InvalidStateTransition("Position already closed")
 
-        pnl_value = (exit_price.value - self.entry_price.value) * self.volume.value
-        self.realized_pnl = Money(pnl_value, self.realized_pnl.currency)
-        self._closed = True
+        delta = exit_price.value - self.entry_price.value
+        pnl = delta * self.volume.value * Decimal(self.side.sign())
 
-    @property
-    def is_closed(self) -> bool:
-        return self._closed
+        return replace(
+            self,
+            realized_pnl=Money(pnl, self.realized_pnl.currency),
+            closed=True,
+        )
