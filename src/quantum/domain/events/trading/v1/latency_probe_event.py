@@ -10,6 +10,7 @@ from quantum.domain.types.enums import App, LatencyPhase
 @dataclass(frozen=True)
 class LatencyProbeEvent(BaseEvent):
     event_name: ClassVar[str] = "trading.latency_probe"
+    event_version: ClassVar[int] = 1
     app: App
     phase: LatencyPhase
     symbol: Symbol

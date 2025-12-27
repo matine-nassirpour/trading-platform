@@ -11,6 +11,7 @@ from quantum.domain.types.enums import App
 @dataclass(frozen=True)
 class OrderSubmitEvent(BaseEvent):
     event_name: ClassVar[str] = "trading.order_submit"
+    event_version: ClassVar[int] = 1
     intent_id: IntentId
     client_order_id: str
     symbol: Symbol

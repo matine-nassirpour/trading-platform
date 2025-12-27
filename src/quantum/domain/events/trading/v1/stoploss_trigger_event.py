@@ -20,6 +20,7 @@ from quantum.domain.types.enums import App, DealEntry, DealReason
 @dataclass(frozen=True)
 class StopLossTriggerEvent(BaseEvent):
     event_name: ClassVar[str] = "trading.stoploss_trigger"
+    event_version: ClassVar[int] = 1
 
     intent_id: IntentId
     order_id: OrderId

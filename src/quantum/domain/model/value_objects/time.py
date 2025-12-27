@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
-from quantum.domain.model.exceptions import InvariantViolation
+from quantum.domain.model.exceptions.validation_exceptions import InvariantViolation
 from quantum.domain.model.value_objects.base import ValueObject
 
 

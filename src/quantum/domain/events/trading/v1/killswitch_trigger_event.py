@@ -9,6 +9,7 @@ from quantum.domain.types.enums import App, KillSwitchReason
 @dataclass(frozen=True)
 class KillSwitchTriggerEvent(BaseEvent):
     event_name: ClassVar[str] = "trading.killswitch_trigger"
+    event_version: ClassVar[int] = 1
     trigger_epoch_ms: EpochMs
     reason: KillSwitchReason
     detail: str | None = None

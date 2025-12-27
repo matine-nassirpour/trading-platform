@@ -12,6 +12,7 @@ from quantum.domain.types.enums import App, OrderType, TimeInForce
 @dataclass(frozen=True)
 class OrderIntentEvent(BaseEvent):
     event_name: ClassVar[str] = "trading.order_intent"
+    event_version: ClassVar[int] = 1
     app: App
 
     intent_id: IntentId

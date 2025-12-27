@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from quantum.domain.model.exceptions import RiskViolation
+from quantum.domain.model.exceptions.risk_exceptions import DrawdownLimitExceeded
 from quantum.domain.model.value_objects.drawdown_limit import DrawdownLimit
 from quantum.domain.model.value_objects.money import Money
 
@@ -16,4 +16,4 @@ class DrawdownPolicy:
 
     def evaluate(self, current_drawdown: Money) -> None:
         if abs(current_drawdown.value) >= self.max_drawdown.value.value:
-            raise RiskViolation("Maximum drawdown exceeded")
+            raise DrawdownLimitExceeded("Maximum drawdown exceeded")

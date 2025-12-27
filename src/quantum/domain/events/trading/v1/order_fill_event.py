@@ -14,6 +14,7 @@ from quantum.domain.types.enums import App, DealEntry, DealReason
 @dataclass(frozen=True)
 class OrderFillEvent(BaseEvent):
     event_name: ClassVar[str] = "trading.order_fill"
+    event_version: ClassVar[int] = 1
 
     intent_id: IntentId
     order_id: OrderId

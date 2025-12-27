@@ -12,9 +12,10 @@ from quantum.domain.types.enums import App
 @dataclass(frozen=True)
 class BreakevenTriggerEvent(BaseEvent):
     event_name: ClassVar[str] = "trading.breakeven_trigger"
-    symbol: Symbol
-    position_id: PositionId
+    event_version: ClassVar[int] = 1
     intent_id: IntentId
-    trigger_epoch_ms: EpochMs
+    position_id: PositionId
+    symbol: Symbol
     price_at_trigger: Price
+    trigger_epoch_ms: EpochMs
     app: App = App.EA_MQL5

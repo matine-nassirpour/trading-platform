@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from quantum.domain.model.exceptions import InvariantViolation
+from quantum.domain.model.exceptions.validation_exceptions import InvariantViolation
 
 
 def require_positive(value: Decimal, name: str) -> None:

@@ -12,6 +12,7 @@ from quantum.domain.types.order_check_outcome import OrderCheckOutcome
 @dataclass(frozen=True)
 class OrderCheckEvent(BaseEvent):
     event_name: ClassVar[str] = "trading.order_check"
+    event_version: ClassVar[int] = 1
 
     intent_id: IntentId
     symbol: Symbol

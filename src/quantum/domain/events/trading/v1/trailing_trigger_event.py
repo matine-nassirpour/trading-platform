@@ -12,11 +12,12 @@ from quantum.domain.types.enums import App
 @dataclass(frozen=True)
 class TrailingTriggerEvent(BaseEvent):
     event_name: ClassVar[str] = "trading.trailing_trigger"
-    symbol: Symbol
+    event_version: ClassVar[int] = 1
 
     intent_id: IntentId
     position_id: PositionId
 
+    symbol: Symbol
     new_sl: Price
 
     trigger_epoch_ms: EpochMs

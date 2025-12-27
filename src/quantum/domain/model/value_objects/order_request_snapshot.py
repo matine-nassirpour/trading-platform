@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from quantum.domain.model.exceptions import InvariantViolation
+from quantum.domain.model.exceptions.validation_exceptions import InvariantViolation
 from quantum.domain.model.value_objects.base import ValueObject
 from quantum.domain.model.value_objects.price import Price
 from quantum.domain.model.value_objects.symbol import Symbol

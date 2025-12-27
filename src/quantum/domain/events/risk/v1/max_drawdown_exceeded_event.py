@@ -9,6 +9,7 @@ from quantum.domain.model.value_objects.time import EpochMs
 @dataclass(frozen=True)
 class MaxDrawdownExceededEvent(BaseEvent):
     event_name: ClassVar[str] = "risk.max_drawdown_exceeded"
+    event_version: ClassVar[int] = 1
 
     current_drawdown: Money
     limit: Money

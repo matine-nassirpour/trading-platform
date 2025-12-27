@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from decimal import Decimal
 
-from quantum.domain.model.exceptions import InvariantViolation
+from quantum.domain.model.exceptions.validation_exceptions import InvariantViolation
 from quantum.domain.model.value_objects.base import ValueObject
 from quantum.domain.model.value_objects.money import Money
 

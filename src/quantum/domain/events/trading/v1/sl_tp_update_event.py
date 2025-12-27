@@ -12,6 +12,7 @@ from quantum.domain.types.enums import App
 @dataclass(frozen=True)
 class SlTpUpdateEvent(BaseEvent):
     event_name: ClassVar[str] = "trading.sl_tp_update"
+    event_version: ClassVar[int] = 1
     symbol: Symbol
     position_id: PositionId
     update_epoch_ms: EpochMs

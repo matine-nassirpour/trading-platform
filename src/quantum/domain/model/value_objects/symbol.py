@@ -2,7 +2,7 @@ import re
 
 from dataclasses import dataclass
 
-from quantum.domain.model.exceptions import InvariantViolation
+from quantum.domain.model.exceptions.validation_exceptions import InvariantViolation
 from quantum.domain.model.value_objects.base import ValueObject
 
 _SYMBOL_RE = re.compile(r"^[A-Z0-9._\-]{3,20}$")

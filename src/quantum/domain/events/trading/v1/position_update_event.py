@@ -14,6 +14,7 @@ from quantum.domain.types.enums import App
 @dataclass(frozen=True)
 class PositionUpdateEvent(BaseEvent):
     event_name: ClassVar[str] = "trading.position_update"
+    event_version: ClassVar[int] = 1
     symbol: Symbol
     position_id: PositionId
     intent_id: IntentId

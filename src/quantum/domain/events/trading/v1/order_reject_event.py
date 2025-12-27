@@ -15,6 +15,7 @@ from quantum.domain.types.enums import App
 @dataclass(frozen=True)
 class OrderRejectEvent(BaseEvent):
     event_name: ClassVar[str] = "trading.order_reject"
+    event_version: ClassVar[int] = 1
     intent_id: IntentId
     symbol: Symbol
     reject_epoch_ms: EpochMs
