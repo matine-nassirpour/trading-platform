@@ -6,6 +6,7 @@ from quantum.domain.events.trading.v1.order_ack_event import OrderAckEvent
 from quantum.domain.events.trading.v1.order_submit_event import OrderSubmitEvent
 from quantum.domain.model.aggregates.base import AggregateRoot
 from quantum.domain.model.entities.order import Order
+from quantum.domain.model.exceptions.order_exceptions import OrderNotFound
 from quantum.domain.model.exceptions.validation_exceptions import (
     InvalidStateTransition,
     InvariantViolation,
@@ -97,7 +98,7 @@ class TradingIntent(AggregateRoot):
                 updated_orders.append(order)
 
         if not found:
-            raise InvalidStateTransition("Order not found in TradingIntent")
+            raise OrderNotFound(f"Order {order_id} not found in TradingIntent")
 
         event = OrderAckEvent(
             occurred_at=at.to_datetime(),

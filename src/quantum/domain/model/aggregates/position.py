@@ -11,6 +11,7 @@ from quantum.domain.model.value_objects.money import Money
 from quantum.domain.model.value_objects.price import Price
 from quantum.domain.model.value_objects.symbol import Symbol
 from quantum.domain.model.value_objects.volume import PositiveVolume
+from quantum.domain.services.pnl_service import PnLService
 from quantum.domain.types.position_side import PositionSide
 
 
@@ -80,11 +81,16 @@ class Position(AggregateRoot):
         if self.closed:
             raise PositionAlreadyClosed("Position already closed")
 
-        delta = exit_price.value - self.entry_price.value
-        pnl_value = delta * self.volume.value * Decimal(self.side.sign())
+        pnl = PnLService.compute_realized_pnl(
+            entry_price=self.entry_price,
+            exit_price=exit_price,
+            volume=self.volume,
+            side=self.side,
+            currency=self.realized_pnl.currency,
+        )
 
         return replace(
             self,
-            realized_pnl=Money(pnl_value, self.realized_pnl.currency),
+            realized_pnl=pnl,
             closed=True,
         )

@@ -31,10 +31,6 @@ class PositiveVolume(ValueObject):
 
         object.__setattr__(self, "value", quantized)
 
-    @classmethod
-    def zero(cls) -> PositiveVolume:
-        return cls(Decimal("0.0"))
-
 
 @dataclass(frozen=True)
 class NonNegativeVolume(ValueObject):

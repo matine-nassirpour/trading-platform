@@ -5,6 +5,7 @@ from dataclasses import dataclass, replace
 from quantum.domain.model.exceptions.order_exceptions import (
     OrderAlreadyAcknowledged,
     OrderNotFillable,
+    OrderOverfill,
 )
 from quantum.domain.model.exceptions.validation_exceptions import InvalidStateTransition
 from quantum.domain.model.value_objects.identifiers import OrderId
@@ -50,9 +51,14 @@ class Order:
             OrderStatus.ACKED,
             OrderStatus.PARTIALLY_FILLED,
         }:
-            raise OrderNotFillable("Order not fillable")
+            raise OrderNotFillable("Order not fillable in current state")
 
-        new_filled = NonNegativeVolume(self.filled_volume.value + volume.value)
+        new_total = self.filled_volume.value + volume.value
+
+        if new_total > self.requested_volume.value:
+            raise OrderOverfill(f"Fill {volume.value} exceeds remaining volume")
+
+        new_filled = NonNegativeVolume(new_total)
 
         status = (
             OrderStatus.FILLED

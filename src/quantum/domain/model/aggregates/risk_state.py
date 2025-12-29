@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from decimal import Decimal
 
 from quantum.domain.events.risk.v1.max_drawdown_exceeded_event import (
     MaxDrawdownExceededEvent,
@@ -17,59 +16,51 @@ from quantum.domain.model.value_objects.time import EpochMs
 class RiskState(AggregateRoot):
     """
     Aggregate Root encapsulating drawdown-based risk constraints.
-
-    Invariants:
-    - current_drawdown.value <= 0
-    - max_drawdown.value.value > 0
-    - currencies must match
     """
 
     max_drawdown: DrawdownLimit
-    current_drawdown: Money
+    equity: Money
+    equity_peak: Money
 
     # --------------------------------------------------------------------------
     # Invariants
     # --------------------------------------------------------------------------
     def _validate(self) -> None:
-        if self.current_drawdown.value > Decimal("0"):
-            raise InvariantViolation("Current drawdown must be ≤ 0")
-
-        if self.max_drawdown.value.value <= Decimal("0"):
-            raise InvariantViolation("Max drawdown must be strictly positive")
-
-        if self.current_drawdown.currency != self.max_drawdown.value.currency:
+        if self.equity.currency != self.equity_peak.currency:
             raise InvariantViolation("Currency mismatch in RiskState")
+
+        if self.max_drawdown.value.currency != self.equity.currency:
+            raise InvariantViolation("Drawdown currency mismatch")
+
+        if self.equity_peak.value < self.equity.value:
+            raise InvariantViolation("Equity peak cannot be below current equity")
 
     # --------------------------------------------------------------------------
     # Commands
     # --------------------------------------------------------------------------
     def register_pnl(self, pnl: Money, at: EpochMs) -> RiskState:
-        """
-        Registers a realized PnL delta.
-
-        Rules:
-        - Positive PnL does not affect drawdown
-        - Negative PnL increases drawdown
-        - Emits MaxDrawdownExceededEvent if limit breached
-        """
-        if pnl.currency != self.current_drawdown.currency:
+        if pnl.currency != self.equity.currency:
             raise InvariantViolation("PnL currency mismatch")
 
-        # Gains do not worsen drawdown
-        if pnl.value >= Decimal("0"):
-            return self
-
-        new_drawdown = Money(
-            self.current_drawdown.value + pnl.value,
-            self.current_drawdown.currency,
+        new_equity = self.equity + pnl
+        new_peak = (
+            new_equity
+            if new_equity.value > self.equity_peak.value
+            else self.equity_peak
         )
 
-        new_state = replace(self, current_drawdown=new_drawdown)
+        drawdown = new_equity.value - new_peak.value
 
-        if new_drawdown.value <= -self.max_drawdown.value.value:
+        new_state = replace(
+            self,
+            equity=new_equity,
+            equity_peak=new_peak,
+        )
+
+        if drawdown <= -self.max_drawdown.value.value:
             event = MaxDrawdownExceededEvent(
                 occurred_at=at.to_datetime(),
-                current_drawdown=new_drawdown,
+                current_drawdown=Money(drawdown, new_equity.currency),
                 limit=self.max_drawdown.value,
                 trigger_epoch_ms=at,
             )

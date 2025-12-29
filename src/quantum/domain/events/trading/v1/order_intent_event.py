@@ -4,6 +4,7 @@ from typing import ClassVar
 from quantum.domain.events.base import BaseEvent
 from quantum.domain.model.value_objects.identifiers import IntentId
 from quantum.domain.model.value_objects.price import Price
+from quantum.domain.model.value_objects.reference_price import ReferencePrice
 from quantum.domain.model.value_objects.symbol import Symbol
 from quantum.domain.model.value_objects.volume import PositiveVolume
 from quantum.domain.types.enums import App, OrderType, TimeInForce
@@ -20,7 +21,7 @@ class OrderIntentEvent(BaseEvent):
     type: OrderType
 
     volume: PositiveVolume
-    price: Price
+    reference_price: ReferencePrice | None = None
     stop_price: Price | None = None
     limit_price: Price | None = None
 
