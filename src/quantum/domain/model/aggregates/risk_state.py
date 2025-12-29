@@ -7,6 +7,7 @@ from quantum.domain.events.risk.v1.max_drawdown_exceeded_event import (
 )
 from quantum.domain.model.aggregates.base import AggregateRoot
 from quantum.domain.model.exceptions.validation_exceptions import InvariantViolation
+from quantum.domain.model.value_objects.drawdown import Drawdown
 from quantum.domain.model.value_objects.drawdown_limit import DrawdownLimit
 from quantum.domain.model.value_objects.money import Money
 from quantum.domain.model.value_objects.time import EpochMs
@@ -16,7 +17,10 @@ from quantum.domain.model.value_objects.time import EpochMs
 class RiskState(AggregateRoot):
     """
     Aggregate Root encapsulating drawdown-based risk constraints.
-    Single source of truth for drawdown evaluation.
+
+    Canonical convention:
+    - equity_peak >= equity
+    - drawdown = equity_peak - equity >= 0
     """
 
     max_drawdown: DrawdownLimit
@@ -42,13 +46,14 @@ class RiskState(AggregateRoot):
             raise InvariantViolation("PnL currency mismatch")
 
         new_equity = self.equity + pnl
+
         new_peak = (
             new_equity
             if new_equity.value > self.equity_peak.value
             else self.equity_peak
         )
 
-        drawdown_value = new_equity.value - new_peak.value
+        drawdown_value = new_peak.value - new_equity.value  # ALWAYS >= 0
 
         new_state = replace(
             self,
@@ -56,10 +61,13 @@ class RiskState(AggregateRoot):
             equity_peak=new_peak,
         )
 
-        if drawdown_value <= -self.max_drawdown.value.value:
+        if drawdown_value >= self.max_drawdown.value.value:
             event = MaxDrawdownExceededEvent(
                 occurred_at=at.to_datetime(),
-                current_drawdown=Money(drawdown_value, new_equity.currency),
+                current_drawdown=Drawdown(
+                    value=drawdown_value,
+                    currency=new_equity.currency,
+                ),
                 limit=self.max_drawdown.value,
                 trigger_epoch_ms=at,
             )

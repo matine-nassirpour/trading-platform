@@ -8,6 +8,13 @@ from quantum.domain.model.exceptions.validation_exceptions import InvariantViola
 from quantum.domain.model.value_objects.base import ValueObject
 
 
+def _validate_strict_positive_int(value: int, name: str) -> None:
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise InvariantViolation(f"{name} must be a strict int (not bool)")
+    if value < 1:
+        raise InvariantViolation(f"{name} must be ≥ 1")
+
+
 @dataclass(frozen=True)
 class IntentId(ValueObject):
     value: uuid.UUID
@@ -22,8 +29,7 @@ class OrderId(ValueObject):
     value: int
 
     def _validate(self) -> None:
-        if self.value < 1:
-            raise InvariantViolation("OrderId must be ≥ 1")
+        _validate_strict_positive_int(self.value, "OrderId")
 
 
 @dataclass(frozen=True)
@@ -31,8 +37,7 @@ class DealId(ValueObject):
     value: int
 
     def _validate(self) -> None:
-        if self.value < 1:
-            raise InvariantViolation("DealId must be ≥ 1")
+        _validate_strict_positive_int(self.value, "DealId")
 
 
 @dataclass(frozen=True)
@@ -40,5 +45,4 @@ class PositionId(ValueObject):
     value: int
 
     def _validate(self) -> None:
-        if self.value < 1:
-            raise InvariantViolation("PositionId must be ≥ 1")
+        _validate_strict_positive_int(self.value, "PositionId")
