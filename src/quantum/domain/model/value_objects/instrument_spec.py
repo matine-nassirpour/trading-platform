@@ -5,6 +5,7 @@ from decimal import Decimal
 
 from quantum.domain.model.exceptions.validation_exceptions import InvariantViolation
 from quantum.domain.model.value_objects.base import ValueObject
+from quantum.domain.model.value_objects.symbol import Symbol
 
 
 @dataclass(frozen=True)
@@ -15,7 +16,7 @@ class InstrumentSpec(ValueObject):
     Defines all monetary and volume granularity.
     """
 
-    symbol: str
+    symbol: Symbol
     price_tick: Decimal
     volume_step: Decimal
     money_scale: Decimal

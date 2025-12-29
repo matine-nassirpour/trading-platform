@@ -16,15 +16,15 @@ from quantum.domain.model.value_objects.time import EpochMs
 class RiskState(AggregateRoot):
     """
     Aggregate Root encapsulating drawdown-based risk constraints.
+    Single source of truth for drawdown evaluation.
     """
 
     max_drawdown: DrawdownLimit
     equity: Money
     equity_peak: Money
 
-    # --------------------------------------------------------------------------
-    # Invariants
-    # --------------------------------------------------------------------------
+    # --- Invariants -----------------------------------------------------------
+
     def _validate(self) -> None:
         if self.equity.currency != self.equity_peak.currency:
             raise InvariantViolation("Currency mismatch in RiskState")
@@ -35,9 +35,8 @@ class RiskState(AggregateRoot):
         if self.equity_peak.value < self.equity.value:
             raise InvariantViolation("Equity peak cannot be below current equity")
 
-    # --------------------------------------------------------------------------
-    # Commands
-    # --------------------------------------------------------------------------
+    # --- Commands -------------------------------------------------------------
+
     def register_pnl(self, pnl: Money, at: EpochMs) -> RiskState:
         if pnl.currency != self.equity.currency:
             raise InvariantViolation("PnL currency mismatch")
@@ -49,7 +48,7 @@ class RiskState(AggregateRoot):
             else self.equity_peak
         )
 
-        drawdown = new_equity.value - new_peak.value
+        drawdown_value = new_equity.value - new_peak.value
 
         new_state = replace(
             self,
@@ -57,10 +56,10 @@ class RiskState(AggregateRoot):
             equity_peak=new_peak,
         )
 
-        if drawdown <= -self.max_drawdown.value.value:
+        if drawdown_value <= -self.max_drawdown.value.value:
             event = MaxDrawdownExceededEvent(
                 occurred_at=at.to_datetime(),
-                current_drawdown=Money(drawdown, new_equity.currency),
+                current_drawdown=Money(drawdown_value, new_equity.currency),
                 limit=self.max_drawdown.value,
                 trigger_epoch_ms=at,
             )

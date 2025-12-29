@@ -13,12 +13,39 @@ from quantum.domain.model.value_objects.currency import Currency
 
 @dataclass(frozen=True)
 class Money(ValueObject):
+    """
+    Monetary Value Object.
+
+    Guarantees:
+    - Decimal-based arithmetic
+    - Currency safety
+    - No NaN / Infinity
+    """
+
     value: Decimal
     currency: Currency
 
     def _validate(self) -> None:
         if not isinstance(self.value, Decimal):
             raise InvariantViolation("Money value must be a Decimal")
+
+        if self.value.is_nan():
+            raise InvariantViolation("Money value must not be NaN")
+
+        if self.value.is_infinite():
+            raise InvariantViolation("Money value must be finite")
+
+        if not isinstance(self.currency, Currency):
+            raise InvariantViolation("Money must have a valid Currency")
+
+    # --- Factories ------------------------------------------------------------
+
+    @staticmethod
+    def zero(currency: Currency) -> Money:
+        """
+        Canonical zero monetary value.
+        """
+        return Money(Decimal("0"), currency)
 
     # --- Internal helpers -----------------------------------------------------
 

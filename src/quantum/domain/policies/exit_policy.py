@@ -68,7 +68,11 @@ class ExitPolicy:
         if side == PositionSide.LONG:
             ExitPolicy._validate_long(entry_price, sl, tp)
 
-        if side == PositionSide.SHORT:
+        elif side == PositionSide.SHORT:
             ExitPolicy._validate_short(entry_price, sl, tp)
 
-        ExitPolicy._validate_distinct_sl_tp(sl, tp, instrument)
+        else:
+            raise InvariantViolation(f"Unsupported PositionSide: {side}")
+
+        if sl and tp:
+            ExitPolicy._validate_distinct_sl_tp(sl, tp, instrument)

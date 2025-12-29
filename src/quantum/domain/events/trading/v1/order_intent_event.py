@@ -27,5 +27,5 @@ class OrderIntentEvent(BaseEvent):
     sl: Price | None = None
     tp: Price | None = None
 
-    time_in_force: TimeInForce | None = TimeInForce.GTC
+    time_in_force: TimeInForce = TimeInForce.GTC
     rationale: str | None = None  # brief tag “setup”

@@ -9,6 +9,7 @@ class PricingPolicy:
     Canonical pricing and quantization rules.
 
     Stateless.
+    Deterministic.
     """
 
     ROUNDING_MODE: Final[str] = ROUND_HALF_EVEN
@@ -27,8 +28,25 @@ class PricingPolicy:
     def quantize_money(value: Decimal, spec: InstrumentSpec) -> Decimal:
         return value.quantize(spec.money_scale, rounding=PricingPolicy.ROUNDING_MODE)
 
-    # --- Safe comparisons -----------------------------------------------------
+    # --- Equality & ordering (canonical) --------------------------------------
 
     @staticmethod
     def price_equal(a: Decimal, b: Decimal, spec: InstrumentSpec) -> bool:
-        return abs(a - b) <= spec.price_tick
+        """
+        Equality after quantization (canonical definition).
+        """
+        return PricingPolicy.quantize_price(a, spec) == PricingPolicy.quantize_price(
+            b, spec
+        )
+
+    @staticmethod
+    def price_less_than(a: Decimal, b: Decimal, spec: InstrumentSpec) -> bool:
+        return PricingPolicy.quantize_price(a, spec) < PricingPolicy.quantize_price(
+            b, spec
+        )
+
+    @staticmethod
+    def price_greater_than(a: Decimal, b: Decimal, spec: InstrumentSpec) -> bool:
+        return PricingPolicy.quantize_price(a, spec) > PricingPolicy.quantize_price(
+            b, spec
+        )
