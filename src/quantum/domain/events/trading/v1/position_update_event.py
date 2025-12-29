@@ -8,7 +8,6 @@ from quantum.domain.model.value_objects.price import Price
 from quantum.domain.model.value_objects.symbol import Symbol
 from quantum.domain.model.value_objects.time import EpochMs
 from quantum.domain.model.value_objects.volume import PositiveVolume
-from quantum.domain.types.enums import App
 
 
 @dataclass(frozen=True)
@@ -25,4 +24,3 @@ class PositionUpdateEvent(BaseEvent):
     update_epoch_ms: EpochMs
     sl: Price | None = None
     tp: Price | None = None
-    app: App = App.EA_MQL5

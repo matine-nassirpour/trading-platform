@@ -7,14 +7,13 @@ from quantum.domain.model.value_objects.price import Price
 from quantum.domain.model.value_objects.reference_price import ReferencePrice
 from quantum.domain.model.value_objects.symbol import Symbol
 from quantum.domain.model.value_objects.volume import PositiveVolume
-from quantum.domain.types.enums import App, OrderType, TimeInForce
+from quantum.domain.types.enums import OrderType, TimeInForce
 
 
 @dataclass(frozen=True)
 class OrderIntentEvent(BaseEvent):
     event_name: ClassVar[str] = "trading.order_intent"
     event_version: ClassVar[int] = 1
-    app: App
 
     intent_id: IntentId
     symbol: Symbol

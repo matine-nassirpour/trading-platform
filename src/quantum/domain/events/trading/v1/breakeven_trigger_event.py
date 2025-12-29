@@ -6,7 +6,6 @@ from quantum.domain.model.value_objects.identifiers import IntentId, PositionId
 from quantum.domain.model.value_objects.price import Price
 from quantum.domain.model.value_objects.symbol import Symbol
 from quantum.domain.model.value_objects.time import EpochMs
-from quantum.domain.types.enums import App
 
 
 @dataclass(frozen=True)
@@ -18,4 +17,3 @@ class BreakevenTriggerEvent(BaseEvent):
     symbol: Symbol
     price_at_trigger: Price
     trigger_epoch_ms: EpochMs
-    app: App = App.EA_MQL5

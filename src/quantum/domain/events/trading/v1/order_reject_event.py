@@ -6,7 +6,6 @@ from quantum.domain.model.value_objects.execution_rejection import ExecutionReje
 from quantum.domain.model.value_objects.identifiers import IntentId
 from quantum.domain.model.value_objects.symbol import Symbol
 from quantum.domain.model.value_objects.time import EpochMs
-from quantum.domain.types.enums import App
 
 
 @dataclass(frozen=True)
@@ -17,4 +16,3 @@ class OrderRejectEvent(BaseEvent):
     symbol: Symbol
     reject_epoch_ms: EpochMs
     rejection: ExecutionRejection
-    app: App = App.EA_MQL5

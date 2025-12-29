@@ -5,7 +5,6 @@ from quantum.domain.events.base import BaseEvent
 from quantum.domain.model.value_objects.identifiers import IntentId
 from quantum.domain.model.value_objects.symbol import Symbol
 from quantum.domain.model.value_objects.time import EpochMs
-from quantum.domain.types.enums import App
 from quantum.domain.types.order_check_outcome import OrderCheckOutcome
 
 
@@ -22,5 +21,3 @@ class OrderCheckEvent(BaseEvent):
 
     outcome: OrderCheckOutcome
     reason: str | None = None
-
-    app: App = App.EA_MQL5

@@ -14,7 +14,7 @@ from quantum.domain.model.value_objects.price import Price
 from quantum.domain.model.value_objects.symbol import Symbol
 from quantum.domain.model.value_objects.time import EpochMs
 from quantum.domain.model.value_objects.volume import PositiveVolume
-from quantum.domain.types.enums import App, DealEntry, DealReason
+from quantum.domain.types.enums import DealEntry, DealReason
 
 
 @dataclass(frozen=True)
@@ -35,4 +35,3 @@ class TakeProfitTriggerEvent(BaseEvent):
     trigger_epoch_ms: EpochMs
     deal_entry: DealEntry = DealEntry.OUT
     reason: DealReason = DealReason.TP
-    app: App = App.EA_MQL5

@@ -8,7 +8,7 @@ from quantum.domain.model.value_objects.price import Price
 from quantum.domain.model.value_objects.symbol import Symbol
 from quantum.domain.model.value_objects.time import EpochMs
 from quantum.domain.model.value_objects.volume import PositiveVolume
-from quantum.domain.types.enums import App, DealEntry, DealReason
+from quantum.domain.types.enums import DealEntry, DealReason
 
 
 @dataclass(frozen=True)
@@ -31,4 +31,3 @@ class OrderFillEvent(BaseEvent):
     reason: DealReason
     fill_epoch_ms: EpochMs  # t_fill (unix ms)
     partial: bool
-    app: App = App.EA_MQL5

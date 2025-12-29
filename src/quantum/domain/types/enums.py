@@ -1,12 +1,6 @@
 from enum import StrEnum
 
 
-class App(StrEnum):
-    PYTHON_CORE = "python_core"
-    EA_MQL5 = "ea_mql5"
-    ANGULAR_UI = "angular_ui"
-
-
 class TradeAction(StrEnum):
     DEAL = "deal"
     PENDING = "pending"
