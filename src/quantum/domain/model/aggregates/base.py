@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
+from typing import Self
 
 from quantum.domain.events.base import BaseEvent
 from quantum.domain.model.exceptions.validation_exceptions import InvariantViolation
@@ -21,7 +22,6 @@ class AggregateRoot:
         default_factory=tuple,
         repr=False,
         compare=False,
-        init=True,
         kw_only=True,
     )
 
@@ -29,22 +29,14 @@ class AggregateRoot:
         self._validate()
         self._validate_events()
 
-    # --------------------------------------------------------------------------
-    # Invariants
-    # --------------------------------------------------------------------------
+    # --- Invariants -----------------------------------------------------------
+
     def _validate(self) -> None:
-        """
-        Aggregate-specific invariant validation.
-        Must be overridden by subclasses.
-        """
         raise NotImplementedError(
             f"{self.__class__.__name__} must implement _validate()"
         )
 
     def _validate_events(self) -> None:
-        """
-        Structural guarantees on domain events.
-        """
         if not isinstance(self._events, tuple):
             raise InvariantViolation("Aggregate events must be stored as a tuple")
 
@@ -52,10 +44,9 @@ class AggregateRoot:
             if not isinstance(event, BaseEvent):
                 raise InvariantViolation("Invalid domain event attached to aggregate")
 
-    # --------------------------------------------------------------------------
-    # Domain Events
-    # --------------------------------------------------------------------------
-    def _raise(self, event: BaseEvent):
+    # --- Domain Events --------------------------------------------------------
+
+    def _raise(self: Self, event: BaseEvent) -> Self:
         """
         Returns a new aggregate instance with the event appended.
         """

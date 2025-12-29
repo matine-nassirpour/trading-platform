@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from decimal import Decimal
 
 from quantum.domain.model.aggregates.base import AggregateRoot
 from quantum.domain.model.exceptions.position_exceptions import PositionAlreadyClosed
 from quantum.domain.model.exceptions.validation_exceptions import InvariantViolation
+from quantum.domain.model.value_objects.currency import Currency
 from quantum.domain.model.value_objects.identifiers import PositionId
 from quantum.domain.model.value_objects.money import Money
 from quantum.domain.model.value_objects.price import Price
@@ -45,16 +45,10 @@ class Position(AggregateRoot):
     # --- Invariants -----------------------------------------------------------
 
     def _validate(self) -> None:
-        if self.volume.value <= Decimal("0"):
-            raise InvariantViolation("Position volume must be strictly positive")
-
-        if self.entry_price.value <= Decimal("0"):
-            raise InvariantViolation("Entry price must be strictly positive")
-
         if self.realized_pnl.currency is None:
-            raise InvariantViolation("PnL currency must be defined")
+            raise InvariantViolation("Position must have a currency")
 
-    # Factory ------------------------------------------------------------------
+    # --- Factory --------------------------------------------------------------
 
     @staticmethod
     def open(
@@ -63,7 +57,7 @@ class Position(AggregateRoot):
         side: PositionSide,
         volume: PositiveVolume,
         entry_price: Price,
-        currency: str = "USD",
+        currency: Currency,
     ) -> Position:
         return Position(
             position_id=position_id,
@@ -71,11 +65,11 @@ class Position(AggregateRoot):
             side=side,
             volume=volume,
             entry_price=entry_price,
-            realized_pnl=Money(Decimal("0"), currency),
+            realized_pnl=Money(value=entry_price.value * 0, currency=currency),
             closed=False,
         )
 
-    # Commands -----------------------------------------------------------------
+    # --- Commands -------------------------------------------------------------
 
     def close(self, exit_price: Price) -> Position:
         if self.closed:
@@ -89,8 +83,4 @@ class Position(AggregateRoot):
             currency=self.realized_pnl.currency,
         )
 
-        return replace(
-            self,
-            realized_pnl=pnl,
-            closed=True,
-        )
+        return replace(self, realized_pnl=pnl, closed=True)

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 
+from quantum.domain.model.value_objects.currency import Currency
 from quantum.domain.model.value_objects.money import Money
 from quantum.domain.model.value_objects.price import Price
 from quantum.domain.model.value_objects.volume import PositiveVolume
@@ -11,17 +12,30 @@ from quantum.domain.types.position_side import PositionSide
 class PnLService:
     """
     Canonical domain service for PnL computation.
-    Centralizes all PnL logic to avoid divergence.
+
+    Responsibilities:
+    - Compute realized PnL
+    - Enforce sign convention (LONG / SHORT)
+    - Remain currency-safe and deterministic
     """
 
     @staticmethod
     def compute_realized_pnl(
+        *,
         entry_price: Price,
         exit_price: Price,
         volume: PositiveVolume,
         side: PositionSide,
-        currency: str,
+        currency: Currency,
     ) -> Money:
+        """
+        Computes realized PnL for a closed position.
+
+        Formula:
+            pnl = (exit_price - entry_price) * volume * side_sign
+        """
+
         delta = exit_price.value - entry_price.value
         pnl_value = delta * volume.value * Decimal(side.sign())
-        return Money(pnl_value, currency)
+
+        return Money(value=pnl_value, currency=currency)

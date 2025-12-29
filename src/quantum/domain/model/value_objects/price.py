@@ -3,7 +3,6 @@ from decimal import Decimal
 
 from quantum.domain.model.exceptions.validation_exceptions import InvariantViolation
 from quantum.domain.model.value_objects.base import ValueObject
-from quantum.domain.policies.monetary_policy import MonetaryPolicy
 
 
 @dataclass(frozen=True)
@@ -14,9 +13,5 @@ class Price(ValueObject):
         if not isinstance(self.value, Decimal):
             raise InvariantViolation("Price value must be a Decimal")
 
-        quantized = MonetaryPolicy.quantize_price(self.value)
-
-        if quantized <= Decimal("0"):
+        if self.value <= Decimal("0"):
             raise InvariantViolation("Price must be strictly positive")
-
-        object.__setattr__(self, "value", quantized)

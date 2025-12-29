@@ -5,7 +5,6 @@ from decimal import Decimal
 
 from quantum.domain.model.exceptions.validation_exceptions import InvariantViolation
 from quantum.domain.model.value_objects.base import ValueObject
-from quantum.domain.policies.monetary_policy import MonetaryPolicy
 
 
 @dataclass(frozen=True)
@@ -24,12 +23,8 @@ class PositiveVolume(ValueObject):
         if not isinstance(self.value, Decimal):
             raise InvariantViolation("Volume value must be a Decimal")
 
-        quantized = MonetaryPolicy.quantize_volume(self.value)
-
-        if quantized <= Decimal("0"):
+        if self.value <= Decimal("0"):
             raise InvariantViolation("PositiveVolume must be strictly > 0")
-
-        object.__setattr__(self, "value", quantized)
 
 
 @dataclass(frozen=True)
@@ -49,12 +44,8 @@ class NonNegativeVolume(ValueObject):
         if not isinstance(self.value, Decimal):
             raise InvariantViolation("Volume value must be a Decimal")
 
-        quantized = MonetaryPolicy.quantize_volume(self.value)
-
-        if quantized < Decimal("0"):
+        if self.value < Decimal("0"):
             raise InvariantViolation("NonNegativeVolume must be ≥ 0")
-
-        object.__setattr__(self, "value", quantized)
 
     @classmethod
     def zero(cls) -> NonNegativeVolume:

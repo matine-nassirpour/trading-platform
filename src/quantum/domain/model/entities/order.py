@@ -17,6 +17,9 @@ from quantum.domain.types.order_status import OrderStatus
 class Order:
     """
     Entity representing an order.
+
+    Identity:
+    - OrderId
     """
 
     order_id: OrderId
@@ -26,6 +29,16 @@ class Order:
 
     def __post_init__(self) -> None:
         self._validate()
+
+    # ---  Identity semantics --------------------------------------------------
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Order):
+            return False
+        return self.order_id == other.order_id
+
+    def __hash__(self) -> int:
+        return hash(self.order_id)
 
     # --- Invariants -----------------------------------------------------------
 
@@ -60,7 +73,7 @@ class Order:
 
         new_filled = NonNegativeVolume(new_total)
 
-        status = (
+        new_status = (
             OrderStatus.FILLED
             if new_filled.value == self.requested_volume.value
             else OrderStatus.PARTIALLY_FILLED
@@ -69,5 +82,5 @@ class Order:
         return replace(
             self,
             filled_volume=new_filled,
-            status=status,
+            status=new_status,
         )

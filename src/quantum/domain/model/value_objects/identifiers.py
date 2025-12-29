@@ -12,10 +12,6 @@ from quantum.domain.model.value_objects.base import ValueObject
 class IntentId(ValueObject):
     value: uuid.UUID
 
-    @classmethod
-    def new(cls) -> IntentId:
-        return cls(uuid.uuid4())
-
     def _validate(self) -> None:
         if not isinstance(self.value, uuid.UUID):
             raise InvariantViolation("IntentId must be a UUID")
