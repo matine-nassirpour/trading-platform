@@ -15,7 +15,9 @@ from quantum.domain.model.value_objects.identifiers import IntentId, OrderId
 from quantum.domain.model.value_objects.symbol import Symbol
 from quantum.domain.model.value_objects.time import EpochMs
 from quantum.domain.model.value_objects.volume import NonNegativeVolume, PositiveVolume
+from quantum.domain.types.enums import OrderType
 from quantum.domain.types.order_status import OrderStatus
+from quantum.domain.types.position_side import PositionSide
 
 
 @dataclass(frozen=True)
@@ -32,6 +34,7 @@ class TradingIntent(AggregateRoot):
 
     intent_id: IntentId
     symbol: Symbol
+    side: PositionSide
     orders: tuple[Order, ...] = ()
     submitted: bool = False
 
@@ -86,6 +89,7 @@ class TradingIntent(AggregateRoot):
         self,
         *,
         order_id: OrderId,
+        order_type: OrderType,
         volume: PositiveVolume,
         at: EpochMs,
         sizing_model: str | None = None,
@@ -95,18 +99,27 @@ class TradingIntent(AggregateRoot):
 
         Rules:
         - Intent MUST be submitted
-        - Orders are immutable entities
-        - Each creation emits domain events
+        - OrderType is explicit and immutable
+        - PositionSide is inherited from the TradingIntent
+        - Each Order has a unique OrderId within the aggregate
+        - Order starts with zero filled volume
         """
+
         if not self.submitted:
             raise InvalidStateTransition(
                 "Cannot create Order before TradingIntent submission"
             )
 
+        if any(o.order_id == order_id for o in self.orders):
+            raise InvariantViolation(f"Duplicate OrderId: {order_id}")
+
         order = Order(
             order_id=order_id,
+            order_type=order_type,
+            side=self.side,
             requested_volume=volume,
             filled_volume=NonNegativeVolume.zero(),
+            fills=(),
             status=OrderStatus.PENDING,
         )
 
