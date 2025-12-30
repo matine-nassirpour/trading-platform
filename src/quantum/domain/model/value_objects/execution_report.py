@@ -1,13 +1,14 @@
 from dataclasses import dataclass
 
 from quantum.domain.model.exceptions.validation_exceptions import InvariantViolation
+from quantum.domain.model.value_objects.base import ValueObject
 from quantum.domain.model.value_objects.execution_id import ExecutionId
 from quantum.domain.model.value_objects.time import EpochMs
 from quantum.domain.types.execution import ExecutionType
 
 
 @dataclass(frozen=True)
-class ExecutionReport:
+class ExecutionReport(ValueObject):
     """
     Canonical execution report.
 
@@ -19,6 +20,18 @@ class ExecutionReport:
     reason: str | None
     reported_at: EpochMs
 
-    def __post_init__(self) -> None:
-        if self.reason is not None and not self.reason.strip():
-            raise InvariantViolation("ExecutionReport reason must not be empty")
+    def _validate(self) -> None:
+        if not isinstance(self.execution_id, ExecutionId):
+            raise InvariantViolation("ExecutionReport must have a valid ExecutionId")
+
+        if not isinstance(self.execution_type, ExecutionType):
+            raise InvariantViolation("ExecutionReport must have a valid ExecutionType")
+
+        if self.reason is not None:
+            if not isinstance(self.reason, str):
+                raise InvariantViolation("ExecutionReport reason must be a string")
+            if not self.reason.strip():
+                raise InvariantViolation("ExecutionReport reason must not be empty")
+
+        if not isinstance(self.reported_at, EpochMs):
+            raise InvariantViolation("ExecutionReport must have a valid timestamp")

@@ -2,9 +2,9 @@ from quantum.domain.model.exceptions.validation_exceptions import InvariantViola
 from quantum.domain.model.value_objects.instrument_spec import InstrumentSpec
 from quantum.domain.model.value_objects.price import Price
 from quantum.domain.model.value_objects.reference_price import ReferencePrice
-from quantum.domain.policies.exit_pricing_policy import ExitPricingPolicy
 from quantum.domain.policies.pricing_policy import PricingPolicy
 from quantum.domain.types.position_side import PositionSide
+from quantum.domain.types.pricing_context import PricingContext
 
 
 class ExitPolicy:
@@ -28,9 +28,13 @@ class ExitPolicy:
     ) -> Price:
         """
         Entry / reference price is NOT executable.
-        It uses neutral (statistical) quantization.
+        Neutral (statistical) quantization only.
         """
-        quantized = PricingPolicy.quantize_price(entry.value, instrument)
+        quantized = PricingPolicy.quantize_price(
+            value=entry.value,
+            instrument=instrument,
+            context=PricingContext.NEUTRAL,
+        )
         return Price(quantized)
 
     @staticmethod
@@ -42,29 +46,32 @@ class ExitPolicy:
         instrument: InstrumentSpec,
     ) -> tuple[Price | None, Price | None]:
         """
-        Applies directional, executable quantization to SL / TP.
+        Applies executable, directional quantization to SL / TP.
         """
+
         q_sl = (
             Price(
-                ExitPricingPolicy.quantize_sl(
+                PricingPolicy.quantize_price(
                     value=sl.value,
-                    side=side,
                     instrument=instrument,
+                    context=PricingContext.EXECUTION_SL,
+                    side=side,
                 )
             )
-            if sl
+            if sl is not None
             else None
         )
 
         q_tp = (
             Price(
-                ExitPricingPolicy.quantize_tp(
+                PricingPolicy.quantize_price(
                     value=tp.value,
-                    side=side,
                     instrument=instrument,
+                    context=PricingContext.EXECUTION_TP,
+                    side=side,
                 )
             )
-            if tp
+            if tp is not None
             else None
         )
 
@@ -141,10 +148,9 @@ class ExitPolicy:
         Validates Stop Loss / Take Profit constraints.
 
         Canonical rules:
-        - Entry price is neutrally quantized (non-executable)
-        - SL / TP are directionally quantized (executable)
-        - All comparisons use quantized values
-        - Ordering depends on PositionSide
+        - Entry price is NEUTRAL (non-executable)
+        - SL / TP are EXECUTABLE with directional safety
+        - Ordering rules depend on PositionSide
         - SL and TP must remain distinct after quantization
         """
 
@@ -179,7 +185,7 @@ class ExitPolicy:
         else:
             raise InvariantViolation(f"Unsupported PositionSide: {side}")
 
-        if q_sl and q_tp:
+        if q_sl is not None and q_tp is not None:
             ExitPolicy._validate_distinct_sl_tp(
                 sl=q_sl,
                 tp=q_tp,
