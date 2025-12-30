@@ -7,9 +7,11 @@ from quantum.domain.services.quantization_service import QuantizationService
 
 class PricingPolicy:
     """
-    Canonical pricing rules.
+    Canonical pricing and sizing rules.
 
-    ALL comparisons are done AFTER increment quantization.
+    Rule:
+    - Multiple-of quantization FIRST (market constraint)
+    - Decimal scale quantization SECOND (representation constraint)
     """
 
     ROUNDING_MODE: Final[str] = ROUND_HALF_EVEN
@@ -32,7 +34,7 @@ class PricingPolicy:
             value=value,
             increment=spec.volume_increment,
         )
-        return raw.quantize(spec.volume_increment, rounding=PricingPolicy.ROUNDING_MODE)
+        return raw.quantize(spec.volume_scale, rounding=PricingPolicy.ROUNDING_MODE)
 
     # --- Money ----------------------------------------------------------------
 
@@ -40,7 +42,7 @@ class PricingPolicy:
     def quantize_money(value: Decimal, spec: InstrumentSpec) -> Decimal:
         return value.quantize(spec.money_scale, rounding=PricingPolicy.ROUNDING_MODE)
 
-    # --- Comparisons ----------------------------------------------------------
+    # --- Comparisons (price) --------------------------------------------------
 
     @staticmethod
     def price_equal(a: Decimal, b: Decimal, spec: InstrumentSpec) -> bool:

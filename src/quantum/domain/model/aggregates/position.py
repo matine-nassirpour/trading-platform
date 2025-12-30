@@ -20,6 +20,12 @@ class Position(AggregateRoot):
     """
     Aggregate Root representing a trading position.
 
+    Domain semantics:
+    - A Position is opened exactly once
+    - A Position is closed at most once
+    - Realized PnL is final once closed
+    - Currency consistency is enforced at aggregate level
+
     Identity:
     - PositionId
     """
@@ -45,13 +51,27 @@ class Position(AggregateRoot):
     # --- Invariants -----------------------------------------------------------
 
     def _validate(self) -> None:
-        if self.realized_pnl.currency is None:
-            raise InvariantViolation("Position must have a currency")
+        # Money already guarantees currency correctness and finiteness,
+        # but the aggregate guarantees semantic consistency.
+
+        if not isinstance(self.realized_pnl, Money):
+            raise InvariantViolation("Position must have a valid Money PnL")
+
+        if self.closed:
+            # When closed, realized_pnl is final and meaningful.
+            # No further invariant is required here, but the state is explicit.
+            pass
+
+        if not self.closed:
+            # When open, realized_pnl must be the canonical zero.
+            if self.realized_pnl.value != 0:
+                raise InvariantViolation("Open Position must have zero realized PnL")
 
     # --- Factory --------------------------------------------------------------
 
     @staticmethod
     def open(
+        *,
         position_id: PositionId,
         symbol: Symbol,
         side: PositionSide,
@@ -59,19 +79,33 @@ class Position(AggregateRoot):
         entry_price: Price,
         currency: Currency,
     ) -> Position:
+        """
+        Canonical factory for opening a Position.
+
+        Guarantees:
+        - realized_pnl starts at zero
+        - currency is explicitly bound
+        """
         return Position(
             position_id=position_id,
             symbol=symbol,
             side=side,
             volume=volume,
             entry_price=entry_price,
-            realized_pnl=Money(value=entry_price.value * 0, currency=currency),
+            realized_pnl=Money.zero(currency),
             closed=False,
         )
 
     # --- Commands -------------------------------------------------------------
 
-    def close(self, exit_price: Price) -> Position:
+    def close(self, *, exit_price: Price) -> Position:
+        """
+        Closes the position and computes realized PnL.
+
+        Rules:
+        - A position can only be closed once
+        - PnL computation is deterministic and side-aware
+        """
         if self.closed:
             raise PositionAlreadyClosed("Position already closed")
 
@@ -83,4 +117,8 @@ class Position(AggregateRoot):
             currency=self.realized_pnl.currency,
         )
 
-        return replace(self, realized_pnl=pnl, closed=True)
+        return replace(
+            self,
+            realized_pnl=pnl,
+            closed=True,
+        )

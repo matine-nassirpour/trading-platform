@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 
 from quantum.domain.model.exceptions.order_exceptions import (
-    OrderAlreadyAcknowledged,
     OrderNotFillable,
     OrderOverfill,
 )
@@ -27,9 +26,6 @@ class Order:
     filled_volume: NonNegativeVolume
     status: OrderStatus
 
-    def __post_init__(self) -> None:
-        self._validate()
-
     # ---  Identity semantics --------------------------------------------------
 
     def __eq__(self, other: object) -> bool:
@@ -42,34 +38,59 @@ class Order:
 
     # --- Invariants -----------------------------------------------------------
 
+    def __post_init__(self) -> None:
+        self._validate()
+
     def _validate(self) -> None:
+        # volume coherence
         if self.filled_volume.value > self.requested_volume.value:
             raise InvalidStateTransition("Filled volume cannot exceed requested volume")
 
-        if (
-            self.status == OrderStatus.FILLED
-            and self.filled_volume.value != self.requested_volume.value
-        ):
-            raise InvalidStateTransition("FILLED order must have fully filled volume")
+        # terminal state consistency
+        if self.status == OrderStatus.FILLED:
+            if self.filled_volume.value != self.requested_volume.value:
+                raise InvalidStateTransition(
+                    "FILLED order must have fully filled volume"
+                )
 
-    # --- State transitions ----------------------------------------------------
+        if self.status in {OrderStatus.REJECTED, OrderStatus.CANCELLED}:
+            if self.filled_volume.value != 0:
+                raise InvalidStateTransition(
+                    "Rejected or cancelled order must have zero filled volume"
+                )
 
-    def acknowledge(self) -> Order:
-        if self.status != OrderStatus.PENDING:
-            raise OrderAlreadyAcknowledged("Only pending orders can be acknowledged")
-        return replace(self, status=OrderStatus.ACKED)
+    # --- Domain behavior ------------------------------------------------------
+
+    def is_fillable(self) -> bool:
+        """
+        Orders are fillable as long as they are not terminal.
+        """
+        return self.status in {
+            OrderStatus.PENDING,
+            OrderStatus.PARTIALLY_FILLED,
+        }
 
     def register_fill(self, volume: PositiveVolume) -> Order:
-        if self.status not in {
-            OrderStatus.ACKED,
-            OrderStatus.PARTIALLY_FILLED,
-        }:
-            raise OrderNotFillable("Order not fillable in current state")
+        """
+        Registers a fill on the order.
+
+        Rules:
+        - Only fillable orders can accept fills
+        - Overfills are forbidden
+        - State transitions are implicit and deterministic
+        """
+        if not self.is_fillable():
+            raise OrderNotFillable(
+                f"Order {self.order_id} not fillable in state {self.status}"
+            )
 
         new_total = self.filled_volume.value + volume.value
 
         if new_total > self.requested_volume.value:
-            raise OrderOverfill(f"Fill {volume.value} exceeds remaining volume")
+            raise OrderOverfill(
+                f"Fill {volume.value} exceeds remaining volume "
+                f"({self.requested_volume.value - self.filled_volume.value})"
+            )
 
         new_filled = NonNegativeVolume(new_total)
 
@@ -84,3 +105,19 @@ class Order:
             filled_volume=new_filled,
             status=new_status,
         )
+
+    def cancel(self) -> Order:
+        """
+        Cancels an order if it is not terminal.
+
+        Note:
+        - Partial fills are NOT reverted.
+        """
+        if self.status in {
+            OrderStatus.FILLED,
+            OrderStatus.CANCELLED,
+            OrderStatus.REJECTED,
+        }:
+            raise InvalidStateTransition(f"Cannot cancel order in state {self.status}")
+
+        return replace(self, status=OrderStatus.CANCELLED)

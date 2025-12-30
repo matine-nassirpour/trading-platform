@@ -23,10 +23,11 @@ class TradingIntent(AggregateRoot):
     """
     Aggregate Root representing a trading intent.
 
-    Invariants:
-    - submitted == False  => orders == ()
-    - orders != ()        => submitted == True
-    - order_id unique within orders
+    Canonical invariants:
+    - submitted == False  ⇒ orders == ()
+    - submitted == True   ⇒ orders != ()
+    - OrderId must be unique within the aggregate
+    - Symbol is owned by the aggregate, not by individual orders
     """
 
     intent_id: IntentId
@@ -41,21 +42,33 @@ class TradingIntent(AggregateRoot):
         if not isinstance(self.orders, tuple):
             raise InvariantViolation("Orders must be stored as an immutable tuple")
 
-        # submission / orders coherence
+        # submission ↔ orders coherence
         if not self.submitted and self.orders:
-            raise InvariantViolation("Orders cannot exist before intent submission")
+            raise InvariantViolation(
+                "Orders cannot exist before TradingIntent submission"
+            )
 
-        if self.submitted and not isinstance(self.orders, tuple):
-            raise InvariantViolation("Orders must be a tuple after submission")
+        if self.submitted and not self.orders:
+            raise InvariantViolation(
+                "Submitted TradingIntent must contain at least one Order"
+            )
 
         # uniqueness of OrderId
-        order_ids = [o.order_id for o in self.orders]
+        order_ids = [order.order_id for order in self.orders]
         if len(order_ids) != len(set(order_ids)):
-            raise InvariantViolation("Duplicate OrderId detected in TradingIntent")
+            raise InvariantViolation("Duplicate OrderId detected within TradingIntent")
 
     # --- Commands -------------------------------------------------------------
 
-    def submit(self, at: EpochMs, client_order_id: str) -> TradingIntent:
+    def submit(self, *, at: EpochMs, client_order_id: str) -> TradingIntent:
+        """
+        Submits the trading intent.
+
+        Rules:
+        - Can only be submitted once
+        - Does not create orders
+        - Orders must be created AFTER submission
+        """
         if self.submitted:
             raise InvalidStateTransition("TradingIntent already submitted")
 
@@ -77,8 +90,18 @@ class TradingIntent(AggregateRoot):
         at: EpochMs,
         sizing_model: str | None = None,
     ) -> TradingIntent:
+        """
+        Creates an Order inside a submitted TradingIntent.
+
+        Rules:
+        - Intent MUST be submitted
+        - Orders are immutable entities
+        - Each creation emits domain events
+        """
         if not self.submitted:
-            raise InvalidStateTransition("Cannot create order before submission")
+            raise InvalidStateTransition(
+                "Cannot create Order before TradingIntent submission"
+            )
 
         order = Order(
             order_id=order_id,
@@ -89,10 +112,8 @@ class TradingIntent(AggregateRoot):
 
         intent = replace(self, orders=self.orders + (order,))
 
-        events = []
-
         if sizing_model is not None:
-            events.append(
+            intent = intent._raise(
                 OrderSizingEvent(
                     occurred_at=at.to_datetime(),
                     intent_id=self.intent_id,
@@ -103,7 +124,7 @@ class TradingIntent(AggregateRoot):
                 )
             )
 
-        events.append(
+        intent = intent._raise(
             OrderCreatedEvent(
                 occurred_at=at.to_datetime(),
                 intent_id=self.intent_id,
@@ -113,8 +134,5 @@ class TradingIntent(AggregateRoot):
                 decision_epoch_ms=at,
             )
         )
-
-        for event in events:
-            intent = intent._raise(event)
 
         return intent

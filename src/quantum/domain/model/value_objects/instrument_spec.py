@@ -13,7 +13,7 @@ class InstrumentSpec(ValueObject):
     """
     Canonical tradable instrument specification.
 
-    Distinguishes:
+    Distinguishes explicitly:
     - increment: market constraint (multiple-of)
     - scale: representation / rounding constraint
     """
@@ -23,18 +23,21 @@ class InstrumentSpec(ValueObject):
     price_increment: Decimal
     volume_increment: Decimal
 
-    price_scale: Decimal  # e.g. Decimal("0.01")
-    money_scale: Decimal  # e.g. Decimal("0.01")
-
-    def _validate(self) -> None:
-        self._validate_positive(self.price_increment, "price_increment")
-        self._validate_positive(self.volume_increment, "volume_increment")
-        self._validate_positive(self.price_scale, "price_scale")
-        self._validate_positive(self.money_scale, "money_scale")
+    price_scale: Decimal
+    volume_scale: Decimal
+    money_scale: Decimal
 
     @staticmethod
-    def _validate_positive(value: Decimal, name: str) -> None:
+    def _validate_positive_decimal(value: Decimal, name: str) -> None:
         if not isinstance(value, Decimal):
             raise InvariantViolation(f"{name} must be a Decimal")
         if value <= Decimal("0"):
             raise InvariantViolation(f"{name} must be strictly positive")
+
+    def _validate(self) -> None:
+        self._validate_positive_decimal(self.price_increment, "price_increment")
+        self._validate_positive_decimal(self.volume_increment, "volume_increment")
+
+        self._validate_positive_decimal(self.price_scale, "price_scale")
+        self._validate_positive_decimal(self.volume_scale, "volume_scale")
+        self._validate_positive_decimal(self.money_scale, "money_scale")
