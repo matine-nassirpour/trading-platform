@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 
-from quantum.domain.events.trading.v1.order_ack_event import OrderAckEvent
+from quantum.domain.events.trading.v1.order_created_event import OrderCreatedEvent
+from quantum.domain.events.trading.v1.order_sizing_event import OrderSizingEvent
 from quantum.domain.events.trading.v1.order_submit_event import OrderSubmitEvent
 from quantum.domain.model.aggregates.base import AggregateRoot
 from quantum.domain.model.entities.order import Order
-from quantum.domain.model.exceptions.order_exceptions import OrderNotFound
 from quantum.domain.model.exceptions.validation_exceptions import (
     InvalidStateTransition,
     InvariantViolation,
@@ -71,8 +71,11 @@ class TradingIntent(AggregateRoot):
 
     def create_order(
         self,
+        *,
         order_id: OrderId,
         volume: PositiveVolume,
+        at: EpochMs,
+        sizing_model: str | None = None,
     ) -> TradingIntent:
         if not self.submitted:
             raise InvalidStateTransition("Cannot create order before submission")
@@ -84,28 +87,34 @@ class TradingIntent(AggregateRoot):
             status=OrderStatus.PENDING,
         )
 
-        return replace(self, orders=self.orders + (order,))
+        intent = replace(self, orders=self.orders + (order,))
 
-    def acknowledge_order(self, order_id: OrderId, at: EpochMs) -> TradingIntent:
-        updated_orders = []
-        found = False
+        events = []
 
-        for order in self.orders:
-            if order.order_id == order_id:
-                updated_orders.append(order.acknowledge())
-                found = True
-            else:
-                updated_orders.append(order)
+        if sizing_model is not None:
+            events.append(
+                OrderSizingEvent(
+                    occurred_at=at.to_datetime(),
+                    intent_id=self.intent_id,
+                    symbol=self.symbol,
+                    volume=volume,
+                    sizing_model=sizing_model,
+                    decision_epoch_ms=at,
+                )
+            )
 
-        if not found:
-            raise OrderNotFound(f"Order {order_id} not found in TradingIntent")
-
-        event = OrderAckEvent(
-            occurred_at=at.to_datetime(),
-            intent_id=self.intent_id,
-            order_id=order_id,
-            symbol=self.symbol,
-            ack_epoch_ms=at,
+        events.append(
+            OrderCreatedEvent(
+                occurred_at=at.to_datetime(),
+                intent_id=self.intent_id,
+                order_id=order_id,
+                symbol=self.symbol,
+                volume=volume,
+                decision_epoch_ms=at,
+            )
         )
 
-        return replace(self, orders=tuple(updated_orders))._raise(event)
+        for event in events:
+            intent = intent._raise(event)
+
+        return intent

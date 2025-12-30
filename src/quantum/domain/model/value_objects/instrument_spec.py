@@ -11,22 +11,30 @@ from quantum.domain.model.value_objects.symbol import Symbol
 @dataclass(frozen=True)
 class InstrumentSpec(ValueObject):
     """
-    Market convention for a tradable instrument.
+    Canonical tradable instrument specification.
 
-    Defines all monetary and volume granularity.
+    Distinguishes:
+    - increment: market constraint (multiple-of)
+    - scale: representation / rounding constraint
     """
 
     symbol: Symbol
-    price_tick: Decimal
-    volume_step: Decimal
-    money_scale: Decimal
+
+    price_increment: Decimal
+    volume_increment: Decimal
+
+    price_scale: Decimal  # e.g. Decimal("0.01")
+    money_scale: Decimal  # e.g. Decimal("0.01")
 
     def _validate(self) -> None:
-        if self.price_tick <= Decimal("0"):
-            raise InvariantViolation("price_tick must be > 0")
+        self._validate_positive(self.price_increment, "price_increment")
+        self._validate_positive(self.volume_increment, "volume_increment")
+        self._validate_positive(self.price_scale, "price_scale")
+        self._validate_positive(self.money_scale, "money_scale")
 
-        if self.volume_step <= Decimal("0"):
-            raise InvariantViolation("volume_step must be > 0")
-
-        if self.money_scale <= Decimal("0"):
-            raise InvariantViolation("money_scale must be > 0")
+    @staticmethod
+    def _validate_positive(value: Decimal, name: str) -> None:
+        if not isinstance(value, Decimal):
+            raise InvariantViolation(f"{name} must be a Decimal")
+        if value <= Decimal("0"):
+            raise InvariantViolation(f"{name} must be strictly positive")
