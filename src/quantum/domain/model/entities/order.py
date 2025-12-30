@@ -7,9 +7,12 @@ from quantum.domain.model.exceptions.order_exceptions import (
     OrderOverfill,
 )
 from quantum.domain.model.exceptions.validation_exceptions import InvalidStateTransition
+from quantum.domain.model.value_objects.fill import Fill
 from quantum.domain.model.value_objects.identifiers import OrderId
 from quantum.domain.model.value_objects.volume import NonNegativeVolume, PositiveVolume
+from quantum.domain.types.enums import OrderType
 from quantum.domain.types.order_status import OrderStatus
+from quantum.domain.types.position_side import PositionSide
 
 
 @dataclass(frozen=True, eq=False)
@@ -22,16 +25,19 @@ class Order:
     """
 
     order_id: OrderId
+    order_type: OrderType
+    side: PositionSide
+
     requested_volume: PositiveVolume
     filled_volume: NonNegativeVolume
+
+    fills: tuple[Fill, ...]
     status: OrderStatus
 
     # ---  Identity semantics --------------------------------------------------
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, Order):
-            return False
-        return self.order_id == other.order_id
+        return isinstance(other, Order) and self.order_id == other.order_id
 
     def __hash__(self) -> int:
         return hash(self.order_id)
@@ -42,22 +48,20 @@ class Order:
         self._validate()
 
     def _validate(self) -> None:
-        # volume coherence
+        if not isinstance(self.fills, tuple):
+            raise InvalidStateTransition("Fills must be stored as an immutable tuple")
+
+        total_filled = sum(f.volume.value for f in self.fills)
+
+        if total_filled != self.filled_volume.value:
+            raise InvalidStateTransition("Filled volume must equal sum of fills")
+
         if self.filled_volume.value > self.requested_volume.value:
             raise InvalidStateTransition("Filled volume cannot exceed requested volume")
 
-        # terminal state consistency
         if self.status == OrderStatus.FILLED:
             if self.filled_volume.value != self.requested_volume.value:
-                raise InvalidStateTransition(
-                    "FILLED order must have fully filled volume"
-                )
-
-        if self.status in {OrderStatus.REJECTED, OrderStatus.CANCELLED}:
-            if self.filled_volume.value != 0:
-                raise InvalidStateTransition(
-                    "Rejected or cancelled order must have zero filled volume"
-                )
+                raise InvalidStateTransition("FILLED order must be fully filled")
 
     # --- Domain behavior ------------------------------------------------------
 
@@ -70,7 +74,7 @@ class Order:
             OrderStatus.PARTIALLY_FILLED,
         }
 
-    def register_fill(self, volume: PositiveVolume) -> Order:
+    def register_fill(self, fill: Fill) -> Order:
         """
         Registers a fill on the order.
 
@@ -80,17 +84,12 @@ class Order:
         - State transitions are implicit and deterministic
         """
         if not self.is_fillable():
-            raise OrderNotFillable(
-                f"Order {self.order_id} not fillable in state {self.status}"
-            )
+            raise OrderNotFillable(f"Order {self.order_id} not fillable")
 
-        new_total = self.filled_volume.value + volume.value
+        new_total = self.filled_volume.value + fill.volume.value
 
         if new_total > self.requested_volume.value:
-            raise OrderOverfill(
-                f"Fill {volume.value} exceeds remaining volume "
-                f"({self.requested_volume.value - self.filled_volume.value})"
-            )
+            raise OrderOverfill("Fill exceeds remaining volume")
 
         new_filled = NonNegativeVolume(new_total)
 
@@ -102,6 +101,7 @@ class Order:
 
         return replace(
             self,
+            fills=self.fills + (fill,),
             filled_volume=new_filled,
             status=new_status,
         )
