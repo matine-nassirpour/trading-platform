@@ -1,4 +1,5 @@
 from quantum.domain.risk.value_objects.risk_breach import RiskBreach
+from quantum.domain.risk.value_objects.risk_breach_kind import RiskBreachKind
 from quantum.domain.risk.value_objects.risk_limits import RiskLimits
 from quantum.domain.shared.value_objects.money import Money
 
@@ -16,7 +17,7 @@ class RiskPolicy:
     ) -> RiskBreach | None:
         if current_drawdown.value >= limits.max_drawdown.value:
             return RiskBreach(
-                kind="drawdown",
+                kind=RiskBreachKind.drawdown(),
                 current=current_drawdown,
                 limit=limits.max_drawdown,
             )
@@ -30,7 +31,7 @@ class RiskPolicy:
     ) -> RiskBreach | None:
         if notional.value >= limits.max_notional.value:
             return RiskBreach(
-                kind="notional",
+                kind=RiskBreachKind.notional(),
                 current=notional,
                 limit=limits.max_notional,
             )
@@ -44,7 +45,7 @@ class RiskPolicy:
     ) -> RiskBreach | None:
         if daily_loss.value >= limits.max_daily_loss.value:
             return RiskBreach(
-                kind="daily_loss",
+                kind=RiskBreachKind.daily_loss(),
                 current=daily_loss,
                 limit=limits.max_daily_loss,
             )

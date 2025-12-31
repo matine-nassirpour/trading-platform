@@ -1,12 +1,24 @@
-from enum import StrEnum
+from typing import ClassVar
+
+from quantum.domain.shared.primitives.closed_set_value_object import (
+    ClosedSetValueObject,
+)
 
 
-class DealReason(StrEnum):
-    CLIENT = "client"  # user / algo
-    MOBILE = "mobile"
-    WEB = "web"
-    SL = "sl"  # stop loss triggered
-    TP = "tp"  # take profit triggered
-    SO = "so"  # stop out
-    ROLLOVER = "rollover"  # swap/rollover
-    REVERSE = "reverse"  # reverse position
+class DealReason(ClosedSetValueObject):
+    """
+    Reason for deal execution.
+    """
+
+    _ALLOWED_VALUES: ClassVar[frozenset[str]] = frozenset(
+        {
+            "client",  # user / algo
+            "mobile",
+            "web",
+            "sl",
+            "tp",
+            "so",
+            "rollover",  # swap/rollover
+            "reverse",  # reverse position
+        }
+    )

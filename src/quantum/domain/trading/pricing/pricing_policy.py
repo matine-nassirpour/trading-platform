@@ -3,9 +3,9 @@ from typing import Final
 
 from quantum.domain.shared.errors.invariants import InvariantViolation
 from quantum.domain.trading.pricing.quantization_service import QuantizationService
-from quantum.domain.trading.types.position_side import PositionSide
-from quantum.domain.trading.types.pricing_context import PricingContext
 from quantum.domain.trading.value_objects.instrument_spec import InstrumentSpec
+from quantum.domain.trading.value_objects.position_side import PositionSide
+from quantum.domain.trading.value_objects.pricing_context import PricingContext
 
 
 class PricingPolicy:
@@ -24,17 +24,25 @@ class PricingPolicy:
 
     _NEUTRAL_ROUNDING: Final[str] = ROUND_HALF_EVEN
 
-    _ROUNDING_MATRIX: Final[dict[tuple[PricingContext, PositionSide], str]] = {
-        # --- Neutral (non-executable)
-        (PricingContext.NEUTRAL, PositionSide.LONG): ROUND_HALF_EVEN,
-        (PricingContext.NEUTRAL, PositionSide.SHORT): ROUND_HALF_EVEN,
-        # --- Stop Loss (worst-case)
-        (PricingContext.EXECUTION_SL, PositionSide.LONG): ROUND_FLOOR,
-        (PricingContext.EXECUTION_SL, PositionSide.SHORT): ROUND_CEILING,
-        # --- Take Profit (best-case)
-        (PricingContext.EXECUTION_TP, PositionSide.LONG): ROUND_CEILING,
-        (PricingContext.EXECUTION_TP, PositionSide.SHORT): ROUND_FLOOR,
-    }
+    # --- Internal decision logic ---------------------------------------------
+
+    @staticmethod
+    def _execution_rounding(
+        *,
+        context: PricingContext,
+        side: PositionSide,
+    ) -> str:
+        """
+        Determines execution-safe rounding based on context and position side.
+        """
+
+        if context.is_execution_sl():
+            return ROUND_FLOOR if side.is_long() else ROUND_CEILING
+
+        if context.is_execution_tp():
+            return ROUND_CEILING if side.is_long() else ROUND_FLOOR
+
+        raise InvariantViolation(f"Unsupported execution pricing context: {context}")
 
     # --- Price ----------------------------------------------------------------
 
@@ -51,11 +59,14 @@ class PricingPolicy:
 
         Rules:
         1) Multiple-of increment (market constraint)
-        2) Decimal scale quantization (representation)
-        3) Context-aware directional rounding (execution safety)
+        2) Context-aware directional rounding
+        3) Decimal scale quantization
         """
 
-        if context != PricingContext.NEUTRAL and side is None:
+        if not isinstance(context, PricingContext):
+            raise InvariantViolation("Invalid PricingContext")
+
+        if not context.is_neutral() and side is None:
             raise InvariantViolation(
                 "Execution pricing requires an explicit PositionSide"
             )
@@ -67,15 +78,15 @@ class PricingPolicy:
         )
 
         # Step 2 — rounding selection
-        if context == PricingContext.NEUTRAL:
+        if context.is_neutral():
             rounding = PricingPolicy._NEUTRAL_ROUNDING
         else:
-            try:
-                rounding = PricingPolicy._ROUNDING_MATRIX[(context, side)]
-            except KeyError:
-                raise InvariantViolation(
-                    f"Unsupported pricing context/side combination: {context}, {side}"
-                ) from None
+            if not isinstance(side, PositionSide):
+                raise InvariantViolation("Invalid PositionSide")
+            rounding = PricingPolicy._execution_rounding(
+                context=context,
+                side=side,
+            )
 
         # Step 3 — decimal scale
         return raw.quantize(
@@ -124,12 +135,12 @@ class PricingPolicy:
         qa = PricingPolicy.quantize_price(
             value=a,
             instrument=instrument,
-            context=PricingContext.NEUTRAL,
+            context=PricingContext.neutral(),
         )
         qb = PricingPolicy.quantize_price(
             value=b,
             instrument=instrument,
-            context=PricingContext.NEUTRAL,
+            context=PricingContext.neutral(),
         )
         return qa == qb
 
@@ -139,18 +150,17 @@ class PricingPolicy:
         b: Decimal,
         instrument: InstrumentSpec,
     ) -> bool:
-        return PricingPolicy.price_equal(a, b, instrument) is False and (
-            PricingPolicy.quantize_price(
-                value=a,
-                instrument=instrument,
-                context=PricingContext.NEUTRAL,
-            )
-            < PricingPolicy.quantize_price(
-                value=b,
-                instrument=instrument,
-                context=PricingContext.NEUTRAL,
-            )
+        qa = PricingPolicy.quantize_price(
+            value=a,
+            instrument=instrument,
+            context=PricingContext.neutral(),
         )
+        qb = PricingPolicy.quantize_price(
+            value=b,
+            instrument=instrument,
+            context=PricingContext.neutral(),
+        )
+        return qa < qb
 
     @staticmethod
     def price_greater_than(
@@ -158,15 +168,14 @@ class PricingPolicy:
         b: Decimal,
         instrument: InstrumentSpec,
     ) -> bool:
-        return PricingPolicy.price_equal(a, b, instrument) is False and (
-            PricingPolicy.quantize_price(
-                value=a,
-                instrument=instrument,
-                context=PricingContext.NEUTRAL,
-            )
-            > PricingPolicy.quantize_price(
-                value=b,
-                instrument=instrument,
-                context=PricingContext.NEUTRAL,
-            )
+        qa = PricingPolicy.quantize_price(
+            value=a,
+            instrument=instrument,
+            context=PricingContext.neutral(),
         )
+        qb = PricingPolicy.quantize_price(
+            value=b,
+            instrument=instrument,
+            context=PricingContext.neutral(),
+        )
+        return qa > qb

@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from quantum.domain.execution.types.execution import ExecutionType
+from quantum.domain.execution.types.execution_type import ExecutionType
 from quantum.domain.execution.value_objects.execution_id import ExecutionId
 from quantum.domain.shared.errors.invariants import InvariantViolation
 from quantum.domain.shared.primitives.value_object import ValueObject

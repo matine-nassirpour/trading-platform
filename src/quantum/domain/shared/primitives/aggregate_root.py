@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, field, replace
 from typing import Self
 
@@ -8,7 +9,7 @@ from quantum.domain.shared.events.base_event import BaseEvent
 
 
 @dataclass(frozen=True)
-class AggregateRoot:
+class AggregateRoot(ABC):
     """
     Canonical Aggregate Root.
 
@@ -31,10 +32,9 @@ class AggregateRoot:
 
     # --- Invariants -----------------------------------------------------------
 
+    @abstractmethod
     def _validate(self) -> None:
-        raise NotImplementedError(
-            f"{self.__class__.__name__} must implement _validate()"
-        )
+        raise NotImplementedError
 
     def _validate_events(self) -> None:
         if not isinstance(self._events, tuple):

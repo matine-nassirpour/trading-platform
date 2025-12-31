@@ -4,7 +4,7 @@ from decimal import Decimal
 
 from quantum.domain.shared.value_objects.currency import Currency
 from quantum.domain.shared.value_objects.money import Money
-from quantum.domain.trading.types.position_side import PositionSide
+from quantum.domain.trading.value_objects.position_side import PositionSide
 from quantum.domain.trading.value_objects.price import Price
 from quantum.domain.trading.value_objects.volume import PositiveVolume
 

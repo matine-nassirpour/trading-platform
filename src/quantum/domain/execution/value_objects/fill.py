@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from quantum.domain.execution.types.execution import LiquiditySide
+from quantum.domain.execution.types.liquidity_side import LiquiditySide
 from quantum.domain.execution.value_objects.execution_id import ExecutionId
 from quantum.domain.execution.value_objects.fee import Fee
 from quantum.domain.shared.errors.invariants import InvariantViolation

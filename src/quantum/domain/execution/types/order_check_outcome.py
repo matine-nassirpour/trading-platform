@@ -1,10 +1,22 @@
-from enum import StrEnum
+from typing import ClassVar
+
+from quantum.domain.shared.primitives.closed_set_value_object import (
+    ClosedSetValueObject,
+)
 
 
-class OrderCheckOutcome(StrEnum):
-    ACCEPTED = "accepted"
-    INSUFFICIENT_MARGIN = "insufficient_margin"
-    INVALID_PRICE = "invalid_price"
-    INVALID_VOLUME = "invalid_volume"
-    MARKET_CLOSED = "market_closed"
-    UNKNOWN_ERROR = "unknown_error"
+class OrderCheckOutcome(ClosedSetValueObject):
+    """
+    Outcome of pre-execution order checks.
+    """
+
+    _ALLOWED_VALUES: ClassVar[frozenset[str]] = frozenset(
+        {
+            "accepted",
+            "insufficient_margin",
+            "invalid_price",
+            "invalid_volume",
+            "market_closed",
+            "unknown_error",
+        }
+    )

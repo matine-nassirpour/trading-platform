@@ -1,9 +1,9 @@
-from decimal import ROUND_CEILING, ROUND_FLOOR, ROUND_HALF_EVEN, Decimal
+from decimal import Decimal
 
 from quantum.domain.shared.errors.invariants import InvariantViolation
 from quantum.domain.trading.pricing.quantization_service import QuantizationService
-from quantum.domain.trading.types.price_rounding import PriceRoundingMode
 from quantum.domain.trading.value_objects.instrument_spec import InstrumentSpec
+from quantum.domain.trading.value_objects.price_rounding_mode import PriceRoundingMode
 
 
 class DirectionalRoundingPolicy:
@@ -15,12 +15,6 @@ class DirectionalRoundingPolicy:
     - Deterministic
     - Context-explicit
     """
-
-    _ROUNDING_MAP = {
-        PriceRoundingMode.FLOOR: ROUND_FLOOR,
-        PriceRoundingMode.CEILING: ROUND_CEILING,
-        PriceRoundingMode.NEAREST: ROUND_HALF_EVEN,
-    }
 
     @staticmethod
     def quantize_price(
@@ -35,8 +29,8 @@ class DirectionalRoundingPolicy:
         2) directional rounding (execution constraint)
         """
 
-        if mode not in DirectionalRoundingPolicy._ROUNDING_MAP:
-            raise InvariantViolation(f"Unsupported rounding mode: {mode}")
+        if not isinstance(mode, PriceRoundingMode):
+            raise InvariantViolation("Invalid PriceRoundingMode")
 
         # Step 1 — market increment
         raw = QuantizationService.quantize_to_increment(
@@ -44,10 +38,8 @@ class DirectionalRoundingPolicy:
             increment=instrument.price_increment,
         )
 
-        # Step 2 — directional rounding
-        rounding = DirectionalRoundingPolicy._ROUNDING_MAP[mode]
-
+        # Step 2 — directional rounding (delegated to VO)
         return raw.quantize(
             instrument.price_scale,
-            rounding=rounding,
+            rounding=mode.decimal_rounding(),
         )

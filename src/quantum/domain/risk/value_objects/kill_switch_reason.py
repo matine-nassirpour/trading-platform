@@ -5,17 +5,16 @@ from quantum.domain.shared.primitives.closed_set_value_object import (
 )
 
 
-class LatencyPhase(ClosedSetValueObject):
+class KillSwitchReason(ClosedSetValueObject):
     """
-    Execution latency measurement phase.
+    Canonical kill switch trigger reason.
     """
 
     _ALLOWED_VALUES: ClassVar[frozenset[str]] = frozenset(
         {
-            "terminal_ping",
-            "order_check",
-            "order_send",
-            "ack",
-            "fill",
+            "risk_limit",
+            "network",
+            "broker_rejects",
+            "manual",
         }
     )

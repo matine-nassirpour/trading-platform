@@ -7,22 +7,22 @@ from quantum.domain.shared.primitives.closed_set_value_object import (
 )
 
 
-class DealEntry(ClosedSetValueObject):
+class KillSwitchStatus(ClosedSetValueObject):
     """
-    Deal entry direction.
+    Canonical kill switch status.
     """
 
     _ALLOWED_VALUES: ClassVar[frozenset[str]] = frozenset(
         {
-            "in",
-            "out",
+            "armed",
+            "triggered",
         }
     )
 
     @classmethod
-    def in_(cls) -> DealEntry:
-        return cls("in")
+    def armed(cls) -> KillSwitchStatus:
+        return cls("armed")
 
     @classmethod
-    def out(cls) -> DealEntry:
-        return cls("out")
+    def triggered(cls) -> KillSwitchStatus:
+        return cls("triggered")

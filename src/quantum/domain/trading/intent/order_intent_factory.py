@@ -1,20 +1,19 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Final
 
 from quantum.domain.shared.errors.invariants import InvariantViolation
 from quantum.domain.shared.value_objects.epoch_ms import EpochMs
 from quantum.domain.shared.value_objects.symbol import Symbol
 from quantum.domain.trading.events.v1.order_intent_event import OrderIntentEvent
 from quantum.domain.trading.risk.exit_policy import ExitPolicy
-from quantum.domain.trading.types.order_type import OrderType
-from quantum.domain.trading.types.position_side import PositionSide
-from quantum.domain.trading.types.time_in_force import TimeInForce
 from quantum.domain.trading.value_objects.identifiers import IntentId
 from quantum.domain.trading.value_objects.instrument_spec import InstrumentSpec
+from quantum.domain.trading.value_objects.order_type import OrderType
+from quantum.domain.trading.value_objects.position_side import PositionSide
 from quantum.domain.trading.value_objects.price import Price
 from quantum.domain.trading.value_objects.reference_price import ReferencePrice
+from quantum.domain.trading.value_objects.time_in_force import TimeInForce
 from quantum.domain.trading.value_objects.volume import PositiveVolume
 
 
@@ -41,7 +40,7 @@ class OrderIntentParameters:
     sl: Price | None = None
     tp: Price | None = None
 
-    time_in_force: TimeInForce = TimeInForce.GTC
+    time_in_force: TimeInForce = TimeInForce("gtc")
     rationale: str | None = None
 
     decision_epoch_ms: EpochMs | None = None
@@ -50,42 +49,7 @@ class OrderIntentParameters:
 class OrderIntentFactory:
     """
     Canonical domain factory for OrderIntentEvent.
-
-    Responsibilities:
-    - Enforce ALL order-type price invariants
-    - Enforce SL / TP correctness via ExitPolicy
-    - Produce a valid OrderIntentEvent or fail deterministically
     """
-
-    # --- OrderType → price rules (explicit & auditable) -----------------------
-
-    _REQUIRES_LIMIT: Final[set[OrderType]] = {
-        OrderType.BUY_LIMIT,
-        OrderType.SELL_LIMIT,
-        OrderType.BUY_STOP_LIMIT,
-        OrderType.SELL_STOP_LIMIT,
-    }
-
-    _REQUIRES_STOP: Final[set[OrderType]] = {
-        OrderType.BUY_STOP,
-        OrderType.SELL_STOP,
-        OrderType.BUY_STOP_LIMIT,
-        OrderType.SELL_STOP_LIMIT,
-    }
-
-    _FORBIDS_LIMIT: Final[set[OrderType]] = {
-        OrderType.BUY,
-        OrderType.SELL,
-        OrderType.BUY_STOP,
-        OrderType.SELL_STOP,
-    }
-
-    _FORBIDS_STOP: Final[set[OrderType]] = {
-        OrderType.BUY,
-        OrderType.SELL,
-        OrderType.BUY_LIMIT,
-        OrderType.SELL_LIMIT,
-    }
 
     # --- Validation rules -----------------------------------------------------
 
@@ -93,19 +57,21 @@ class OrderIntentFactory:
     def _validate_price_requirements(params: OrderIntentParameters) -> None:
         t = params.order_type
 
-        if t in OrderIntentFactory._REQUIRES_LIMIT and params.limit_price is None:
+        if t.requires_limit_price() and params.limit_price is None:
             raise InvariantViolation(f"{t} requires limit_price")
 
-        if t in OrderIntentFactory._REQUIRES_STOP and params.stop_price is None:
+        if t.requires_stop_price() and params.stop_price is None:
             raise InvariantViolation(f"{t} requires stop_price")
 
-        if t in OrderIntentFactory._FORBIDS_LIMIT and params.limit_price is not None:
+        if t.forbids_limit_price() and params.limit_price is not None:
             raise InvariantViolation(f"{t} forbids limit_price")
 
-        if t in OrderIntentFactory._FORBIDS_STOP and params.stop_price is not None:
+        if t.forbids_stop_price() and params.stop_price is not None:
             raise InvariantViolation(f"{t} forbids stop_price")
 
-        if t.requires_price() and not (params.limit_price or params.stop_price):
+        if t.requires_price_reference() and not (
+            params.limit_price or params.stop_price or params.reference_price
+        ):
             raise InvariantViolation(f"{t} requires a price reference")
 
     @staticmethod

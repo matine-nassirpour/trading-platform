@@ -1,9 +1,9 @@
 from quantum.domain.shared.errors.invariants import InvariantViolation
 from quantum.domain.trading.pricing.pricing_policy import PricingPolicy
-from quantum.domain.trading.types.position_side import PositionSide
-from quantum.domain.trading.types.pricing_context import PricingContext
 from quantum.domain.trading.value_objects.instrument_spec import InstrumentSpec
+from quantum.domain.trading.value_objects.position_side import PositionSide
 from quantum.domain.trading.value_objects.price import Price
+from quantum.domain.trading.value_objects.pricing_context import PricingContext
 from quantum.domain.trading.value_objects.reference_price import ReferencePrice
 
 
@@ -33,7 +33,7 @@ class ExitPolicy:
         quantized = PricingPolicy.quantize_price(
             value=entry.value,
             instrument=instrument,
-            context=PricingContext.NEUTRAL,
+            context=PricingContext.neutral(),
         )
         return Price(quantized)
 
@@ -54,7 +54,7 @@ class ExitPolicy:
                 PricingPolicy.quantize_price(
                     value=sl.value,
                     instrument=instrument,
-                    context=PricingContext.EXECUTION_SL,
+                    context=PricingContext.execution_sl(),
                     side=side,
                 )
             )
@@ -67,7 +67,7 @@ class ExitPolicy:
                 PricingPolicy.quantize_price(
                     value=tp.value,
                     instrument=instrument,
-                    context=PricingContext.EXECUTION_TP,
+                    context=PricingContext.execution_tp(),
                     side=side,
                 )
             )
@@ -166,7 +166,7 @@ class ExitPolicy:
             instrument=instrument,
         )
 
-        if side == PositionSide.LONG:
+        if side.is_long():
             ExitPolicy._validate_long(
                 entry=q_entry,
                 sl=q_sl,
@@ -174,7 +174,7 @@ class ExitPolicy:
                 instrument=instrument,
             )
 
-        elif side == PositionSide.SHORT:
+        elif side.is_short():
             ExitPolicy._validate_short(
                 entry=q_entry,
                 sl=q_sl,
@@ -182,7 +182,7 @@ class ExitPolicy:
                 instrument=instrument,
             )
 
-        else:
+        else:  # Defensive (should be unreachable)
             raise InvariantViolation(f"Unsupported PositionSide: {side}")
 
         if q_sl is not None and q_tp is not None:
