@@ -243,21 +243,77 @@ trading-platform/
 │       │   │   └── __init__.py
 │       │   └── __init__.py
 │       ├── domain/
-│       │   ├── commands/
-│       │   │   ├── __init__.py
-│       │   │   └── order_intent_factory.py
-│       │   ├── events/
-│       │   │   ├── risk/
+│       │   ├── execution/
+│       │   │   ├── types/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── deal_entry.py
+│       │   │   │   ├── deal_reason.py
+│       │   │   │   ├── execution.py
+│       │   │   │   ├── latency_phase.py
+│       │   │   │   └── order_check_outcome.py
+│       │   │   ├── value_objects/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── deal_id.py
+│       │   │   │   ├── execution_id.py
+│       │   │   │   ├── execution_rejection.py
+│       │   │   │   ├── execution_report.py
+│       │   │   │   ├── fee.py
+│       │   │   │   └── fill.py
+│       │   │   └── __init__.py
+│       │   ├── risk/
+│       │   │   ├── aggregates/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── kill_switch_state.py
+│       │   │   │   └── risk_state.py
+│       │   │   ├── events/
 │       │   │   │   ├── v1/
 │       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── killswitch_trigger_event.py
 │       │   │   │   │   ├── max_drawdown_exceeded_event.py
 │       │   │   │   │   └── risk_breach_event.py
 │       │   │   │   └── __init__.py
-│       │   │   ├── trading/
+│       │   │   ├── policies/
+│       │   │   │   ├── __init__.py
+│       │   │   │   └── risk_policy.py
+│       │   │   ├── types/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── kill_switch_reason.py
+│       │   │   │   └── kill_switch_status.py
+│       │   │   ├── value_objects/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── drawdown.py
+│       │   │   │   ├── drawdown_limit.py
+│       │   │   │   ├── risk_breach.py
+│       │   │   │   └── risk_limits.py
+│       │   │   └── __init__.py
+│       │   ├── shared/
+│       │   │   ├── errors/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── domain_error.py
+│       │   │   │   ├── invariants.py
+│       │   │   │   ├── order_errors.py
+│       │   │   │   ├── position_errors.py
+│       │   │   │   └── risk_errors.py
+│       │   │   ├── events/
+│       │   │   │   ├── __init__.py
+│       │   │   │   └── base_event.py
+│       │   │   ├── primitives/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── aggregate_root.py
+│       │   │   │   ├── numeric_value_object.py
+│       │   │   │   └── value_object.py
+│       │   │   ├── value_objects/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── currency.py
+│       │   │   │   ├── epoch_ms.py
+│       │   │   │   ├── money.py
+│       │   │   │   └── symbol.py
+│       │   │   └── __init__.py
+│       │   ├── trading/
+│       │   │   ├── events/
 │       │   │   │   ├── v1/
 │       │   │   │   │   ├── __init__.py
 │       │   │   │   │   ├── breakeven_trigger_event.py
-│       │   │   │   │   ├── killswitch_trigger_event.py
 │       │   │   │   │   ├── order_created_event.py
 │       │   │   │   │   ├── order_intent_event.py
 │       │   │   │   │   ├── order_sizing_event.py
@@ -266,74 +322,48 @@ trading-platform/
 │       │   │   │   │   ├── sl_tp_update_event.py
 │       │   │   │   │   └── trailing_trigger_event.py
 │       │   │   │   └── __init__.py
-│       │   │   ├── __init__.py
-│       │   │   └── base.py
-│       │   ├── model/
-│       │   │   ├── aggregates/
+│       │   │   ├── intent/
 │       │   │   │   ├── __init__.py
-│       │   │   │   ├── base.py
-│       │   │   │   ├── intent.py
-│       │   │   │   ├── kill_switch_state.py
-│       │   │   │   ├── position.py
-│       │   │   │   └── risk_state.py
-│       │   │   ├── entities/
+│       │   │   │   ├── order_intent_factory.py
+│       │   │   │   └── trading_intent.py
+│       │   │   ├── order/
 │       │   │   │   ├── __init__.py
 │       │   │   │   └── order.py
-│       │   │   ├── exceptions/
+│       │   │   ├── position/
 │       │   │   │   ├── __init__.py
-│       │   │   │   ├── base.py
-│       │   │   │   ├── order_exceptions.py
-│       │   │   │   ├── position_exceptions.py
-│       │   │   │   ├── risk_exceptions.py
-│       │   │   │   └── validation_exceptions.py
+│       │   │   │   ├── pnl_service.py
+│       │   │   │   └── position.py
+│       │   │   ├── pricing/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── directional_rounding_policy.py
+│       │   │   │   ├── pricing_policy.py
+│       │   │   │   └── quantization_service.py
+│       │   │   ├── risk/
+│       │   │   │   ├── __init__.py
+│       │   │   │   └── exit_policy.py
+│       │   │   ├── types/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── order_filling_type.py
+│       │   │   │   ├── order_status.py
+│       │   │   │   ├── order_type.py
+│       │   │   │   ├── position_side.py
+│       │   │   │   ├── price_rounding.py
+│       │   │   │   ├── pricing_context.py
+│       │   │   │   ├── time_in_force.py
+│       │   │   │   └── trade_action.py
 │       │   │   ├── value_objects/
 │       │   │   │   ├── __init__.py
-│       │   │   │   ├── _numeric.py
-│       │   │   │   ├── base.py
 │       │   │   │   ├── contract_size.py
-│       │   │   │   ├── currency.py
 │       │   │   │   ├── currency_pair.py
-│       │   │   │   ├── drawdown.py
-│       │   │   │   ├── drawdown_limit.py
-│       │   │   │   ├── execution_id.py
-│       │   │   │   ├── execution_rejection.py
-│       │   │   │   ├── execution_report.py
-│       │   │   │   ├── fee.py
-│       │   │   │   ├── fill.py
 │       │   │   │   ├── identifiers.py
 │       │   │   │   ├── instrument_spec.py
-│       │   │   │   ├── money.py
 │       │   │   │   ├── price.py
 │       │   │   │   ├── price_constraints.py
 │       │   │   │   ├── reference_price.py
-│       │   │   │   ├── risk_breach.py
-│       │   │   │   ├── risk_limits.py
-│       │   │   │   ├── symbol.py
 │       │   │   │   ├── tick_value.py
-│       │   │   │   ├── time.py
 │       │   │   │   ├── volume.py
 │       │   │   │   └── volume_constraints.py
 │       │   │   └── __init__.py
-│       │   ├── policies/
-│       │   │   ├── __init__.py
-│       │   │   ├── directional_rounding_policy.py
-│       │   │   ├── exit_policy.py
-│       │   │   ├── pricing_policy.py
-│       │   │   └── risk_policy.py
-│       │   ├── services/
-│       │   │   ├── __init__.py
-│       │   │   ├── pnl_service.py
-│       │   │   └── quantization_service.py
-│       │   ├── types/
-│       │   │   ├── __init__.py
-│       │   │   ├── enums.py
-│       │   │   ├── execution.py
-│       │   │   ├── kill_switch.py
-│       │   │   ├── order_check_outcome.py
-│       │   │   ├── order_status.py
-│       │   │   ├── position_side.py
-│       │   │   ├── price_rounding.py
-│       │   │   └── pricing_context.py
 │       │   └── __init__.py
 │       ├── infrastructure/
 │       │   ├── adapters/

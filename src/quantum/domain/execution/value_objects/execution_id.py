@@ -1,0 +1,19 @@
+import uuid
+
+from dataclasses import dataclass
+
+from quantum.domain.shared.errors.invariants import InvariantViolation
+from quantum.domain.shared.primitives.value_object import ValueObject
+
+
+@dataclass(frozen=True)
+class ExecutionId(ValueObject):
+    """
+    Canonical unique execution identifier.
+    """
+
+    value: uuid.UUID
+
+    def _validate(self) -> None:
+        if not isinstance(self.value, uuid.UUID):
+            raise InvariantViolation("ExecutionId must be a UUID")

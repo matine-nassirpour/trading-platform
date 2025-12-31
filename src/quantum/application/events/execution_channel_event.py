@@ -1,8 +1,8 @@
 from typing import ClassVar
 
 from quantum.application.contracts.execution_code import ExecutionCode
-from quantum.domain.events.base import BaseEvent
 from quantum.domain.model.value_objects import EpochMs
+from quantum.domain.shared.events import BaseEvent
 from quantum.domain.types.enums import App
 from quantum.domain.types.execution_channel import ExecutionChannel
 
