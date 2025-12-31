@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 from typing import ClassVar
 
+from quantum.domain.risk.types.kill_switch_reason import KillSwitchReason
 from quantum.domain.shared.events.base_event import BaseEvent
 from quantum.domain.shared.value_objects.epoch_ms import EpochMs
-from quantum.domain.types.enums import KillSwitchReason
 
 
 @dataclass(frozen=True)

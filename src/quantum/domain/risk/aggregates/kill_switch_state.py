@@ -5,6 +5,7 @@ from dataclasses import dataclass, replace
 from quantum.domain.risk.events.v1.killswitch_trigger_event import (
     KillSwitchTriggerEvent,
 )
+from quantum.domain.risk.types.kill_switch_reason import KillSwitchReason
 from quantum.domain.risk.types.kill_switch_status import KillSwitchStatus
 from quantum.domain.shared.errors.invariants import (
     InvalidStateTransition,
@@ -12,7 +13,6 @@ from quantum.domain.shared.errors.invariants import (
 )
 from quantum.domain.shared.primitives.aggregate_root import AggregateRoot
 from quantum.domain.shared.value_objects.epoch_ms import EpochMs
-from quantum.domain.types.enums import KillSwitchReason
 
 
 @dataclass(frozen=True)
