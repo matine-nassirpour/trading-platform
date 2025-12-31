@@ -8,13 +8,14 @@ from quantum.domain.shared.value_objects.epoch_ms import EpochMs
 from quantum.domain.shared.value_objects.symbol import Symbol
 from quantum.domain.trading.events.v1.order_intent_event import OrderIntentEvent
 from quantum.domain.trading.risk.exit_policy import ExitPolicy
+from quantum.domain.trading.types.order_type import OrderType
 from quantum.domain.trading.types.position_side import PositionSide
+from quantum.domain.trading.types.time_in_force import TimeInForce
 from quantum.domain.trading.value_objects.identifiers import IntentId
 from quantum.domain.trading.value_objects.instrument_spec import InstrumentSpec
 from quantum.domain.trading.value_objects.price import Price
 from quantum.domain.trading.value_objects.reference_price import ReferencePrice
 from quantum.domain.trading.value_objects.volume import PositiveVolume
-from quantum.domain.types.enums import OrderType, TimeInForce
 
 
 @dataclass(frozen=True)

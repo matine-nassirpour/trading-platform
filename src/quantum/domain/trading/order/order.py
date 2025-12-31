@@ -7,13 +7,13 @@ from quantum.domain.execution.value_objects.fill import Fill
 from quantum.domain.shared.errors.invariants import InvalidStateTransition
 from quantum.domain.shared.errors.order_errors import OrderNotFillable, OrderOverfill
 from quantum.domain.trading.types.order_status import OrderStatus
+from quantum.domain.trading.types.order_type import OrderType
 from quantum.domain.trading.types.position_side import PositionSide
 from quantum.domain.trading.value_objects.identifiers import OrderId
 from quantum.domain.trading.value_objects.volume import (
     NonNegativeVolume,
     PositiveVolume,
 )
-from quantum.domain.types.enums import OrderType
 
 
 @dataclass(frozen=True, eq=False)

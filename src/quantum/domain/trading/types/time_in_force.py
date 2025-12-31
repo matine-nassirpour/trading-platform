@@ -1,4 +1,4 @@
-from mypy.typeshed.stdlib.enum import StrEnum
+from enum import StrEnum
 
 
 class TimeInForce(StrEnum):
