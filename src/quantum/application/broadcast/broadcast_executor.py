@@ -14,7 +14,7 @@ from quantum.application.resilience.resilience_policy import (
 )
 from quantum.application.resilience.retry_policy import RetryPolicy
 from quantum.application.services.execution_service import ExecutionService
-from quantum.domain.types.execution_channel import ExecutionChannel
+from quantum.application.types.execution_channel import ExecutionChannel
 
 LOGGER: Final = logging.getLogger(__name__)
 
@@ -46,9 +46,8 @@ class BroadcastExecutor:
         self._cfg = cfg
         self._sem = asyncio.Semaphore(concurrency_limit)
 
-    # --------------------------------------------------------------------------
-    # Core Broadcast Logic
-    # --------------------------------------------------------------------------
+    # --- Core Broadcast Logic -------------------------------------------------
+
     async def broadcast_order_async(
         self,
         targets: list[ExecutionChannel],
@@ -109,9 +108,8 @@ class BroadcastExecutor:
         )
         return BroadcastResult(results=dict(results))
 
-    # --------------------------------------------------------------------------
-    # Optional Sync Wrapper (for legacy contexts)
-    # --------------------------------------------------------------------------
+    # --- Optional Sync Wrapper (for legacy contexts) --------------------------
+
     def broadcast_order_sync(
         self,
         targets: list[ExecutionChannel],

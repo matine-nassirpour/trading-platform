@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Protocol
 
-from quantum.domain.types.execution_channel import ExecutionChannel
+from quantum.application.types.execution_channel import ExecutionChannel
 
 
 class BroadcastPolicy(Protocol):

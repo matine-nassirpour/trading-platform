@@ -1,13 +1,12 @@
 from pydantic import BaseModel, ConfigDict, Field
 
-from quantum.domain.model.value_objects import Symbol
-from quantum.domain.types.decimal_validators import PositiveDecimal
-from quantum.domain.types.enums import (
-    OrderFillingType,
-    OrderType,
-    TimeInForce,
-    TradeAction,
-)
+from quantum.application.types.order_filling_type import OrderFillingType
+from quantum.application.types.trade_action import TradeAction
+from quantum.domain.shared.value_objects.symbol import Symbol
+from quantum.domain.trading.value_objects.market.price import Price
+from quantum.domain.trading.value_objects.market.volume import PositiveVolume
+from quantum.domain.trading.value_objects.order.order_type import OrderType
+from quantum.domain.trading.value_objects.order.time_in_force import TimeInForce
 
 
 class OrderRequest(BaseModel):
@@ -18,13 +17,13 @@ class OrderRequest(BaseModel):
 
     action: TradeAction
     symbol: Symbol
-    volume: PositiveDecimal
+    volume: PositiveVolume
     type: OrderType
-    price: PositiveDecimal | None = Field(None)
-    stop_loss: PositiveDecimal | None = Field(None)
-    take_profit: PositiveDecimal | None = Field(None)
+    price: Price | None = Field(None)
+    stop_loss: Price | None = Field(None)
+    take_profit: Price | None = Field(None)
     deviation: int | None = Field(None)
-    time_in_force: TimeInForce = TimeInForce.GTC
+    time_in_force: TimeInForce = TimeInForce("gtc")
     filling: OrderFillingType
     comment: str | None = Field(None)
 
@@ -35,8 +34,8 @@ class CheckRequest(BaseModel):
     """Request to check an order's validity before execution."""
 
     order: OrderRequest
-    stop_price: PositiveDecimal | None = Field(None)
-    limit_price: PositiveDecimal | None = Field(None)
+    stop_price: Price | None = Field(None)
+    limit_price: Price | None = Field(None)
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -46,7 +45,7 @@ class CheckRequest(BaseModel):
         return self.order.symbol
 
     @property
-    def volume(self) -> PositiveDecimal:
+    def volume(self) -> PositiveVolume:
         """Shortcut access to the order volume."""
         return self.order.volume
 

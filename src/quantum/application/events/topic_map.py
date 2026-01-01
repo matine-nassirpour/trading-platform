@@ -17,19 +17,14 @@ from __future__ import annotations
 def map_topic(event_name: str) -> str:
     # Trading lifecycle (always business topics)
     if event_name in {
-        "trading.v1.order_intent",
-        "trading.v1.order_submit",
-        "trading.v1.order_check",
-        "trading.v1.order_fill",
-        "trading.v1.order_reject",
-        "trading.v1.position_update",
-        "trading.v1.sl_tp_update",
-        "trading.v1.stoploss_trigger",
-        "trading.v1.takeprofit_trigger",
-        "trading.v1.trailing_trigger",
-        "trading.v1.breakeven_trigger",
-        "trading.v1.killswitch_trigger",
-        "trading.v1.reconciliation",
+        "trading.v1.breakeven_trigger_event",
+        "trading.v1.order_created_event",
+        "trading.v1.order_intent_event",
+        "trading.v1.order_sizing_event",
+        "trading.v1.order_submit_event",
+        "trading.v1.sl_tp_defined_event",
+        "trading.v1.sl_tp_update_event",
+        "trading.v1.trailing_trigger_event",
     }:
         return "trading.events"
 

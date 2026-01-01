@@ -64,9 +64,8 @@ class TradingEventEmitter:
         self._workers: list[asyncio.Task[None]] = []
         self._closing = asyncio.Event()
 
-    # --------------------------------------------------------------------------
-    # Lifecycle
-    # --------------------------------------------------------------------------
+    # --- Lifecycle ------------------------------------------------------------
+
     async def start(self) -> None:
         """
         Start background publisher workers.
@@ -103,9 +102,8 @@ class TradingEventEmitter:
         self._workers.clear()
         LOGGER.info("[Emitter] closed (remaining=%d)", self._queue.qsize())
 
-    # --------------------------------------------------------------------------
-    # Public API
-    # --------------------------------------------------------------------------
+    # --- Public API -----------------------------------------------------------
+
     async def emit(self, event: object) -> None:
         """
         Enqueue an event for asynchronous publication.
@@ -118,9 +116,8 @@ class TradingEventEmitter:
             return
         await self._queue.put(event)
 
-    # --------------------------------------------------------------------------
-    # Internal Helpers
-    # --------------------------------------------------------------------------
+    # --- Internal Helpers -----------------------------------------------------
+
     async def _worker(self, worker_id: int) -> None:
         try:
             while not self._closing.is_set():

@@ -10,7 +10,7 @@ These events are agnostic of the transport layer (asyncio, Kafka, etc.).
 from dataclasses import dataclass
 from typing import Any
 
-from quantum.domain.types.execution_channel import ExecutionChannel
+from quantum.application.types.execution_channel import ExecutionChannel
 
 
 @dataclass(frozen=True)

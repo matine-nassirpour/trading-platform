@@ -19,9 +19,6 @@ P = ParamSpec("P")
 R = TypeVar("R")
 
 
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Configuration Model                                                        │
-# ╰────────────────────────────────────────────────────────────────────────────╯
 @dataclass(frozen=True)
 class ResilienceConfig:
     """Immutable resilience configuration parameters."""
@@ -34,9 +31,6 @@ class ResilienceConfig:
     max_total_time: float | None = None  # Optional global deadline (seconds)
 
 
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Logging Adapter                                                            │
-# ╰────────────────────────────────────────────────────────────────────────────╯
 class ResilienceLogger:
     """Adapter for consistent structured logging across sync/async flows."""
 
@@ -117,9 +111,6 @@ class ResilienceLogger:
         )
 
 
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Backoff Strategy                                                           │
-# ╰────────────────────────────────────────────────────────────────────────────╯
 class BackoffStrategy:
     """Computes exponential backoff delays with optional jitter."""
 
@@ -142,9 +133,6 @@ class BackoffStrategy:
         return float(min(delay, self._cap))
 
 
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Domain Exception for Aborts                                                │
-# ╰────────────────────────────────────────────────────────────────────────────╯
 class ResilienceAbortError(RuntimeError):
     """Raised when retries are exhausted or deadline exceeded."""
 
@@ -184,9 +172,8 @@ class ResilienceExecutor(Generic[P, R]):
             jitter=self.cfg.enable_jitter,
         )
 
-    # --------------------------------------------------------------------------
-    # Internal Helpers
-    # --------------------------------------------------------------------------
+    # --- Internal Helpers -----------------------------------------------------
+
     def _compute_delay(self, attempt: int, elapsed_total: float) -> float:
         """Compute backoff delay while respecting max_total_time if set."""
         delay = self.backoff.compute_delay(attempt)
@@ -233,9 +220,8 @@ class ResilienceExecutor(Generic[P, R]):
         self.logger.log_retry(self.operation, attempt, delay)
         return delay
 
-    # --------------------------------------------------------------------------
-    # Synchronous Execution
-    # --------------------------------------------------------------------------
+    # --- Synchronous Execution ------------------------------------------------
+
     def execute_sync(
         self, func: Callable[P, R], *args: P.args, **kwargs: P.kwargs
     ) -> R:
@@ -266,9 +252,8 @@ class ResilienceExecutor(Generic[P, R]):
             delay = self._handle_post_attempt(attempt, start_global, result, last_exc)
             time.sleep(delay)
 
-    # --------------------------------------------------------------------------
-    # Asynchronous Execution
-    # --------------------------------------------------------------------------
+    # --- Asynchronous Execution -----------------------------------------------
+
     async def execute_async(
         self, func: Callable[P, Awaitable[R]], *args: P.args, **kwargs: P.kwargs
     ) -> R:

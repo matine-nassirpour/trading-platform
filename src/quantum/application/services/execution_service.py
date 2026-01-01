@@ -12,7 +12,7 @@ from quantum.application.resilience.resilience_policy import (
     resilient_call,
 )
 from quantum.application.resilience.retry_policy import RetryPolicy
-from quantum.domain.types.execution_channel import ExecutionChannel
+from quantum.application.types.execution_channel import ExecutionChannel
 
 
 @bind_resilience

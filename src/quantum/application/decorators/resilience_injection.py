@@ -19,9 +19,6 @@ LOGGER: Final = logging.getLogger(__name__)
 C = TypeVar("C", bound=object)
 
 
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Exception                                                                  │
-# ╰────────────────────────────────────────────────────────────────────────────╯
 class ResilienceBindingError(Exception):
     """Raised when the @bind_resilience decorator cannot inject required components."""
 
@@ -32,9 +29,6 @@ class ResilienceBindingError(Exception):
         self.missing = missing
 
 
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Protocol: ResilientCallable                                                │
-# ╰────────────────────────────────────────────────────────────────────────────╯
 class ResilientCallable(Protocol):
     """Marker protocol for methods decorated with resilient_call wrappers."""
 
@@ -45,9 +39,6 @@ class ResilientCallable(Protocol):
     def __call__(self, *args: Any, **kwargs: Any) -> Any: ...
 
 
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Internal Helper                                                            │
-# ╰────────────────────────────────────────────────────────────────────────────╯
 def _apply_resilient(
     fn: Callable[..., Any],
     *,
@@ -68,9 +59,6 @@ def _apply_resilient(
     return cast(ResilientCallable, decorator(fn))
 
 
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Public Decorator                                                           │
-# ╰────────────────────────────────────────────────────────────────────────────╯
 @overload
 def bind_resilience(cls: type[C]) -> type[C]: ...
 @overload

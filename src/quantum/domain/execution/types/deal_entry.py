@@ -26,3 +26,11 @@ class DealEntry(ClosedSetValueObject):
     @classmethod
     def out(cls) -> DealEntry:
         return cls("out")
+
+    # --- Semantic helpers -----------------------------------------------------
+
+    def is_in(self) -> bool:
+        return self.value == "in"
+
+    def is_out(self) -> bool:
+        return self.value == "out"

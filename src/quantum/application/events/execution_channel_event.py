@@ -1,10 +1,9 @@
 from typing import ClassVar
 
 from quantum.application.contracts.execution_code import ExecutionCode
-from quantum.domain.model.value_objects import EpochMs
-from quantum.domain.shared.events import BaseEvent
-from quantum.domain.types.enums import App
-from quantum.domain.types.execution_channel import ExecutionChannel
+from quantum.application.types.execution_channel import ExecutionChannel
+from quantum.domain.shared.events.base_event import BaseEvent
+from quantum.domain.shared.value_objects.epoch_ms import EpochMs
 
 
 class ExecutionChannelEvent(BaseEvent):
@@ -14,7 +13,6 @@ class ExecutionChannelEvent(BaseEvent):
     """
 
     event_name: ClassVar[str] = "system.execution_channel"
-    app: App = App.PYTHON_CORE
     channel: ExecutionChannel
     code: ExecutionCode
     detail: str | None = None  # message returned by the API

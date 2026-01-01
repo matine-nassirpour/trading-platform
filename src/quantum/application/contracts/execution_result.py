@@ -16,9 +16,8 @@ class ExecutionResult:
     message: str
     payload: Any | None = None
 
-    # --------------------------------------------------------------------------
-    # Factory Methods
-    # --------------------------------------------------------------------------
+    # --- Factory Methods ------------------------------------------------------
+
     @classmethod
     def ok(
         cls, message: str = "success", payload: Any | None = None
@@ -42,9 +41,8 @@ class ExecutionResult:
         """Non-recoverable failure."""
         return cls(code=ExecutionCode.INTERNAL_FAIL, message=message, payload=payload)
 
-    # --------------------------------------------------------------------------
-    # Helpers
-    # --------------------------------------------------------------------------
+    # --- Helpers --------------------------------------------------------------
+
     def succeeded(self) -> bool:
         """Return True if the operation succeeded."""
         return self.code == ExecutionCode.OK
