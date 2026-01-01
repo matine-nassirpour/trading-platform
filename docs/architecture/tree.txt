@@ -248,8 +248,9 @@ trading-platform/
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── deal_entry.py
 │       │   │   │   ├── deal_reason.py
-│       │   │   │   ├── execution.py
+│       │   │   │   ├── execution_type.py
 │       │   │   │   ├── latency_phase.py
+│       │   │   │   ├── liquidity_side.py
 │       │   │   │   └── order_check_outcome.py
 │       │   │   ├── value_objects/
 │       │   │   │   ├── __init__.py
@@ -275,15 +276,14 @@ trading-platform/
 │       │   │   ├── policies/
 │       │   │   │   ├── __init__.py
 │       │   │   │   └── risk_policy.py
-│       │   │   ├── types/
-│       │   │   │   ├── __init__.py
-│       │   │   │   ├── kill_switch_reason.py
-│       │   │   │   └── kill_switch_status.py
 │       │   │   ├── value_objects/
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── drawdown.py
 │       │   │   │   ├── drawdown_limit.py
+│       │   │   │   ├── kill_switch_reason.py
+│       │   │   │   ├── kill_switch_status.py
 │       │   │   │   ├── risk_breach.py
+│       │   │   │   ├── risk_breach_kind.py
 │       │   │   │   └── risk_limits.py
 │       │   │   └── __init__.py
 │       │   ├── shared/
@@ -300,6 +300,7 @@ trading-platform/
 │       │   │   ├── primitives/
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── aggregate_root.py
+│       │   │   │   ├── closed_set_value_object.py
 │       │   │   │   ├── numeric_value_object.py
 │       │   │   │   └── value_object.py
 │       │   │   ├── value_objects/
@@ -344,12 +345,6 @@ trading-platform/
 │       │   │   ├── types/
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── order_filling_type.py
-│       │   │   │   ├── order_status.py
-│       │   │   │   ├── order_type.py
-│       │   │   │   ├── position_side.py
-│       │   │   │   ├── price_rounding.py
-│       │   │   │   ├── pricing_context.py
-│       │   │   │   ├── time_in_force.py
 │       │   │   │   └── trade_action.py
 │       │   │   ├── value_objects/
 │       │   │   │   ├── __init__.py
@@ -357,10 +352,17 @@ trading-platform/
 │       │   │   │   ├── currency_pair.py
 │       │   │   │   ├── identifiers.py
 │       │   │   │   ├── instrument_spec.py
+│       │   │   │   ├── order_status.py
+│       │   │   │   ├── order_type.py
+│       │   │   │   ├── position_side.py
 │       │   │   │   ├── price.py
 │       │   │   │   ├── price_constraints.py
+│       │   │   │   ├── price_rounding_mode.py
+│       │   │   │   ├── pricing_context.py
 │       │   │   │   ├── reference_price.py
+│       │   │   │   ├── sl_tp_update_reason.py
 │       │   │   │   ├── tick_value.py
+│       │   │   │   ├── time_in_force.py
 │       │   │   │   ├── volume.py
 │       │   │   │   └── volume_constraints.py
 │       │   │   └── __init__.py

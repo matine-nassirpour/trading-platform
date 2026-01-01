@@ -12,3 +12,6 @@ class ExecutionRejection(ValueObject):
     def _validate(self) -> None:
         if not self.code:
             raise InvariantViolation("Rejection code must not be empty")
+
+        if not isinstance(self.description, str) or not self.description.strip():
+            raise InvariantViolation("Rejection description must not be empty")
