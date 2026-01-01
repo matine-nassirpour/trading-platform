@@ -2,8 +2,12 @@ from decimal import Decimal
 
 from quantum.domain.shared.errors.invariants import InvariantViolation
 from quantum.domain.trading.pricing.quantization_service import QuantizationService
-from quantum.domain.trading.value_objects.instrument_spec import InstrumentSpec
-from quantum.domain.trading.value_objects.price_rounding_mode import PriceRoundingMode
+from quantum.domain.trading.value_objects.instrument.instrument_spec import (
+    InstrumentSpec,
+)
+from quantum.domain.trading.value_objects.pricing.price_rounding_mode import (
+    PriceRoundingMode,
+)
 
 
 class DirectionalRoundingPolicy:

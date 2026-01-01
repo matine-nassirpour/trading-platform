@@ -3,9 +3,11 @@ from typing import Final
 
 from quantum.domain.shared.errors.invariants import InvariantViolation
 from quantum.domain.trading.pricing.quantization_service import QuantizationService
-from quantum.domain.trading.value_objects.instrument_spec import InstrumentSpec
-from quantum.domain.trading.value_objects.position_side import PositionSide
-from quantum.domain.trading.value_objects.pricing_context import PricingContext
+from quantum.domain.trading.value_objects.instrument.instrument_spec import (
+    InstrumentSpec,
+)
+from quantum.domain.trading.value_objects.order.position_side import PositionSide
+from quantum.domain.trading.value_objects.pricing.pricing_context import PricingContext
 
 
 class PricingPolicy:

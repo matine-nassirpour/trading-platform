@@ -6,14 +6,14 @@ from decimal import Decimal
 from quantum.domain.execution.value_objects.fill import Fill
 from quantum.domain.shared.errors.invariants import InvalidStateTransition
 from quantum.domain.shared.errors.order_errors import OrderNotFillable, OrderOverfill
-from quantum.domain.trading.value_objects.identifiers import OrderId
-from quantum.domain.trading.value_objects.order_status import OrderStatus
-from quantum.domain.trading.value_objects.order_type import OrderType
-from quantum.domain.trading.value_objects.position_side import PositionSide
-from quantum.domain.trading.value_objects.volume import (
+from quantum.domain.trading.value_objects.identifiers.order_id import OrderId
+from quantum.domain.trading.value_objects.market.volume import (
     NonNegativeVolume,
     PositiveVolume,
 )
+from quantum.domain.trading.value_objects.order.order_status import OrderStatus
+from quantum.domain.trading.value_objects.order.order_type import OrderType
+from quantum.domain.trading.value_objects.order.position_side import PositionSide
 
 
 @dataclass(frozen=True, eq=False)

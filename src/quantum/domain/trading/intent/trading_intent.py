@@ -13,11 +13,12 @@ from quantum.domain.trading.events.v1.order_created_event import OrderCreatedEve
 from quantum.domain.trading.events.v1.order_sizing_event import OrderSizingEvent
 from quantum.domain.trading.events.v1.order_submit_event import OrderSubmitEvent
 from quantum.domain.trading.order.order import Order
-from quantum.domain.trading.value_objects.identifiers import IntentId, OrderId
-from quantum.domain.trading.value_objects.order_status import OrderStatus
-from quantum.domain.trading.value_objects.order_type import OrderType
-from quantum.domain.trading.value_objects.position_side import PositionSide
-from quantum.domain.trading.value_objects.volume import PositiveVolume
+from quantum.domain.trading.value_objects.identifiers.intent_id import IntentId
+from quantum.domain.trading.value_objects.identifiers.order_id import OrderId
+from quantum.domain.trading.value_objects.market.volume import PositiveVolume
+from quantum.domain.trading.value_objects.order.order_status import OrderStatus
+from quantum.domain.trading.value_objects.order.order_type import OrderType
+from quantum.domain.trading.value_objects.order.position_side import PositionSide
 
 
 @dataclass(frozen=True)

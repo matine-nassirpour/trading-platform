@@ -3,12 +3,12 @@ from typing import ClassVar
 
 from quantum.domain.shared.events.base_event import BaseEvent
 from quantum.domain.shared.value_objects.symbol import Symbol
-from quantum.domain.trading.value_objects.identifiers import IntentId
-from quantum.domain.trading.value_objects.order_type import OrderType
-from quantum.domain.trading.value_objects.price import Price
-from quantum.domain.trading.value_objects.reference_price import ReferencePrice
-from quantum.domain.trading.value_objects.time_in_force import TimeInForce
-from quantum.domain.trading.value_objects.volume import PositiveVolume
+from quantum.domain.trading.value_objects.identifiers.intent_id import IntentId
+from quantum.domain.trading.value_objects.market.price import Price
+from quantum.domain.trading.value_objects.market.reference_price import ReferencePrice
+from quantum.domain.trading.value_objects.market.volume import PositiveVolume
+from quantum.domain.trading.value_objects.order.order_type import OrderType
+from quantum.domain.trading.value_objects.order.time_in_force import TimeInForce
 
 
 @dataclass(frozen=True)

@@ -4,8 +4,9 @@ from typing import ClassVar
 from quantum.domain.shared.events.base_event import BaseEvent
 from quantum.domain.shared.value_objects.epoch_ms import EpochMs
 from quantum.domain.shared.value_objects.symbol import Symbol
-from quantum.domain.trading.value_objects.identifiers import IntentId, PositionId
-from quantum.domain.trading.value_objects.price import Price
+from quantum.domain.trading.value_objects.identifiers.intent_id import IntentId
+from quantum.domain.trading.value_objects.identifiers.position_id import PositionId
+from quantum.domain.trading.value_objects.market.price import Price
 
 
 @dataclass(frozen=True)

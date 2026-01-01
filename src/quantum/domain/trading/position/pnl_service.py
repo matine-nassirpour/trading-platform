@@ -4,9 +4,9 @@ from decimal import Decimal
 
 from quantum.domain.shared.value_objects.currency import Currency
 from quantum.domain.shared.value_objects.money import Money
-from quantum.domain.trading.value_objects.position_side import PositionSide
-from quantum.domain.trading.value_objects.price import Price
-from quantum.domain.trading.value_objects.volume import PositiveVolume
+from quantum.domain.trading.value_objects.market.price import Price
+from quantum.domain.trading.value_objects.market.volume import PositiveVolume
+from quantum.domain.trading.value_objects.order.position_side import PositionSide
 
 
 class PnLService:

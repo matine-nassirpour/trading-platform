@@ -7,11 +7,15 @@ from quantum.domain.shared.errors.invariants import InvariantViolation
 from quantum.domain.shared.primitives.value_object import ValueObject
 from quantum.domain.shared.value_objects.currency import Currency
 from quantum.domain.shared.value_objects.symbol import Symbol
-from quantum.domain.trading.value_objects.contract_size import ContractSize
-from quantum.domain.trading.value_objects.currency_pair import CurrencyPair
-from quantum.domain.trading.value_objects.price_constraints import PriceConstraints
-from quantum.domain.trading.value_objects.tick_value import TickValue
-from quantum.domain.trading.value_objects.volume_constraints import VolumeConstraints
+from quantum.domain.trading.value_objects.instrument.currency_pair import CurrencyPair
+from quantum.domain.trading.value_objects.market.contract_size import ContractSize
+from quantum.domain.trading.value_objects.market.tick_value import TickValue
+from quantum.domain.trading.value_objects.market.volume_constraints import (
+    VolumeConstraints,
+)
+from quantum.domain.trading.value_objects.pricing.price_constraints import (
+    PriceConstraints,
+)
 
 
 @dataclass(frozen=True)
