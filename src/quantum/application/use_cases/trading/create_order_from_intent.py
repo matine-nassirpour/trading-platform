@@ -1,14 +1,31 @@
+from quantum.application.dto.commands.create_order_from_intent import (
+    CreateOrderFromIntentCommand,
+)
+from quantum.application.errors.not_found_errors import TradingIntentNotFound
+from quantum.application.ports.aliases import EventPublisher, TradingIntentRepo, UoW
+
+
 class CreateOrderFromIntentUseCase:
-    def __init__(self, intent_repo, event_publisher, uow):
+    """
+    Creates an Order inside an already submitted TradingIntent.
+    """
+
+    def __init__(
+        self,
+        *,
+        intent_repo: TradingIntentRepo,
+        event_publisher: EventPublisher,
+        uow: UoW,
+    ) -> None:
         self._intent_repo = intent_repo
         self._event_publisher = event_publisher
         self._uow = uow
 
-    def execute(self, command):
+    def execute(self, command: CreateOrderFromIntentCommand) -> None:
         with self._uow:
             intent = self._intent_repo.get(command.intent_id)
             if intent is None:
-                raise RuntimeError("TradingIntent not found")
+                raise TradingIntentNotFound(command.intent_id)
 
             intent = intent.create_order(
                 order_id=command.order_id,

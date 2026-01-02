@@ -1,3 +1,6 @@
+from quantum.application.errors.not_found_errors import OrderNotFound
+
+
 class CancelOrderUseCase:
     def __init__(self, order_repo, event_publisher, uow):
         self._order_repo = order_repo
@@ -8,7 +11,7 @@ class CancelOrderUseCase:
         with self._uow:
             order = self._order_repo.get(command.order_id)
             if order is None:
-                raise RuntimeError("Order not found")
+                raise OrderNotFound(command.order_id)
 
             order = order.cancel()
 

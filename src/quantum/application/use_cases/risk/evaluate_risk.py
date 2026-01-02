@@ -1,17 +1,33 @@
+from quantum.application.dto.commands.evaluate_risk import EvaluateRiskCommand
+from quantum.application.mappers.risk_breach_event_mapper import RiskBreachEventMapper
+from quantum.application.ports.aliases import EventPublisher, UoW
+from quantum.domain.risk.policies.risk_policy import RiskPolicy
+
+
 class EvaluateRiskUseCase:
-    def __init__(self, risk_repo, limits_provider, event_publisher, uow):
+    """
+    Application use case responsible for evaluating desk-level risk
+    and emitting domain events when limits are breached.
+    """
+
+    def __init__(
+        self,
+        *,
+        risk_repo,
+        limits_provider,
+        event_publisher: EventPublisher,
+        uow: UoW,
+    ) -> None:
         self._risk_repo = risk_repo
         self._limits_provider = limits_provider
         self._event_publisher = event_publisher
         self._uow = uow
 
-    def execute(self, command):
-        from quantum.domain.risk.policies.risk_policy import RiskPolicy
-
+    def execute(self, command: EvaluateRiskCommand) -> None:
         with self._uow:
             limits = self._limits_provider.get_limits()
 
-            breaches = [
+            breaches = (
                 RiskPolicy.evaluate_drawdown(
                     current_drawdown=command.current_drawdown,
                     limits=limits,
@@ -24,9 +40,18 @@ class EvaluateRiskUseCase:
                     daily_loss=command.daily_loss,
                     limits=limits,
                 ),
-            ]
+            )
 
-            for breach in filter(None, breaches):
-                self._event_publisher.publish((breach,))
+            events = tuple(
+                RiskBreachEventMapper.to_event(
+                    breach=breach,
+                    at=command.at,
+                )
+                for breach in breaches
+                if breach is not None
+            )
+
+            if events:
+                self._event_publisher.publish(events)
 
             self._uow.commit()

@@ -1,12 +1,32 @@
+from quantum.application.dto.commands.submit_trading_intent import (
+    SubmitTradingIntentCommand,
+)
+from quantum.application.ports.aliases import EventPublisher, TradingIntentRepo, UoW
+from quantum.domain.trading.intent.trading_intent import TradingIntent
+
+
 class SubmitTradingIntentUseCase:
-    def __init__(self, intent_repo, event_publisher, uow):
+    """
+    Application use case responsible for submitting a new TradingIntent.
+
+    Dependencies:
+    - TradingIntentRepo : persistence of aggregate
+    - EventPublisher    : transactional domain event publication
+    - UoW               : atomic transaction boundary
+    """
+
+    def __init__(
+        self,
+        *,
+        intent_repo: TradingIntentRepo,
+        event_publisher: EventPublisher,
+        uow: UoW,
+    ) -> None:
         self._intent_repo = intent_repo
         self._event_publisher = event_publisher
         self._uow = uow
 
-    def execute(self, command):
-        from quantum.domain.trading.intent.trading_intent import TradingIntent
-
+    def execute(self, command: SubmitTradingIntentCommand) -> None:
         with self._uow:
             intent = TradingIntent(
                 intent_id=command.intent_id,
