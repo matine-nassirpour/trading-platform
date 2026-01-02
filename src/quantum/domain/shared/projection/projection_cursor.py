@@ -1,0 +1,23 @@
+from dataclasses import dataclass
+
+from quantum.domain.shared.errors.invariants import InvariantViolation
+from quantum.domain.shared.primitives.value_object import ValueObject
+from quantum.domain.shared.value_objects.epoch_ms import EpochMs
+
+
+@dataclass(frozen=True)
+class ProjectionCursor(ValueObject):
+    """
+    Represents the last event position processed by a projection.
+
+    Used for:
+    - replay
+    - catch-up
+    - audit
+    """
+
+    last_processed_at: EpochMs
+
+    def _validate(self) -> None:
+        if not isinstance(self.last_processed_at, EpochMs):
+            raise InvariantViolation("ProjectionCursor requires an EpochMs")

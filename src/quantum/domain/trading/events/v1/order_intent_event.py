@@ -3,6 +3,8 @@ from typing import ClassVar
 
 from quantum.domain.shared.events.base_event import BaseEvent
 from quantum.domain.shared.value_objects.symbol import Symbol
+from quantum.domain.trading.context.trading_context import TradingContext
+from quantum.domain.trading.decision.decision_identity import DecisionIdentity
 from quantum.domain.trading.value_objects.identifiers.intent_id import IntentId
 from quantum.domain.trading.value_objects.market.price import Price
 from quantum.domain.trading.value_objects.market.reference_price import ReferencePrice
@@ -19,6 +21,8 @@ class OrderIntentEvent(BaseEvent):
     intent_id: IntentId
     symbol: Symbol
     type: OrderType
+    trading_context: TradingContext
+    decision_identity: DecisionIdentity
 
     volume: PositiveVolume
     reference_price: ReferencePrice | None = None
@@ -29,4 +33,3 @@ class OrderIntentEvent(BaseEvent):
     tp: Price | None = None
 
     time_in_force: TimeInForce = TimeInForce("gtc")
-    rationale: str | None = None  # brief tag “setup”

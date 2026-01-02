@@ -1,8 +1,9 @@
-from decimal import ROUND_CEILING, ROUND_FLOOR, ROUND_HALF_EVEN, Decimal
+from decimal import Decimal
 from typing import Final
 
 from quantum.domain.shared.errors.invariants import InvariantViolation
 from quantum.domain.trading.pricing.quantization_service import QuantizationService
+from quantum.domain.trading.pricing.rounding_strategy import _RoundingStrategy
 from quantum.domain.trading.value_objects.instrument.instrument_spec import (
     InstrumentSpec,
 )
@@ -14,37 +15,13 @@ class PricingPolicy:
     """
     Canonical and SINGLE pricing policy for the entire Domain.
 
-    Responsibilities:
-    - Apply market increment constraints
-    - Apply decimal scale constraints
-    - Apply context-aware rounding rules
-    - Remain deterministic and auditable
-
-    This class is the ONLY allowed entry point
-    for price / volume quantization in the Domain.
+    Rules:
+    - This is the ONLY allowed pricing entry point.
+    - All executable pricing MUST go through this policy.
+    - No alternative pricing services are allowed.
     """
 
-    _NEUTRAL_ROUNDING: Final[str] = ROUND_HALF_EVEN
-
-    # --- Internal decision logic ---------------------------------------------
-
-    @staticmethod
-    def _execution_rounding(
-        *,
-        context: PricingContext,
-        side: PositionSide,
-    ) -> str:
-        """
-        Determines execution-safe rounding based on context and position side.
-        """
-
-        if context.is_execution_sl():
-            return ROUND_FLOOR if side.is_long() else ROUND_CEILING
-
-        if context.is_execution_tp():
-            return ROUND_CEILING if side.is_long() else ROUND_FLOOR
-
-        raise InvariantViolation(f"Unsupported execution pricing context: {context}")
+    _NEUTRAL_ROUNDING: Final[str] = _RoundingStrategy.NEUTRAL
 
     # --- Price ----------------------------------------------------------------
 
@@ -59,8 +36,8 @@ class PricingPolicy:
         """
         Canonical price quantization.
 
-        Rules:
-        1) Multiple-of increment (market constraint)
+        Pipeline:
+        1) Market increment (multiple-of-increment)
         2) Context-aware directional rounding
         3) Decimal scale quantization
         """
@@ -85,7 +62,8 @@ class PricingPolicy:
         else:
             if not isinstance(side, PositionSide):
                 raise InvariantViolation("Invalid PositionSide")
-            rounding = PricingPolicy._execution_rounding(
+
+            rounding = _RoundingStrategy.execution(
                 context=context,
                 side=side,
             )
@@ -108,6 +86,7 @@ class PricingPolicy:
             value=value,
             increment=instrument.volume_increment,
         )
+
         return raw.quantize(
             instrument.volume_scale,
             rounding=PricingPolicy._NEUTRAL_ROUNDING,
