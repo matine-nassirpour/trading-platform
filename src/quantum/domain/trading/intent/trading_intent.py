@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 
+from quantum.domain.execution.value_objects.fill import Fill
 from quantum.domain.shared.errors.invariants import (
     InvalidStateTransition,
     InvariantViolation,
@@ -149,3 +150,35 @@ class TradingIntent(AggregateRoot):
         )
 
         return intent
+
+    def register_fill(
+        self,
+        *,
+        order_id: OrderId,
+        fill: Fill,
+    ) -> TradingIntent:
+        """
+        Registers a fill on one of the Orders belonging to this TradingIntent.
+
+        Invariants:
+        - Order must exist in the aggregate
+        - Order must be fillable
+        - All Order invariants are preserved
+        """
+
+        updated_orders = []
+        found = False
+
+        for order in self.orders:
+            if order.order_id == order_id:
+                updated_orders.append(order.register_fill(fill))
+                found = True
+            else:
+                updated_orders.append(order)
+
+        if not found:
+            raise InvariantViolation(
+                f"Order {order_id} not found in TradingIntent {self.intent_id}"
+            )
+
+        return replace(self, orders=tuple(updated_orders))

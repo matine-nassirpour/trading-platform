@@ -1,20 +1,47 @@
-from quantum.application.errors.not_found_errors import OrderNotFound
+from quantum.application.dto.commands.register_fill import RegisterFillCommand
+from quantum.application.errors.not_found_errors import TradingIntentNotFound
+from quantum.application.mappers.fill_event_mapper import FillIntegrationEventMapper
+from quantum.application.ports.outbound.integration_event_publisher import (
+    IntegrationEventPublisher,
+)
+from quantum.application.ports.outbound.trading_intent_repository import (
+    TradingIntentRepository,
+)
+from quantum.application.ports.outbound.unit_of_work import UnitOfWork
 
 
 class RegisterFillUseCase:
-    def __init__(self, order_repo, event_publisher, uow):
-        self._order_repo = order_repo
+    def __init__(
+        self,
+        *,
+        intent_repo: TradingIntentRepository,
+        event_publisher: IntegrationEventPublisher,
+        uow: UnitOfWork,
+    ) -> None:
+        self._intent_repo = intent_repo
         self._event_publisher = event_publisher
         self._uow = uow
 
-    def execute(self, command):
+    def execute(self, command: RegisterFillCommand) -> None:
         with self._uow:
-            order = self._order_repo.get(command.order_id)
-            if order is None:
-                raise OrderNotFound(command.order_id)
+            intent = self._intent_repo.get(command.intent_id)
+            if intent is None:
+                raise TradingIntentNotFound(command.intent_id)
 
-            order = order.register_fill(command.fill)
+            intent = intent.register_fill(
+                order_id=command.order_id,
+                fill=command.fill,
+            )
 
-            self._order_repo.save(order)
-            self._event_publisher.publish(order.events)
+            self._intent_repo.save(intent)
+
+            integration_events = (
+                FillIntegrationEventMapper.from_fill(
+                    intent_id=command.intent_id,
+                    order_id=command.order_id,
+                    fill=command.fill,
+                ),
+            )
+
+            self._event_publisher.publish(integration_events)
             self._uow.commit()

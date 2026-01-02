@@ -1,6 +1,10 @@
 from quantum.application.dto.commands.close_position import ClosePositionCommand
 from quantum.application.errors.not_found_errors import PositionNotFound
-from quantum.application.ports.aliases import EventPublisher, PositionRepo, UoW
+from quantum.application.ports.outbound.domain_event_publisher import (
+    DomainEventPublisher,
+)
+from quantum.application.ports.outbound.position_repository import PositionRepository
+from quantum.application.ports.outbound.unit_of_work import UnitOfWork
 
 
 class ClosePositionUseCase:
@@ -11,9 +15,9 @@ class ClosePositionUseCase:
     def __init__(
         self,
         *,
-        repo: PositionRepo,
-        event_publisher: EventPublisher,
-        uow: UoW,
+        repo: PositionRepository,
+        event_publisher: DomainEventPublisher,
+        uow: UnitOfWork,
     ) -> None:
         self._repo = repo
         self._event_publisher = event_publisher

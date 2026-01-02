@@ -1,11 +1,16 @@
 from quantum.application.dto.commands.trigger_kill_switch import (
     TriggerKillSwitchCommand,
 )
-from quantum.application.ports.aliases import EventPublisher, UoW
+from quantum.application.ports.outbound.domain_event_publisher import (
+    DomainEventPublisher,
+)
+from quantum.application.ports.outbound.unit_of_work import UnitOfWork
 
 
 class TriggerKillSwitchUseCase:
-    def __init__(self, *, repo, event_publisher: EventPublisher, uow: UoW) -> None:
+    def __init__(
+        self, *, repo, event_publisher: DomainEventPublisher, uow: UnitOfWork
+    ) -> None:
         self._repo = repo
         self._event_publisher = event_publisher
         self._uow = uow

@@ -1,6 +1,9 @@
 from quantum.application.dto.commands.evaluate_risk import EvaluateRiskCommand
 from quantum.application.mappers.risk_breach_event_mapper import RiskBreachEventMapper
-from quantum.application.ports.aliases import EventPublisher, UoW
+from quantum.application.ports.outbound.domain_event_publisher import (
+    DomainEventPublisher,
+)
+from quantum.application.ports.outbound.unit_of_work import UnitOfWork
 from quantum.domain.risk.policies.risk_policy import RiskPolicy
 
 
@@ -15,8 +18,8 @@ class EvaluateRiskUseCase:
         *,
         risk_repo,
         limits_provider,
-        event_publisher: EventPublisher,
-        uow: UoW,
+        event_publisher: DomainEventPublisher,
+        uow: UnitOfWork,
     ) -> None:
         self._risk_repo = risk_repo
         self._limits_provider = limits_provider

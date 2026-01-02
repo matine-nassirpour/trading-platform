@@ -2,7 +2,13 @@ from quantum.application.dto.commands.create_order_from_intent import (
     CreateOrderFromIntentCommand,
 )
 from quantum.application.errors.not_found_errors import TradingIntentNotFound
-from quantum.application.ports.aliases import EventPublisher, TradingIntentRepo, UoW
+from quantum.application.ports.outbound.domain_event_publisher import (
+    DomainEventPublisher,
+)
+from quantum.application.ports.outbound.trading_intent_repository import (
+    TradingIntentRepository,
+)
+from quantum.application.ports.outbound.unit_of_work import UnitOfWork
 
 
 class CreateOrderFromIntentUseCase:
@@ -13,9 +19,9 @@ class CreateOrderFromIntentUseCase:
     def __init__(
         self,
         *,
-        intent_repo: TradingIntentRepo,
-        event_publisher: EventPublisher,
-        uow: UoW,
+        intent_repo: TradingIntentRepository,
+        event_publisher: DomainEventPublisher,
+        uow: UnitOfWork,
     ) -> None:
         self._intent_repo = intent_repo
         self._event_publisher = event_publisher

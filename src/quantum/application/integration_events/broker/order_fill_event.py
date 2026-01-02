@@ -1,10 +1,12 @@
 from dataclasses import dataclass
 from typing import ClassVar
 
+from quantum.application.integration_events.base_integration_event import (
+    IntegrationEvent,
+)
 from quantum.domain.execution.types.deal_entry import DealEntry
 from quantum.domain.execution.types.deal_reason import DealReason
 from quantum.domain.execution.value_objects.deal_id import DealId
-from quantum.domain.shared.events.base_event import BaseEvent
 from quantum.domain.shared.value_objects.epoch_ms import EpochMs
 from quantum.domain.shared.value_objects.money import Money
 from quantum.domain.shared.value_objects.symbol import Symbol
@@ -15,7 +17,7 @@ from quantum.domain.trading.value_objects.market.volume import PositiveVolume
 
 
 @dataclass(frozen=True)
-class OrderFillEvent(BaseEvent):
+class OrderFillEvent(IntegrationEvent):
     event_name: ClassVar[str] = "trading.order_fill"
     event_version: ClassVar[int] = 1
 
