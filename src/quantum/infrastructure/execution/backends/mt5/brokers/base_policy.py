@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from quantum.application.contracts import OrderRequest
+from quantum.infrastructure.execution.contracts import OrderRequest
 
 
 class BrokerPolicy(ABC):

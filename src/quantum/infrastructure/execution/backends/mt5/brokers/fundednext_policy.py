@@ -1,7 +1,7 @@
-from quantum.application.contracts import OrderRequest
 from quantum.infrastructure.execution.backends.mt5.brokers.base_policy import (
     BrokerPolicy,
 )
+from quantum.infrastructure.execution.contracts import OrderRequest
 
 
 class FUNDEDNEXTExecutionPolicy(BrokerPolicy):

@@ -21,8 +21,8 @@ import time
 from dataclasses import dataclass
 from typing import Final
 
-from quantum.application.events.event_adapter import adapt_event_for_bus
 from quantum.application.ports.outbound.event_bus_port import EventBusPort
+from quantum.infrastructure.events.emission.event_adapter import adapt_event_for_bus
 from quantum.infrastructure.events.emission.event_retry_policy import (
     EventRetryConfig,
     EventRetryPolicy,

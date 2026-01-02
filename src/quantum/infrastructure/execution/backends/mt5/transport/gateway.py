@@ -6,8 +6,6 @@ import time
 from collections.abc import Callable
 from typing import Any, Final
 
-from quantum.application.contracts import ExecutionResult
-from quantum.application.contracts.execution_code import ExecutionCode
 from quantum.domain.types.execution_channel import ExecutionChannel
 from quantum.infrastructure.config.runtime.manager import ConfigManager
 from quantum.infrastructure.execution.backends.mt5.execution_metrics import (
@@ -28,6 +26,8 @@ from quantum.infrastructure.execution.backends.mt5.transport.contracts import (
 from quantum.infrastructure.execution.backends.mt5.transport.timeout_utils import (
     timeout_guard,
 )
+from quantum.infrastructure.execution.contracts import ExecutionResult
+from quantum.infrastructure.execution.contracts.execution_code import ExecutionCode
 from quantum.infrastructure.observability.tracing.provider import get_tracer
 
 LOGGER: Final = logging.getLogger(__name__)

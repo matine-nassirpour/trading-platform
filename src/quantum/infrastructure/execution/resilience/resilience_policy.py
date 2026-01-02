@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from functools import wraps
 from typing import Any, Final, Generic, ParamSpec, TypeVar, cast
 
-from quantum.application.ports.outbound.timeout_runner_port import TimeoutRunnerPort
+from quantum.infrastructure.execution.ports.timeout_runner_port import TimeoutRunnerPort
 from quantum.infrastructure.execution.resilience.retry_policy import (
     DefaultRetryPolicy,
     RetryPolicy,

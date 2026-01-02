@@ -1,8 +1,8 @@
 from collections.abc import Mapping
 from dataclasses import dataclass
 
-from quantum.application.contracts.execution_result import ExecutionResult
-from quantum.application.types.execution_channel import ExecutionChannel
+from quantum.infrastructure.execution.contracts.execution_result import ExecutionResult
+from quantum.infrastructure.execution.type.execution_channel import ExecutionChannel
 
 
 @dataclass(frozen=True)

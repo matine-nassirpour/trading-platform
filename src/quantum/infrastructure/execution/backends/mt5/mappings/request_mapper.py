@@ -19,12 +19,16 @@ import logging
 from decimal import Decimal
 from typing import Any, Final, cast
 
-from quantum.application.contracts import CheckRequest, OrderRequest, QueryRequest
 from quantum.domain.types.enums import (
     OrderFillingType,
     OrderType,
     TimeInForce,
     TradeAction,
+)
+from quantum.infrastructure.execution.contracts import (
+    CheckRequest,
+    OrderRequest,
+    QueryRequest,
 )
 
 LOGGER: Final = logging.getLogger(__name__)

@@ -8,8 +8,8 @@ gateways (MT5, FIX, simulator, etc.).
 from collections.abc import Callable
 from typing import Any, Protocol
 
-from quantum.application.contracts import ExecutionResult
 from quantum.domain.types.execution_channel import ExecutionChannel
+from quantum.infrastructure.execution.contracts import ExecutionResult
 
 
 class ExecutionFunctionProtocol(Protocol):

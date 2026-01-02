@@ -19,7 +19,7 @@ import threading
 
 from typing import Final
 
-from quantum.application.contracts.execution_code import ExecutionCode
+from quantum.infrastructure.execution.contracts.execution_code import ExecutionCode
 
 LOGGER: Final = logging.getLogger(__name__)
 

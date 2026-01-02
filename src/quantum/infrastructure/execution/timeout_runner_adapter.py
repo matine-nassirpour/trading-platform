@@ -10,7 +10,7 @@ from contextlib import AbstractContextManager
 from types import TracebackType
 from typing import Any, Final, TypeVar
 
-from quantum.application.ports.outbound.timeout_runner_port import TimeoutRunnerPort
+from quantum.infrastructure.execution.ports.timeout_runner_port import TimeoutRunnerPort
 
 LOGGER: Final = logging.getLogger(__name__)
 

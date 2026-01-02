@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from quantum.application.contracts.execution_code import ExecutionCode
+from quantum.infrastructure.execution.contracts.execution_code import ExecutionCode
 
 
 @dataclass(frozen=True)

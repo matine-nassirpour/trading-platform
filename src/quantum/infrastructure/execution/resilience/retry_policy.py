@@ -4,8 +4,8 @@ import asyncio
 
 from typing import Any, Protocol
 
-from quantum.application.contracts.execution_code import ExecutionCode
-from quantum.application.contracts.execution_result import ExecutionResult
+from quantum.infrastructure.execution.contracts.execution_code import ExecutionCode
+from quantum.infrastructure.execution.contracts.execution_result import ExecutionResult
 
 
 class RetryPolicy(Protocol):

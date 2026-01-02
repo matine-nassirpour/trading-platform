@@ -1,9 +1,9 @@
 from typing import ClassVar
 
-from quantum.application.contracts.execution_code import ExecutionCode
-from quantum.application.types.execution_channel import ExecutionChannel
 from quantum.domain.shared.events.base_event import BaseEvent
 from quantum.domain.shared.value_objects.epoch_ms import EpochMs
+from quantum.infrastructure.execution.contracts.execution_code import ExecutionCode
+from quantum.infrastructure.execution.type.execution_channel import ExecutionChannel
 
 
 class ExecutionChannelEvent(BaseEvent):

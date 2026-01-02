@@ -7,7 +7,7 @@ from collections.abc import Callable
 from functools import wraps
 from typing import Any, Final, Protocol, TypeVar, cast, overload
 
-from quantum.application.ports.outbound.timeout_runner_port import TimeoutRunnerPort
+from quantum.infrastructure.execution.ports.timeout_runner_port import TimeoutRunnerPort
 from quantum.infrastructure.execution.resilience import (
     ResilienceConfig,
     RetryPolicy,

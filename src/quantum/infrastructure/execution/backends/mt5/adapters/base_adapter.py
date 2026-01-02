@@ -4,12 +4,6 @@ import threading
 from types import ModuleType
 from typing import Final
 
-from quantum.application.contracts import (
-    CheckRequest,
-    ExecutionResult,
-    OrderRequest,
-    QueryRequest,
-)
 from quantum.domain.types.execution_channel import ExecutionChannel
 from quantum.infrastructure.execution.backends.mt5.mappings.request_mapper import (
     to_mt5_check_request,
@@ -21,6 +15,12 @@ from quantum.infrastructure.execution.backends.mt5.runtime.gateway_registry impo
 )
 from quantum.infrastructure.execution.backends.mt5.transport.contracts import (
     ExecutionFunctionProtocol,
+)
+from quantum.infrastructure.execution.contracts import (
+    CheckRequest,
+    ExecutionResult,
+    OrderRequest,
+    QueryRequest,
 )
 from quantum.infrastructure.execution.ports.execution_port import ExecutionPort
 from quantum.infrastructure.observability.tracing.provider import get_tracer
