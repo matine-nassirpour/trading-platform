@@ -1,9 +1,9 @@
 from datetime import UTC, date, datetime
 
-from quantum.application.ports.outbound.time_provider_port import TimeProviderPort
+from quantum.application.ports.outbound.clock import Clock
 
 
-class SystemTimeProviderAdapter(TimeProviderPort):
+class SystemTimeProviderAdapter(Clock):
     """
     Provides real UTC time based on the system clock.
 

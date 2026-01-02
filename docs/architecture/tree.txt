@@ -170,76 +170,83 @@ trading-platform/
 ├── src/
 │   └── quantum/
 │       ├── application/
-│       │   ├── broadcast/
-│       │   │   ├── __init__.py
-│       │   │   ├── broadcast_executor.py
-│       │   │   ├── broadcast_policy.py
-│       │   │   └── broadcast_result.py
-│       │   ├── contracts/
-│       │   │   ├── __init__.py
-│       │   │   ├── execution_code.py
-│       │   │   ├── execution_operation.py
-│       │   │   ├── execution_request.py
-│       │   │   └── execution_result.py
-│       │   ├── decorators/
-│       │   │   ├── __init__.py
-│       │   │   └── resilience_injection.py
 │       │   ├── dto/
+│       │   │   ├── commands/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── cancel_order.py
+│       │   │   │   ├── close_position.py
+│       │   │   │   ├── create_order_from_intent.py
+│       │   │   │   ├── evaluate_risk.py
+│       │   │   │   ├── register_execution_report.py
+│       │   │   │   ├── register_fill.py
+│       │   │   │   ├── submit_trading_intent.py
+│       │   │   │   └── trigger_kill_switch.py
 │       │   │   └── __init__.py
 │       │   ├── events/
 │       │   │   ├── __init__.py
 │       │   │   ├── event_adapter.py
-│       │   │   ├── event_retry_policy.py
-│       │   │   ├── execution_channel_event.py
-│       │   │   ├── orchestration_events.py
-│       │   │   ├── topic_map.py
-│       │   │   └── trading_event_emitter.py
-│       │   ├── orchestrator/
-│       │   │   ├── allocation/
-│       │   │   │   ├── __init__.py
-│       │   │   │   └── allocation_policy.py
-│       │   │   ├── broadcaster/
-│       │   │   │   ├── __init__.py
-│       │   │   │   └── execution_broadcaster.py
-│       │   │   ├── context/
-│       │   │   │   ├── __init__.py
-│       │   │   │   └── orchestration_context.py
-│       │   │   ├── health/
-│       │   │   │   ├── __init__.py
-│       │   │   │   ├── circuit_breaker.py
-│       │   │   │   ├── health_model.py
-│       │   │   │   └── health_service.py
-│       │   │   ├── ports/
-│       │   │   │   ├── __init__.py
-│       │   │   │   ├── broadcaster_port.py
-│       │   │   │   ├── orchestrator_port.py
-│       │   │   │   └── router_port.py
-│       │   │   ├── router/
-│       │   │   │   ├── __init__.py
-│       │   │   │   └── execution_router.py
-│       │   │   ├── __init__.py
-│       │   │   └── execution_orchestrator.py
+│       │   │   ├── order_ack_event.py
+│       │   │   ├── order_check_event.py
+│       │   │   ├── order_fill_event.py
+│       │   │   ├── order_reject_event.py
+│       │   │   ├── position_update_event.py
+│       │   │   ├── stoploss_trigger_event.py
+│       │   │   └── takeprofit_trigger_event.py
 │       │   ├── ports/
 │       │   │   ├── inbound/
 │       │   │   │   ├── __init__.py
-│       │   │   │   └── application_runtime_port.py
+│       │   │   │   ├── application_runtime_port.py
+│       │   │   │   ├── cancel_order_port.py
+│       │   │   │   ├── close_position_port.py
+│       │   │   │   ├── create_order_from_intent_port.py
+│       │   │   │   ├── evaluate_risk_port.py
+│       │   │   │   ├── register_execution_report_port.py
+│       │   │   │   ├── register_fill_port.py
+│       │   │   │   ├── submit_trading_intent_port.py
+│       │   │   │   └── trigger_kill_switch_port.py
 │       │   │   ├── outbound/
 │       │   │   │   ├── __init__.py
+│       │   │   │   ├── clock.py
 │       │   │   │   ├── event_bus_port.py
+│       │   │   │   ├── event_publisher.py
+│       │   │   │   ├── execution_gateway.py
 │       │   │   │   ├── execution_port.py
-│       │   │   │   ├── time_provider_port.py
-│       │   │   │   └── timeout_runner_port.py
+│       │   │   │   ├── id_generators.py
+│       │   │   │   ├── instrument_spec_provider.py
+│       │   │   │   ├── kill_switch_repository.py
+│       │   │   │   ├── position_repository.py
+│       │   │   │   ├── risk_limits_provider.py
+│       │   │   │   ├── risk_state_repository.py
+│       │   │   │   ├── timeout_runner_port.py
+│       │   │   │   ├── trading_intent_repository.py
+│       │   │   │   └── unit_of_work.py
 │       │   │   └── __init__.py
-│       │   ├── resilience/
-│       │   │   ├── __init__.py
-│       │   │   ├── resilience_policy.py
-│       │   │   └── retry_policy.py
 │       │   ├── services/
 │       │   │   ├── __init__.py
 │       │   │   ├── application_orchestrator.py
-│       │   │   ├── execution_service.py
 │       │   │   └── operation_registry.py
+│       │   ├── types/
+│       │   │   ├── __init__.py
+│       │   │   ├── execution_channel.py
+│       │   │   ├── order_filling_type.py
+│       │   │   └── trade_action.py
 │       │   ├── use_cases/
+│       │   │   ├── execution/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── register_execution_report.py
+│       │   │   │   └── register_fill.py
+│       │   │   ├── position/
+│       │   │   │   ├── __init__.py
+│       │   │   │   └── close_position.py
+│       │   │   ├── risk/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── evaluate_risk.py
+│       │   │   │   └── trigger_kill_switch.py
+│       │   │   ├── trading/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── cancel_order.py
+│       │   │   │   ├── create_order_from_intent.py
+│       │   │   │   └── submit_trading_intent.py
 │       │   │   └── __init__.py
 │       │   └── __init__.py
 │       ├── domain/
@@ -342,29 +349,39 @@ trading-platform/
 │       │   │   ├── risk/
 │       │   │   │   ├── __init__.py
 │       │   │   │   └── exit_policy.py
-│       │   │   ├── types/
-│       │   │   │   ├── __init__.py
-│       │   │   │   ├── order_filling_type.py
-│       │   │   │   └── trade_action.py
 │       │   │   ├── value_objects/
-│       │   │   │   ├── __init__.py
-│       │   │   │   ├── contract_size.py
-│       │   │   │   ├── currency_pair.py
-│       │   │   │   ├── identifiers.py
-│       │   │   │   ├── instrument_spec.py
-│       │   │   │   ├── order_status.py
-│       │   │   │   ├── order_type.py
-│       │   │   │   ├── position_side.py
-│       │   │   │   ├── price.py
-│       │   │   │   ├── price_constraints.py
-│       │   │   │   ├── price_rounding_mode.py
-│       │   │   │   ├── pricing_context.py
-│       │   │   │   ├── reference_price.py
-│       │   │   │   ├── sl_tp_update_reason.py
-│       │   │   │   ├── tick_value.py
-│       │   │   │   ├── time_in_force.py
-│       │   │   │   ├── volume.py
-│       │   │   │   └── volume_constraints.py
+│       │   │   │   ├── identifiers/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── intent_id.py
+│       │   │   │   │   ├── order_id.py
+│       │   │   │   │   └── position_id.py
+│       │   │   │   ├── instrument/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── currency_pair.py
+│       │   │   │   │   └── instrument_spec.py
+│       │   │   │   ├── market/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── contract_size.py
+│       │   │   │   │   ├── price.py
+│       │   │   │   │   ├── reference_price.py
+│       │   │   │   │   ├── tick_value.py
+│       │   │   │   │   ├── volume.py
+│       │   │   │   │   └── volume_constraints.py
+│       │   │   │   ├── order/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── order_status.py
+│       │   │   │   │   ├── order_type.py
+│       │   │   │   │   ├── position_side.py
+│       │   │   │   │   └── time_in_force.py
+│       │   │   │   ├── pricing/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── price_constraints.py
+│       │   │   │   │   ├── price_rounding_mode.py
+│       │   │   │   │   └── pricing_context.py
+│       │   │   │   ├── risk/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   └── sl_tp_update_reason.py
+│       │   │   │   └── __init__.py
 │       │   │   └── __init__.py
 │       │   └── __init__.py
 │       ├── infrastructure/
@@ -399,7 +416,8 @@ trading-platform/
 │       │   │   │   │   └── timeout_utils.py
 │       │   │   │   ├── __init__.py
 │       │   │   │   └── execution_metrics.py
-│       │   │   └── __init__.py
+│       │   │   ├── __init__.py
+│       │   │   └── execution_service.py
 │       │   ├── config/
 │       │   │   ├── environment/
 │       │   │   │   ├── core/
@@ -472,16 +490,33 @@ trading-platform/
 │       │   │   │   ├── directory_path_spec.py
 │       │   │   │   └── executable_path_spec.py
 │       │   │   └── __init__.py
-│       │   ├── datafeeds/
-│       │   │   └── __init__.py
+│       │   ├── decorators/
+│       │   │   ├── __init__.py
+│       │   │   └── resilience_injection.py
 │       │   ├── eventbus/
 │       │   │   ├── __init__.py
 │       │   │   └── asyncio_event_bus_adapter.py
+│       │   ├── events/
+│       │   │   ├── __init__.py
+│       │   │   ├── event_retry_policy.py
+│       │   │   ├── execution_channel_event.py
+│       │   │   ├── orchestration_events.py
+│       │   │   ├── topic_map.py
+│       │   │   └── trading_event_emitter.py
 │       │   ├── execution/
+│       │   │   ├── broadcast/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── broadcast_executor.py
+│       │   │   │   ├── broadcast_policy.py
+│       │   │   │   └── broadcast_result.py
+│       │   │   ├── contracts/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── execution_code.py
+│       │   │   │   ├── execution_operation.py
+│       │   │   │   ├── execution_request.py
+│       │   │   │   └── execution_result.py
 │       │   │   ├── __init__.py
 │       │   │   └── timeout_runner_adapter.py
-│       │   ├── messaging/
-│       │   │   └── __init__.py
 │       │   ├── observability/
 │       │   │   ├── bootstrap/
 │       │   │   │   ├── lifecycle/
@@ -637,8 +672,10 @@ trading-platform/
 │       │   │   │   ├── provider.py
 │       │   │   │   └── trace_context.py
 │       │   │   └── __init__.py
-│       │   ├── storage/
-│       │   │   └── __init__.py
+│       │   ├── resilience/
+│       │   │   ├── __init__.py
+│       │   │   ├── resilience_policy.py
+│       │   │   └── retry_policy.py
 │       │   ├── time/
 │       │   │   ├── __init__.py
 │       │   │   ├── time_format.py

@@ -1,0 +1,24 @@
+class SubmitTradingIntentUseCase:
+    def __init__(self, intent_repo, event_publisher, uow):
+        self._intent_repo = intent_repo
+        self._event_publisher = event_publisher
+        self._uow = uow
+
+    def execute(self, command):
+        from quantum.domain.trading.intent.trading_intent import TradingIntent
+
+        with self._uow:
+            intent = TradingIntent(
+                intent_id=command.intent_id,
+                symbol=command.symbol,
+                side=command.side,
+            )
+
+            intent = intent.submit(
+                at=command.decision_epoch_ms,
+                client_order_id=command.client_order_id,
+            )
+
+            self._intent_repo.save(intent)
+            self._event_publisher.publish(intent.events)
+            self._uow.commit()
