@@ -1,9 +1,9 @@
 from quantum.domain.shared.errors.invariants import InvariantViolation
+from quantum.domain.shared.value_objects.price import Price
 from quantum.domain.trading.pricing.pricing_policy import PricingPolicy
 from quantum.domain.trading.value_objects.instrument.instrument_spec import (
     InstrumentSpec,
 )
-from quantum.domain.trading.value_objects.market.price import Price
 from quantum.domain.trading.value_objects.market.reference_price import ReferencePrice
 from quantum.domain.trading.value_objects.order.position_side import PositionSide
 from quantum.domain.trading.value_objects.pricing.pricing_context import PricingContext

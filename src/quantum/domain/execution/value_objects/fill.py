@@ -6,8 +6,8 @@ from quantum.domain.execution.value_objects.fee import Fee
 from quantum.domain.shared.errors.invariants import InvariantViolation
 from quantum.domain.shared.primitives.value_object import ValueObject
 from quantum.domain.shared.value_objects.epoch_ms import EpochMs
-from quantum.domain.trading.value_objects.market.price import Price
-from quantum.domain.trading.value_objects.market.volume import PositiveVolume
+from quantum.domain.shared.value_objects.price import Price
+from quantum.domain.shared.value_objects.volume import PositiveVolume
 
 
 @dataclass(frozen=True)

@@ -7,11 +7,11 @@ from quantum.domain.shared.errors.position_errors import PositionAlreadyClosed
 from quantum.domain.shared.primitives.aggregate_root import AggregateRoot
 from quantum.domain.shared.value_objects.currency import Currency
 from quantum.domain.shared.value_objects.money import Money
+from quantum.domain.shared.value_objects.price import Price
 from quantum.domain.shared.value_objects.symbol import Symbol
+from quantum.domain.shared.value_objects.volume import PositiveVolume
 from quantum.domain.trading.position.pnl_service import PnLService
 from quantum.domain.trading.value_objects.identifiers.position_id import PositionId
-from quantum.domain.trading.value_objects.market.price import Price
-from quantum.domain.trading.value_objects.market.volume import PositiveVolume
 from quantum.domain.trading.value_objects.order.position_side import PositionSide
 
 
