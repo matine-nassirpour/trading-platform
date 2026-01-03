@@ -78,7 +78,7 @@ class TradingIntent(AggregateRoot):
             raise InvalidStateTransition("TradingIntent already submitted")
 
         event = OrderSubmitEvent(
-            occurred_at=at.to_datetime(),
+            occurred_at=at,
             intent_id=self.intent_id,
             client_order_id=client_order_id,
             symbol=self.symbol,
@@ -129,7 +129,7 @@ class TradingIntent(AggregateRoot):
         if sizing_model is not None:
             intent = intent._raise(
                 OrderSizingEvent(
-                    occurred_at=at.to_datetime(),
+                    occurred_at=at,
                     intent_id=self.intent_id,
                     symbol=self.symbol,
                     volume=volume,
@@ -140,7 +140,7 @@ class TradingIntent(AggregateRoot):
 
         intent = intent._raise(
             OrderCreatedEvent(
-                occurred_at=at.to_datetime(),
+                occurred_at=at,
                 intent_id=self.intent_id,
                 order_id=order_id,
                 symbol=self.symbol,

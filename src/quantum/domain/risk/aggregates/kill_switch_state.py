@@ -64,7 +64,7 @@ class KillSwitchState(AggregateRoot):
             raise InvalidStateTransition("KillSwitch already triggered")
 
         event = KillSwitchTriggerEvent(
-            occurred_at=at.to_datetime(),
+            occurred_at=at,
             trigger_epoch_ms=at,
             reason=reason,
             detail=detail,

@@ -7,6 +7,8 @@ from quantum.domain.shared.value_objects.epoch_ms import EpochMs
 from quantum.domain.shared.value_objects.price import Price
 from quantum.domain.shared.value_objects.symbol import Symbol
 from quantum.domain.shared.value_objects.volume import PositiveVolume
+from quantum.domain.trading.context.trading_context import TradingContext
+from quantum.domain.trading.decision.decision_identity import DecisionIdentity
 from quantum.domain.trading.events.v1.order_intent_event import OrderIntentEvent
 from quantum.domain.trading.risk.exit_policy import ExitPolicy
 from quantum.domain.trading.value_objects.identifiers.intent_id import IntentId
@@ -33,19 +35,19 @@ class OrderIntentParameters:
     order_type: OrderType
     side: PositionSide
 
+    trading_context: TradingContext
+    decision_identity: DecisionIdentity
+
     volume: PositiveVolume
 
     reference_price: ReferencePrice | None = None
-    limit_price: Price | None = None
     stop_price: Price | None = None
+    limit_price: Price | None = None
 
     sl: Price | None = None
     tp: Price | None = None
 
     time_in_force: TimeInForce = TimeInForce("gtc")
-    rationale: str | None = None
-
-    decision_epoch_ms: EpochMs | None = None
 
 
 class OrderIntentFactory:
@@ -115,10 +117,13 @@ class OrderIntentFactory:
         OrderIntentFactory._validate_sl_tp(params, instrument)
 
         return OrderIntentEvent(
-            occurred_at=occurred_at.to_datetime(),
+            occurred_at=occurred_at,
             intent_id=params.intent_id,
             symbol=params.symbol,
-            type=params.order_type,
+            order_type=params.order_type,
+            side=params.side,
+            trading_context=params.trading_context,
+            decision_identity=params.decision_identity,
             volume=params.volume,
             reference_price=params.reference_price,
             stop_price=params.stop_price,

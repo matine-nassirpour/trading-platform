@@ -5,7 +5,6 @@ from typing import Generic, TypeVar
 from quantum.domain.shared.events.base_event import BaseEvent
 from quantum.domain.shared.projection.projection_cursor import ProjectionCursor
 from quantum.domain.shared.projection.projection_state import ProjectionState
-from quantum.domain.shared.value_objects.epoch_ms import EpochMs
 
 S = TypeVar("S", bound=ProjectionState)
 
@@ -50,12 +49,10 @@ class DomainProjection(ABC, Generic[S]):
         """
 
         state = self.initial_state()
-        last_cursor = cursor
+        last_cursor = cursor or ProjectionCursor.initial()
 
         for event in events:
             state = self.apply(state, event)
-            last_cursor = ProjectionCursor(
-                last_processed_at=EpochMs.from_datetime(event.occurred_at)
-            )
+            last_cursor = ProjectionCursor(last_processed_at=event.occurred_at)
 
         return state, last_cursor

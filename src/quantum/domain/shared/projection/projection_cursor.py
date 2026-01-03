@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 
 from quantum.domain.shared.errors.invariants import InvariantViolation
@@ -21,3 +23,10 @@ class ProjectionCursor(ValueObject):
     def _validate(self) -> None:
         if not isinstance(self.last_processed_at, EpochMs):
             raise InvariantViolation("ProjectionCursor requires an EpochMs")
+
+    @staticmethod
+    def initial() -> ProjectionCursor:
+        """
+        Canonical initial cursor (no events processed).
+        """
+        return ProjectionCursor(last_processed_at=EpochMs(0))

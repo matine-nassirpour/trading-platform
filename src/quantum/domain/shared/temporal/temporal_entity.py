@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import dataclass, replace
 
 from quantum.domain.shared.errors.invariants import InvariantViolation
@@ -17,7 +19,7 @@ class TemporalEntity:
         if not isinstance(self.validity, TemporalValidity):
             raise InvariantViolation("TemporalEntity requires TemporalValidity")
 
-    def close_validity(self, *, at: EpochMs):
+    def close_validity(self, *, at: EpochMs) -> TemporalEntity:
         """
         Returns a new instance with closed temporal validity.
         """

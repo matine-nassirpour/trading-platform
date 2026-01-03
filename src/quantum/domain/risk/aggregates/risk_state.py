@@ -63,7 +63,7 @@ class RiskState(AggregateRoot):
 
         if drawdown_value >= self.max_drawdown.value.value:
             event = MaxDrawdownExceededEvent(
-                occurred_at=at.to_datetime(),
+                occurred_at=at,
                 current_drawdown=Drawdown(
                     value=drawdown_value,
                     currency=new_equity.currency,

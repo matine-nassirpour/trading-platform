@@ -10,6 +10,7 @@ from quantum.domain.trading.decision.decision_identity import DecisionIdentity
 from quantum.domain.trading.value_objects.identifiers.intent_id import IntentId
 from quantum.domain.trading.value_objects.market.reference_price import ReferencePrice
 from quantum.domain.trading.value_objects.order.order_type import OrderType
+from quantum.domain.trading.value_objects.order.position_side import PositionSide
 from quantum.domain.trading.value_objects.order.time_in_force import TimeInForce
 
 
@@ -20,14 +21,23 @@ class OrderIntentEvent(BaseEvent):
 
     intent_id: IntentId
     symbol: Symbol
-    type: OrderType
+    order_type: OrderType
+    side: PositionSide
+
     trading_context: TradingContext
     decision_identity: DecisionIdentity
 
     volume: PositiveVolume
-    reference_price: ReferencePrice | None = None
-    stop_price: Price | None = None
-    limit_price: Price | None = None
+
+    reference_price: ReferencePrice | None = (
+        None  # Non-executable price observed at decision time (audit / validation anchor)
+    )
+    stop_price: Price | None = (
+        None  # Executable trigger price for STOP or STOP-LIMIT orders
+    )
+    limit_price: Price | None = (
+        None  # Executable price constraint for LIMIT or STOP-LIMIT orders
+    )
 
     sl: Price | None = None
     tp: Price | None = None
