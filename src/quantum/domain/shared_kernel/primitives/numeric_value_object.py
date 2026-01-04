@@ -13,16 +13,15 @@ class NumericValueObject(ValueObject, ABC):
     """
     Canonical base class for all numeric Value Objects.
 
-    Design guarantees:
-    - Immutable
-    - Deterministic validation
-    - Explicit numeric invariants
-    - No NaN / Infinity
-    - No floating-point arithmetic
+    HARD GUARANTEES:
+    - Decimal-only
+    - No NaN
+    - No Infinity
+    - Fundamental numeric invariants are NON-OVERRIDABLE
 
-    Architectural principles:
-    - Fundamental numeric invariants are enforced ONCE here
-    - Subclasses only define semantic constraints
+    Architectural contract:
+    - Subclasses MAY define semantic constraints
+    - Subclasses MUST NOT alter numeric safety guarantees
     """
 
     value: Decimal
@@ -30,18 +29,28 @@ class NumericValueObject(ValueObject, ABC):
     # --- Validation entrypoint ------------------------------------------------
 
     def _validate(self) -> None:
-        self._validate_numeric_fundamentals()
+        """
+        FINAL validation entrypoint.
+
+        Order is STRICT and MUST NOT be altered:
+        1. numeric fundamentals
+        2. semantic constraints
+        """
+        self.__validate_numeric_fundamentals()
         self._validate_semantics()
 
     # --- Fundamental invariants (NON-OVERRIDABLE) -----------------------------
 
-    def _validate_numeric_fundamentals(self) -> None:
+    def __validate_numeric_fundamentals(self) -> None:
         """
         Enforces all fundamental numeric invariants.
 
-        This method MUST NOT be overridden.
-        It defines the minimal safety contract for all numeric domain values.
+        This method is:
+        - private (name-mangled)
+        - unreachable for override
+        - enforced for all subclasses
         """
+
         if not isinstance(self.value, Decimal):
             raise InvariantViolation(
                 f"{self.__class__.__name__} value must be a Decimal"
@@ -67,3 +76,27 @@ class NumericValueObject(ValueObject, ABC):
         - sign-constrained
         """
         raise NotImplementedError
+
+    # --- Subclass override guard (HARD FAIL) ----------------------------------
+
+    def __init_subclass__(cls) -> None:
+        """
+        Prevents subclasses from redefining numeric fundamental validation.
+
+        This is a HARD architectural guard.
+        """
+
+        forbidden = {
+            "_validate",
+            "_NumericValueObject__validate_numeric_fundamentals",
+            "_validate_numeric_fundamentals",
+        }
+
+        for name in forbidden:
+            if name in cls.__dict__:
+                raise TypeError(
+                    f"{cls.__name__} is not allowed to override "
+                    f"numeric fundamental validation method: {name}"
+                )
+
+        super().__init_subclass__()
