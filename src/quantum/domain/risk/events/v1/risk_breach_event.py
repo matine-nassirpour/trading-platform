@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import ClassVar
 
 from quantum.domain.risk.value_objects.risk_breach import RiskBreach
-from quantum.domain.shared.events.base_event import BaseEvent
+from quantum.domain.shared_kernel.events.base_event import BaseEvent
 
 
 @dataclass(frozen=True)

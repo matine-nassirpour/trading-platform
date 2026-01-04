@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
-from quantum.domain.shared.errors.invariants import InvariantViolation
-from quantum.domain.shared.primitives.value_object import ValueObject
+from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 from quantum.domain.trading.decision.decision_source import DecisionSource
 from quantum.domain.trading.decision.model_version import ModelVersion
 from quantum.domain.trading.decision.strategy_id import StrategyId

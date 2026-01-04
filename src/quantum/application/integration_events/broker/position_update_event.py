@@ -4,11 +4,11 @@ from typing import ClassVar
 from quantum.application.integration_events.base_integration_event import (
     IntegrationEvent,
 )
-from quantum.domain.shared.value_objects.epoch_ms import EpochMs
-from quantum.domain.shared.value_objects.price import Price
-from quantum.domain.shared.value_objects.symbol import Symbol
-from quantum.domain.shared.value_objects.unrealized_pnl import UnrealizedPnL
-from quantum.domain.shared.value_objects.volume import PositiveVolume
+from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
+from quantum.domain.shared_kernel.value_objects.price import Price
+from quantum.domain.shared_kernel.value_objects.symbol import Symbol
+from quantum.domain.shared_kernel.value_objects.unrealized_pnl import UnrealizedPnL
+from quantum.domain.shared_kernel.value_objects.volume import PositiveVolume
 from quantum.domain.trading.value_objects.identifiers.intent_id import IntentId
 from quantum.domain.trading.value_objects.identifiers.position_id import PositionId
 

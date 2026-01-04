@@ -4,9 +4,15 @@ from dataclasses import dataclass, replace
 from decimal import Decimal
 
 from quantum.domain.execution.value_objects.fill import Fill
-from quantum.domain.shared.errors.invariants import InvalidStateTransition
-from quantum.domain.shared.errors.order_errors import OrderNotFillable, OrderOverfill
-from quantum.domain.shared.value_objects.volume import NonNegativeVolume, PositiveVolume
+from quantum.domain.shared_kernel.errors.invariants import InvalidStateTransition
+from quantum.domain.shared_kernel.errors.order_errors import (
+    OrderNotFillable,
+    OrderOverfill,
+)
+from quantum.domain.shared_kernel.value_objects.volume import (
+    NonNegativeVolume,
+    PositiveVolume,
+)
 from quantum.domain.trading.value_objects.identifiers.order_id import OrderId
 from quantum.domain.trading.value_objects.order.order_status import OrderStatus
 from quantum.domain.trading.value_objects.order.order_type import OrderType

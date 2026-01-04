@@ -3,14 +3,14 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 
 from quantum.domain.execution.value_objects.fill import Fill
-from quantum.domain.shared.errors.invariants import (
+from quantum.domain.shared_kernel.errors.invariants import (
     InvalidStateTransition,
     InvariantViolation,
 )
-from quantum.domain.shared.primitives.aggregate_root import AggregateRoot
-from quantum.domain.shared.value_objects.epoch_ms import EpochMs
-from quantum.domain.shared.value_objects.symbol import Symbol
-from quantum.domain.shared.value_objects.volume import PositiveVolume
+from quantum.domain.shared_kernel.primitives.aggregate_root import AggregateRoot
+from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
+from quantum.domain.shared_kernel.value_objects.symbol import Symbol
+from quantum.domain.shared_kernel.value_objects.volume import PositiveVolume
 from quantum.domain.trading.events.v1.order_created_event import OrderCreatedEvent
 from quantum.domain.trading.events.v1.order_sizing_event import OrderSizingEvent
 from quantum.domain.trading.events.v1.order_submit_event import OrderSubmitEvent

@@ -2,9 +2,9 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from typing import Generic, TypeVar
 
-from quantum.domain.shared.events.base_event import BaseEvent
-from quantum.domain.shared.projection.projection_cursor import ProjectionCursor
-from quantum.domain.shared.projection.projection_state import ProjectionState
+from quantum.domain.shared_kernel.events.base_event import BaseEvent
+from quantum.domain.shared_kernel.projection.projection_cursor import ProjectionCursor
+from quantum.domain.shared_kernel.projection.projection_state import ProjectionState
 
 S = TypeVar("S", bound=ProjectionState)
 

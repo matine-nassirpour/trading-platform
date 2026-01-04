@@ -3,8 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from re import fullmatch
 
-from quantum.domain.shared.errors.invariants import InvariantViolation
-from quantum.domain.shared.primitives.value_object import ValueObject
+from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 
 _ISO_4217_RE = fullmatch
 

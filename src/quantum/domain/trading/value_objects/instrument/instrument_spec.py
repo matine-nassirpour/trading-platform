@@ -3,10 +3,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal
 
-from quantum.domain.shared.errors.invariants import InvariantViolation
-from quantum.domain.shared.primitives.value_object import ValueObject
-from quantum.domain.shared.value_objects.currency import Currency
-from quantum.domain.shared.value_objects.symbol import Symbol
+from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.primitives.value_object import ValueObject
+from quantum.domain.shared_kernel.value_objects.currency import Currency
+from quantum.domain.shared_kernel.value_objects.symbol import Symbol
 from quantum.domain.trading.value_objects.instrument.currency_pair import CurrencyPair
 from quantum.domain.trading.value_objects.market.contract_size import ContractSize
 from quantum.domain.trading.value_objects.market.tick_value import TickValue
@@ -51,7 +51,7 @@ class InstrumentSpec(ValueObject):
     currencies: CurrencyPair
     pnl_currency: Currency
 
-    # --- Invariants ----------------------------------------------------------
+    # --- Invariants -----------------------------------------------------------
 
     @staticmethod
     def _validate_positive_decimal(value: Decimal, name: str) -> None:

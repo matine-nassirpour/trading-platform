@@ -1,7 +1,7 @@
 from abc import ABC
 from dataclasses import dataclass
 
-from quantum.domain.shared.primitives.value_object import ValueObject
+from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 
 
 @dataclass(frozen=True)

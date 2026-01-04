@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 
-from quantum.domain.shared.errors.invariants import InvariantViolation
-from quantum.domain.shared.temporal.temporal_validity import TemporalValidity
-from quantum.domain.shared.value_objects.epoch_ms import EpochMs
+from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.temporal.temporal_validity import TemporalValidity
+from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
 
 
 @dataclass(frozen=True)

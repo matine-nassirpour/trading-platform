@@ -1,7 +1,7 @@
 from decimal import Decimal
 from typing import Final
 
-from quantum.domain.shared.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.trading.pricing.quantization_service import QuantizationService
 from quantum.domain.trading.pricing.rounding_strategy import _RoundingStrategy
 from quantum.domain.trading.value_objects.instrument.instrument_spec import (

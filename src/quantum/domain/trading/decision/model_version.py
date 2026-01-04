@@ -2,8 +2,8 @@ import re
 
 from dataclasses import dataclass
 
-from quantum.domain.shared.errors.invariants import InvariantViolation
-from quantum.domain.shared.primitives.value_object import ValueObject
+from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 
 _VERSION_RE = re.compile(r"^v\d+(\.\d+){0,2}$")
 

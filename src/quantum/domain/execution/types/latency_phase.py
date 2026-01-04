@@ -1,6 +1,6 @@
 from typing import ClassVar
 
-from quantum.domain.shared.primitives.closed_set_value_object import (
+from quantum.domain.shared_kernel.primitives.closed_set_value_object import (
     ClosedSetValueObject,
 )
 

@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from quantum.domain.shared.value_objects.currency import Currency
-from quantum.domain.shared.value_objects.price import Price
-from quantum.domain.shared.value_objects.realized_pnl import RealizedPnL
-from quantum.domain.shared.value_objects.volume import PositiveVolume
+from quantum.domain.shared_kernel.value_objects.currency import Currency
+from quantum.domain.shared_kernel.value_objects.price import Price
+from quantum.domain.shared_kernel.value_objects.realized_pnl import RealizedPnL
+from quantum.domain.shared_kernel.value_objects.volume import PositiveVolume
 from quantum.domain.trading.value_objects.order.position_side import PositionSide
 
 

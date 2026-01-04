@@ -1,7 +1,9 @@
 from quantum.domain.risk.value_objects.risk_breach import RiskBreach
 from quantum.domain.risk.value_objects.risk_breach_kind import RiskBreachKind
 from quantum.domain.risk.value_objects.risk_limits import RiskLimits
-from quantum.domain.shared.primitives.monetary_value_object import MonetaryValueObject
+from quantum.domain.shared_kernel.primitives.monetary_value_object import (
+    MonetaryValueObject,
+)
 
 
 class RiskPolicy:

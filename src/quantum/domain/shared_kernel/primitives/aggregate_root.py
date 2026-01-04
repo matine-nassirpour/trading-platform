@@ -4,8 +4,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field, replace
 from typing import Self
 
-from quantum.domain.shared.errors.invariants import InvariantViolation
-from quantum.domain.shared.events.base_event import BaseEvent
+from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.events.base_event import BaseEvent
 
 
 @dataclass(frozen=True)

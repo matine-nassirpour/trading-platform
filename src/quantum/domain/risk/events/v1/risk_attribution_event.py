@@ -3,7 +3,7 @@ from typing import ClassVar
 
 from quantum.domain.risk.attribution.risk_attribution import RiskAttribution
 from quantum.domain.risk.value_objects.risk_breach_kind import RiskBreachKind
-from quantum.domain.shared.events.base_event import BaseEvent
+from quantum.domain.shared_kernel.events.base_event import BaseEvent
 
 
 @dataclass(frozen=True)

@@ -4,9 +4,14 @@ from abc import ABC
 from dataclasses import dataclass
 from decimal import Decimal
 
-from quantum.domain.shared.errors.invariants import CurrencyMismatch, InvariantViolation
-from quantum.domain.shared.primitives.numeric_value_object import NumericValueObject
-from quantum.domain.shared.value_objects.currency import Currency
+from quantum.domain.shared_kernel.errors.invariants import (
+    CurrencyMismatch,
+    InvariantViolation,
+)
+from quantum.domain.shared_kernel.primitives.numeric_value_object import (
+    NumericValueObject,
+)
+from quantum.domain.shared_kernel.value_objects.currency import Currency
 
 
 @dataclass(frozen=True)
@@ -25,7 +30,7 @@ class MonetaryValueObject(NumericValueObject, ABC):
     value: Decimal
     currency: Currency
 
-    # --- Validation ----------------------------------------------------------
+    # --- Validation -----------------------------------------------------------
 
     def _validate_type(self) -> None:
         if not isinstance(self.value, Decimal):
@@ -43,7 +48,7 @@ class MonetaryValueObject(NumericValueObject, ABC):
     # and must be implemented by concrete subclasses
     # (e.g. >= 0, > 0, bounded, etc.)
 
-    # --- Shared monetary helpers ---------------------------------------------
+    # --- Shared monetary helpers ----------------------------------------------
 
     def _check_currency(self, other: MonetaryValueObject) -> None:
         if self.currency != other.currency:
@@ -51,7 +56,7 @@ class MonetaryValueObject(NumericValueObject, ABC):
                 f"Currency mismatch: {self.currency} vs {other.currency}"
             )
 
-    # --- Safe arithmetic -----------------------------------------------------
+    # --- Safe arithmetic ------------------------------------------------------
 
     def __add__(self, other: MonetaryValueObject) -> MonetaryValueObject:
         self._check_currency(other)
@@ -67,7 +72,7 @@ class MonetaryValueObject(NumericValueObject, ABC):
             currency=self.currency,
         )
 
-    # --- Comparisons (currency-safe) -----------------------------------------
+    # --- Comparisons (currency-safe) ------------------------------------------
 
     def __lt__(self, other: MonetaryValueObject) -> bool:
         self._check_currency(other)

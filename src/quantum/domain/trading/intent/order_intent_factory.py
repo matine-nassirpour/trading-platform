@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from quantum.domain.shared.errors.invariants import InvariantViolation
-from quantum.domain.shared.value_objects.epoch_ms import EpochMs
-from quantum.domain.shared.value_objects.price import Price
-from quantum.domain.shared.value_objects.symbol import Symbol
-from quantum.domain.shared.value_objects.volume import PositiveVolume
+from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
+from quantum.domain.shared_kernel.value_objects.price import Price
+from quantum.domain.shared_kernel.value_objects.symbol import Symbol
+from quantum.domain.shared_kernel.value_objects.volume import PositiveVolume
 from quantum.domain.trading.context.trading_context import TradingContext
 from quantum.domain.trading.decision.decision_identity import DecisionIdentity
 from quantum.domain.trading.events.v1.order_intent_event import OrderIntentEvent

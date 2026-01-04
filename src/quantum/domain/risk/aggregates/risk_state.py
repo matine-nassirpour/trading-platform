@@ -7,10 +7,12 @@ from quantum.domain.risk.events.v1.max_drawdown_exceeded_event import (
 )
 from quantum.domain.risk.value_objects.drawdown import Drawdown
 from quantum.domain.risk.value_objects.drawdown_limit import DrawdownLimit
-from quantum.domain.shared.errors.invariants import InvariantViolation
-from quantum.domain.shared.primitives.aggregate_root import AggregateRoot
-from quantum.domain.shared.primitives.monetary_value_object import MonetaryValueObject
-from quantum.domain.shared.value_objects.epoch_ms import EpochMs
+from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.primitives.aggregate_root import AggregateRoot
+from quantum.domain.shared_kernel.primitives.monetary_value_object import (
+    MonetaryValueObject,
+)
+from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
 
 
 @dataclass(frozen=True)

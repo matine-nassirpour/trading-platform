@@ -1,9 +1,11 @@
 from dataclasses import dataclass
 
 from quantum.domain.risk.value_objects.risk_breach_kind import RiskBreachKind
-from quantum.domain.shared.errors.invariants import InvariantViolation
-from quantum.domain.shared.primitives.monetary_value_object import MonetaryValueObject
-from quantum.domain.shared.primitives.value_object import ValueObject
+from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.primitives.monetary_value_object import (
+    MonetaryValueObject,
+)
+from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 
 
 @dataclass(frozen=True)

@@ -7,12 +7,12 @@ from quantum.domain.risk.events.v1.killswitch_trigger_event import (
 )
 from quantum.domain.risk.value_objects.kill_switch_reason import KillSwitchReason
 from quantum.domain.risk.value_objects.kill_switch_status import KillSwitchStatus
-from quantum.domain.shared.errors.invariants import (
+from quantum.domain.shared_kernel.errors.invariants import (
     InvalidStateTransition,
     InvariantViolation,
 )
-from quantum.domain.shared.primitives.aggregate_root import AggregateRoot
-from quantum.domain.shared.value_objects.epoch_ms import EpochMs
+from quantum.domain.shared_kernel.primitives.aggregate_root import AggregateRoot
+from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
 
 
 @dataclass(frozen=True)

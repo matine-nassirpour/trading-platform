@@ -2,8 +2,10 @@ from dataclasses import dataclass
 from typing import ClassVar
 
 from quantum.domain.risk.value_objects.drawdown import Drawdown
-from quantum.domain.shared.events.base_event import BaseEvent
-from quantum.domain.shared.primitives.monetary_value_object import MonetaryValueObject
+from quantum.domain.shared_kernel.events.base_event import BaseEvent
+from quantum.domain.shared_kernel.primitives.monetary_value_object import (
+    MonetaryValueObject,
+)
 
 
 @dataclass(frozen=True)

@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import Protocol, runtime_checkable
 
-from quantum.domain.shared.value_objects.price import Price
-from quantum.domain.shared.value_objects.symbol import Symbol
-from quantum.domain.shared.value_objects.volume import PositiveVolume
+from quantum.domain.shared_kernel.value_objects.price import Price
+from quantum.domain.shared_kernel.value_objects.symbol import Symbol
+from quantum.domain.shared_kernel.value_objects.volume import PositiveVolume
 from quantum.domain.trading.value_objects.identifiers.intent_id import IntentId
 from quantum.domain.trading.value_objects.identifiers.order_id import OrderId
 from quantum.domain.trading.value_objects.order.order_type import OrderType

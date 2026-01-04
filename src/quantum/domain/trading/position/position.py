@@ -2,14 +2,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 
-from quantum.domain.shared.errors.invariants import InvariantViolation
-from quantum.domain.shared.errors.position_errors import PositionAlreadyClosed
-from quantum.domain.shared.primitives.aggregate_root import AggregateRoot
-from quantum.domain.shared.value_objects.currency import Currency
-from quantum.domain.shared.value_objects.price import Price
-from quantum.domain.shared.value_objects.realized_pnl import RealizedPnL
-from quantum.domain.shared.value_objects.symbol import Symbol
-from quantum.domain.shared.value_objects.volume import PositiveVolume
+from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.errors.position_errors import PositionAlreadyClosed
+from quantum.domain.shared_kernel.primitives.aggregate_root import AggregateRoot
+from quantum.domain.shared_kernel.value_objects.currency import Currency
+from quantum.domain.shared_kernel.value_objects.price import Price
+from quantum.domain.shared_kernel.value_objects.realized_pnl import RealizedPnL
+from quantum.domain.shared_kernel.value_objects.symbol import Symbol
+from quantum.domain.shared_kernel.value_objects.volume import PositiveVolume
 from quantum.domain.trading.position.pnl_service import PnLService
 from quantum.domain.trading.value_objects.identifiers.position_id import PositionId
 from quantum.domain.trading.value_objects.order.position_side import PositionSide

@@ -3,9 +3,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal
 
-from quantum.domain.shared.errors.invariants import InvariantViolation
-from quantum.domain.shared.primitives.monetary_value_object import MonetaryValueObject
-from quantum.domain.shared.value_objects.currency import Currency
+from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.primitives.monetary_value_object import (
+    MonetaryValueObject,
+)
+from quantum.domain.shared_kernel.value_objects.currency import Currency
 
 
 @dataclass(frozen=True)

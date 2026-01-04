@@ -4,8 +4,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from decimal import Decimal
 
-from quantum.domain.shared.errors.invariants import InvariantViolation
-from quantum.domain.shared.primitives.value_object import ValueObject
+from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 
 
 @dataclass(frozen=True)

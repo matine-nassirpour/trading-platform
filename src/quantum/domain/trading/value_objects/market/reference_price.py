@@ -1,8 +1,10 @@
 from dataclasses import dataclass
 from decimal import Decimal
 
-from quantum.domain.shared.errors.invariants import InvariantViolation
-from quantum.domain.shared.primitives.numeric_value_object import NumericValueObject
+from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.primitives.numeric_value_object import (
+    NumericValueObject,
+)
 
 
 @dataclass(frozen=True)

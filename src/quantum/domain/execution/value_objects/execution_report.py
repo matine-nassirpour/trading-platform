@@ -2,9 +2,9 @@ from dataclasses import dataclass
 
 from quantum.domain.execution.types.execution_type import ExecutionType
 from quantum.domain.execution.value_objects.execution_id import ExecutionId
-from quantum.domain.shared.errors.invariants import InvariantViolation
-from quantum.domain.shared.primitives.value_object import ValueObject
-from quantum.domain.shared.value_objects.epoch_ms import EpochMs
+from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.primitives.value_object import ValueObject
+from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
 
 
 @dataclass(frozen=True)

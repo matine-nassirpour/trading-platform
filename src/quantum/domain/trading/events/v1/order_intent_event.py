@@ -1,10 +1,10 @@
 from dataclasses import dataclass
 from typing import ClassVar
 
-from quantum.domain.shared.events.base_event import BaseEvent
-from quantum.domain.shared.value_objects.price import Price
-from quantum.domain.shared.value_objects.symbol import Symbol
-from quantum.domain.shared.value_objects.volume import PositiveVolume
+from quantum.domain.shared_kernel.events.base_event import BaseEvent
+from quantum.domain.shared_kernel.value_objects.price import Price
+from quantum.domain.shared_kernel.value_objects.symbol import Symbol
+from quantum.domain.shared_kernel.value_objects.volume import PositiveVolume
 from quantum.domain.trading.context.trading_context import TradingContext
 from quantum.domain.trading.decision.decision_identity import DecisionIdentity
 from quantum.domain.trading.value_objects.identifiers.intent_id import IntentId

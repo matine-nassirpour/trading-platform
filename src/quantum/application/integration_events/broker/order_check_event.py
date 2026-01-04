@@ -5,8 +5,8 @@ from quantum.application.integration_events.base_integration_event import (
     IntegrationEvent,
 )
 from quantum.domain.execution.types.order_check_outcome import OrderCheckOutcome
-from quantum.domain.shared.value_objects.epoch_ms import EpochMs
-from quantum.domain.shared.value_objects.symbol import Symbol
+from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
+from quantum.domain.shared_kernel.value_objects.symbol import Symbol
 from quantum.domain.trading.value_objects.identifiers.intent_id import IntentId
 
 

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
-from quantum.domain.shared.value_objects.epoch_ms import EpochMs
-from quantum.domain.shared.value_objects.symbol import Symbol
+from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
+from quantum.domain.shared_kernel.value_objects.symbol import Symbol
 from quantum.domain.trading.value_objects.identifiers.intent_id import IntentId
 from quantum.domain.trading.value_objects.order.position_side import PositionSide
 

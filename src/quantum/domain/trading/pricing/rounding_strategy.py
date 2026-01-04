@@ -1,7 +1,7 @@
 from decimal import ROUND_CEILING, ROUND_FLOOR, ROUND_HALF_EVEN
 from typing import Final
 
-from quantum.domain.shared.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.trading.value_objects.order.position_side import PositionSide
 from quantum.domain.trading.value_objects.pricing.pricing_context import PricingContext
 

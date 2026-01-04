@@ -7,8 +7,8 @@ from quantum.application.integration_events.base_integration_event import (
 from quantum.domain.execution.value_objects.execution_rejection import (
     ExecutionRejection,
 )
-from quantum.domain.shared.value_objects.epoch_ms import EpochMs
-from quantum.domain.shared.value_objects.symbol import Symbol
+from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
+from quantum.domain.shared_kernel.value_objects.symbol import Symbol
 from quantum.domain.trading.value_objects.identifiers.intent_id import IntentId
 
 

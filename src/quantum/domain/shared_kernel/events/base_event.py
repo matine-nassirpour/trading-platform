@@ -2,7 +2,7 @@ from abc import ABC
 from dataclasses import dataclass
 from typing import ClassVar
 
-from quantum.domain.shared.value_objects.epoch_ms import EpochMs
+from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
 
 
 @dataclass(frozen=True)

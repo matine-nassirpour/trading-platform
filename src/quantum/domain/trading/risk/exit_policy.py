@@ -1,5 +1,5 @@
-from quantum.domain.shared.errors.invariants import InvariantViolation
-from quantum.domain.shared.value_objects.price import Price
+from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.value_objects.price import Price
 from quantum.domain.trading.pricing.pricing_policy import PricingPolicy
 from quantum.domain.trading.value_objects.instrument.instrument_spec import (
     InstrumentSpec,
