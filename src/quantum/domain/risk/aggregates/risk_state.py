@@ -7,12 +7,11 @@ from quantum.domain.risk.events.v1.max_drawdown_exceeded_event import (
 )
 from quantum.domain.risk.value_objects.drawdown import Drawdown
 from quantum.domain.risk.value_objects.drawdown_limit import DrawdownLimit
+from quantum.domain.risk.value_objects.equity import Equity
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.primitives.aggregate_root import AggregateRoot
-from quantum.domain.shared_kernel.primitives.monetary_value_object import (
-    MonetaryValueObject,
-)
 from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
+from quantum.domain.shared_kernel.value_objects.realized_pnl import RealizedPnL
 
 
 @dataclass(frozen=True)
@@ -26,8 +25,8 @@ class RiskState(AggregateRoot):
     """
 
     max_drawdown: DrawdownLimit
-    equity: MonetaryValueObject
-    equity_peak: MonetaryValueObject
+    equity: Equity
+    equity_peak: Equity
 
     # --- Invariants -----------------------------------------------------------
 
@@ -43,11 +42,15 @@ class RiskState(AggregateRoot):
 
     # --- Commands -------------------------------------------------------------
 
-    def register_pnl(self, pnl: MonetaryValueObject, at: EpochMs) -> RiskState:
+    def register_pnl(self, pnl: RealizedPnL, at: EpochMs) -> RiskState:
+        """
+        Applies a realized PnL to the equity.
+        """
+
         if pnl.currency != self.equity.currency:
             raise InvariantViolation("PnL currency mismatch")
 
-        new_equity = self.equity + pnl
+        new_equity = self.equity.add(pnl)
 
         new_peak = (
             new_equity

@@ -15,6 +15,9 @@ class TemporalEntity:
 
     validity: TemporalValidity
 
+    def __post_init__(self) -> None:
+        self._validate_temporal()
+
     def _validate_temporal(self) -> None:
         if not isinstance(self.validity, TemporalValidity):
             raise InvariantViolation("TemporalEntity requires TemporalValidity")

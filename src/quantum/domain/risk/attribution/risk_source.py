@@ -1,6 +1,6 @@
 from dataclasses import dataclass
-from typing import Any
 
+from quantum.domain.risk.attribution.risk_reference import RiskReference
 from quantum.domain.risk.attribution.risk_source_type import RiskSourceType
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
@@ -18,11 +18,11 @@ class RiskSource(ValueObject):
     """
 
     type: RiskSourceType
-    reference: Any  # intentionally opaque at domain level
+    reference: RiskReference
 
     def _validate(self) -> None:
         if not isinstance(self.type, RiskSourceType):
             raise InvariantViolation("RiskSource requires a RiskSourceType")
 
-        if self.reference is None:
-            raise InvariantViolation("RiskSource reference must not be None")
+        if not isinstance(self.reference, RiskReference):
+            raise InvariantViolation("RiskSource requires a RiskReference")
