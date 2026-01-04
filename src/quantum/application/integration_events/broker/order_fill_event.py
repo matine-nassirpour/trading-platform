@@ -7,9 +7,11 @@ from quantum.application.integration_events.base_integration_event import (
 from quantum.domain.execution.types.deal_entry import DealEntry
 from quantum.domain.execution.types.deal_reason import DealReason
 from quantum.domain.execution.value_objects.deal_id import DealId
+from quantum.domain.execution.value_objects.fee import Fee
 from quantum.domain.shared.value_objects.epoch_ms import EpochMs
-from quantum.domain.shared.value_objects.money import Money
 from quantum.domain.shared.value_objects.price import Price
+from quantum.domain.shared.value_objects.realized_pnl import RealizedPnL
+from quantum.domain.shared.value_objects.swap import Swap
 from quantum.domain.shared.value_objects.symbol import Symbol
 from quantum.domain.shared.value_objects.volume import PositiveVolume
 from quantum.domain.trading.value_objects.identifiers.intent_id import IntentId
@@ -28,9 +30,9 @@ class OrderFillEvent(IntegrationEvent):
 
     price: Price
     volume: PositiveVolume
-    commission: Money
-    swap: Money
-    profit: Money
+    commission: Fee
+    swap: Swap
+    profit: RealizedPnL
 
     deal_entry: DealEntry
     reason: DealReason

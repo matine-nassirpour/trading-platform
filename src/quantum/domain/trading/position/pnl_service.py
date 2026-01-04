@@ -3,8 +3,8 @@ from __future__ import annotations
 from decimal import Decimal
 
 from quantum.domain.shared.value_objects.currency import Currency
-from quantum.domain.shared.value_objects.money import Money
 from quantum.domain.shared.value_objects.price import Price
+from quantum.domain.shared.value_objects.realized_pnl import RealizedPnL
 from quantum.domain.shared.value_objects.volume import PositiveVolume
 from quantum.domain.trading.value_objects.order.position_side import PositionSide
 
@@ -27,7 +27,7 @@ class PnLService:
         volume: PositiveVolume,
         side: PositionSide,
         currency: Currency,
-    ) -> Money:
+    ) -> RealizedPnL:
         """
         Computes realized PnL for a closed position.
 
@@ -38,4 +38,4 @@ class PnLService:
         delta = exit_price.value - entry_price.value
         pnl_value = delta * volume.value * Decimal(side.sign())
 
-        return Money(value=pnl_value, currency=currency)
+        return RealizedPnL(value=pnl_value, currency=currency)

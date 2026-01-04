@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from dataclasses import dataclass
 from decimal import Decimal
 
@@ -9,9 +7,13 @@ from quantum.domain.shared.value_objects.currency import Currency
 
 
 @dataclass(frozen=True)
-class Drawdown(MonetaryValueObject):
+class Notional(MonetaryValueObject):
     """
-    Positive drawdown expressed in monetary units.
+    Gross notional exposure.
+
+    Properties:
+    - Always non-negative
+    - Currency-aware
     """
 
     value: Decimal
@@ -19,4 +21,4 @@ class Drawdown(MonetaryValueObject):
 
     def _validate_semantics(self) -> None:
         if self.value < Decimal("0"):
-            raise InvariantViolation("Drawdown must be non-negative")
+            raise InvariantViolation("Notional must be non-negative")

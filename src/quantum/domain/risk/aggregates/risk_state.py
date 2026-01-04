@@ -9,8 +9,8 @@ from quantum.domain.risk.value_objects.drawdown import Drawdown
 from quantum.domain.risk.value_objects.drawdown_limit import DrawdownLimit
 from quantum.domain.shared.errors.invariants import InvariantViolation
 from quantum.domain.shared.primitives.aggregate_root import AggregateRoot
+from quantum.domain.shared.primitives.monetary_value_object import MonetaryValueObject
 from quantum.domain.shared.value_objects.epoch_ms import EpochMs
-from quantum.domain.shared.value_objects.money import Money
 
 
 @dataclass(frozen=True)
@@ -24,8 +24,8 @@ class RiskState(AggregateRoot):
     """
 
     max_drawdown: DrawdownLimit
-    equity: Money
-    equity_peak: Money
+    equity: MonetaryValueObject
+    equity_peak: MonetaryValueObject
 
     # --- Invariants -----------------------------------------------------------
 
@@ -41,7 +41,7 @@ class RiskState(AggregateRoot):
 
     # --- Commands -------------------------------------------------------------
 
-    def register_pnl(self, pnl: Money, at: EpochMs) -> RiskState:
+    def register_pnl(self, pnl: MonetaryValueObject, at: EpochMs) -> RiskState:
         if pnl.currency != self.equity.currency:
             raise InvariantViolation("PnL currency mismatch")
 

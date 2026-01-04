@@ -4,11 +4,11 @@ from dataclasses import dataclass
 from decimal import Decimal
 
 from quantum.domain.shared.errors.invariants import InvariantViolation
-from quantum.domain.shared.primitives.numeric_value_object import _NumericValueObject
+from quantum.domain.shared.primitives.numeric_value_object import NumericValueObject
 
 
 @dataclass(frozen=True)
-class PositiveVolume(_NumericValueObject):
+class PositiveVolume(NumericValueObject):
     """
     Volume strictly greater than zero.
 
@@ -23,12 +23,13 @@ class PositiveVolume(_NumericValueObject):
         if not isinstance(self.value, Decimal):
             raise InvariantViolation("Volume value must be a Decimal")
 
+    def _validate_semantics(self) -> None:
         if self.value <= Decimal("0"):
             raise InvariantViolation("PositiveVolume must be strictly > 0")
 
 
 @dataclass(frozen=True)
-class NonNegativeVolume(_NumericValueObject):
+class NonNegativeVolume(NumericValueObject):
     """
     Volume greater than or equal to zero.
 
@@ -44,6 +45,7 @@ class NonNegativeVolume(_NumericValueObject):
         if not isinstance(self.value, Decimal):
             raise InvariantViolation("Volume value must be a Decimal")
 
+    def _validate_semantics(self) -> None:
         if self.value < Decimal("0"):
             raise InvariantViolation("NonNegativeVolume must be ≥ 0")
 

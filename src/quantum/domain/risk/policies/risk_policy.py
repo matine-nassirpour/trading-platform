@@ -1,7 +1,7 @@
 from quantum.domain.risk.value_objects.risk_breach import RiskBreach
 from quantum.domain.risk.value_objects.risk_breach_kind import RiskBreachKind
 from quantum.domain.risk.value_objects.risk_limits import RiskLimits
-from quantum.domain.shared.value_objects.money import Money
+from quantum.domain.shared.primitives.monetary_value_object import MonetaryValueObject
 
 
 class RiskPolicy:
@@ -12,7 +12,7 @@ class RiskPolicy:
     @staticmethod
     def evaluate_drawdown(
         *,
-        current_drawdown: Money,
+        current_drawdown: MonetaryValueObject,
         limits: RiskLimits,
     ) -> RiskBreach | None:
         if current_drawdown.value >= limits.max_drawdown.value:
@@ -26,7 +26,7 @@ class RiskPolicy:
     @staticmethod
     def evaluate_notional(
         *,
-        notional: Money,
+        notional: MonetaryValueObject,
         limits: RiskLimits,
     ) -> RiskBreach | None:
         if notional.value >= limits.max_notional.value:
@@ -40,7 +40,7 @@ class RiskPolicy:
     @staticmethod
     def evaluate_daily_loss(
         *,
-        daily_loss: Money,
+        daily_loss: MonetaryValueObject,
         limits: RiskLimits,
     ) -> RiskBreach | None:
         if daily_loss.value >= limits.max_daily_loss.value:

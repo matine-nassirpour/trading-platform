@@ -6,8 +6,8 @@ from quantum.domain.shared.errors.invariants import InvariantViolation
 from quantum.domain.shared.errors.position_errors import PositionAlreadyClosed
 from quantum.domain.shared.primitives.aggregate_root import AggregateRoot
 from quantum.domain.shared.value_objects.currency import Currency
-from quantum.domain.shared.value_objects.money import Money
 from quantum.domain.shared.value_objects.price import Price
+from quantum.domain.shared.value_objects.realized_pnl import RealizedPnL
 from quantum.domain.shared.value_objects.symbol import Symbol
 from quantum.domain.shared.value_objects.volume import PositiveVolume
 from quantum.domain.trading.position.pnl_service import PnLService
@@ -35,7 +35,7 @@ class Position(AggregateRoot):
     side: PositionSide
     volume: PositiveVolume
     entry_price: Price
-    realized_pnl: Money
+    realized_pnl: RealizedPnL
     closed: bool = False
 
     # --- Identity semantics ---------------------------------------------------
@@ -54,7 +54,7 @@ class Position(AggregateRoot):
         # Money already guarantees currency correctness and finiteness,
         # but the aggregate guarantees semantic consistency.
 
-        if not isinstance(self.realized_pnl, Money):
+        if not isinstance(self.realized_pnl, RealizedPnL):
             raise InvariantViolation("Position must have a valid Money PnL")
 
         if self.closed:
@@ -92,7 +92,7 @@ class Position(AggregateRoot):
             side=side,
             volume=volume,
             entry_price=entry_price,
-            realized_pnl=Money.zero(currency),
+            realized_pnl=RealizedPnL.zero(currency),
             closed=False,
         )
 

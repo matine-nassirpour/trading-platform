@@ -302,6 +302,7 @@ trading-platform/
 │       │   │   │   ├── drawdown_limit.py
 │       │   │   │   ├── kill_switch_reason.py
 │       │   │   │   ├── kill_switch_status.py
+│       │   │   │   ├── notional.py
 │       │   │   │   ├── risk_breach.py
 │       │   │   │   ├── risk_breach_kind.py
 │       │   │   │   └── risk_limits.py
@@ -321,6 +322,7 @@ trading-platform/
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── aggregate_root.py
 │       │   │   │   ├── closed_set_value_object.py
+│       │   │   │   ├── monetary_value_object.py
 │       │   │   │   ├── numeric_value_object.py
 │       │   │   │   └── value_object.py
 │       │   │   ├── projection/
@@ -338,9 +340,11 @@ trading-platform/
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── currency.py
 │       │   │   │   ├── epoch_ms.py
-│       │   │   │   ├── money.py
 │       │   │   │   ├── price.py
+│       │   │   │   ├── realized_pnl.py
+│       │   │   │   ├── swap.py
 │       │   │   │   ├── symbol.py
+│       │   │   │   ├── unrealized_pnl.py
 │       │   │   │   └── volume.py
 │       │   │   └── __init__.py
 │       │   ├── trading/

@@ -2,8 +2,8 @@ from dataclasses import dataclass
 
 from quantum.domain.risk.value_objects.risk_breach_kind import RiskBreachKind
 from quantum.domain.shared.errors.invariants import InvariantViolation
+from quantum.domain.shared.primitives.monetary_value_object import MonetaryValueObject
 from quantum.domain.shared.primitives.value_object import ValueObject
-from quantum.domain.shared.value_objects.money import Money
 
 
 @dataclass(frozen=True)
@@ -13,8 +13,8 @@ class RiskBreach(ValueObject):
     """
 
     kind: RiskBreachKind
-    current: Money
-    limit: Money
+    current: MonetaryValueObject
+    limit: MonetaryValueObject
 
     def _validate(self) -> None:
         if not isinstance(self.kind, RiskBreachKind):
