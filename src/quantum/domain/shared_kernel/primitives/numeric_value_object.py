@@ -20,43 +20,29 @@ class NumericValueObject(ValueObject, ABC):
     - No NaN / Infinity
     - No floating-point arithmetic
 
-    This abstraction is intentionally generic and unit-agnostic.
+    Architectural principles:
+    - Fundamental numeric invariants are enforced ONCE here
+    - Subclasses only define semantic constraints
     """
 
     value: Decimal
 
+    # --- Validation entrypoint ------------------------------------------------
+
     def _validate(self) -> None:
-        self._validate_type()
-        self._validate_finite()
+        self._validate_numeric_fundamentals()
         self._validate_semantics()
 
-    # --- Mandatory hooks ------------------------------------------------------
+    # --- Fundamental invariants (NON-OVERRIDABLE) -----------------------------
 
-    @abstractmethod
-    def _validate_type(self) -> None:
+    def _validate_numeric_fundamentals(self) -> None:
         """
-        Enforces the concrete numeric type (usually Decimal).
-        """
-        raise NotImplementedError
+        Enforces all fundamental numeric invariants.
 
-    @abstractmethod
-    def _validate_semantics(self) -> None:
-        """
-        Enforces domain-specific numeric invariants
-        (e.g. > 0, >= 0, bounded, etc.).
-        """
-        raise NotImplementedError
-
-    # --- Shared numeric invariants --------------------------------------------
-
-    def _validate_finite(self) -> None:
-        """
-        Enforces that the numeric value is finite and defined.
-
-        This is a hard invariant for all financial / risk quantities.
+        This method MUST NOT be overridden.
+        It defines the minimal safety contract for all numeric domain values.
         """
         if not isinstance(self.value, Decimal):
-            # Defensive: type check is duplicated intentionally
             raise InvariantViolation(
                 f"{self.__class__.__name__} value must be a Decimal"
             )
@@ -66,3 +52,18 @@ class NumericValueObject(ValueObject, ABC):
 
         if self.value.is_infinite():
             raise InvariantViolation(f"{self.__class__.__name__} must be finite")
+
+    # --- Semantic invariants (OVERRIDABLE) ------------------------------------
+
+    @abstractmethod
+    def _validate_semantics(self) -> None:
+        """
+        Enforces domain-specific numeric invariants.
+
+        Examples:
+        - strictly positive
+        - non-negative
+        - bounded
+        - sign-constrained
+        """
+        raise NotImplementedError

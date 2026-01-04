@@ -13,17 +13,9 @@ from quantum.domain.shared_kernel.primitives.numeric_value_object import (
 class PositiveVolume(NumericValueObject):
     """
     Volume strictly greater than zero.
-
-    Use cases:
-    - requested order volume
-    - initial position size
     """
 
     value: Decimal
-
-    def _validate_type(self) -> None:
-        if not isinstance(self.value, Decimal):
-            raise InvariantViolation("Volume value must be a Decimal")
 
     def _validate_semantics(self) -> None:
         if self.value <= Decimal("0"):
@@ -42,10 +34,6 @@ class NonNegativeVolume(NumericValueObject):
     """
 
     value: Decimal
-
-    def _validate_type(self) -> None:
-        if not isinstance(self.value, Decimal):
-            raise InvariantViolation("Volume value must be a Decimal")
 
     def _validate_semantics(self) -> None:
         if self.value < Decimal("0"):

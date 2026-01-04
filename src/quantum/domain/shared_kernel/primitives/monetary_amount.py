@@ -25,9 +25,8 @@ class MonetaryAmount(NumericValueObject, ABC):
     value: Decimal
     currency: Currency
 
-    def _validate_type(self) -> None:
-        if not isinstance(self.value, Decimal):
-            raise InvariantViolation("Monetary value must be a Decimal")
-
+    def _validate_semantics(self) -> None:
         if not isinstance(self.currency, Currency):
-            raise InvariantViolation("Invalid currency")
+            raise InvariantViolation(
+                f"{self.__class__.__name__} requires a valid Currency"
+            )

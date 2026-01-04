@@ -15,10 +15,6 @@ class ReferencePrice(NumericValueObject):
 
     value: Decimal
 
-    def _validate_type(self) -> None:
-        if not isinstance(self.value, Decimal):
-            raise InvariantViolation("ReferencePrice value must be a Decimal")
-
     def _validate_semantics(self) -> None:
-        if self.value <= Decimal("0"):
+        if self.value < Decimal("0"):
             raise InvariantViolation("ReferencePrice must be strictly positive")
