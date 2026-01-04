@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from typing import ClassVar
 
 from quantum.domain.shared.events.base_event import BaseEvent
-from quantum.domain.shared.value_objects.epoch_ms import EpochMs
 from quantum.domain.shared.value_objects.price import Price
 from quantum.domain.shared.value_objects.symbol import Symbol
 from quantum.domain.trading.value_objects.identifiers.intent_id import IntentId
@@ -40,5 +39,3 @@ class SlTpConfigurationChangedEvent(BaseEvent):
     new_tp: Price | None
 
     reason: SlTpChangeReason
-
-    trigger_epoch_ms: EpochMs

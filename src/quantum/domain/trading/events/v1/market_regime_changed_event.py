@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from typing import ClassVar
 
 from quantum.domain.shared.events.base_event import BaseEvent
-from quantum.domain.shared.value_objects.epoch_ms import EpochMs
 from quantum.domain.trading.context.market_regime import MarketRegime
 
 
@@ -19,5 +18,3 @@ class MarketRegimeChangedEvent(BaseEvent):
 
     previous: MarketRegime
     current: MarketRegime
-
-    trigger_epoch_ms: EpochMs

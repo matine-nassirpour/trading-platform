@@ -11,8 +11,9 @@ from quantum.domain.trading.value_objects.identifiers.intent_id import IntentId
 class OrderSubmitEvent(BaseEvent):
     event_name: ClassVar[str] = "trading.order_submit"
     event_version: ClassVar[int] = 1
+
     intent_id: IntentId
     client_order_id: str
     symbol: Symbol
-    request_epoch_ms: EpochMs
+
     response_epoch_ms: EpochMs | None = None  # completed in the ACK

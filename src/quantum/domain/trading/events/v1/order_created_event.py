@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from typing import ClassVar
 
 from quantum.domain.shared.events.base_event import BaseEvent
-from quantum.domain.shared.value_objects.epoch_ms import EpochMs
 from quantum.domain.shared.value_objects.symbol import Symbol
 from quantum.domain.shared.value_objects.volume import PositiveVolume
 from quantum.domain.trading.value_objects.identifiers.intent_id import IntentId
@@ -26,4 +25,3 @@ class OrderCreatedEvent(BaseEvent):
     order_id: OrderId
     symbol: Symbol
     volume: PositiveVolume
-    decision_epoch_ms: EpochMs

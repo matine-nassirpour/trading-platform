@@ -3,7 +3,6 @@ from typing import ClassVar
 
 from quantum.domain.risk.value_objects.drawdown import Drawdown
 from quantum.domain.shared.events.base_event import BaseEvent
-from quantum.domain.shared.value_objects.epoch_ms import EpochMs
 from quantum.domain.shared.value_objects.money import Money
 
 
@@ -21,4 +20,3 @@ class MaxDrawdownExceededEvent(BaseEvent):
 
     current_drawdown: Drawdown
     limit: Money
-    trigger_epoch_ms: EpochMs
