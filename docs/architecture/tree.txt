@@ -182,16 +182,26 @@ trading-platform/
 │       │   │   │   ├── submit_trading_intent.py
 │       │   │   │   └── trigger_kill_switch.py
 │       │   │   └── __init__.py
-│       │   ├── events/
+│       │   ├── errors/
 │       │   │   ├── __init__.py
-│       │   │   ├── event_adapter.py
-│       │   │   ├── order_ack_event.py
-│       │   │   ├── order_check_event.py
-│       │   │   ├── order_fill_event.py
-│       │   │   ├── order_reject_event.py
-│       │   │   ├── position_update_event.py
-│       │   │   ├── stoploss_trigger_event.py
-│       │   │   └── takeprofit_trigger_event.py
+│       │   │   ├── application_error.py
+│       │   │   └── not_found_errors.py
+│       │   ├── integration_events/
+│       │   │   ├── broker/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── order_ack_event.py
+│       │   │   │   ├── order_check_event.py
+│       │   │   │   ├── order_fill_event.py
+│       │   │   │   ├── order_reject_event.py
+│       │   │   │   ├── position_update_event.py
+│       │   │   │   ├── stoploss_trigger_event.py
+│       │   │   │   └── takeprofit_trigger_event.py
+│       │   │   ├── __init__.py
+│       │   │   └── base_integration_event.py
+│       │   ├── mappers/
+│       │   │   ├── __init__.py
+│       │   │   ├── fill_event_mapper.py
+│       │   │   └── risk_breach_event_mapper.py
 │       │   ├── ports/
 │       │   │   ├── inbound/
 │       │   │   │   ├── __init__.py
@@ -207,27 +217,24 @@ trading-platform/
 │       │   │   ├── outbound/
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── clock.py
+│       │   │   │   ├── domain_event_publisher.py
 │       │   │   │   ├── event_bus_port.py
-│       │   │   │   ├── event_publisher.py
 │       │   │   │   ├── execution_gateway.py
-│       │   │   │   ├── execution_port.py
 │       │   │   │   ├── id_generators.py
 │       │   │   │   ├── instrument_spec_provider.py
+│       │   │   │   ├── integration_event_publisher.py
 │       │   │   │   ├── kill_switch_repository.py
 │       │   │   │   ├── position_repository.py
 │       │   │   │   ├── risk_limits_provider.py
 │       │   │   │   ├── risk_state_repository.py
-│       │   │   │   ├── timeout_runner_port.py
 │       │   │   │   ├── trading_intent_repository.py
 │       │   │   │   └── unit_of_work.py
 │       │   │   └── __init__.py
 │       │   ├── services/
 │       │   │   ├── __init__.py
-│       │   │   ├── application_orchestrator.py
-│       │   │   └── operation_registry.py
+│       │   │   └── application_orchestrator.py
 │       │   ├── types/
 │       │   │   ├── __init__.py
-│       │   │   ├── execution_channel.py
 │       │   │   ├── order_filling_type.py
 │       │   │   └── trade_action.py
 │       │   ├── use_cases/
@@ -273,11 +280,17 @@ trading-platform/
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── kill_switch_state.py
 │       │   │   │   └── risk_state.py
+│       │   │   ├── attribution/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── risk_attribution.py
+│       │   │   │   ├── risk_source.py
+│       │   │   │   └── risk_source_type.py
 │       │   │   ├── events/
 │       │   │   │   ├── v1/
 │       │   │   │   │   ├── __init__.py
 │       │   │   │   │   ├── killswitch_trigger_event.py
 │       │   │   │   │   ├── max_drawdown_exceeded_event.py
+│       │   │   │   │   ├── risk_attribution_event.py
 │       │   │   │   │   └── risk_breach_event.py
 │       │   │   │   └── __init__.py
 │       │   │   ├── policies/
@@ -310,25 +323,46 @@ trading-platform/
 │       │   │   │   ├── closed_set_value_object.py
 │       │   │   │   ├── numeric_value_object.py
 │       │   │   │   └── value_object.py
+│       │   │   ├── projection/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── domain_projection.py
+│       │   │   │   ├── projection_cursor.py
+│       │   │   │   ├── projection_error.py
+│       │   │   │   └── projection_state.py
+│       │   │   ├── temporal/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── temporal_entity.py
+│       │   │   │   ├── temporal_validity.py
+│       │   │   │   └── time_interval.py
 │       │   │   ├── value_objects/
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── currency.py
 │       │   │   │   ├── epoch_ms.py
 │       │   │   │   ├── money.py
-│       │   │   │   └── symbol.py
+│       │   │   │   ├── price.py
+│       │   │   │   ├── symbol.py
+│       │   │   │   └── volume.py
 │       │   │   └── __init__.py
 │       │   ├── trading/
+│       │   │   ├── context/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── market_regime.py
+│       │   │   │   └── trading_context.py
+│       │   │   ├── decision/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── decision_identity.py
+│       │   │   │   ├── decision_source.py
+│       │   │   │   ├── model_version.py
+│       │   │   │   └── strategy_id.py
 │       │   │   ├── events/
 │       │   │   │   ├── v1/
 │       │   │   │   │   ├── __init__.py
-│       │   │   │   │   ├── breakeven_trigger_event.py
+│       │   │   │   │   ├── market_regime_changed_event.py
 │       │   │   │   │   ├── order_created_event.py
 │       │   │   │   │   ├── order_intent_event.py
 │       │   │   │   │   ├── order_sizing_event.py
 │       │   │   │   │   ├── order_submit_event.py
-│       │   │   │   │   ├── sl_tp_defined_event.py
-│       │   │   │   │   ├── sl_tp_update_event.py
-│       │   │   │   │   └── trailing_trigger_event.py
+│       │   │   │   │   └── sl_tp_configuration_changed_event.py
 │       │   │   │   └── __init__.py
 │       │   │   ├── intent/
 │       │   │   │   ├── __init__.py
@@ -343,9 +377,9 @@ trading-platform/
 │       │   │   │   └── position.py
 │       │   │   ├── pricing/
 │       │   │   │   ├── __init__.py
-│       │   │   │   ├── directional_rounding_policy.py
 │       │   │   │   ├── pricing_policy.py
-│       │   │   │   └── quantization_service.py
+│       │   │   │   ├── quantization_service.py
+│       │   │   │   └── rounding_strategy.py
 │       │   │   ├── risk/
 │       │   │   │   ├── __init__.py
 │       │   │   │   └── exit_policy.py
@@ -362,10 +396,8 @@ trading-platform/
 │       │   │   │   ├── market/
 │       │   │   │   │   ├── __init__.py
 │       │   │   │   │   ├── contract_size.py
-│       │   │   │   │   ├── price.py
 │       │   │   │   │   ├── reference_price.py
 │       │   │   │   │   ├── tick_value.py
-│       │   │   │   │   ├── volume.py
 │       │   │   │   │   └── volume_constraints.py
 │       │   │   │   ├── order/
 │       │   │   │   │   ├── __init__.py
@@ -380,44 +412,11 @@ trading-platform/
 │       │   │   │   │   └── pricing_context.py
 │       │   │   │   ├── risk/
 │       │   │   │   │   ├── __init__.py
-│       │   │   │   │   └── sl_tp_update_reason.py
+│       │   │   │   │   └── sl_tp_change_reason.py
 │       │   │   │   └── __init__.py
 │       │   │   └── __init__.py
 │       │   └── __init__.py
 │       ├── infrastructure/
-│       │   ├── adapters/
-│       │   │   ├── mt5/
-│       │   │   │   ├── adapters/
-│       │   │   │   │   ├── __init__.py
-│       │   │   │   │   ├── adapter_factory.py
-│       │   │   │   │   ├── base_adapter.py
-│       │   │   │   │   ├── ftmo_adapter.py
-│       │   │   │   │   └── fundednext_adapter.py
-│       │   │   │   ├── brokers/
-│       │   │   │   │   ├── __init__.py
-│       │   │   │   │   ├── base_policy.py
-│       │   │   │   │   ├── ftmo_policy.py
-│       │   │   │   │   └── fundednext_policy.py
-│       │   │   │   ├── mappings/
-│       │   │   │   │   ├── __init__.py
-│       │   │   │   │   ├── request_mapper.py
-│       │   │   │   │   └── retcode_map.py
-│       │   │   │   ├── runtime/
-│       │   │   │   │   ├── __init__.py
-│       │   │   │   │   ├── bootstrap.py
-│       │   │   │   │   └── gateway_registry.py
-│       │   │   │   ├── sessions/
-│       │   │   │   │   ├── __init__.py
-│       │   │   │   │   └── session_manager.py
-│       │   │   │   ├── transport/
-│       │   │   │   │   ├── __init__.py
-│       │   │   │   │   ├── contracts.py
-│       │   │   │   │   ├── gateway.py
-│       │   │   │   │   └── timeout_utils.py
-│       │   │   │   ├── __init__.py
-│       │   │   │   └── execution_metrics.py
-│       │   │   ├── __init__.py
-│       │   │   └── execution_service.py
 │       │   ├── config/
 │       │   │   ├── environment/
 │       │   │   │   ├── core/
@@ -493,17 +492,57 @@ trading-platform/
 │       │   ├── decorators/
 │       │   │   ├── __init__.py
 │       │   │   └── resilience_injection.py
-│       │   ├── eventbus/
-│       │   │   ├── __init__.py
-│       │   │   └── asyncio_event_bus_adapter.py
 │       │   ├── events/
-│       │   │   ├── __init__.py
-│       │   │   ├── event_retry_policy.py
-│       │   │   ├── execution_channel_event.py
-│       │   │   ├── orchestration_events.py
-│       │   │   ├── topic_map.py
-│       │   │   └── trading_event_emitter.py
+│       │   │   ├── bus/
+│       │   │   │   ├── __init__.py
+│       │   │   │   └── asyncio_event_bus_adapter.py
+│       │   │   ├── emission/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── event_adapter.py
+│       │   │   │   ├── event_retry_policy.py
+│       │   │   │   └── trading_event_emitter.py
+│       │   │   ├── mapping/
+│       │   │   │   ├── __init__.py
+│       │   │   │   └── topic_map.py
+│       │   │   ├── telemetry/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── execution_channel_event.py
+│       │   │   │   └── orchestration_events.py
+│       │   │   └── __init__.py
 │       │   ├── execution/
+│       │   │   ├── backends/
+│       │   │   │   ├── mt5/
+│       │   │   │   │   ├── adapters/
+│       │   │   │   │   │   ├── __init__.py
+│       │   │   │   │   │   ├── adapter_factory.py
+│       │   │   │   │   │   ├── base_adapter.py
+│       │   │   │   │   │   ├── ftmo_adapter.py
+│       │   │   │   │   │   └── fundednext_adapter.py
+│       │   │   │   │   ├── brokers/
+│       │   │   │   │   │   ├── __init__.py
+│       │   │   │   │   │   ├── base_policy.py
+│       │   │   │   │   │   ├── ftmo_policy.py
+│       │   │   │   │   │   └── fundednext_policy.py
+│       │   │   │   │   ├── mappings/
+│       │   │   │   │   │   ├── __init__.py
+│       │   │   │   │   │   ├── request_mapper.py
+│       │   │   │   │   │   └── retcode_map.py
+│       │   │   │   │   ├── runtime/
+│       │   │   │   │   │   ├── __init__.py
+│       │   │   │   │   │   ├── bootstrap.py
+│       │   │   │   │   │   └── gateway_registry.py
+│       │   │   │   │   ├── sessions/
+│       │   │   │   │   │   ├── __init__.py
+│       │   │   │   │   │   └── session_manager.py
+│       │   │   │   │   ├── transport/
+│       │   │   │   │   │   ├── __init__.py
+│       │   │   │   │   │   ├── contracts.py
+│       │   │   │   │   │   ├── gateway.py
+│       │   │   │   │   │   └── timeout_utils.py
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── execution_metrics.py
+│       │   │   │   │   └── execution_service.py
+│       │   │   │   └── __init__.py
 │       │   │   ├── broadcast/
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── broadcast_executor.py
@@ -512,9 +551,19 @@ trading-platform/
 │       │   │   ├── contracts/
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── execution_code.py
-│       │   │   │   ├── execution_operation.py
 │       │   │   │   ├── execution_request.py
 │       │   │   │   └── execution_result.py
+│       │   │   ├── ports/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── execution_port.py
+│       │   │   │   └── timeout_runner_port.py
+│       │   │   ├── resilience/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── resilience_policy.py
+│       │   │   │   └── retry_policy.py
+│       │   │   ├── type/
+│       │   │   │   ├── __init__.py
+│       │   │   │   └── execution_channel.py
 │       │   │   ├── __init__.py
 │       │   │   └── timeout_runner_adapter.py
 │       │   ├── observability/
@@ -672,10 +721,6 @@ trading-platform/
 │       │   │   │   ├── provider.py
 │       │   │   │   └── trace_context.py
 │       │   │   └── __init__.py
-│       │   ├── resilience/
-│       │   │   ├── __init__.py
-│       │   │   ├── resilience_policy.py
-│       │   │   └── retry_policy.py
 │       │   ├── time/
 │       │   │   ├── __init__.py
 │       │   │   ├── time_format.py

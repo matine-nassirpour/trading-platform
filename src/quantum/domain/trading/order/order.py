@@ -104,9 +104,9 @@ class Order:
         new_fills = self.fills + (fill,)
 
         new_status = (
-            OrderStatus("filled")
+            OrderStatus.filled()
             if fill.volume.value == self.remaining_volume.value
-            else OrderStatus("partially_filled")
+            else OrderStatus.partially_filled()
         )
 
         return replace(
@@ -124,5 +124,5 @@ class Order:
 
         return replace(
             self,
-            status=OrderStatus("cancelled"),
+            status=OrderStatus.cancelled(),
         )
