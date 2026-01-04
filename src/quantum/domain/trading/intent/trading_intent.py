@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 
-from quantum.domain.execution.value_objects.fill import Fill
+from quantum.domain.execution.value_objects.execution_fill import ExecutionFill
 from quantum.domain.shared_kernel.errors.invariants import (
     InvalidStateTransition,
     InvariantViolation,
@@ -97,13 +97,6 @@ class TradingIntent(AggregateRoot):
     ) -> TradingIntent:
         """
         Creates an Order inside a submitted TradingIntent.
-
-        Rules:
-        - Intent MUST be submitted
-        - OrderType is explicit and immutable
-        - PositionSide is inherited from the TradingIntent
-        - Each Order has a unique OrderId within the aggregate
-        - Order starts with zero filled volume
         """
 
         if not self.submitted:
@@ -152,10 +145,11 @@ class TradingIntent(AggregateRoot):
         self,
         *,
         order_id: OrderId,
-        fill: Fill,
+        fill: ExecutionFill,
     ) -> TradingIntent:
         """
-        Registers a fill on one of the Orders belonging to this TradingIntent.
+        Registers an execution fill on one of the Orders belonging
+        to this TradingIntent.
 
         Invariants:
         - Order must exist in the aggregate
