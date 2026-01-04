@@ -82,7 +82,6 @@ class TradingIntent(AggregateRoot):
             intent_id=self.intent_id,
             client_order_id=client_order_id,
             symbol=self.symbol,
-            request_epoch_ms=at,
         )
 
         return replace(self, submitted=True)._raise(event)
@@ -134,7 +133,6 @@ class TradingIntent(AggregateRoot):
                     symbol=self.symbol,
                     volume=volume,
                     sizing_model=sizing_model,
-                    decision_epoch_ms=at,
                 )
             )
 
@@ -145,7 +143,6 @@ class TradingIntent(AggregateRoot):
                 order_id=order_id,
                 symbol=self.symbol,
                 volume=volume,
-                decision_epoch_ms=at,
             )
         )
 

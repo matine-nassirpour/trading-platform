@@ -23,5 +23,4 @@ class RiskBreachEventMapper:
         return RiskBreachEvent(
             occurred_at=at.to_datetime(),
             breach=breach,
-            trigger_epoch_ms=at,
         )

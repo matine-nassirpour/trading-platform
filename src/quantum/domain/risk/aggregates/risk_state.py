@@ -69,7 +69,6 @@ class RiskState(AggregateRoot):
                     currency=new_equity.currency,
                 ),
                 limit=self.max_drawdown.value,
-                trigger_epoch_ms=at,
             )
             return new_state._raise(event)
 

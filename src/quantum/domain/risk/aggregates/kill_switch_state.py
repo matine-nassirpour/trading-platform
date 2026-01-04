@@ -65,7 +65,6 @@ class KillSwitchState(AggregateRoot):
 
         event = KillSwitchTriggerEvent(
             occurred_at=at,
-            trigger_epoch_ms=at,
             reason=reason,
             detail=detail,
         )
