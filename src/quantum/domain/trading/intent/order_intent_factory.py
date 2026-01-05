@@ -8,7 +8,14 @@ from quantum.domain.shared_kernel.value_objects.price import Price
 from quantum.domain.shared_kernel.value_objects.symbol import Symbol
 from quantum.domain.shared_kernel.value_objects.volume import PositiveVolume
 from quantum.domain.trading.context.trading_context import TradingContext
+from quantum.domain.trading.decision.boundary.decision_boundary import DecisionBoundary
+from quantum.domain.trading.decision.boundary.decision_boundary_policy import (
+    DecisionBoundaryPolicy,
+)
 from quantum.domain.trading.decision.decision_identity import DecisionIdentity
+from quantum.domain.trading.events.v1.decision_authorized_event import (
+    DecisionAuthorizedEvent,
+)
 from quantum.domain.trading.events.v1.order_intent_event import OrderIntentEvent
 from quantum.domain.trading.risk.exit_policy import ExitPolicy
 from quantum.domain.trading.value_objects.identifiers.intent_id import IntentId
@@ -105,18 +112,43 @@ class OrderIntentFactory:
         *,
         params: OrderIntentParameters,
         instrument: InstrumentSpec,
+        decision_boundary: DecisionBoundary,
         occurred_at: EpochMs,
-    ) -> OrderIntentEvent:
+    ) -> tuple[OrderIntentEvent, DecisionAuthorizedEvent]:
         """
         Validates and creates an OrderIntentEvent.
 
-        This method is the SINGLE valid way to emit OrderIntentEvent.
+        Governance rules:
+        - Decision MUST be authorized by a DecisionBoundary
+        - Authorization result is explicitly emitted as an event
+
+        Returns:
+        - OrderIntentEvent
+        - DecisionAuthorizedEvent
         """
 
+        # --- Structural validation --------------------------------------------
         OrderIntentFactory._validate_price_requirements(params)
         OrderIntentFactory._validate_sl_tp(params, instrument)
 
-        return OrderIntentEvent(
+        # --- Decision boundary evaluation -------------------------------------
+        boundary_result = DecisionBoundaryPolicy.evaluate(
+            boundary=decision_boundary,
+            decision=params.decision_identity,
+            context=params.trading_context,
+        )
+
+        if not boundary_result.authorized:
+            raise InvariantViolation(boundary_result.reason)
+
+        decision_authorized_event = DecisionAuthorizedEvent(
+            occurred_at=occurred_at,
+            intent_id=params.intent_id,
+            result=boundary_result,
+        )
+
+        # --- Intent emission --------------------------------------------------
+        order_intent_event = OrderIntentEvent(
             occurred_at=occurred_at,
             intent_id=params.intent_id,
             symbol=params.symbol,
@@ -132,3 +164,5 @@ class OrderIntentFactory:
             tp=params.tp,
             time_in_force=params.time_in_force,
         )
+
+        return order_intent_event, decision_authorized_event

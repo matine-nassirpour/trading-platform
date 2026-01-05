@@ -9,6 +9,7 @@ from quantum.domain.shared_kernel.errors.order_errors import (
     OrderNotFillable,
     OrderOverfill,
 )
+from quantum.domain.shared_kernel.primitives.entity import Entity
 from quantum.domain.shared_kernel.value_objects.volume import (
     NonNegativeVolume,
     PositiveVolume,
@@ -20,7 +21,7 @@ from quantum.domain.trading.value_objects.order.position_side import PositionSid
 
 
 @dataclass(frozen=True, eq=False)
-class Order:
+class Order(Entity):
     """
     Entity representing an order.
 
@@ -116,7 +117,11 @@ class Order:
 
     def register_fill(self, fill: ExecutionFill) -> Order:
         """
-        Registers a fill on the order.
+        Registers an execution fill on the order.
+
+        Guarantees:
+        - Order remains valid
+        - Volume constraints preserved
         """
         if not self.is_fillable():
             raise OrderNotFillable(f"Order {self.order_id} not fillable")
@@ -140,7 +145,7 @@ class Order:
 
     def cancel(self) -> Order:
         """
-        Cancels an order if it is not terminal.
+        Cancels the order if it is not in a terminal state.
         """
         if self.status.is_terminal():
             raise InvalidStateTransition(f"Cannot cancel order in state {self.status}")
