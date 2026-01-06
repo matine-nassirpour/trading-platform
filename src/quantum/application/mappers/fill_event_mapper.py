@@ -1,8 +1,8 @@
 from quantum.application.integration_events.broker.order_fill_event import (
     OrderFillEvent,
 )
-from quantum.domain.execution.value_objects.execution_cost import ExecutionCost
-from quantum.domain.execution.value_objects.execution_fill import ExecutionFill
+from quantum.domain.trading.execution.order.execution_fill import ExecutionFill
+from quantum.domain.trading.execution.settlement.execution_cost import ExecutionCost
 
 
 class FillIntegrationEventMapper:

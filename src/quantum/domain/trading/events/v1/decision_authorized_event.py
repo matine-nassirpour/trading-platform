@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import ClassVar
 
 from quantum.domain.shared_kernel.events.base_event import BaseEvent
-from quantum.domain.trading.decision.boundary.decision_boundary_result import (
+from quantum.domain.trading.decision.governance.boundary.decision_boundary_result import (
     DecisionBoundaryResult,
 )
 from quantum.domain.trading.value_objects.identifiers.intent_id import IntentId

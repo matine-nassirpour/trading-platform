@@ -257,26 +257,6 @@ trading-platform/
 │       │   │   └── __init__.py
 │       │   └── __init__.py
 │       ├── domain/
-│       │   ├── execution/
-│       │   │   ├── types/
-│       │   │   │   ├── __init__.py
-│       │   │   │   ├── deal_entry.py
-│       │   │   │   ├── deal_reason.py
-│       │   │   │   ├── execution_type.py
-│       │   │   │   ├── latency_phase.py
-│       │   │   │   ├── liquidity_side.py
-│       │   │   │   └── order_check_outcome.py
-│       │   │   ├── value_objects/
-│       │   │   │   ├── __init__.py
-│       │   │   │   ├── deal_id.py
-│       │   │   │   ├── execution_cost.py
-│       │   │   │   ├── execution_fill.py
-│       │   │   │   ├── execution_id.py
-│       │   │   │   ├── execution_metadata.py
-│       │   │   │   ├── execution_rejection.py
-│       │   │   │   ├── execution_report.py
-│       │   │   │   └── fee.py
-│       │   │   └── __init__.py
 │       │   ├── risk/
 │       │   │   ├── aggregates/
 │       │   │   │   ├── __init__.py
@@ -328,6 +308,7 @@ trading-platform/
 │       │   │   │   ├── aggregate_root.py
 │       │   │   │   ├── algebraic_monetary_value_object.py
 │       │   │   │   ├── closed_set_value_object.py
+│       │   │   │   ├── entity.py
 │       │   │   │   ├── monetary_amount.py
 │       │   │   │   ├── numeric_value_object.py
 │       │   │   │   └── value_object.py
@@ -354,45 +335,110 @@ trading-platform/
 │       │   │   │   └── volume.py
 │       │   │   └── __init__.py
 │       │   ├── trading/
+│       │   │   ├── capital/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── capital_allocation_intent.py
+│       │   │   │   ├── capital_fraction.py
+│       │   │   │   └── risk_budget_slice.py
 │       │   │   ├── context/
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── market_regime.py
 │       │   │   │   └── trading_context.py
 │       │   │   ├── decision/
-│       │   │   │   ├── __init__.py
-│       │   │   │   ├── decision_identity.py
-│       │   │   │   ├── decision_source.py
-│       │   │   │   ├── model_version.py
-│       │   │   │   └── strategy_id.py
+│       │   │   │   ├── governance/
+│       │   │   │   │   ├── boundary/
+│       │   │   │   │   │   ├── __init__.py
+│       │   │   │   │   │   ├── decision_boundary.py
+│       │   │   │   │   │   ├── decision_boundary_policy.py
+│       │   │   │   │   │   └── decision_boundary_result.py
+│       │   │   │   │   ├── lifecycle/
+│       │   │   │   │   │   ├── __init__.py
+│       │   │   │   │   │   ├── strategy_eligibility_policy.py
+│       │   │   │   │   │   ├── strategy_eligibility_result.py
+│       │   │   │   │   │   ├── strategy_lifecycle.py
+│       │   │   │   │   │   └── strategy_lifecycle_state.py
+│       │   │   │   │   └── __init__.py
+│       │   │   │   ├── identity/
+│       │   │   │   │   ├── confidence/
+│       │   │   │   │   │   ├── __init__.py
+│       │   │   │   │   │   ├── decision_confidence.py
+│       │   │   │   │   │   └── decision_confidence_level.py
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── decision_identity.py
+│       │   │   │   │   ├── decision_source.py
+│       │   │   │   │   ├── model_version.py
+│       │   │   │   │   └── strategy_id.py
+│       │   │   │   ├── outcome/
+│       │   │   │   │   ├── no_trade/
+│       │   │   │   │   │   ├── __init__.py
+│       │   │   │   │   │   ├── no_trade_decision.py
+│       │   │   │   │   │   ├── no_trade_decision_factory.py
+│       │   │   │   │   │   └── no_trade_reason.py
+│       │   │   │   │   ├── trade/
+│       │   │   │   │   │   ├── __init__.py
+│       │   │   │   │   │   └── order_intent_factory.py
+│       │   │   │   │   └── __init__.py
+│       │   │   │   └── __init__.py
 │       │   │   ├── events/
 │       │   │   │   ├── v1/
 │       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── decision_authorized_event.py
 │       │   │   │   │   ├── market_regime_changed_event.py
+│       │   │   │   │   ├── no_trade_decision_event.py
 │       │   │   │   │   ├── order_created_event.py
 │       │   │   │   │   ├── order_intent_event.py
 │       │   │   │   │   ├── order_sizing_event.py
 │       │   │   │   │   ├── order_submit_event.py
-│       │   │   │   │   └── sl_tp_configuration_changed_event.py
+│       │   │   │   │   ├── sl_tp_configuration_changed_event.py
+│       │   │   │   │   └── strategy_lifecycle_changed_event.py
 │       │   │   │   └── __init__.py
-│       │   │   ├── intent/
-│       │   │   │   ├── __init__.py
-│       │   │   │   ├── order_intent_factory.py
-│       │   │   │   └── trading_intent.py
-│       │   │   ├── order/
-│       │   │   │   ├── __init__.py
-│       │   │   │   └── order.py
-│       │   │   ├── position/
-│       │   │   │   ├── __init__.py
-│       │   │   │   ├── pnl_service.py
-│       │   │   │   └── position.py
-│       │   │   ├── pricing/
-│       │   │   │   ├── __init__.py
-│       │   │   │   ├── pricing_policy.py
-│       │   │   │   ├── quantization_service.py
-│       │   │   │   └── rounding_strategy.py
-│       │   │   ├── risk/
-│       │   │   │   ├── __init__.py
-│       │   │   │   └── exit_policy.py
+│       │   │   ├── execution/
+│       │   │   │   ├── analytics/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── execution_metadata.py
+│       │   │   │   │   └── execution_report.py
+│       │   │   │   ├── intent/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   └── trading_intent.py
+│       │   │   │   ├── order/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── deal_id.py
+│       │   │   │   │   ├── execution_fill.py
+│       │   │   │   │   ├── execution_id.py
+│       │   │   │   │   ├── order.py
+│       │   │   │   │   ├── order_status.py
+│       │   │   │   │   ├── order_type.py
+│       │   │   │   │   ├── position_side.py
+│       │   │   │   │   └── time_in_force.py
+│       │   │   │   ├── position/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── pnl_service.py
+│       │   │   │   │   └── position.py
+│       │   │   │   ├── pricing/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── price_rounding_mode.py
+│       │   │   │   │   ├── pricing_context.py
+│       │   │   │   │   ├── pricing_policy.py
+│       │   │   │   │   ├── quantization_service.py
+│       │   │   │   │   └── rounding_strategy.py
+│       │   │   │   ├── safety/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── execution_rejection.py
+│       │   │   │   │   ├── exit_policy.py
+│       │   │   │   │   └── sl_tp_change_reason.py
+│       │   │   │   ├── settlement/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── execution_cost.py
+│       │   │   │   │   └── fee.py
+│       │   │   │   ├── taxonomy/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── deal_entry.py
+│       │   │   │   │   ├── deal_reason.py
+│       │   │   │   │   ├── execution_type.py
+│       │   │   │   │   ├── latency_phase.py
+│       │   │   │   │   ├── liquidity_side.py
+│       │   │   │   │   └── order_check_outcome.py
+│       │   │   │   └── __init__.py
 │       │   │   ├── value_objects/
 │       │   │   │   ├── identifiers/
 │       │   │   │   │   ├── __init__.py
@@ -402,27 +448,14 @@ trading-platform/
 │       │   │   │   ├── instrument/
 │       │   │   │   │   ├── __init__.py
 │       │   │   │   │   ├── currency_pair.py
-│       │   │   │   │   └── instrument_spec.py
+│       │   │   │   │   ├── instrument_spec.py
+│       │   │   │   │   └── price_constraints.py
 │       │   │   │   ├── market/
 │       │   │   │   │   ├── __init__.py
 │       │   │   │   │   ├── contract_size.py
 │       │   │   │   │   ├── reference_price.py
 │       │   │   │   │   ├── tick_value.py
 │       │   │   │   │   └── volume_constraints.py
-│       │   │   │   ├── order/
-│       │   │   │   │   ├── __init__.py
-│       │   │   │   │   ├── order_status.py
-│       │   │   │   │   ├── order_type.py
-│       │   │   │   │   ├── position_side.py
-│       │   │   │   │   └── time_in_force.py
-│       │   │   │   ├── pricing/
-│       │   │   │   │   ├── __init__.py
-│       │   │   │   │   ├── price_constraints.py
-│       │   │   │   │   ├── price_rounding_mode.py
-│       │   │   │   │   └── pricing_context.py
-│       │   │   │   ├── risk/
-│       │   │   │   │   ├── __init__.py
-│       │   │   │   │   └── sl_tp_change_reason.py
 │       │   │   │   └── __init__.py
 │       │   │   └── __init__.py
 │       │   └── __init__.py

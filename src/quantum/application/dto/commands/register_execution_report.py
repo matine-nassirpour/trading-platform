@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from quantum.domain.execution.value_objects.execution_report import ExecutionReport
+from quantum.domain.trading.execution.analytics.execution_report import ExecutionReport
 
 
 @dataclass(frozen=True)

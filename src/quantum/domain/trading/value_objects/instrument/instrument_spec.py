@@ -8,13 +8,13 @@ from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 from quantum.domain.shared_kernel.value_objects.currency import Currency
 from quantum.domain.shared_kernel.value_objects.symbol import Symbol
 from quantum.domain.trading.value_objects.instrument.currency_pair import CurrencyPair
+from quantum.domain.trading.value_objects.instrument.price_constraints import (
+    PriceConstraints,
+)
 from quantum.domain.trading.value_objects.market.contract_size import ContractSize
 from quantum.domain.trading.value_objects.market.tick_value import TickValue
 from quantum.domain.trading.value_objects.market.volume_constraints import (
     VolumeConstraints,
-)
-from quantum.domain.trading.value_objects.pricing.price_constraints import (
-    PriceConstraints,
 )
 
 
