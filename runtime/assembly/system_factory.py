@@ -16,7 +16,9 @@ from quantum.application.ports.outbound.event_bus_port import EventBusPort
 from quantum.application.services.application_orchestrator import (
     ApplicationOrchestrator,
 )
-from quantum.infrastructure.events.bus import AsyncioEventBusAdapter
+from quantum.infrastructure.events.bus.asyncio_event_bus_adapter import (
+    AsyncioEventBusAdapter,
+)
 
 
 @dataclass(frozen=True)
