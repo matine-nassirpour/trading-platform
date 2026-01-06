@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Protocol, runtime_checkable
 
-from quantum.domain.trading.execution.intent.trading_intent import TradingIntent
+from quantum.domain.trading.intent.trading_intent import TradingIntent
 from quantum.domain.trading.value_objects.identifiers.intent_id import IntentId
 
 

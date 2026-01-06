@@ -1,11 +1,11 @@
 from quantum.domain.trading.context.trading_context import TradingContext
-from quantum.domain.trading.decision.governance.boundary.decision_boundary import (
+from quantum.domain.trading.decision.identity.decision_identity import DecisionIdentity
+from quantum.domain.trading.governance.boundary.decision_boundary import (
     DecisionBoundary,
 )
-from quantum.domain.trading.decision.governance.boundary.decision_boundary_result import (
+from quantum.domain.trading.governance.boundary.decision_boundary_result import (
     DecisionBoundaryResult,
 )
-from quantum.domain.trading.decision.identity.decision_identity import DecisionIdentity
 
 
 class DecisionBoundaryPolicy:

@@ -11,7 +11,7 @@ from quantum.domain.shared_kernel.value_objects.realized_pnl import RealizedPnL
 from quantum.domain.shared_kernel.value_objects.symbol import Symbol
 from quantum.domain.shared_kernel.value_objects.volume import PositiveVolume
 from quantum.domain.trading.execution.order.position_side import PositionSide
-from quantum.domain.trading.execution.position.pnl_service import PnLService
+from quantum.domain.trading.position.pnl_service import PnLService
 from quantum.domain.trading.value_objects.identifiers.position_id import PositionId
 
 

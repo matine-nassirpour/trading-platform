@@ -17,4 +17,4 @@ class ReferencePrice(NumericValueObject):
 
     def _validate_semantics(self) -> None:
         if self.value < Decimal("0"):
-            raise InvariantViolation("ReferencePrice must be strictly positive")
+            raise InvariantViolation("ReferencePrice must be non-negative")

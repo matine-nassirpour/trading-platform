@@ -1,8 +1,8 @@
 from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
-from quantum.domain.trading.decision.governance.lifecycle.strategy_eligibility_result import (
+from quantum.domain.trading.governance.lifecycle.strategy_eligibility_result import (
     StrategyEligibilityResult,
 )
-from quantum.domain.trading.decision.governance.lifecycle.strategy_lifecycle import (
+from quantum.domain.trading.governance.lifecycle.strategy_lifecycle import (
     StrategyLifecycle,
 )
 
