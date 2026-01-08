@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 
 
@@ -14,7 +15,9 @@ class StrategyEligibilityResult(ValueObject):
 
     def _validate(self) -> None:
         if not isinstance(self.eligible, bool):
-            raise ValueError("eligible must be a boolean")
+            raise InvariantViolation("eligible must be a boolean")
 
         if not isinstance(self.reason, str) or not self.reason.strip():
-            raise ValueError("StrategyEligibilityResult requires a non-empty reason")
+            raise InvariantViolation(
+                "StrategyEligibilityResult requires a non-empty reason"
+            )

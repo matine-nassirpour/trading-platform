@@ -1,124 +1,74 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
-
-from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.errors.position_errors import PositionAlreadyClosed
-from quantum.domain.shared_kernel.primitives.aggregate_root import AggregateRoot
-from quantum.domain.shared_kernel.value_objects.currency import Currency
+from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import (
+    EventSourcedAggregateRoot,
+)
+from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
 from quantum.domain.shared_kernel.value_objects.price import Price
-from quantum.domain.shared_kernel.value_objects.realized_pnl import RealizedPnL
-from quantum.domain.shared_kernel.value_objects.symbol import Symbol
 from quantum.domain.shared_kernel.value_objects.volume import PositiveVolume
+from quantum.domain.trading.events.v1.position_closed_event import PositionClosedEvent
+from quantum.domain.trading.events.v1.position_opened_event import PositionOpenedEvent
 from quantum.domain.trading.execution.order.position_side import PositionSide
-from quantum.domain.trading.position.pnl_service import PnLService
 from quantum.domain.trading.value_objects.identifiers.position_id import PositionId
 
 
-@dataclass(frozen=True, eq=False)
-class Position(AggregateRoot):
-    """
-    Aggregate Root representing a trading position.
-
-    Domain semantics:
-    - A Position is opened exactly once
-    - A Position is closed at most once
-    - Realized PnL is final once closed
-    - Currency consistency is enforced at aggregate level
-
-    Identity:
-    - PositionId
-    """
-
+class Position(EventSourcedAggregateRoot):
     position_id: PositionId
-    symbol: Symbol
     side: PositionSide
     volume: PositiveVolume
     entry_price: Price
-    realized_pnl: RealizedPnL
     closed: bool = False
-
-    # --- Identity semantics ---------------------------------------------------
-
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, Position):
-            return False
-        return self.position_id == other.position_id
-
-    def __hash__(self) -> int:
-        return hash(self.position_id)
-
-    # --- Invariants -----------------------------------------------------------
-
-    def _validate(self) -> None:
-        # Money already guarantees currency correctness and finiteness,
-        # but the aggregate guarantees semantic consistency.
-
-        if not isinstance(self.realized_pnl, RealizedPnL):
-            raise InvariantViolation("Position must have a valid Money PnL")
-
-        if self.closed:
-            # When closed, realized_pnl is final and meaningful.
-            # No further invariant is required here, but the state is explicit.
-            pass
-
-        if not self.closed:
-            # When open, realized_pnl must be the canonical zero.
-            if self.realized_pnl.value != 0:
-                raise InvariantViolation("Open Position must have zero realized PnL")
 
     # --- Factory --------------------------------------------------------------
 
     @staticmethod
     def open(
         *,
+        occurred_at: EpochMs,
         position_id: PositionId,
-        symbol: Symbol,
         side: PositionSide,
         volume: PositiveVolume,
         entry_price: Price,
-        currency: Currency,
     ) -> Position:
-        """
-        Canonical factory for opening a Position.
+        pos = Position.__new__(Position)
+        EventSourcedAggregateRoot.__init__(pos)
 
-        Guarantees:
-        - realized_pnl starts at zero
-        - currency is explicitly bound
-        """
-        return Position(
-            position_id=position_id,
-            symbol=symbol,
-            side=side,
-            volume=volume,
-            entry_price=entry_price,
-            realized_pnl=RealizedPnL.zero(currency),
-            closed=False,
+        pos._raise(
+            PositionOpenedEvent(
+                occurred_at=occurred_at,
+                position_id=position_id,
+                side=side,
+                volume=volume,
+                entry_price=entry_price,
+            )
         )
+        return pos
 
     # --- Commands -------------------------------------------------------------
 
-    def close(self, *, exit_price: Price) -> Position:
-        """
-        Closes the position and computes realized PnL.
-
-        Rules:
-        - A position can only be closed once
-        - PnL computation is deterministic and side-aware
-        """
+    def close(self, *, exit_price: Price, occurred_at: EpochMs) -> None:
         if self.closed:
             raise PositionAlreadyClosed("Position already closed")
 
-        pnl = PnLService.compute_realized_pnl(
-            entry_price=self.entry_price,
-            exit_price=exit_price,
-            volume=self.volume,
-            side=self.side,
-            currency=self.realized_pnl.currency,
+        self._raise(
+            PositionClosedEvent(
+                occurred_at=occurred_at,
+                position_id=self.position_id,
+                side=self.side,
+                volume=self.volume,
+                exit_price=exit_price,
+            )
         )
 
-        return replace(
-            self,
-            realized_pnl=pnl,
-            closed=True,
-        )
+    # --- Event application ----------------------------------------------------
+
+    def _apply_position_opened_event(self, event: PositionOpenedEvent) -> None:
+        self.position_id = event.position_id
+        self.side = event.side
+        self.volume = event.volume
+        self.entry_price = event.entry_price
+        self.closed = False
+
+    def _apply_position_closed_event(self, event: PositionClosedEvent) -> None:
+        self.closed = True

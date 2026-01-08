@@ -162,7 +162,7 @@ class TradingIntent(AggregateRoot):
 
         for order in self.orders:
             if order.order_id == order_id:
-                updated_orders.append(order.register_fill(fill))
+                updated_orders.append(order.register_fill(fill=fill))
                 found = True
             else:
                 updated_orders.append(order)

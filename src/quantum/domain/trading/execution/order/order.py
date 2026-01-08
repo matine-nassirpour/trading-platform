@@ -1,17 +1,23 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from decimal import Decimal
 
-from quantum.domain.shared_kernel.errors.invariants import InvalidStateTransition
 from quantum.domain.shared_kernel.errors.order_errors import (
     OrderNotFillable,
     OrderOverfill,
 )
-from quantum.domain.shared_kernel.primitives.entity import Entity
+from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import (
+    EventSourcedAggregateRoot,
+)
 from quantum.domain.shared_kernel.value_objects.volume import (
     NonNegativeVolume,
     PositiveVolume,
+)
+from quantum.domain.trading.events.v1.order_cancelled_event import OrderCancelledEvent
+from quantum.domain.trading.events.v1.order_created_event import OrderCreatedEvent
+from quantum.domain.trading.events.v1.order_fill_registered_event import (
+    OrderFillRegisteredEvent,
 )
 from quantum.domain.trading.execution.order.execution_fill import ExecutionFill
 from quantum.domain.trading.execution.order.order_status import OrderStatus
@@ -20,8 +26,8 @@ from quantum.domain.trading.execution.order.position_side import PositionSide
 from quantum.domain.trading.value_objects.identifiers.order_id import OrderId
 
 
-@dataclass(frozen=True, eq=False)
-class Order(Entity):
+@dataclass(eq=False)
+class Order(EventSourcedAggregateRoot):
     """
     Entity representing an order.
 
@@ -33,25 +39,42 @@ class Order(Entity):
     order_type: OrderType
     side: PositionSide
 
-    requested_volume: PositiveVolume
-    fills: tuple[ExecutionFill, ...]
-    status: OrderStatus
+    requested_volume: PositiveVolume | None = None
+    fills: tuple[ExecutionFill, ...] = ()
+    status: OrderStatus | None = None
 
-    # ---  Identity semantics --------------------------------------------------
+    # --- Commands -------------------------------------------------------------
 
-    def __eq__(self, other: object) -> bool:
-        return isinstance(other, Order) and self.order_id == other.order_id
+    def register_fill(self, *, fill: ExecutionFill) -> None:
+        if not self.status.is_fillable():
+            raise OrderNotFillable(f"Order {self.order_id} not fillable")
 
-    def __hash__(self) -> int:
-        return hash(self.order_id)
+        if fill.volume.value > self.remaining_volume.value:
+            raise OrderOverfill("Execution fill exceeds remaining order volume")
+
+        self._raise(
+            OrderFillRegisteredEvent(
+                occurred_at=fill.executed_at,
+                order_id=self.order_id,
+                fill=fill,
+            )
+        )
+
+    def cancel(self, *, occurred_at) -> None:
+        if self.status.is_terminal():
+            raise OrderNotFillable("Order already terminal")
+
+        self._raise(
+            OrderCancelledEvent(
+                occurred_at=occurred_at,
+                order_id=self.order_id,
+            )
+        )
 
     # --- Properties  ----------------------------------------------------------
 
     @property
     def filled_volume(self) -> NonNegativeVolume:
-        """
-        Canonical filled volume, derived from fills.
-        """
         total = sum(
             (fill.volume.value for fill in self.fills),
             start=Decimal("0"),
@@ -60,97 +83,27 @@ class Order(Entity):
 
     @property
     def remaining_volume(self) -> NonNegativeVolume:
-        """
-        Remaining executable volume.
-        """
         remaining = self.requested_volume.value - self.filled_volume.value
         return NonNegativeVolume(remaining)
 
-    # --- Invariants -----------------------------------------------------------
+    # --- Event application ----------------------------------------------------
 
-    def _validate(self) -> None:
-        self._validate_fills_container()
-        self._validate_fills_types()
-        self._validate_volume_consistency()
-        self._validate_filled_state()
-        self._validate_pending_state()
+    def _apply_order_created_event(self, event: OrderCreatedEvent) -> None:
+        self.order_id = event.order_id
+        self.requested_volume = event.volume
+        self.fills = ()
+        self.status = OrderStatus.pending()
 
-    def _validate_fills_container(self) -> None:
-        if not isinstance(self.fills, tuple):
-            raise InvalidStateTransition(
-                "Execution fills must be stored as an immutable tuple"
-            )
+    def _apply_order_fill_registered_event(
+        self, event: OrderFillRegisteredEvent
+    ) -> None:
+        self.fills = self.fills + (event.fill,)
 
-    def _validate_fills_types(self) -> None:
-        for fill in self.fills:
-            if not isinstance(fill, ExecutionFill):
-                raise InvalidStateTransition(
-                    "Order may only contain ExecutionFill instances"
-                )
-
-    def _validate_volume_consistency(self) -> None:
-        if self.filled_volume.value > self.requested_volume.value:
-            raise InvalidStateTransition(
-                "Total filled volume cannot exceed requested volume"
-            )
-
-    def _validate_filled_state(self) -> None:
-        if self.status.is_filled():
-            if self.remaining_volume.value != Decimal("0"):
-                raise InvalidStateTransition(
-                    "FILLED order must have zero remaining volume"
-                )
-
-    def _validate_pending_state(self) -> None:
-        if self.status.is_pending() and self.fills:
-            raise InvalidStateTransition(
-                "PENDING order must not contain execution fills"
-            )
-
-    # --- Domain behavior ------------------------------------------------------
-
-    def is_fillable(self) -> bool:
-        """
-        Orders are fillable as long as they are not terminal.
-        """
-        return self.status.is_fillable()
-
-    def register_fill(self, fill: ExecutionFill) -> Order:
-        """
-        Registers an execution fill on the order.
-
-        Guarantees:
-        - Order remains valid
-        - Volume constraints preserved
-        """
-        if not self.is_fillable():
-            raise OrderNotFillable(f"Order {self.order_id} not fillable")
-
-        if fill.volume.value > self.remaining_volume.value:
-            raise OrderOverfill("Execution fill exceeds remaining order volume")
-
-        new_fills = self.fills + (fill,)
-
-        new_status = (
+        self.status = (
             OrderStatus.filled()
-            if fill.volume.value == self.remaining_volume.value
+            if self.remaining_volume.value == Decimal("0")
             else OrderStatus.partially_filled()
         )
 
-        return replace(
-            self,
-            fills=new_fills,
-            status=new_status,
-        )
-
-    def cancel(self) -> Order:
-        """
-        Cancels the order if it is not in a terminal state.
-        """
-        if self.status.is_terminal():
-            raise InvalidStateTransition(f"Cannot cancel order in state {self.status}")
-
-        return replace(
-            self,
-            status=OrderStatus.cancelled(),
-        )
+    def _apply_order_cancelled_event(self, event: OrderCancelledEvent) -> None:
+        self.status = OrderStatus.cancelled()

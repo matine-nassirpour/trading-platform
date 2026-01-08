@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 
 
@@ -16,7 +17,9 @@ class DecisionBoundaryResult(ValueObject):
 
     def _validate(self) -> None:
         if not isinstance(self.authorized, bool):
-            raise ValueError("authorized must be a boolean")
+            raise InvariantViolation("authorized must be a boolean")
 
         if not isinstance(self.reason, str) or not self.reason.strip():
-            raise ValueError("DecisionBoundaryResult requires a non-empty reason")
+            raise InvariantViolation(
+                "DecisionBoundaryResult requires a non-empty reason"
+            )
