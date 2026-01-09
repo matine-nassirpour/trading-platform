@@ -5,10 +5,12 @@ from quantum.domain.risk.events.v1.max_drawdown_exceeded_event import (
     MaxDrawdownExceededEvent,
 )
 from quantum.domain.risk.policies.risk_policy import RiskPolicy
-from quantum.domain.risk.value_objects.drawdown import Drawdown
 from quantum.domain.risk.value_objects.equity import Equity
 from quantum.domain.risk.value_objects.risk_limits import RiskLimits
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.money.contextual_monetary_amount import (
+    ContextualMonetaryAmount,
+)
 from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import (
     EventSourcedAggregateRoot,
 )
@@ -50,35 +52,29 @@ class RiskState(EventSourcedAggregateRoot):
     # --- Commands -------------------------------------------------------------
 
     def register_pnl(self, *, pnl: RealizedPnL, at: EpochMs) -> None:
+        if pnl.context != self.equity.context:
+            raise InvariantViolation("MoneyContext mismatch")
+
         if pnl.currency != self.equity.currency:
             raise InvariantViolation("PnL currency mismatch")
 
-        # Pure calculation (no state mutation)
-        new_equity = self.equity.add(pnl)
-        new_peak = (
-            new_equity
-            if new_equity.value > self.equity_peak.value
-            else self.equity_peak
-        )
-
-        drawdown_value = new_peak.value - new_equity.value
-
-        drawdown = Drawdown(
-            value=drawdown_value,
-            currency=new_equity.currency,
-        )
-
-        # Emit equity transition
         self._raise(
             EquityAdjustedEvent(
                 occurred_at=at,
                 pnl=pnl,
-                new_equity=new_equity,
-                new_equity_peak=new_peak,
+                new_equity=self.equity.add(pnl),
+                new_equity_peak=max(
+                    self.equity_peak, self.equity.add(pnl), key=lambda e: e.value
+                ),
             )
         )
 
-        # Evaluate risk on projected state
+        drawdown = ContextualMonetaryAmount(
+            value=self.equity_peak.value - self.equity.value,
+            currency=self.equity.currency,
+            context=self.equity.context,
+        )
+
         breach = RiskPolicy.evaluate_drawdown(
             current_drawdown=drawdown,
             limits=self.limits,

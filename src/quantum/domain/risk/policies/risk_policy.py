@@ -3,8 +3,10 @@ from quantum.domain.risk.value_objects.risk_breach_kind import RiskBreachKind
 from quantum.domain.risk.value_objects.risk_limits import RiskLimits
 from quantum.domain.risk.value_objects.risk_threshold_policy import RiskThresholdPolicy
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.money.contextual_monetary_amount import (
+    ContextualMonetaryAmount,
+)
 from quantum.domain.shared_kernel.policies.domain_policy import DomainPolicy
-from quantum.domain.shared_kernel.primitives.monetary_amount import MonetaryAmount
 
 
 class RiskPolicy(DomainPolicy):
@@ -15,18 +17,19 @@ class RiskPolicy(DomainPolicy):
     @staticmethod
     def _breached(
         *,
-        current: MonetaryAmount,
-        limit: MonetaryAmount,
+        current: ContextualMonetaryAmount,
+        limit: ContextualMonetaryAmount,
         policy: RiskThresholdPolicy,
     ) -> bool:
-        if not isinstance(current, MonetaryAmount) or not isinstance(
-            limit, MonetaryAmount
-        ):
-            raise InvariantViolation("RiskPolicy requires MonetaryAmount values")
+        if not isinstance(current, ContextualMonetaryAmount):
+            raise InvariantViolation("RiskPolicy requires ContextualMonetaryAmount")
 
-        if current.currency != limit.currency:
+        if not isinstance(limit, ContextualMonetaryAmount):
+            raise InvariantViolation("RiskPolicy requires ContextualMonetaryAmount")
+
+        if current.context != limit.context:
             raise InvariantViolation(
-                f"Currency mismatch: {current.currency} vs {limit.currency}"
+                f"MoneyContext mismatch: {current.context} vs {limit.context}"
             )
 
         if policy == RiskThresholdPolicy.inclusive():
@@ -39,7 +42,7 @@ class RiskPolicy(DomainPolicy):
     @staticmethod
     def evaluate_drawdown(
         *,
-        current_drawdown: MonetaryAmount,
+        current_drawdown: ContextualMonetaryAmount,
         limits: RiskLimits,
     ) -> RiskBreach | None:
         if RiskPolicy._breached(
@@ -58,7 +61,7 @@ class RiskPolicy(DomainPolicy):
     @staticmethod
     def evaluate_notional(
         *,
-        notional: MonetaryAmount,
+        notional: ContextualMonetaryAmount,
         limits: RiskLimits,
     ) -> RiskBreach | None:
         if RiskPolicy._breached(
@@ -77,7 +80,7 @@ class RiskPolicy(DomainPolicy):
     @staticmethod
     def evaluate_daily_loss(
         *,
-        daily_loss: MonetaryAmount,
+        daily_loss: ContextualMonetaryAmount,
         limits: RiskLimits,
     ) -> RiskBreach | None:
         if RiskPolicy._breached(

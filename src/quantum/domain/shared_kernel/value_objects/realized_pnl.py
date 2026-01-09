@@ -3,22 +3,24 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal
 
-from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.primitives.algebraic_monetary_value_object import (
-    AlgebraicMonetaryValueObject,
+from quantum.domain.shared_kernel.money.money_context import MoneyContext
+from quantum.domain.shared_kernel.primitives.contextual_algebraic_monetary_value_object import (
+    ContextualAlgebraicMonetaryValueObject,
 )
-from quantum.domain.shared_kernel.primitives.monetary_amount import MonetaryAmount
 from quantum.domain.shared_kernel.value_objects.currency import Currency
 
 
 @dataclass(frozen=True)
-class RealizedPnL(AlgebraicMonetaryValueObject):
+class RealizedPnL(ContextualAlgebraicMonetaryValueObject):
     """
     Realized profit and loss from executed trades.
+
+    PnL is a contextual monetary flux.
     """
 
     value: Decimal
     currency: Currency
+    context: MoneyContext
 
     def _validate_semantics(self) -> None:
         # No restriction: PnL ∈ ℝ
@@ -26,25 +28,28 @@ class RealizedPnL(AlgebraicMonetaryValueObject):
 
     # --- Algebraic operations (explicit, safe) --------------------------------
 
-    def add(self, other: MonetaryAmount) -> RealizedPnL:
-        if not isinstance(other, RealizedPnL):
-            raise InvariantViolation("RealizedPnL can only be added to RealizedPnL")
-
+    def add(self, other: RealizedPnL) -> RealizedPnL:
         self._check_currency(other)
-        return RealizedPnL(self.value + other.value, self.currency)
+        self._check_context(other)
+        return RealizedPnL(
+            value=self.value + other.value,
+            currency=self.currency,
+            context=self.context,
+        )
 
-    def subtract(self, other: MonetaryAmount) -> RealizedPnL:
-        if not isinstance(other, RealizedPnL):
-            raise InvariantViolation(
-                "RealizedPnL can only be subtracted from RealizedPnL"
-            )
-
+    def subtract(self, other: RealizedPnL) -> RealizedPnL:
         self._check_currency(other)
-        return RealizedPnL(self.value - other.value, self.currency)
+        self._check_context(other)
+        return RealizedPnL(
+            value=self.value - other.value,
+            currency=self.currency,
+            context=self.context,
+        )
 
     @staticmethod
-    def zero(currency: Currency) -> RealizedPnL:
+    def zero(context: MoneyContext) -> RealizedPnL:
         return RealizedPnL(
             value=Decimal("0"),
-            currency=currency,
+            currency=context.reporting_currency,
+            context=context,
         )

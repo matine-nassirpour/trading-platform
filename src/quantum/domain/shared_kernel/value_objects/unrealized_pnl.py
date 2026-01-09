@@ -3,27 +3,22 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal
 
-from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.primitives.algebraic_monetary_value_object import (
-    AlgebraicMonetaryValueObject,
+from quantum.domain.shared_kernel.money.money_context import MoneyContext
+from quantum.domain.shared_kernel.primitives.contextual_algebraic_monetary_value_object import (
+    ContextualAlgebraicMonetaryValueObject,
 )
-from quantum.domain.shared_kernel.primitives.monetary_amount import MonetaryAmount
 from quantum.domain.shared_kernel.value_objects.currency import Currency
 
 
 @dataclass(frozen=True)
-class UnrealizedPnL(AlgebraicMonetaryValueObject):
+class UnrealizedPnL(ContextualAlgebraicMonetaryValueObject):
     """
-    Unrealized Profit and Loss.
-
-    Properties:
-    - Derived, non-settled monetary variation
-    - Can be positive, zero, or negative
-    - Algebraically composable
+    Unrealized PnL bound to a MoneyContext.
     """
 
     value: Decimal
     currency: Currency
+    context: MoneyContext
 
     # --- Invariants -----------------------------------------------------------
 
@@ -33,36 +28,28 @@ class UnrealizedPnL(AlgebraicMonetaryValueObject):
 
     # --- Algebraic operations -------------------------------------------------
 
-    def add(self, other: MonetaryAmount) -> UnrealizedPnL:
-        if not isinstance(other, UnrealizedPnL):
-            raise InvariantViolation("UnrealizedPnL can only be added to UnrealizedPnL")
-
+    def add(self, other: UnrealizedPnL) -> UnrealizedPnL:
         self._check_currency(other)
-
+        self._check_context(other)
         return UnrealizedPnL(
             value=self.value + other.value,
             currency=self.currency,
+            context=self.context,
         )
 
-    def subtract(self, other: MonetaryAmount) -> UnrealizedPnL:
-        if not isinstance(other, UnrealizedPnL):
-            raise InvariantViolation(
-                "UnrealizedPnL can only be subtracted from UnrealizedPnL"
-            )
-
+    def subtract(self, other: UnrealizedPnL) -> UnrealizedPnL:
         self._check_currency(other)
-
+        self._check_context(other)
         return UnrealizedPnL(
             value=self.value - other.value,
             currency=self.currency,
+            context=self.context,
         )
 
     @staticmethod
-    def zero(currency: Currency) -> UnrealizedPnL:
-        """
-        Canonical zero unrealized PnL.
-        """
+    def zero(context: MoneyContext) -> UnrealizedPnL:
         return UnrealizedPnL(
             value=Decimal("0"),
-            currency=currency,
+            currency=context.reporting_currency,
+            context=context,
         )
