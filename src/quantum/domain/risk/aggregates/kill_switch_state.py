@@ -27,16 +27,6 @@ class KillSwitchState(EventSourcedAggregateRoot):
     triggered_at: EpochMs | None
     reason: KillSwitchReason | None
 
-    # --- Factory --------------------------------------------------------------
-
-    @staticmethod
-    def arm(*, at: EpochMs) -> KillSwitchState:
-        ks = KillSwitchState.__new__(KillSwitchState)
-        EventSourcedAggregateRoot.__init__(ks)
-
-        ks._raise(KillSwitchArmedEvent(occurred_at=at))
-        return ks
-
     # --- Commands -------------------------------------------------------------
 
     def trigger(

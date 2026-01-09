@@ -15,7 +15,7 @@ class RiskPolicy(DomainPolicy):
     """
 
     @staticmethod
-    def _breached(
+    def _is_breached(
         *,
         current: ContextualMonetaryAmount,
         limit: ContextualMonetaryAmount,
@@ -32,10 +32,16 @@ class RiskPolicy(DomainPolicy):
                 f"MoneyContext mismatch: {current.context} vs {limit.context}"
             )
 
-        if policy == RiskThresholdPolicy.inclusive():
+        mode = policy.value  # canonical closed-set value
+
+        if mode == "inclusive":
             return current.value >= limit.value
 
-        return current.value > limit.value
+        if mode == "exclusive":
+            return current.value > limit.value
+
+        # This is unreachable by construction, but protects against future corruption
+        raise InvariantViolation(f"Unknown RiskThresholdPolicy: {mode}")
 
     # --- Public evaluation rules ----------------------------------------------
 
@@ -45,7 +51,7 @@ class RiskPolicy(DomainPolicy):
         current_drawdown: ContextualMonetaryAmount,
         limits: RiskLimits,
     ) -> RiskBreach | None:
-        if RiskPolicy._breached(
+        if RiskPolicy._is_breached(
             current=current_drawdown,
             limit=limits.max_drawdown,
             policy=limits.threshold_policy,
@@ -64,7 +70,7 @@ class RiskPolicy(DomainPolicy):
         notional: ContextualMonetaryAmount,
         limits: RiskLimits,
     ) -> RiskBreach | None:
-        if RiskPolicy._breached(
+        if RiskPolicy._is_breached(
             current=notional,
             limit=limits.max_notional,
             policy=limits.threshold_policy,
@@ -83,7 +89,7 @@ class RiskPolicy(DomainPolicy):
         daily_loss: ContextualMonetaryAmount,
         limits: RiskLimits,
     ) -> RiskBreach | None:
-        if RiskPolicy._breached(
+        if RiskPolicy._is_breached(
             current=daily_loss,
             limit=limits.max_daily_loss,
             policy=limits.threshold_policy,

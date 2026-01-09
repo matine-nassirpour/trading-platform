@@ -4,22 +4,24 @@ from dataclasses import dataclass
 from decimal import Decimal
 
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.primitives.monetary_amount import MonetaryAmount
-from quantum.domain.shared_kernel.value_objects.currency import Currency
+from quantum.domain.shared_kernel.money.contextual_monetary_amount import (
+    ContextualMonetaryAmount,
+)
 
 
 @dataclass(frozen=True)
-class Drawdown(MonetaryAmount):
+class Drawdown(ContextualMonetaryAmount):
     """
-    Positive drawdown expressed in monetary units.
+    Drawdown = equity_peak − equity.
 
-    NOTE:
-    - NOT algebraically composable
+    Properties:
+    - Always ≥ 0
+    - Bound to a MoneyContext
+    - Non-algebraic
     """
-
-    value: Decimal
-    currency: Currency
 
     def _validate_semantics(self) -> None:
+        super()._validate_semantics()
+
         if self.value < Decimal("0"):
             raise InvariantViolation("Drawdown must be non-negative")
