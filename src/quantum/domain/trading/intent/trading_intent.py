@@ -10,22 +10,23 @@ from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import
 from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
 from quantum.domain.shared_kernel.value_objects.symbol import Symbol
 from quantum.domain.trading.events.v1.order_created_event import OrderCreatedEvent
+from quantum.domain.trading.events.v1.order_intent_event import OrderIntentEvent
 from quantum.domain.trading.events.v1.order_submit_event import OrderSubmitEvent
 from quantum.domain.trading.execution.order.order import Order
-from quantum.domain.trading.execution.order.position_side import PositionSide
 from quantum.domain.trading.value_objects.identifiers.intent_id import IntentId
+from quantum.domain.trading.value_objects.identifiers.order_id import OrderId
 
 
 class TradingIntent(EventSourcedAggregateRoot):
     """
     Canonical event-sourced TradingIntent aggregate.
+    Represents a governed trading decision envelope.
     """
 
     _intent_id: IntentId
     _symbol: Symbol
-    _side: PositionSide
-    _orders: tuple[Order, ...] = ()
-    _submitted: bool = False
+    _orders: dict[OrderId, Order]
+    _submitted: bool
 
     # --- Factory --------------------------------------------------------------
 
@@ -34,12 +35,18 @@ class TradingIntent(EventSourcedAggregateRoot):
         *,
         intent_id: IntentId,
         symbol: Symbol,
+        occurred_at: EpochMs,
     ) -> TradingIntent:
         intent = TradingIntent()
-        intent._intent_id = intent_id
-        intent._symbol = symbol
-        intent._orders = {}
-        intent._submitted = False
+
+        intent._raise(
+            OrderIntentEvent(
+                occurred_at=occurred_at,
+                intent_id=intent_id,
+                symbol=symbol,
+            )
+        )
+
         return intent
 
     # --- Commands -------------------------------------------------------------
@@ -57,37 +64,57 @@ class TradingIntent(EventSourcedAggregateRoot):
             )
         )
 
-    def create_order(
-        self,
-        *,
-        order: Order,
-        at: EpochMs,
-    ) -> None:
+    def attach_order(self, *, order: Order, at: EpochMs) -> None:
         if not self._submitted:
-            raise InvalidStateTransition("Cannot create order before submission")
+            raise InvalidStateTransition("Cannot attach order before submission")
 
-        if order._order_id in self._orders:
-            raise InvariantViolation("Duplicate OrderId")
+        if order.order_id in self._orders:
+            raise InvariantViolation("Duplicate OrderId in TradingIntent")
 
         self._raise(
             OrderCreatedEvent(
                 occurred_at=at,
                 intent_id=self._intent_id,
-                order_id=order._order_id,
+                order_id=order.order_id,
                 symbol=self._symbol,
-                volume=order._requested_volume,
+                order_type=order.order_type,
+                side=order.side,
+                volume=order.requested_volume,
             )
         )
 
-        self._orders[order._order_id] = order
-
     # --- Event application ----------------------------------------------------
+
+    def _apply_tradingintentcreatedevent(self, event: OrderIntentEvent) -> None:
+        self._intent_id = event.intent_id
+        self._symbol = event.symbol
+        self._orders = {}
+        self._submitted = False
 
     def _apply_ordersubmitevent(self, event: OrderSubmitEvent) -> None:
         self._submitted = True
 
     def _apply_ordercreatedevent(self, event: OrderCreatedEvent) -> None:
-        pass  # structural event, Order owns its own state
+        # Structural linkage only — Order owns its own lifecycle
+        self._orders[event.order_id] = Order.rehydrate_from_events([])
+
+    # --- Derived properties ---------------------------------------------------
+
+    @property
+    def intent_id(self) -> IntentId:
+        return self._intent_id
+
+    @property
+    def symbol(self) -> Symbol:
+        return self._symbol
+
+    @property
+    def is_submitted(self) -> bool:
+        return self._submitted
+
+    @property
+    def orders(self) -> dict[OrderId, Order]:
+        return dict(self._orders)
 
     # --- Aggregate invariants -------------------------------------------------
 
@@ -98,8 +125,8 @@ class TradingIntent(EventSourcedAggregateRoot):
         if not isinstance(self._symbol, Symbol):
             raise InvariantViolation("Symbol missing")
 
-        if not isinstance(self._submitted, bool):
-            raise InvariantViolation("Invalid submission flag")
-
         if not isinstance(self._orders, dict):
             raise InvariantViolation("Orders container corrupted")
+
+        if not isinstance(self._submitted, bool):
+            raise InvariantViolation("Invalid submission flag")

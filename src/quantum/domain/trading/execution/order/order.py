@@ -35,17 +35,18 @@ class Order(EventSourcedAggregateRoot):
     _order_id: OrderId
     _order_type: OrderType
     _side: PositionSide
-
-    _requested_volume: PositiveVolume | None = None
-    _fills: tuple[ExecutionFill, ...] = ()
-    _status: OrderStatus | None = None
+    _requested_volume: PositiveVolume
+    _fills: tuple[ExecutionFill, ...]
+    _status: OrderStatus
 
     # --- Factory --------------------------------------------------------------
 
     @staticmethod
     def create(
         *,
+        intent_id,
         order_id: OrderId,
+        symbol,
         order_type: OrderType,
         side: PositionSide,
         volume: PositiveVolume,
@@ -55,12 +56,14 @@ class Order(EventSourcedAggregateRoot):
         order._raise(
             OrderCreatedEvent(
                 occurred_at=occurred_at,
+                intent_id=intent_id,
                 order_id=order_id,
+                symbol=symbol,
+                order_type=order_type,
+                side=side,
                 volume=volume,
             )
         )
-        order._order_type = order_type
-        order._side = side
         return order
 
     # --- Commands -------------------------------------------------------------
@@ -80,7 +83,7 @@ class Order(EventSourcedAggregateRoot):
             )
         )
 
-    def cancel(self, *, occurred_at) -> None:
+    def cancel(self, *, occurred_at: EpochMs) -> None:
         if self._status.is_terminal():
             raise OrderNotFillable("Order already terminal")
 
@@ -100,16 +103,15 @@ class Order(EventSourcedAggregateRoot):
 
     @property
     def filled_volume(self) -> NonNegativeVolume:
-        total = sum(
-            (f.volume.value for f in self._fills),
-            start=Decimal("0"),
-        )
+        total = sum((f.volume.value for f in self._fills), start=Decimal("0"))
         return NonNegativeVolume(total)
 
     # --- Event application ----------------------------------------------------
 
     def _apply_ordercreatedevent(self, event: OrderCreatedEvent) -> None:
         self._order_id = event.order_id
+        self._order_type = event.order_type
+        self._side = event.side
         self._requested_volume = event.volume
         self._fills = ()
         self._status = OrderStatus.pending()
@@ -128,42 +130,42 @@ class Order(EventSourcedAggregateRoot):
     # --- Aggregate invariants -------------------------------------------------
 
     def _validate_state(self) -> None:
-        self._assert_has_identity()
+        self._assert_identity()
+        self._assert_structure()
         self._assert_volume_integrity()
-        self._assert_fill_integrity()
         self._assert_status_consistency()
 
-    def _assert_has_identity(self) -> None:
-        if not hasattr(self, "order_id"):
+    def _assert_identity(self) -> None:
+        if not isinstance(self._order_id, OrderId):
             raise InvariantViolation("OrderId missing")
 
-    def _assert_volume_integrity(self) -> None:
-        if not hasattr(self, "requested_volume"):
+    def _assert_structure(self) -> None:
+        if not isinstance(self._order_type, OrderType):
+            raise InvariantViolation("OrderType missing")
+
+        if not isinstance(self._side, PositionSide):
+            raise InvariantViolation("PositionSide missing")
+
+        if not isinstance(self._requested_volume, PositiveVolume):
             raise InvariantViolation("Requested volume missing")
 
-        if self.requested_volume.value <= 0:
-            raise InvariantViolation("Requested volume must be > 0")
+        if not isinstance(self._status, OrderStatus):
+            raise InvariantViolation("OrderStatus missing")
 
-    def _assert_fill_integrity(self) -> None:
-        if not hasattr(self, "fills"):
-            raise InvariantViolation("Fills container missing")
-
-        filled = sum(f.volume.value for f in self.fills)
+    def _assert_volume_integrity(self) -> None:
+        filled = sum(f.volume.value for f in self._fills)
 
         if filled < 0:
             raise InvariantViolation("Filled volume cannot be negative")
 
-        if filled > self.requested_volume.value:
-            raise InvariantViolation("Order is overfilled")
+        if filled > self._requested_volume.value:
+            raise InvariantViolation("Order overfilled")
 
     def _assert_status_consistency(self) -> None:
-        if not hasattr(self, "status"):
-            raise InvariantViolation("OrderStatus missing")
+        filled = sum(f.volume.value for f in self._fills)
 
-        filled = sum(f.volume.value for f in self.fills)
-
-        if self.status.is_filled() and filled != self.requested_volume.value:
+        if self._status.is_filled() and filled != self._requested_volume.value:
             raise InvariantViolation("Filled order must be fully filled")
 
-        if self.status.is_cancelled() and filled == self.requested_volume.value:
+        if self._status.is_cancelled() and filled == self._requested_volume.value:
             raise InvariantViolation("Cancelled order cannot be fully filled")
