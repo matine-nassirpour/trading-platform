@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.errors.position_errors import PositionAlreadyClosed
+from quantum.domain.shared_kernel.money.money_context import MoneyContext
 from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import (
     EventSourcedAggregateRoot,
 )
@@ -11,6 +12,7 @@ from quantum.domain.shared_kernel.value_objects.volume import PositiveVolume
 from quantum.domain.trading.events.v1.position_closed_event import PositionClosedEvent
 from quantum.domain.trading.events.v1.position_opened_event import PositionOpenedEvent
 from quantum.domain.trading.execution.order.position_side import PositionSide
+from quantum.domain.trading.position.pnl_service import PnLService
 from quantum.domain.trading.value_objects.identifiers.position_id import PositionId
 
 
@@ -48,9 +50,23 @@ class Position(EventSourcedAggregateRoot):
 
     # --- Commands -------------------------------------------------------------
 
-    def close(self, *, exit_price: Price, occurred_at: EpochMs) -> None:
+    def close(
+        self,
+        *,
+        exit_price: Price,
+        occurred_at: EpochMs,
+        context: MoneyContext,
+    ) -> None:
         if self.closed:
             raise PositionAlreadyClosed("Position already closed")
+
+        pnl = PnLService.compute_realized_pnl(
+            entry_price=self.entry_price,
+            exit_price=exit_price,
+            volume=self.volume,
+            side=self.side,
+            context=context,
+        )
 
         self._raise(
             PositionClosedEvent(
@@ -59,6 +75,7 @@ class Position(EventSourcedAggregateRoot):
                 side=self.side,
                 volume=self.volume,
                 exit_price=exit_price,
+                realized_pnl=pnl,
             )
         )
 

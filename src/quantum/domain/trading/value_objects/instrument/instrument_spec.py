@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.money.money_context import MoneyContext
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 from quantum.domain.shared_kernel.value_objects.currency import Currency
 from quantum.domain.shared_kernel.value_objects.symbol import Symbol
@@ -30,6 +31,8 @@ class InstrumentSpec(ValueObject):
     """
 
     symbol: Symbol
+
+    context: MoneyContext
 
     # --- Market mechanics
     price_increment: Decimal
@@ -61,18 +64,28 @@ class InstrumentSpec(ValueObject):
             raise InvariantViolation(f"{name} must be strictly positive")
 
     def _validate(self) -> None:
+        if not isinstance(self.context, MoneyContext):
+            raise InvariantViolation("InstrumentSpec requires a MoneyContext")
+
         # increments & scales
         self._validate_positive_decimal(self.price_increment, "price_increment")
         self._validate_positive_decimal(self.volume_increment, "volume_increment")
-
         self._validate_positive_decimal(self.price_scale, "price_scale")
         self._validate_positive_decimal(self.volume_scale, "volume_scale")
         self._validate_positive_decimal(self.money_scale, "money_scale")
 
-        # currencies
-        if self.tick_value.currency != self.pnl_currency:
-            raise InvariantViolation("TickValue currency must match PnL currency")
+        # TickValue and PnL must belong to this ledger
+        if self.tick_value.currency != self.context.reporting_currency:
+            raise InvariantViolation(
+                "TickValue currency must match MoneyContext reporting currency"
+            )
 
+        if self.pnl_currency != self.context.reporting_currency:
+            raise InvariantViolation(
+                "PnL currency must match MoneyContext reporting currency"
+            )
+
+        # FX semantics still enforced
         if self.pnl_currency not in {
             self.currencies.base,
             self.currencies.quote,

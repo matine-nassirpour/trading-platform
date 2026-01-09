@@ -4,7 +4,8 @@ from decimal import Decimal
 
 from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
 from quantum.domain.shared_kernel.architecture.domain_object import DomainObject
-from quantum.domain.shared_kernel.value_objects.currency import Currency
+from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.money.money_context import MoneyContext
 from quantum.domain.shared_kernel.value_objects.price import Price
 from quantum.domain.shared_kernel.value_objects.realized_pnl import RealizedPnL
 from quantum.domain.shared_kernel.value_objects.volume import PositiveVolume
@@ -15,10 +16,11 @@ class PnLService(DomainObject):
     """
     Canonical domain service for PnL computation.
 
-    Responsibilities:
-    - Compute realized PnL
-    - Enforce sign convention (LONG / SHORT)
-    - Remain currency-safe and deterministic
+    HARD GUARANTEES:
+    - PnL is always contextual (MoneyContext-bound)
+    - Currency-safe
+    - Deterministic
+    - Sign-correct (LONG / SHORT)
     """
 
     @classmethod
@@ -32,16 +34,25 @@ class PnLService(DomainObject):
         exit_price: Price,
         volume: PositiveVolume,
         side: PositionSide,
-        currency: Currency,
+        context: MoneyContext,
     ) -> RealizedPnL:
         """
         Computes realized PnL for a closed position.
 
         Formula:
             pnl = (exit_price - entry_price) * volume * side_sign
+
+        The result is bound to the given MoneyContext.
         """
+
+        if not isinstance(context, MoneyContext):
+            raise InvariantViolation("PnLService requires a MoneyContext")
 
         delta = exit_price.value - entry_price.value
         pnl_value = delta * volume.value * Decimal(side.sign())
 
-        return RealizedPnL(value=pnl_value, currency=currency)
+        return RealizedPnL(
+            value=pnl_value,
+            currency=context.reporting_currency,
+            context=context,
+        )
