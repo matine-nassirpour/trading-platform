@@ -3,18 +3,14 @@ from dataclasses import dataclass
 from typing import ClassVar
 
 from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
+from quantum.domain.shared_kernel.architecture.domain_object import DomainObject
 from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
 
 
 @dataclass(frozen=True)
-class BaseEvent(ABC):
+class BaseEvent(DomainObject, ABC):
     """
     Canonical immutable Domain Event.
-
-    Guarantees:
-    - Immutable
-    - Versioned
-    - Schema-introspectable
     """
 
     @classmethod

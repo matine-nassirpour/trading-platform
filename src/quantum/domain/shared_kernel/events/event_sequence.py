@@ -15,5 +15,5 @@ class EventSequence:
         if not isinstance(self.value, int):
             raise InvariantViolation("EventSequence must be an integer")
 
-        if self.value <= 0:
-            raise InvariantViolation("EventSequence must be strictly positive")
+        if self.value < 1:
+            raise InvariantViolation("EventSequence must be >= 1")

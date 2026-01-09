@@ -1,19 +1,27 @@
 from __future__ import annotations
 
+from abc import ABC
 from dataclasses import dataclass, replace
 
+from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
+from quantum.domain.shared_kernel.architecture.domain_object import DomainObject
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.temporal.temporal_validity import TemporalValidity
 from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
 
 
 @dataclass(frozen=True)
-class TemporalEntity:
+class TemporalEntity(DomainObject, ABC):
     """
     Mixin for entities / aggregates with explicit temporal validity.
     """
 
     validity: TemporalValidity
+
+    @classmethod
+    def role(cls) -> DomainRole:
+        # Not a concrete domain role — it is a structural mixin
+        return DomainRole.ENTITY
 
     def __post_init__(self) -> None:
         self._validate_temporal()
