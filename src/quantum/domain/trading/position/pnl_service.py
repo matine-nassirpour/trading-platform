@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from decimal import Decimal
 
+from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
+from quantum.domain.shared_kernel.architecture.domain_object import DomainObject
 from quantum.domain.shared_kernel.value_objects.currency import Currency
 from quantum.domain.shared_kernel.value_objects.price import Price
 from quantum.domain.shared_kernel.value_objects.realized_pnl import RealizedPnL
@@ -9,7 +11,7 @@ from quantum.domain.shared_kernel.value_objects.volume import PositiveVolume
 from quantum.domain.trading.execution.order.position_side import PositionSide
 
 
-class PnLService:
+class PnLService(DomainObject):
     """
     Canonical domain service for PnL computation.
 
@@ -18,6 +20,10 @@ class PnLService:
     - Enforce sign convention (LONG / SHORT)
     - Remain currency-safe and deterministic
     """
+
+    @classmethod
+    def role(cls) -> DomainRole:
+        return DomainRole.SERVICE
 
     @staticmethod
     def compute_realized_pnl(

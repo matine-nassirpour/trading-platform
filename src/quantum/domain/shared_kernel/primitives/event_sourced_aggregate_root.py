@@ -1,48 +1,59 @@
-# domain/shared_kernel/primitives/event_sourced_aggregate_root.py
-
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import TypeVar
 
+from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
+from quantum.domain.shared_kernel.architecture.domain_object import DomainObject
+from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.events.base_event import BaseEvent
+from quantum.domain.shared_kernel.primitives.validatable_aggregate import (
+    ValidatableAggregate,
+)
 
-T = TypeVar("T", bound="EventSourcedAggregateRoot")
 
-
-class EventSourcedAggregateRoot:
+class EventSourcedAggregateRoot(ValidatableAggregate, DomainObject):
     """
-    Base class for event-sourced aggregates.
+    Canonical base class for all Event-Sourced aggregates.
 
-    Rules:
-    - State is derived exclusively from events
-    - Aggregates NEVER mutate state directly
-    - Events are applied via _apply(event)
+    HARD RULES:
+    - All state transitions happen via domain events
+    - No direct mutation is allowed
+    - Aggregate state MUST be valid after every event
+    - Deterministic replay MUST always reconstruct a valid state
+    - State is validated after every event
     """
+
+    # --- Domain role ----------------------------------------------------------
+
+    @classmethod
+    def role(cls) -> DomainRole:
+        return DomainRole.AGGREGATE
+
+    # --- Lifecycle ------------------------------------------------------------
 
     def __init__(self) -> None:
         self._uncommitted_events: list[BaseEvent] = []
 
     # --- Event handling -------------------------------------------------------
 
-    def _raise(self: T, event: BaseEvent) -> T:
+    def _raise(self, event: BaseEvent) -> None:
         """
-        Raises and applies a new domain event.
+        Raises and applies a domain event.
         """
         self._apply(event)
+        self._validate_state()
         self._uncommitted_events.append(event)
-        return self
 
     def _apply(self, event: BaseEvent) -> None:
         """
-        Dispatch event to the corresponding apply_<EventName> handler.
+        Dispatches event to the appropriate handler.
         """
-        handler_name = f"_apply_{event.__class__.__name__}"
+        handler_name = f"_apply_{event.__class__.__name__.lower()}"
         handler = getattr(self, handler_name, None)
 
         if handler is None:
-            raise RuntimeError(
-                f"{self.__class__.__name__} cannot apply event {event.__class__.__name__}"
+            raise InvariantViolation(
+                f"{self.__class__.__name__} cannot apply {event.__class__.__name__}"
             )
 
         handler(event)
@@ -50,9 +61,9 @@ class EventSourcedAggregateRoot:
     # --- Replay ---------------------------------------------------------------
 
     @classmethod
-    def rehydrate(cls: type[T], events: Iterable[BaseEvent]) -> T:
+    def rehydrate(cls, events: Iterable[BaseEvent]) -> EventSourcedAggregateRoot:
         """
-        Reconstructs aggregate state from a stream of past events.
+        Rebuilds an aggregate from its event stream.
         """
         instance = cls.__new__(cls)
         EventSourcedAggregateRoot.__init__(instance)
@@ -60,13 +71,27 @@ class EventSourcedAggregateRoot:
         for event in events:
             instance._apply(event)
 
+        instance._validate_state()
         return instance
 
-    # --- Event access ---------------------------------------------------------
+    # --- Contracts ------------------------------------------------------------
 
-    @property
-    def uncommitted_events(self) -> list[BaseEvent]:
-        return list(self._uncommitted_events)
+    def _validate_state(self) -> None:
+        """
+        Aggregate-wide invariant validation.
 
-    def clear_uncommitted_events(self) -> None:
+        MUST be overridden by concrete aggregates.
+        """
+        raise NotImplementedError(
+            f"{self.__class__.__name__} must implement _validate_state()"
+        )
+
+    # --- Introspection --------------------------------------------------------
+
+    def pull_uncommitted_events(self) -> tuple[BaseEvent, ...]:
+        """
+        Returns and clears uncommitted events.
+        """
+        events = tuple(self._uncommitted_events)
         self._uncommitted_events.clear()
+        return events

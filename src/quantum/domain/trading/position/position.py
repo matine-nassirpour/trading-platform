@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.errors.position_errors import PositionAlreadyClosed
 from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import (
     EventSourcedAggregateRoot,
@@ -72,3 +73,21 @@ class Position(EventSourcedAggregateRoot):
 
     def _apply_position_closed_event(self, event: PositionClosedEvent) -> None:
         self.closed = True
+
+    # --- Aggregate invariants -------------------------------------------------
+
+    def _validate_state(self) -> None:
+        if not isinstance(self.position_id, PositionId):
+            raise InvariantViolation("PositionId missing")
+
+        if not isinstance(self.side, PositionSide):
+            raise InvariantViolation("PositionSide missing")
+
+        if not isinstance(self.volume, PositiveVolume):
+            raise InvariantViolation("Volume missing")
+
+        if not isinstance(self.entry_price, Price):
+            raise InvariantViolation("Entry price missing")
+
+        if not isinstance(self.closed, bool):
+            raise InvariantViolation("Closed flag corrupted")
