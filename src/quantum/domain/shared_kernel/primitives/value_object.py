@@ -4,6 +4,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, fields
 from typing import TypeVar
 
+from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
+
 T = TypeVar("T")
 
 
@@ -18,6 +20,10 @@ class ValueObject(ABC):
     - Explicit invariant validation
     - Zero assumptions about internal shape
     """
+
+    @classmethod
+    def role(cls) -> DomainRole:
+        return DomainRole.VALUE_OBJECT
 
     def __post_init__(self) -> None:
         self._validate()

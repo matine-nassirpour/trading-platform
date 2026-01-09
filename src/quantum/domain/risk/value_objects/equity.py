@@ -4,45 +4,70 @@ from dataclasses import dataclass
 from decimal import Decimal
 
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.primitives.algebraic_monetary_value_object import (
-    AlgebraicMonetaryValueObject,
+from quantum.domain.shared_kernel.money.contextual_monetary_amount import (
+    ContextualMonetaryAmount,
 )
-from quantum.domain.shared_kernel.primitives.monetary_amount import MonetaryAmount
+from quantum.domain.shared_kernel.money.money_context import MoneyContext
 from quantum.domain.shared_kernel.value_objects.currency import Currency
 from quantum.domain.shared_kernel.value_objects.realized_pnl import RealizedPnL
 
 
 @dataclass(frozen=True)
-class Equity(AlgebraicMonetaryValueObject):
+class Equity(ContextualMonetaryAmount):
     """
-    Trading equity.
+    Desk equity, bound to a MoneyContext.
+
+    Algebra:
+    - Equity ⊕ RealizedPnL → Equity
+    - Equity ⊖ RealizedPnL → Equity
+
+    Notes:
+    - Equity may be negative (margin trading).
     """
 
     value: Decimal
     currency: Currency
+    context: MoneyContext
 
     def _validate_semantics(self) -> None:
-        # Equity can be negative (margin trading)
-        pass
+        # Enforce MoneyContext ↔ currency consistency (via parent)
+        super()._validate_semantics()
+        # No further constraint: Equity ∈ ℝ
 
-    def add(self, other: MonetaryAmount) -> Equity:
-        if not isinstance(other, RealizedPnL):
-            raise InvariantViolation("Equity can only be adjusted by RealizedPnL")
+    def _assert_compatible_pnl(self, pnl: RealizedPnL) -> None:
+        if not isinstance(pnl, RealizedPnL):
+            raise InvariantViolation("Equity adjustment requires a RealizedPnL")
 
-        self._check_currency(other)
+        if pnl.context != self.context:
+            raise InvariantViolation("RealizedPnL MoneyContext mismatch")
+
+        # Redundant with context check, but makes the invariant explicit and local
+        if pnl.currency != self.currency:
+            raise InvariantViolation("RealizedPnL currency mismatch")
+
+    def add(self, pnl: RealizedPnL) -> Equity:
+        """
+        Returns a new Equity adjusted upward by the given realized PnL.
+        """
+        self._assert_compatible_pnl(pnl)
 
         return Equity(
-            value=self.value + other.value,
+            value=self.value + pnl.value,
             currency=self.currency,
+            context=self.context,
         )
 
-    def subtract(self, other: MonetaryAmount) -> Equity:
-        if not isinstance(other, RealizedPnL):
-            raise InvariantViolation("Equity can only be adjusted by RealizedPnL")
+    def subtract(self, pnl: RealizedPnL) -> Equity:
+        """
+        Returns a new Equity adjusted downward by the given realized PnL.
 
-        self._check_currency(other)
+        Semantic note:
+        - subtracting a negative pnl increases equity, which is mathematically consistent.
+        """
+        self._assert_compatible_pnl(pnl)
 
         return Equity(
-            value=self.value - other.value,
+            value=self.value - pnl.value,
             currency=self.currency,
+            context=self.context,
         )

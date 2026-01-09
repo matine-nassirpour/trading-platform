@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from quantum.domain.risk.events.v1.equity_adjusted_event import EquityAdjustedEvent
 from quantum.domain.risk.events.v1.max_drawdown_exceeded_event import (
     MaxDrawdownExceededEvent,
 )
@@ -49,29 +50,17 @@ class RiskState(EventSourcedAggregateRoot):
     # --- Commands -------------------------------------------------------------
 
     def register_pnl(self, *, pnl: RealizedPnL, at: EpochMs) -> None:
-        """
-        Applies a realized PnL to the equity and evaluates drawdown risk.
-
-        Deterministic:
-        - No side effects
-        - No implicit policy
-        - All breach semantics delegated to RiskPolicy
-        """
-
         if pnl.currency != self.equity.currency:
             raise InvariantViolation("PnL currency mismatch")
 
-        # 1. compute new equity
+        # Pure calculation (no state mutation)
         new_equity = self.equity.add(pnl)
-
-        # 2. compute new peak
         new_peak = (
             new_equity
             if new_equity.value > self.equity_peak.value
             else self.equity_peak
         )
 
-        # 3. compute drawdown (ALWAYS >= 0 by invariant)
         drawdown_value = new_peak.value - new_equity.value
 
         drawdown = Drawdown(
@@ -79,14 +68,17 @@ class RiskState(EventSourcedAggregateRoot):
             currency=new_equity.currency,
         )
 
-        # 4. update state locally
-        self.equity = new_equity
-        self.equity_peak = new_peak
+        # Emit equity transition
+        self._raise(
+            EquityAdjustedEvent(
+                occurred_at=at,
+                pnl=pnl,
+                new_equity=new_equity,
+                new_equity_peak=new_peak,
+            )
+        )
 
-        # 5. Delegate breach evaluation to RiskPolicy
-        self._validate_state()
-
-        # 6. delegate breach detection
+        # Evaluate risk on projected state
         breach = RiskPolicy.evaluate_drawdown(
             current_drawdown=drawdown,
             limits=self.limits,
@@ -103,9 +95,12 @@ class RiskState(EventSourcedAggregateRoot):
 
     # --- Event application ----------------------------------------------------
 
+    def _apply_equityadjustedevent(self, event: EquityAdjustedEvent) -> None:
+        self.equity = event.new_equity
+        self.equity_peak = event.new_equity_peak
+
     def _apply_maxdrawdownexceededevent(self, event: MaxDrawdownExceededEvent) -> None:
-        # RiskState itself is NOT changed by this event.
-        # The event is a governance signal for other systems (KillSwitch, etc).
+        # Governance event only → no state change
         pass
 
     # --- Invariants -----------------------------------------------------------

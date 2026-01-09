@@ -1,14 +1,15 @@
 from dataclasses import dataclass
-from decimal import Decimal
 
 from quantum.domain.risk.value_objects.risk_threshold_policy import RiskThresholdPolicy
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.primitives.monetary_amount import MonetaryAmount
-from quantum.domain.shared_kernel.primitives.value_object import ValueObject
+from quantum.domain.shared_kernel.money.contextual_monetary_amount import (
+    ContextualMonetaryAmount,
+)
+from quantum.domain.shared_kernel.money.money_context import MoneyContext
 
 
 @dataclass(frozen=True)
-class RiskLimits(ValueObject):
+class RiskLimits:
     """
     Canonical desk-level risk limits.
 
@@ -18,24 +19,19 @@ class RiskLimits(ValueObject):
     - All limits must share the same currency
     """
 
-    max_drawdown: MonetaryAmount
-    max_notional: MonetaryAmount
-    max_daily_loss: MonetaryAmount
-    threshold_policy: RiskThresholdPolicy = RiskThresholdPolicy.inclusive()
+    context: MoneyContext
+    max_drawdown: ContextualMonetaryAmount
+    max_notional: ContextualMonetaryAmount
+    max_daily_loss: ContextualMonetaryAmount
+    threshold_policy: RiskThresholdPolicy
 
-    def _validate(self) -> None:
-        currency = self.max_drawdown.currency
-
+    def __post_init__(self) -> None:
         for name, limit in {
             "max_drawdown": self.max_drawdown,
             "max_notional": self.max_notional,
             "max_daily_loss": self.max_daily_loss,
         }.items():
-            if not isinstance(limit, MonetaryAmount):
-                raise InvariantViolation(f"{name} must be a MonetaryAmount")
-
-            if limit.currency != currency:
-                raise InvariantViolation("All risk limits must share the same currency")
-
-            if limit.value <= Decimal("0"):
-                raise InvariantViolation(f"{name} must be strictly positive")
+            if limit.context != self.context:
+                raise InvariantViolation(
+                    f"{name} MoneyContext mismatch: {limit.context} vs {self.context}"
+                )

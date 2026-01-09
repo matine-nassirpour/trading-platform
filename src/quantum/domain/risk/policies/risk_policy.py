@@ -2,10 +2,11 @@ from quantum.domain.risk.value_objects.risk_breach import RiskBreach
 from quantum.domain.risk.value_objects.risk_breach_kind import RiskBreachKind
 from quantum.domain.risk.value_objects.risk_limits import RiskLimits
 from quantum.domain.risk.value_objects.risk_threshold_policy import RiskThresholdPolicy
+from quantum.domain.shared_kernel.policies.domain_policy import DomainPolicy
 from quantum.domain.shared_kernel.primitives.monetary_amount import MonetaryAmount
 
 
-class RiskPolicy:
+class RiskPolicy(DomainPolicy):
     """
     Canonical evaluation rules for desk-level risk limits.
     """

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from quantum.domain.risk.events.v1.killswitch_armed_event import KillSwitchArmedEvent
 from quantum.domain.risk.events.v1.killswitch_trigger_event import (
     KillSwitchTriggerEvent,
 )
@@ -17,26 +18,23 @@ from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
 
 class KillSwitchState(EventSourcedAggregateRoot):
     """
-    Aggregate Root representing a global trading kill switch.
+    Fully event-sourced Kill Switch.
 
-    Properties:
-    - Latched once triggered
-    - Explicit trigger cause
-    - Deterministic reset rules
+    All state MUST come from events.
     """
+
+    status: KillSwitchStatus
+    triggered_at: EpochMs | None
+    reason: KillSwitchReason | None
 
     # --- Factory --------------------------------------------------------------
 
     @staticmethod
-    def armed() -> KillSwitchState:
+    def arm(*, at: EpochMs) -> KillSwitchState:
         ks = KillSwitchState.__new__(KillSwitchState)
         EventSourcedAggregateRoot.__init__(ks)
 
-        ks.status = KillSwitchStatus.armed()
-        ks.triggered_at = None
-        ks.reason = None
-
-        ks._validate_state()
+        ks._raise(KillSwitchArmedEvent(occurred_at=at))
         return ks
 
     # --- Commands -------------------------------------------------------------
@@ -61,6 +59,11 @@ class KillSwitchState(EventSourcedAggregateRoot):
 
     # --- Event application ----------------------------------------------------
 
+    def _apply_killswitcharmedevent(self, event: KillSwitchArmedEvent) -> None:
+        self.status = KillSwitchStatus.armed()
+        self.triggered_at = None
+        self.reason = None
+
     def _apply_killswitchtriggerevent(self, event: KillSwitchTriggerEvent) -> None:
         self.status = KillSwitchStatus.triggered()
         self.triggered_at = event.occurred_at
@@ -72,14 +75,14 @@ class KillSwitchState(EventSourcedAggregateRoot):
         if not isinstance(self.status, KillSwitchStatus):
             raise InvariantViolation("KillSwitchState must have a valid status")
 
+        if self.status == KillSwitchStatus.armed():
+            if self.triggered_at is not None or self.reason is not None:
+                raise InvariantViolation(
+                    "Armed KillSwitch must not have trigger metadata"
+                )
+
         if self.status == KillSwitchStatus.triggered():
             if self.triggered_at is None or self.reason is None:
                 raise InvariantViolation(
                     "Triggered KillSwitch must have timestamp and reason"
-                )
-
-        if self.status == KillSwitchStatus.armed():
-            if self.triggered_at is not None or self.reason is not None:
-                raise InvariantViolation(
-                    "Armed KillSwitch must not carry trigger metadata"
                 )

@@ -3,30 +3,32 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.events.event_id import EventId
+from quantum.domain.shared_kernel.events.event_sequence import EventSequence
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
-from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
 
 
 @dataclass(frozen=True)
 class ProjectionCursor(ValueObject):
     """
-    Represents the last event position processed by a projection.
+    Strong projection cursor.
 
-    Used for:
-    - replay
-    - catch-up
-    - audit
+    Represents exactly the last processed event.
     """
 
-    last_processed_at: EpochMs
+    last_event_id: EventId
+    last_sequence: EventSequence
 
     def _validate(self) -> None:
-        if not isinstance(self.last_processed_at, EpochMs):
-            raise InvariantViolation("ProjectionCursor requires an EpochMs")
+        if not isinstance(self.last_event_id, EventId):
+            raise InvariantViolation("Cursor requires EventId")
+
+        if not isinstance(self.last_sequence, EventSequence):
+            raise InvariantViolation("Cursor requires EventSequence")
 
     @staticmethod
     def initial() -> ProjectionCursor:
-        """
-        Canonical initial cursor (no events processed).
-        """
-        return ProjectionCursor(last_processed_at=EpochMs(0))
+        return ProjectionCursor(
+            last_event_id=EventId.new(),
+            last_sequence=EventSequence(0),  # allowed only for genesis
+        )
