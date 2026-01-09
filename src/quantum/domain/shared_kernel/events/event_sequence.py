@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
@@ -7,6 +9,8 @@ from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 class EventSequence:
     """
     Strictly increasing, gapless sequence number within an event stream.
+
+    Sequence 0 is RESERVED and means: 'before the first event'.
     """
 
     value: int
@@ -15,5 +19,9 @@ class EventSequence:
         if not isinstance(self.value, int):
             raise InvariantViolation("EventSequence must be an integer")
 
-        if self.value < 1:
-            raise InvariantViolation("EventSequence must be >= 1")
+        if self.value < 0:
+            raise InvariantViolation("EventSequence must be >= 0")
+
+    @staticmethod
+    def initial() -> EventSequence:
+        return EventSequence(0)

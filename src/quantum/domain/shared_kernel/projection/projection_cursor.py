@@ -17,17 +17,18 @@ class ProjectionCursor(ValueObject):
     """
 
     last_event_id: EventId
-    last_sequence: EventSequence | None
+    last_sequence: EventSequence
 
     def _validate(self) -> None:
-        if self.last_sequence is not None and not isinstance(
-            self.last_sequence, EventSequence
-        ):
-            raise InvariantViolation("Cursor requires EventSequence or None")
+        if not isinstance(self.last_event_id, EventId):
+            raise InvariantViolation("Cursor requires EventId")
+
+        if not isinstance(self.last_sequence, EventSequence):
+            raise InvariantViolation("Cursor requires EventSequence")
 
     @staticmethod
     def initial() -> ProjectionCursor:
         return ProjectionCursor(
-            last_event_id=EventId.new(),
-            last_sequence=None,
+            last_event_id=EventId.nil(),
+            last_sequence=EventSequence.initial(),
         )

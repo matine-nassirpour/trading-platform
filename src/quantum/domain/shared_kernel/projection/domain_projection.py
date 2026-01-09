@@ -51,16 +51,11 @@ class DomainProjection(ABC, Generic[S]):
         for envelope in events:
             seq = envelope.sequence.value
 
-            # HARD MONOTONICITY GUARANTEES
             if seq != expected_sequence:
                 raise ProjectionError(
                     f"Event sequence violation: expected {expected_sequence}, got {seq}"
                 )
 
-            if seq <= cursor.last_sequence.value:
-                raise ProjectionError("Duplicate or out-of-order event detected")
-
-            # Apply event
             state = self.apply(state, envelope.event)
 
             cursor = ProjectionCursor(
