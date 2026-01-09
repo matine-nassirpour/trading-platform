@@ -6,17 +6,18 @@ from quantum.domain.shared_kernel.money.contextual_monetary_amount import (
     ContextualMonetaryAmount,
 )
 from quantum.domain.shared_kernel.money.money_context import MoneyContext
+from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 
 
 @dataclass(frozen=True)
-class RiskLimits:
+class RiskLimits(ValueObject):
     """
     Canonical desk-level risk limits.
 
     Properties:
     - All limits are monetary thresholds
     - Limits are NOT algebraic quantities
-    - All limits must share the same currency
+    - All limits must share the same MoneyContext
     """
 
     context: MoneyContext
@@ -25,13 +26,22 @@ class RiskLimits:
     max_daily_loss: ContextualMonetaryAmount
     threshold_policy: RiskThresholdPolicy
 
-    def __post_init__(self) -> None:
+    def _validate(self) -> None:
+        if not isinstance(self.context, MoneyContext):
+            raise InvariantViolation("RiskLimits requires a MoneyContext")
+
         for name, limit in {
             "max_drawdown": self.max_drawdown,
             "max_notional": self.max_notional,
             "max_daily_loss": self.max_daily_loss,
         }.items():
+            if not isinstance(limit, ContextualMonetaryAmount):
+                raise InvariantViolation(f"{name} must be a ContextualMonetaryAmount")
+
             if limit.context != self.context:
                 raise InvariantViolation(
                     f"{name} MoneyContext mismatch: {limit.context} vs {self.context}"
                 )
+
+        if not isinstance(self.threshold_policy, RiskThresholdPolicy):
+            raise InvariantViolation("RiskLimits requires a RiskThresholdPolicy")
