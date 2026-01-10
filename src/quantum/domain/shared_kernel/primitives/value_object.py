@@ -2,24 +2,16 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, fields
-from typing import TypeVar
 
 from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
 from quantum.domain.shared_kernel.architecture.domain_object import DomainObject
-
-T = TypeVar("T")
 
 
 @dataclass(frozen=True)
 class ValueObject(DomainObject, ABC):
     """
-    Canonical base class for all Value Objects.
-
-    Guarantees:
-    - Immutability
-    - Equality by structural value
-    - Explicit invariant validation
-    - Fully governed by DomainRole.VALUE_OBJECT
+    Abstract base class for all Value Objects.
+    Concrete subclasses MUST redeclare role().
     """
 
     @classmethod

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 
 
@@ -15,10 +16,13 @@ class EventSequence:
 
     value: int
 
-    def __post_init__(self) -> None:
+    @classmethod
+    def role(cls) -> DomainRole:
+        return DomainRole.VALUE_OBJECT
+
+    def _validate(self) -> None:
         if not isinstance(self.value, int):
             raise InvariantViolation("EventSequence must be an integer")
-
         if self.value < 0:
             raise InvariantViolation("EventSequence must be >= 0")
 

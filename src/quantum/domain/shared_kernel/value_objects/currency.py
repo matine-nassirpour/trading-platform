@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from re import fullmatch
 
+from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 
@@ -18,6 +19,10 @@ class Currency(ValueObject):
     """
 
     code: str
+
+    @classmethod
+    def role(cls) -> DomainRole:
+        return DomainRole.VALUE_OBJECT
 
     def _validate(self) -> None:
         if not isinstance(self.code, str):
