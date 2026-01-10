@@ -28,6 +28,9 @@ class NumericValueObject(ValueObject, ABC):
 
     # --- Validation entrypoint ------------------------------------------------
 
+    def __post_init__(self) -> None:
+        self._validate()
+
     def _validate(self) -> None:
         """
         FINAL validation entrypoint.
@@ -68,12 +71,6 @@ class NumericValueObject(ValueObject, ABC):
     def _validate_semantics(self) -> None:
         """
         Enforces domain-specific numeric invariants.
-
-        Examples:
-        - strictly positive
-        - non-negative
-        - bounded
-        - sign-constrained
         """
         raise NotImplementedError
 
@@ -90,13 +87,11 @@ class NumericValueObject(ValueObject, ABC):
             "_validate",
             "_NumericValueObject__validate_numeric_fundamentals",
             "_validate_numeric_fundamentals",
+            "__post_init__",
         }
 
         for name in forbidden:
             if name in cls.__dict__:
-                raise TypeError(
-                    f"{cls.__name__} is not allowed to override "
-                    f"numeric fundamental validation method: {name}"
-                )
+                raise TypeError(f"{cls.__name__} is not allowed to override {name}")
 
         super().__init_subclass__()

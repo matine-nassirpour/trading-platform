@@ -25,6 +25,9 @@ class DomainRole(str, Enum):
     SERVICE = "service"
     FACTORY = "factory"
     EVENT = "event"
+    PROJECTION = "projection"
+    READ_MODEL = "read_model"
+    CURSOR = "cursor"
 
 
 ROLE_DEFINITION = {

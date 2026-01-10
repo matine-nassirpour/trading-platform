@@ -4,10 +4,11 @@ from dataclasses import dataclass
 
 from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 
 
 @dataclass(frozen=True)
-class EventSequence:
+class EventSequence(ValueObject):
     """
     Strictly increasing, gapless sequence number within an event stream.
 
@@ -23,6 +24,7 @@ class EventSequence:
     def _validate(self) -> None:
         if not isinstance(self.value, int):
             raise InvariantViolation("EventSequence must be an integer")
+
         if self.value < 0:
             raise InvariantViolation("EventSequence must be >= 0")
 
