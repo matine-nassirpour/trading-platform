@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from typing import Generic, TypeVar
 
+from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
 from quantum.domain.shared_kernel.events.base_event import BaseEvent
 from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
 from quantum.domain.shared_kernel.projection.projection_cursor import ProjectionCursor
@@ -21,6 +22,10 @@ class DomainProjection(ABC, Generic[S]):
     - No duplicates
     - Deterministic replay
     """
+
+    @classmethod
+    def role(cls) -> DomainRole:
+        return DomainRole.PROJECTION
 
     @abstractmethod
     def initial_state(self) -> S:

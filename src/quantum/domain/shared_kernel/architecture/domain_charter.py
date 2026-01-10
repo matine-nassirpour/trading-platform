@@ -25,8 +25,8 @@ class DomainRole(str, Enum):
     SERVICE = "service"
     FACTORY = "factory"
     EVENT = "event"
-    PROJECTION = "projection"
     READ_MODEL = "read_model"
+    PROJECTION = "projection"
     CURSOR = "cursor"
 
 
@@ -95,6 +95,38 @@ ROLE_DEFINITION = {
     - Represent historical truth
     - Are never changed
     - Are audit artifacts
+    """
+    ),
+    DomainRole.READ_MODEL: (
+        """
+    Materialized read-side model.
+
+    Properties:
+    - Derived from events or projections
+    - Immutable
+    - Query-only
+    - No business logic
+    """
+    ),
+    DomainRole.PROJECTION: (
+        """
+    Deterministic event → state transformer.
+
+    Properties:
+    - Stateless
+    - Pure
+    - Replayable
+    - No side effects
+    """
+    ),
+    DomainRole.CURSOR: (
+        """
+    Strong ordering and consistency marker.
+
+    Properties:
+    - Monotonic
+    - Immutable
+    - Audit-grade
     """
     ),
 }

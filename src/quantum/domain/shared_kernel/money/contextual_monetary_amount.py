@@ -27,14 +27,14 @@ class ContextualMonetaryAmount(MonetaryAmount, ABC):
 
     def _validate_semantics(self) -> None:
         if not isinstance(self.context, MoneyContext):
-            raise InvariantViolation("ContextualMonetaryAmount requires a MoneyContext")
+            raise InvariantViolation("ContextualMonetaryAmount requires MoneyContext")
 
         if not isinstance(self.currency, Currency):
-            raise InvariantViolation("ContextualMonetaryAmount requires a Currency")
+            raise InvariantViolation("ContextualMonetaryAmount requires Currency")
 
-        if self.currency != self.context.reporting_currency:
+        if self.currency not in self.context.allowed_currencies:
             raise InvariantViolation(
-                f"Currency {self.currency} does not match MoneyContext {self.context.reporting_currency}"
+                f"Currency {self.currency} not allowed in context {self.context}"
             )
 
     def _check_currency_and_context(self, other: ContextualMonetaryAmount) -> None:

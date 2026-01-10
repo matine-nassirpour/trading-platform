@@ -1,6 +1,7 @@
 from abc import ABC
 from dataclasses import dataclass
 
+from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 
 
@@ -15,6 +16,6 @@ class ProjectionState(ValueObject, ABC):
     - Reconstructible at any time
     """
 
-    # No fields here on purpose
-    # Concrete projections define their own state
-    pass
+    @classmethod
+    def role(cls) -> DomainRole:
+        return DomainRole.READ_MODEL

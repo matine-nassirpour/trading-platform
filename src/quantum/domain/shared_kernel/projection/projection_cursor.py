@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.events.event_id import EventId
 from quantum.domain.shared_kernel.events.event_sequence import EventSequence
@@ -18,6 +19,10 @@ class ProjectionCursor(ValueObject):
 
     last_event_id: EventId
     last_sequence: EventSequence
+
+    @classmethod
+    def role(cls) -> DomainRole:
+        return DomainRole.CURSOR
 
     def _validate(self) -> None:
         if not isinstance(self.last_event_id, EventId):
