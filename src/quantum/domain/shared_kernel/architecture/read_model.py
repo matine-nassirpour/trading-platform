@@ -1,21 +1,39 @@
-from abc import ABC
+from abc import ABC, abstractmethod
+from collections.abc import Mapping
+from typing import Any
 
-from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
-from quantum.domain.shared_kernel.architecture.domain_object import DomainObject
 
-
-class ReadModel(DomainObject, ABC):
+class ReadModel(ABC):
     """
-    Base class for all CQRS read-side models.
+    Base contract for all read-side projection states.
 
-    A ReadModel:
-    - Is NOT a domain concept
-    - Has NO business invariants
-    - Is fully derived from events
-    - Exists only for querying / reporting
-    - Is never referenced by Aggregates or Policies
+    Read models are:
+    - NOT part of the Domain
+    - NOT governed by DomainRole
+    - NOT allowed to contain business invariants
+    - Pure data representations
+    - Fully derived from domain events
     """
 
-    @classmethod
-    def role(cls) -> DomainRole:
-        return DomainRole.READ_MODEL
+    @abstractmethod
+    def identity(self) -> str:
+        """
+        Returns the stable identity of this read model.
+
+        Used for:
+        - Caching
+        - UI routing
+        - Snapshot storage
+        - Idempotent updates
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def as_dict(self) -> Mapping[str, Any]:
+        """
+        Returns a deterministic, JSON-serializable representation
+        of this read model.
+
+        Must contain no domain objects.
+        """
+        raise NotImplementedError
