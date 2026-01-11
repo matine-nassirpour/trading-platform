@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal
 
+from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.primitives.numeric_value_object import (
     NumericValueObject,
@@ -16,6 +17,10 @@ class PositiveVolume(NumericValueObject):
     """
 
     value: Decimal
+
+    @classmethod
+    def role(cls) -> DomainRole:
+        return DomainRole.VALUE_OBJECT
 
     def _validate_semantics(self) -> None:
         if self.value <= Decimal("0"):
@@ -34,6 +39,10 @@ class NonNegativeVolume(NumericValueObject):
     """
 
     value: Decimal
+
+    @classmethod
+    def role(cls) -> DomainRole:
+        return DomainRole.VALUE_OBJECT
 
     def _validate_semantics(self) -> None:
         if self.value < Decimal("0"):

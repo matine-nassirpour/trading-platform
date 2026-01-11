@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal
 
+from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
 from quantum.domain.shared_kernel.money.money_context import MoneyContext
 from quantum.domain.shared_kernel.primitives.contextual_algebraic_monetary_value_object import (
     ContextualAlgebraicMonetaryValueObject,
@@ -19,6 +20,10 @@ class UnrealizedPnL(ContextualAlgebraicMonetaryValueObject):
     value: Decimal
     currency: Currency
     context: MoneyContext
+
+    @classmethod
+    def role(cls) -> DomainRole:
+        return DomainRole.VALUE_OBJECT
 
     # --- Invariants -----------------------------------------------------------
 

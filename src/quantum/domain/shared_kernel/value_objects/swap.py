@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal
 
+from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.money.contextual_monetary_amount import (
     ContextualMonetaryAmount,
@@ -26,6 +27,10 @@ class Swap(ContextualMonetaryAmount):
     value: Decimal
     currency: Currency
     context: MoneyContext
+
+    @classmethod
+    def role(cls) -> DomainRole:
+        return DomainRole.VALUE_OBJECT
 
     # --- Invariants -----------------------------------------------------------
 

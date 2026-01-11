@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
+from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 
@@ -22,6 +23,10 @@ class EpochMs(ValueObject):
     """
 
     value: int
+
+    @classmethod
+    def role(cls) -> DomainRole:
+        return DomainRole.VALUE_OBJECT
 
     # --- Invariants -----------------------------------------------------------
 
