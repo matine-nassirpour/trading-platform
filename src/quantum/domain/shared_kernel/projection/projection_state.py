@@ -1,21 +1,19 @@
 from abc import ABC
 from dataclasses import dataclass
 
-from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
-from quantum.domain.shared_kernel.primitives.value_object import ValueObject
+from quantum.domain.shared_kernel.architecture.read_model import ReadModel
 
 
 @dataclass(frozen=True)
-class ProjectionState(ValueObject, ABC):
+class ProjectionState(ReadModel, ABC):
     """
-    Base class for all derived (projected) states.
+    Base class for all derived (projected) read-side states.
 
-    Properties:
+    Guarantees:
     - Immutable
     - Fully derived from domain events
-    - Reconstructible at any time
+    - Reconstructible by replay
+    - Contains NO domain logic
     """
 
-    @classmethod
-    def role(cls) -> DomainRole:
-        return DomainRole.READ_MODEL
+    pass

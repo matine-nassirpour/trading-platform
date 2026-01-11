@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from decimal import Decimal
 
 from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
-from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.money.contextual_monetary_amount import (
     ContextualMonetaryAmount,
 )
@@ -51,17 +50,8 @@ class Swap(ContextualMonetaryAmount):
     def add(self, other: Swap) -> Swap:
         """
         Returns a new Swap equal to this ⊕ other.
-
-        HARD GUARANTEES:
-        - Same currency
-        - Same MoneyContext
-        - No implicit conversion
         """
-        if not isinstance(other, Swap):
-            raise InvariantViolation("Swap can only be added to another Swap")
-
         self._check_currency_and_context(other)
-
         return Swap(
             value=self.value + other.value,
             currency=self.currency,
@@ -72,11 +62,7 @@ class Swap(ContextualMonetaryAmount):
         """
         Returns a new Swap equal to this ⊖ other.
         """
-        if not isinstance(other, Swap):
-            raise InvariantViolation("Swap can only be subtracted from another Swap")
-
         self._check_currency_and_context(other)
-
         return Swap(
             value=self.value - other.value,
             currency=self.currency,

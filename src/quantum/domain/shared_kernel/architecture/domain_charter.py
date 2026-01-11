@@ -99,13 +99,14 @@ ROLE_DEFINITION = {
     ),
     DomainRole.READ_MODEL: (
         """
-    Materialized read-side model.
+    CQRS Read Model.
 
     Properties:
-    - Derived from events or projections
-    - Immutable
+    - Derived from events
     - Query-only
-    - No business logic
+    - Contains no business invariants
+    - Is not part of the domain model
+    - May be denormalized
     """
     ),
     DomainRole.PROJECTION: (

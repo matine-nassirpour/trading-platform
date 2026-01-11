@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from typing import Self
 
 from quantum.domain.shared_kernel.errors.invariants import (
     CurrencyMismatch,
@@ -9,25 +10,24 @@ from quantum.domain.shared_kernel.errors.invariants import (
 from quantum.domain.shared_kernel.money.contextual_monetary_amount import (
     ContextualMonetaryAmount,
 )
-from quantum.domain.shared_kernel.primitives.monetary_amount import MonetaryAmount
 
 
-class ContextualAlgebraicMonetaryValueObject(
-    ContextualMonetaryAmount,
-    ABC,
-):
+class ContextualAlgebraicMonetaryValueObject(ContextualMonetaryAmount, ABC):
     """
     Algebraic monetary value bound to a MoneyContext.
 
-    Guarantees:
-    - Currency consistency
-    - Context consistency
-    - Safe algebraic operations
+    Algebraic contract:
+    - Closed under + and −
+    - Currency invariant
+    - Context invariant
     """
 
-    def _check_currency_and_context(
-        self, other: ContextualAlgebraicMonetaryValueObject
-    ) -> None:
+    # --- Algebraic invariants -------------------------------------------------
+
+    def _check_currency_and_context(self, other: Self) -> None:
+        if not isinstance(other, ContextualAlgebraicMonetaryValueObject):
+            raise InvariantViolation("Operand must be a contextual monetary value")
+
         if self.currency != other.currency:
             raise CurrencyMismatch(
                 f"Currency mismatch: {self.currency} vs {other.currency}"
@@ -38,10 +38,28 @@ class ContextualAlgebraicMonetaryValueObject(
                 f"MoneyContext mismatch: {self.context} vs {other.context}"
             )
 
+    # --- Algebraic operations -------------------------------------------------
+
     @abstractmethod
-    def add(self, other: MonetaryAmount) -> MonetaryAmount:
+    def add(self, other: Self) -> Self:
+        """
+        Returns self ⊕ other.
+
+        Must preserve:
+        - type
+        - currency
+        - MoneyContext
+        """
         raise NotImplementedError
 
     @abstractmethod
-    def subtract(self, other: MonetaryAmount) -> MonetaryAmount:
+    def subtract(self, other: Self) -> Self:
+        """
+        Returns self ⊖ other.
+
+        Must preserve:
+        - type
+        - currency
+        - MoneyContext
+        """
         raise NotImplementedError
