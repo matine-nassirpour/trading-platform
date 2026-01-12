@@ -35,15 +35,13 @@ class Swap(ContextualAlgebraicMonetaryValueObject):
 
     def _validate_semantics(self) -> None:
         """
-        Swap ∈ ℝ (no restriction on sign).
-
-        Inherits:
-        - Decimal-only
-        - Finite
-        - Currency consistency
-        - MoneyContext consistency
+        Swap ∈ ℝ, but:
+        - must be a valid Decimal
+        - must belong to a valid Currency
+        - must belong to a valid MoneyContext
         """
         super()._validate_semantics()
+        # No further restriction on sign
 
     # --- Algebraic operations -------------------------------------------------
 

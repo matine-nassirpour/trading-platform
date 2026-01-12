@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 from quantum.domain.shared_kernel.value_objects.currency import Currency
@@ -19,6 +20,10 @@ class MoneyContext(ValueObject):
 
     reporting_currency: Currency
     allowed_currencies: frozenset[Currency]
+
+    @classmethod
+    def role(cls) -> DomainRole:
+        return DomainRole.VALUE_OBJECT
 
     def _validate_semantics(self) -> None:
         if not isinstance(self.reporting_currency, Currency):

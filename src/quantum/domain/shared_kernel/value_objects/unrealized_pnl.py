@@ -28,8 +28,14 @@ class UnrealizedPnL(ContextualAlgebraicMonetaryValueObject):
     # --- Invariants -----------------------------------------------------------
 
     def _validate_semantics(self) -> None:
-        # No restriction: UnrealizedPnL ∈ ℝ
-        pass
+        """
+        PnL ∈ ℝ, but:
+        - must be a valid Decimal
+        - must belong to a valid Currency
+        - must belong to a valid MoneyContext
+        """
+        super()._validate_semantics()
+        # No further restriction on sign
 
     # --- Algebraic operations -------------------------------------------------
 
