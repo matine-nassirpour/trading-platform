@@ -30,7 +30,25 @@ class DomainProjection(DomainObject, ABC, Generic[S]):
     def role(cls) -> DomainRole:
         return DomainRole.PROJECTION
 
-    # --- Projection contract --------------------------------------------------
+    # --- Internal Guarantees --------------------------------------------------
+
+    @staticmethod
+    def _assert_sequential(envelope: EventEnvelope, expected_sequence: int) -> None:
+        seq = envelope.sequence.value
+
+        if seq != expected_sequence:
+            raise ProjectionError(
+                f"Event sequence violation: expected {expected_sequence}, got {seq}"
+            )
+
+    @staticmethod
+    def _advance_cursor(envelope: EventEnvelope) -> ProjectionCursor:
+        return ProjectionCursor(
+            last_event_id=envelope.id,
+            last_sequence=envelope.sequence,
+        )
+
+    # --- Semantic contract ----------------------------------------------------
 
     @abstractmethod
     def initial_state(self) -> S:
@@ -46,34 +64,58 @@ class DomainProjection(DomainObject, ABC, Generic[S]):
         """
         raise NotImplementedError
 
-    # --- Projection engine --------------------------------------------------
+    # --- Full Replay ----------------------------------------------------------
 
-    def project(
-        self,
-        *,
-        events: Iterable[EventEnvelope],
-        cursor: ProjectionCursor | None = None,
-    ) -> tuple[S, ProjectionCursor]:
+    def replay(self, events: Iterable[EventEnvelope]) -> tuple[S, ProjectionCursor]:
+        """
+        Rebuilds the projection state from genesis by replaying
+        the entire event stream.
+
+        This is the ONLY correct way to rebuild from scratch.
+        """
 
         state = self.initial_state()
-        cursor = cursor or ProjectionCursor.initial()
+        cursor = ProjectionCursor.initial()
 
         expected_sequence = cursor.last_sequence.value + 1
 
         for envelope in events:
-            seq = envelope.sequence.value
-
-            if seq != expected_sequence:
-                raise ProjectionError(
-                    f"Event sequence violation: expected {expected_sequence}, got {seq}"
-                )
+            self._assert_sequential(envelope, expected_sequence)
 
             state = self.apply(state, envelope.event)
+            cursor = self._advance_cursor(envelope)
 
-            cursor = ProjectionCursor(
-                last_event_id=envelope.id,
-                last_sequence=envelope.sequence,
+            expected_sequence += 1
+
+        return state, cursor
+
+    # --- Incremental Projection -----------------------------------------------
+
+    def project_incremental(
+        self,
+        *,
+        state: S,
+        cursor: ProjectionCursor,
+        events: Iterable[EventEnvelope],
+    ) -> tuple[S, ProjectionCursor]:
+        """
+        Continues a projection from a known (state, cursor) pair.
+
+        This is the ONLY correct way to apply events incrementally.
+        """
+
+        if not isinstance(cursor, ProjectionCursor):
+            raise ProjectionError(
+                "project_incremental requires a valid ProjectionCursor"
             )
+
+        expected_sequence = cursor.last_sequence.value + 1
+
+        for envelope in events:
+            self._assert_sequential(envelope, expected_sequence)
+
+            state = self.apply(state, envelope.event)
+            cursor = self._advance_cursor(envelope)
 
             expected_sequence += 1
 
