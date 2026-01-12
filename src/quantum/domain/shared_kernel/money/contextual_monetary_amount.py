@@ -37,7 +37,14 @@ class ContextualMonetaryAmount(MonetaryAmount, ABC):
                 f"Currency {self.currency} not allowed in context {self.context}"
             )
 
-    def _check_currency_and_context(self, other: ContextualMonetaryAmount) -> None:
+    def _assert_same_context_and_currency(
+        self, other: ContextualMonetaryAmount
+    ) -> None:
+        """
+        Canonical invariant: both operands must belong to the same
+        currency and the same MoneyContext.
+        """
+
         if not isinstance(other, ContextualMonetaryAmount):
             raise InvariantViolation("Operand must be a ContextualMonetaryAmount")
 

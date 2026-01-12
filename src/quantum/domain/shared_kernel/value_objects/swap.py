@@ -4,15 +4,15 @@ from dataclasses import dataclass
 from decimal import Decimal
 
 from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
-from quantum.domain.shared_kernel.money.contextual_monetary_amount import (
-    ContextualMonetaryAmount,
-)
 from quantum.domain.shared_kernel.money.money_context import MoneyContext
+from quantum.domain.shared_kernel.primitives.contextual_algebraic_monetary_value_object import (
+    ContextualAlgebraicMonetaryValueObject,
+)
 from quantum.domain.shared_kernel.value_objects.currency import Currency
 
 
 @dataclass(frozen=True)
-class Swap(ContextualMonetaryAmount):
+class Swap(ContextualAlgebraicMonetaryValueObject):
     """
     Swap / rollover monetary adjustment.
 
@@ -51,7 +51,7 @@ class Swap(ContextualMonetaryAmount):
         """
         Returns a new Swap equal to this ⊕ other.
         """
-        self._check_currency_and_context(other)
+        self._assert_algebraically_compatible(other)
         return Swap(
             value=self.value + other.value,
             currency=self.currency,
@@ -62,7 +62,7 @@ class Swap(ContextualMonetaryAmount):
         """
         Returns a new Swap equal to this ⊖ other.
         """
-        self._check_currency_and_context(other)
+        self._assert_algebraically_compatible(other)
         return Swap(
             value=self.value - other.value,
             currency=self.currency,

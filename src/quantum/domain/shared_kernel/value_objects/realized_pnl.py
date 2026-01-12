@@ -34,7 +34,7 @@ class RealizedPnL(ContextualAlgebraicMonetaryValueObject):
     # --- Algebraic operations (explicit, safe) --------------------------------
 
     def add(self, other: RealizedPnL) -> RealizedPnL:
-        self._check_currency_and_context(other)
+        self._assert_algebraically_compatible(other)
         return RealizedPnL(
             value=self.value + other.value,
             currency=self.currency,
@@ -42,7 +42,7 @@ class RealizedPnL(ContextualAlgebraicMonetaryValueObject):
         )
 
     def subtract(self, other: RealizedPnL) -> RealizedPnL:
-        self._check_currency_and_context(other)
+        self._assert_algebraically_compatible(other)
         return RealizedPnL(
             value=self.value - other.value,
             currency=self.currency,

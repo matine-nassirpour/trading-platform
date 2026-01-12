@@ -34,7 +34,7 @@ class UnrealizedPnL(ContextualAlgebraicMonetaryValueObject):
     # --- Algebraic operations -------------------------------------------------
 
     def add(self, other: UnrealizedPnL) -> UnrealizedPnL:
-        self._check_currency_and_context(other)
+        self._assert_algebraically_compatible(other)
         return UnrealizedPnL(
             value=self.value + other.value,
             currency=self.currency,
@@ -42,7 +42,7 @@ class UnrealizedPnL(ContextualAlgebraicMonetaryValueObject):
         )
 
     def subtract(self, other: UnrealizedPnL) -> UnrealizedPnL:
-        self._check_currency_and_context(other)
+        self._assert_algebraically_compatible(other)
         return UnrealizedPnL(
             value=self.value - other.value,
             currency=self.currency,

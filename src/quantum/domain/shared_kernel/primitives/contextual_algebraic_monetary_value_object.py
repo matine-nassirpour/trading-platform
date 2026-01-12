@@ -3,10 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Self
 
-from quantum.domain.shared_kernel.errors.invariants import (
-    CurrencyMismatch,
-    InvariantViolation,
-)
+from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.money.contextual_monetary_amount import (
     ContextualMonetaryAmount,
 )
@@ -24,21 +21,20 @@ class ContextualAlgebraicMonetaryValueObject(ContextualMonetaryAmount, ABC):
 
     # --- Algebraic invariants -------------------------------------------------
 
-    def _check_currency_and_context(self, other: ContextualMonetaryAmount) -> None:
-        if not isinstance(other, ContextualAlgebraicMonetaryValueObject):
+    def _assert_algebraically_compatible(self, other: Self) -> None:
+        """
+        Enforces algebraic closure:
+        - same monetary frame
+        - same runtime type
+        """
+
+        if type(self) is not type(other):
             raise InvariantViolation(
-                "Operand must be a ContextualAlgebraicMonetaryValueObject"
+                f"Algebraic type mismatch: {type(self).__name__} vs {type(other).__name__}"
             )
 
-        if self.currency != other.currency:
-            raise CurrencyMismatch(
-                f"Currency mismatch: {self.currency} vs {other.currency}"
-            )
-
-        if self.context != other.context:
-            raise InvariantViolation(
-                f"MoneyContext mismatch: {self.context} vs {other.context}"
-            )
+        # Delegate currency & context to the canonical checker
+        self._assert_same_context_and_currency(other)
 
     # --- Algebraic operations -------------------------------------------------
 
