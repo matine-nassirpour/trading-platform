@@ -24,6 +24,9 @@ class EventSourcedAggregateRoot(ValidatableAggregate, DomainObject):
     - State is validated after every event
     """
 
+    _is_applying_event: bool
+    _uncommitted_events: list[BaseEvent]
+
     # --- Domain role ----------------------------------------------------------
 
     @classmethod
@@ -33,7 +36,21 @@ class EventSourcedAggregateRoot(ValidatableAggregate, DomainObject):
     # --- Lifecycle ------------------------------------------------------------
 
     def __init__(self) -> None:
-        self._uncommitted_events: list[BaseEvent] = []
+        object.__setattr__(self, "_is_applying_event", False)
+        object.__setattr__(self, "_uncommitted_events", [])
+
+    # --- Mutation barrier -----------------------------------------------------
+
+    def __setattr__(self, name: str, value) -> None:
+        """
+        Forbids any mutation unless we are inside event application.
+        """
+        if not getattr(self, "_is_applying_event", False):
+            raise InvariantViolation(
+                f"Illegal mutation of aggregate {self.__class__.__name__}.{name}. "
+                "State may only be changed while applying a domain event."
+            )
+        object.__setattr__(self, name, value)
 
     # --- Event handling -------------------------------------------------------
 
@@ -41,9 +58,19 @@ class EventSourcedAggregateRoot(ValidatableAggregate, DomainObject):
         """
         Raises and applies a domain event.
         """
-        self._apply(event)
+        self._apply_with_guard(event)
         self._validate_state()
         self._uncommitted_events.append(event)
+
+    def _apply_with_guard(self, event: BaseEvent) -> None:
+        """
+        Applies an event inside a mutation-safe window.
+        """
+        object.__setattr__(self, "_is_applying_event", True)
+        try:
+            self._apply(event)
+        finally:
+            object.__setattr__(self, "_is_applying_event", False)
 
     def _apply(self, event: BaseEvent) -> None:
         """
@@ -70,7 +97,7 @@ class EventSourcedAggregateRoot(ValidatableAggregate, DomainObject):
         EventSourcedAggregateRoot.__init__(instance)
 
         for event in events:
-            instance._apply(event)
+            instance._apply_with_guard(event)
 
         instance._validate_state()
         return instance

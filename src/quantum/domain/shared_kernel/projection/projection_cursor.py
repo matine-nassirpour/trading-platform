@@ -6,10 +6,11 @@ from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.events.event_id import EventId
 from quantum.domain.shared_kernel.events.event_sequence import EventSequence
+from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 
 
 @dataclass(frozen=True)
-class ProjectionCursor:
+class ProjectionCursor(ValueObject):
     """
     Strong projection cursor.
 
@@ -25,10 +26,10 @@ class ProjectionCursor:
 
     def _validate_semantics(self) -> None:
         if not isinstance(self.last_event_id, EventId):
-            raise InvariantViolation("Cursor requires EventId")
+            raise InvariantViolation("ProjectionCursor requires EventId")
 
         if not isinstance(self.last_sequence, EventSequence):
-            raise InvariantViolation("Cursor requires EventSequence")
+            raise InvariantViolation("ProjectionCursor requires EventSequence")
 
     @staticmethod
     def initial() -> ProjectionCursor:

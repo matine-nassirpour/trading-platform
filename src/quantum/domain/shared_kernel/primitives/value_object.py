@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, fields, is_dataclass
+from typing import ClassVar
 
 from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
 from quantum.domain.shared_kernel.architecture.domain_object import DomainObject
@@ -18,7 +19,7 @@ class ValueObject(DomainObject, ABC):
     """
 
     # Internal guard: allows controlled mutation only during validation
-    __is_fully_initialized: bool = False
+    _is_fully_initialized: ClassVar[bool] = False
 
     # --- Architecture ---------------------------------------------------------
 
