@@ -3,6 +3,7 @@ from __future__ import annotations
 from abc import ABC
 from dataclasses import dataclass
 from decimal import Decimal
+from typing import Any
 
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.primitives.numeric_value_object import (
@@ -25,7 +26,7 @@ class MonetaryAmount(NumericValueObject, ABC):
     value: Decimal
     currency: Currency
 
-    def _validate_semantics(self) -> None:
+    def _validate_semantics(self, key: Any) -> None:
         if not isinstance(self.currency, Currency):
             raise InvariantViolation(
                 f"{self.__class__.__name__} requires a valid Currency"

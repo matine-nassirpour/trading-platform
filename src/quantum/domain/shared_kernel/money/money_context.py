@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Any
 
 from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
@@ -25,7 +26,7 @@ class MoneyContext(ValueObject):
     def role(cls) -> DomainRole:
         return DomainRole.VALUE_OBJECT
 
-    def _validate_semantics(self) -> None:
+    def _validate_semantics(self, key: Any) -> None:
         if not isinstance(self.reporting_currency, Currency):
             raise InvariantViolation("MoneyContext requires reporting Currency")
 

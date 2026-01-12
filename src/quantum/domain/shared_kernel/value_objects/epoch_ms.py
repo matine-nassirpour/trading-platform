@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
@@ -30,7 +31,7 @@ class EpochMs(ValueObject):
 
     # --- Invariants -----------------------------------------------------------
 
-    def _validate_semantics(self) -> None:
+    def _validate_semantics(self, key: Any) -> None:
         if not isinstance(self.value, int):
             raise InvariantViolation("EpochMs must be an integer")
 

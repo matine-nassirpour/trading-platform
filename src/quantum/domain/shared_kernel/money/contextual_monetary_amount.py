@@ -3,6 +3,7 @@ from __future__ import annotations
 from abc import ABC
 from dataclasses import dataclass
 from decimal import Decimal
+from typing import Any
 
 from quantum.domain.shared_kernel.errors.invariants import (
     CurrencyMismatch,
@@ -25,7 +26,7 @@ class ContextualMonetaryAmount(MonetaryAmount, ABC):
     currency: Currency
     context: MoneyContext
 
-    def _validate_semantics(self) -> None:
+    def _validate_semantics(self, key: Any) -> None:
         """
         Validation pipeline:
 
@@ -35,7 +36,7 @@ class ContextualMonetaryAmount(MonetaryAmount, ABC):
         """
 
         # --- Step 1: inherit and enforce ALL monetary invariants
-        super()._validate_semantics()
+        super()._validate_semantics(key)
 
         # --- Step 2: context must exist and be valid
         if not isinstance(self.context, MoneyContext):

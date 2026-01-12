@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from decimal import Decimal
+from typing import Any
 
 from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
 from quantum.domain.shared_kernel.money.money_context import MoneyContext
@@ -33,14 +34,14 @@ class Swap(ContextualAlgebraicMonetaryValueObject):
 
     # --- Invariants -----------------------------------------------------------
 
-    def _validate_semantics(self) -> None:
+    def _validate_semantics(self, key: Any) -> None:
         """
         Swap ∈ ℝ, but:
         - must be a valid Decimal
         - must belong to a valid Currency
         - must belong to a valid MoneyContext
         """
-        super()._validate_semantics()
+        super()._validate_semantics(key)
         # No further restriction on sign
 
     # --- Algebraic operations -------------------------------------------------

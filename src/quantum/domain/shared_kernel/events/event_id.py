@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 from uuid import UUID
 
 from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
@@ -24,7 +25,7 @@ class EventId(ValueObject):
     def role(cls) -> DomainRole:
         return DomainRole.VALUE_OBJECT
 
-    def _validate_semantics(self) -> None:
+    def _validate_semantics(self, key: Any) -> None:
         if not isinstance(self.value, UUID):
             raise InvariantViolation("EventId must wrap a UUID")
 

@@ -32,16 +32,18 @@ def immutable_dataclass(cls: type[T]) -> type[T]:
     )
 
     # --- Hard guard: ensure we did not get a dataclass __setattr__
-    if "__setattr__" in cls.__dict__:
-        raise TypeError(
-            f"{cls.__name__} illegally defines __setattr__ via dataclass. "
-            "Use ImmutableDomainObject instead."
-        )
-
-    # --- Ensure class is immutable
     if not issubclass(cls, ImmutableDomainObject):
-        raise TypeError(
-            f"{cls.__name__} must inherit ImmutableDomainObject to be immutable"
-        )
+        raise TypeError(f"{cls.__name__} must inherit ImmutableDomainObject")
 
+    # --- Inject __post_init__ wrapper
+    original_post_init = getattr(cls, "__post_init__", None)
+
+    def __post_init__(self) -> None:
+        if original_post_init:
+            original_post_init(self)
+
+        # Finalize: remove mutation authority
+        object.__delattr__(self, "_mutation_key")
+
+    cls.__post_init__ = __post_init__
     return cls

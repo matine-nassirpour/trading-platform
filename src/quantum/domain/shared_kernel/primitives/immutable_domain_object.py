@@ -1,18 +1,9 @@
 from __future__ import annotations
 
-import contextvars
-import secrets
-
-from collections.abc import Iterator
-from contextlib import contextmanager
 from typing import Any
 
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
-
-# Context variable holding the active mutation token
-_ACTIVE_MUTATION_TOKEN: contextvars.ContextVar[str | None] = contextvars.ContextVar(
-    "_ACTIVE_MUTATION_TOKEN", default=None
-)
+from quantum.domain.shared_kernel.primitives.mutation_key import MutationKey
 
 
 class ImmutableDomainObject:
@@ -30,35 +21,27 @@ class ImmutableDomainObject:
 
     def __init__(self) -> None:
         # Each instance gets its own unforgeable token
-        object.__setattr__(self, "_mutation_token", secrets.token_hex(32))
+        object.__setattr__(self, "_mutation_key", MutationKey())
 
     def __setattr__(self, name: str, value: Any) -> None:
-        active = _ACTIVE_MUTATION_TOKEN.get()
-        my_token = object.__getattribute__(self, "_mutation_token")
+        raise InvariantViolation(
+            f"{self.__class__.__name__} is immutable. "
+            "Use mutation context during construction."
+        )
 
-        if active != my_token:
-            raise InvariantViolation(
-                f"{self.__class__.__name__} is immutable. Cannot set '{name}'."
-            )
+    # --- Internal mutation primitive ------------------------------------------
+
+    def _mutate(self, key: MutationKey, name: str, value: Any) -> None:
+        if not key._matches(self._mutation_key):
+            raise InvariantViolation("Invalid mutation authority")
 
         object.__setattr__(self, name, value)
 
-    # --- Internal mutation guard ----------------------------------------------
+    # --- Capability factory ---------------------------------------------------
 
-    @contextmanager
-    def _mutation_window(self) -> Iterator[None]:
+    def _mutation_capability(self) -> MutationKey:
         """
-        Opens a strictly scoped mutation window for THIS instance only.
-
-        This is:
-        - instance-local
-        - thread-safe
-        - async-safe
-        - non-forgeable
+        Returns the ONLY key capable of mutating this instance.
+        Not copyable, not serializable, not global.
         """
-        token = object.__getattribute__(self, "_mutation_token")
-        reset = _ACTIVE_MUTATION_TOKEN.set(token)
-        try:
-            yield
-        finally:
-            _ACTIVE_MUTATION_TOKEN.reset(reset)
+        return self._mutation_key

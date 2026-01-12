@@ -1,6 +1,7 @@
 import re
 
 from dataclasses import dataclass
+from typing import Any
 
 from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
@@ -17,7 +18,7 @@ class Symbol(ValueObject):
     def role(cls) -> DomainRole:
         return DomainRole.VALUE_OBJECT
 
-    def _validate_semantics(self) -> None:
+    def _validate_semantics(self, key: Any) -> None:
         v = self.value.strip().upper()
         if not _SYMBOL_RE.match(v):
             raise InvariantViolation(f"Invalid symbol: {self.value}")

@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from decimal import Decimal
+from typing import Any
 
 from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
@@ -20,8 +21,8 @@ class Price(ContextualMonetaryAmount):
     def role(cls) -> DomainRole:
         return DomainRole.VALUE_OBJECT
 
-    def _validate_semantics(self) -> None:
-        super()._validate_semantics()
+    def _validate_semantics(self, key: Any) -> None:
+        super()._validate_semantics(key)
 
         if self.value <= Decimal("0"):
             raise InvariantViolation("Price must be strictly positive")

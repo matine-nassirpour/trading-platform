@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC
 from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import ClassVar
+from typing import Any, ClassVar
 
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
@@ -54,7 +54,7 @@ def _validate_allowed_values(values: Iterable[str], cls_name: str) -> frozenset[
     return frozenset(canonical)
 
 
-@dataclass(frozen=True)
+@dataclass(slots=True)
 class ClosedSetValueObject(ValueObject, ABC):
     """
     Canonical base class for closed-set domain concepts.
@@ -87,7 +87,7 @@ class ClosedSetValueObject(ValueObject, ABC):
 
     # --- Semantic invariants --------------------------------------------------
 
-    def _validate_semantics(self) -> None:
+    def _validate_semantics(self, key: Any) -> None:
         if not isinstance(self.value, str):
             raise InvariantViolation(
                 f"{self.__class__.__name__} value must be a string"
