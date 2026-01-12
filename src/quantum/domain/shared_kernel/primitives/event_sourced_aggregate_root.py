@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import Self
+from typing import Any, Self
 
 from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
 from quantum.domain.shared_kernel.architecture.domain_object import DomainObject
@@ -41,7 +41,7 @@ class EventSourcedAggregateRoot(ValidatableAggregate, DomainObject):
 
     # --- Mutation barrier -----------------------------------------------------
 
-    def __setattr__(self, name: str, value) -> None:
+    def __setattr__(self, name: str, value: Any) -> None:
         """
         Forbids any mutation unless we are inside event application.
         """

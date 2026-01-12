@@ -2,13 +2,14 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, fields, is_dataclass
-from typing import ClassVar
+from typing import Any, ClassVar
 
 from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
 from quantum.domain.shared_kernel.architecture.domain_object import DomainObject
+from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=False)
 class ValueObject(DomainObject, ABC):
     """
     Abstract base class for all Value Objects.
@@ -18,8 +19,8 @@ class ValueObject(DomainObject, ABC):
     - Validation pipeline is deterministic and non-bypassable
     """
 
-    # Internal guard: allows controlled mutation only during validation
-    _is_fully_initialized: ClassVar[bool] = False
+    # Internal guard: instance-level, not class-level
+    _is_initializing: ClassVar[str] = "_vo_is_initializing"
 
     # --- Architecture ---------------------------------------------------------
 
@@ -30,21 +31,18 @@ class ValueObject(DomainObject, ABC):
     # --- FINAL initialization pipeline ----------------------------------------
 
     def __post_init__(self) -> None:
-        # Allow controlled mutation during validation
-        object.__setattr__(self, "_ValueObject__is_fully_initialized", False)
-
-        self.__validate()
-
-        # Lock the object forever
-        object.__setattr__(self, "_ValueObject__is_fully_initialized", True)
-
-    def __validate(self) -> None:
         """
-        FINAL validation entrypoint.
+        FINAL. Must never be overridden.
+        """
+        object.__setattr__(self, self._is_initializing, True)
+        try:
+            self._run_validation()
+        finally:
+            object.__setattr__(self, self._is_initializing, False)
 
-        Order is guaranteed and non-overridable:
-        1. base invariants
-        2. subclass semantic invariants
+    def _run_validation(self) -> None:
+        """
+        FINAL. Orchestrates validation in a fixed, auditable order.
         """
         self._validate_base()
         self._validate_semantics()
@@ -53,7 +51,7 @@ class ValueObject(DomainObject, ABC):
 
     def _validate_base(self) -> None:
         """
-        Base-level invariants for all ValueObjects.
+        Base invariants for all ValueObjects.
         Default: none.
         """
         pass
@@ -66,26 +64,37 @@ class ValueObject(DomainObject, ABC):
         """
         raise NotImplementedError
 
+    # --- Mutation barrier -----------------------------------------------------
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        """
+        Prevents any mutation outside of the construction window.
+        """
+        if not getattr(self, self._is_initializing, False):
+            raise InvariantViolation(
+                f"{self.__class__.__name__} is immutable. "
+                f"Illegal attempt to modify attribute '{name}'."
+            )
+        object.__setattr__(self, name, value)
+
     # --- Guard against override -----------------------------------------------
 
     def __init_subclass__(cls) -> None:
         # Enforce dataclass(frozen=True)
         if not is_dataclass(cls):
-            raise TypeError(f"{cls.__name__} must be a frozen dataclass")
+            raise TypeError(f"{cls.__name__} must be a @dataclass(frozen=True)")
 
         params = getattr(cls, "__dataclass_params__", None)
         if not params or not params.frozen:
-            raise TypeError(
-                f"{cls.__name__} must be declared with @dataclass(frozen=True)"
-            )
+            raise TypeError(f"{cls.__name__} must be declared with frozen=True")
 
-        # Forbid any override of the construction & validation pipeline
-        forbidden = {"__init__", "__post_init__", "__validate"}
+        # Forbid overriding FINAL methods
+        forbidden = {"__post_init__", "_run_validation"}
         for name in forbidden:
             if name in cls.__dict__:
                 raise TypeError(
                     f"{cls.__name__} is not allowed to override {name} "
-                    "(ValueObject construction pipeline is final)"
+                    "(ValueObject validation pipeline is final)"
                 )
 
         super().__init_subclass__()
