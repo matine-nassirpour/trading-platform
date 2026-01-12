@@ -89,11 +89,17 @@ ROLE_DEFINITION = {
     ),
     DomainRole.EVENT: (
         """
-    Immutable facts that something happened.
+    Domain Events are immutable payloads.
+
     They:
-    - Represent historical truth
-    - Are never changed
-    - Are audit artifacts
+    - Represent WHAT happened
+    - Do NOT carry identity
+    - Do NOT carry time
+    - Do NOT carry causality
+    - Do NOT know about streams or ordering
+
+    All event metadata (id, timestamp, sequence, causality) MUST be carried
+    by EventEnvelope, not by the event itself.
     """
     ),
     DomainRole.PROJECTION: (

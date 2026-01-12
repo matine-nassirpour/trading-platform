@@ -1,9 +1,21 @@
 from abc import ABC
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 from typing import ClassVar
 
 from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
 from quantum.domain.shared_kernel.architecture.domain_object import DomainObject
+
+_FORBIDDEN_EVENT_FIELDS = {
+    "id",
+    "event_id",
+    "timestamp",
+    "occurred_at",
+    "sequence",
+    "version",
+    "causation_id",
+    "correlation_id",
+    "stream_id",
+}
 
 
 @dataclass(frozen=True)
@@ -24,3 +36,14 @@ class BaseEvent(DomainObject, ABC):
     @classmethod
     def role(cls) -> DomainRole:
         return DomainRole.EVENT
+
+    # --- Architectural guard --------------------------------------------------
+
+    def __post_init__(self) -> None:
+        for field in fields(self):
+            if field.name in _FORBIDDEN_EVENT_FIELDS:
+                raise TypeError(
+                    f"{self.__class__.__name__} illegally defines metadata field "
+                    f"{field.name!r}. Domain events must be pure payloads. "
+                    "Use EventEnvelope for identity, time and causality."
+                )
