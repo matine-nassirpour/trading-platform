@@ -11,13 +11,14 @@ class DomainObject(ABC):
     """
     Root class for all domain-layer types governed by the Domain Charter.
 
-    HARD GUARANTEE:
+    HARD GUARANTEES:
     - Every *concrete* domain class MUST explicitly declare its DomainRole.
     - Inherited roles are NOT allowed for concrete classes.
-    - All domain objects support a controlled initialization window.
+    - DomainObject itself provides NO mutability or lifecycle semantics.
+      Those are owned exclusively by:
+        - ImmutableDomainObject (for ValueObjects, Events, Cursors, etc.)
+        - MutableAggregateRoot (for Aggregates)
     """
-
-    _INIT_FLAG = "_domain_initializing"
 
     @classmethod
     @abstractmethod

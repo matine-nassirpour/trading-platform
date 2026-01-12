@@ -9,17 +9,31 @@ from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 
 class MutableAggregateRoot(DomainObject, ABC):
     """
-    Base class for aggregates that are mutable via domain events only.
+    Aggregate mutation gate.
+
+    HARD GUARANTEES:
+    - Attributes of the aggregate object itself are NEVER mutated.
+    - All state must go through _AggregateState via _mutate().
+    - Even event handlers cannot bypass this.
     """
 
     _MUTATING = False
 
     def __setattr__(self, name: str, value: Any) -> None:
-        if not self._MUTATING:
-            raise InvariantViolation(
-                f"Direct mutation of aggregate {self.__class__.__name__} is forbidden"
-            )
-        object.__setattr__(self, name, value)
+        # During mutation, ONLY _state is allowed to be assigned
+        if self._MUTATING:
+            if name != "_state":
+                raise InvariantViolation(
+                    f"{self.__class__.__name__}: illegal mutation of attribute '{name}'. "
+                    "All aggregate state must be modified via _mutate()."
+                )
+            object.__setattr__(self, name, value)
+            return
+
+        # Outside mutation, nothing may be written
+        raise InvariantViolation(
+            f"{self.__class__.__name__}: direct attribute mutation is forbidden"
+        )
 
     # --- mutation control -----------------------------------------------------
 

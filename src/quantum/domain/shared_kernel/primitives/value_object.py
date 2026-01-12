@@ -30,11 +30,9 @@ class ValueObject(DomainObject, ImmutableDomainObject, ABC):
     # --- FINAL initialization pipeline ----------------------------------------
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, "_IMMUTABLE", False)
-        try:
+        # Open a mutation window only for validation / normalization
+        with self._mutation_window():
             self._run_validation()
-        finally:
-            object.__setattr__(self, "_IMMUTABLE", True)
 
     def _run_validation(self) -> None:
         self._validate_base()

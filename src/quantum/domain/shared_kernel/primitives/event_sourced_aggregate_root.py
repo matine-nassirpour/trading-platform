@@ -28,6 +28,7 @@ class EventSourcedAggregateRoot(
     Canonical base class for all Event-Sourced Aggregates.
 
     HARD GUARANTEES:
+    - Only BaseEvent instances may ever be applied
     - All state changes happen via domain events
     - No direct mutation is allowed
     - Aggregate invariants are validated after every event
@@ -92,8 +93,18 @@ class EventSourcedAggregateRoot(
 
     def _apply(self, event: BaseEvent) -> None:
         """
-        Applies an event inside a mutation-safe window.
+        Applies a single domain event inside a mutation-safe window.
+
+        HARD GUARANTEE:
+        - event MUST be a BaseEvent
         """
+
+        if not isinstance(event, BaseEvent):
+            raise InvariantViolation(
+                f"{self.__class__.__name__} can only apply BaseEvent, "
+                f"got {type(event).__name__}"
+            )
+
         key = (event.event_name, event.event_version)
 
         handlers = self.__class__._EVENT_HANDLERS
@@ -130,11 +141,6 @@ class EventSourcedAggregateRoot(
     # --- Contracts ------------------------------------------------------------
 
     def _validate_state(self) -> None:
-        """
-        Aggregate-wide invariant validation.
-
-        MUST be overridden by concrete aggregates.
-        """
         raise NotImplementedError(
             f"{self.__class__.__name__} must implement _validate_state()"
         )
@@ -142,9 +148,6 @@ class EventSourcedAggregateRoot(
     # --- Introspection --------------------------------------------------------
 
     def pull_uncommitted_events(self) -> tuple[BaseEvent, ...]:
-        """
-        Returns and clears uncommitted events.
-        """
         events = tuple(self._uncommitted_events)
         self._uncommitted_events.clear()
         return events
