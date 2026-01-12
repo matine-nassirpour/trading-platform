@@ -4,7 +4,6 @@ from collections.abc import Callable, Iterable
 from typing import Any, ClassVar, Self
 
 from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
-from quantum.domain.shared_kernel.architecture.domain_object import DomainObject
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.events.base_event import BaseEvent
 from quantum.domain.shared_kernel.primitives.aggregate_state import _AggregateState
@@ -22,7 +21,6 @@ EventHandler = Callable[[Any, BaseEvent], None]
 class EventSourcedAggregateRoot(
     MutableAggregateRoot,
     ValidatableAggregate,
-    DomainObject,
 ):
     """
     Canonical base class for all Event-Sourced Aggregates.
@@ -57,6 +55,7 @@ class EventSourcedAggregateRoot(
     # --- Lifecycle ------------------------------------------------------------
 
     def __init__(self) -> None:
+        super().__init__()
         object.__setattr__(self, "_state", _AggregateState())
         object.__setattr__(self, "_uncommitted_events", [])
 
@@ -94,9 +93,6 @@ class EventSourcedAggregateRoot(
     def _apply(self, event: BaseEvent) -> None:
         """
         Applies a single domain event inside a mutation-safe window.
-
-        HARD GUARANTEE:
-        - event MUST be a BaseEvent
         """
 
         if not isinstance(event, BaseEvent):
@@ -116,11 +112,8 @@ class EventSourcedAggregateRoot(
 
         handler = handlers[key]
 
-        self._begin_mutation()
-        try:
+        with self._mutation_window():
             handler(self, event)
-        finally:
-            self._end_mutation()
 
     # --- Replay ---------------------------------------------------------------
 
@@ -130,7 +123,7 @@ class EventSourcedAggregateRoot(
         Rebuilds an aggregate from its event stream.
         """
         instance = cls.__new__(cls)
-        EventSourcedAggregateRoot.__init__(instance)
+        cls.__init__(instance)
 
         for event in events:
             instance._apply(event)

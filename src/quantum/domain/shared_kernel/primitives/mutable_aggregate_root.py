@@ -5,46 +5,33 @@ from typing import Any
 
 from quantum.domain.shared_kernel.architecture.domain_object import DomainObject
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.primitives.aggregate_mutation_guard import (
+    AggregateMutationGuard,
+)
 
 
-class MutableAggregateRoot(DomainObject, ABC):
+class MutableAggregateRoot(DomainObject, AggregateMutationGuard, ABC):
     """
     Aggregate mutation gate.
 
     HARD GUARANTEES:
     - Attributes of the aggregate object itself are NEVER mutated.
     - All state must go through _AggregateState via _mutate().
-    - Even event handlers cannot bypass this.
+    - Mutation authority is instance-scoped, async-safe, and non-forgeable.
     """
 
-    _MUTATING = False
+    def __init__(self) -> None:
+        super().__init__()
+
+    # --- Attribute write protection ------------------------------------------
 
     def __setattr__(self, name: str, value: Any) -> None:
-        # During mutation, ONLY _state is allowed to be assigned
-        if self._MUTATING:
-            if name != "_state":
-                raise InvariantViolation(
-                    f"{self.__class__.__name__}: illegal mutation of attribute '{name}'. "
-                    "All aggregate state must be modified via _mutate()."
-                )
-            object.__setattr__(self, name, value)
-            return
-
-        # Outside mutation, nothing may be written
         raise InvariantViolation(
-            f"{self.__class__.__name__}: direct attribute mutation is forbidden"
+            f"{self.__class__.__name__}: direct attribute mutation is forbidden. "
+            "All aggregate state must go through domain events."
         )
 
-    # --- mutation control -----------------------------------------------------
-
-    def _begin_mutation(self) -> None:
-        object.__setattr__(self, "_MUTATING", True)
-
-    def _end_mutation(self) -> None:
-        object.__setattr__(self, "_MUTATING", False)
+    # --- Controlled state write ----------------------------------------------
 
     def _assert_mutating(self) -> None:
-        if not self._MUTATING:
-            raise InvariantViolation(
-                f"{self.__class__.__name__} state mutation outside event application"
-            )
+        super()._assert_mutating()
