@@ -8,9 +8,8 @@ from quantum.domain.shared_kernel.events.base_event import BaseEvent
 from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
 from quantum.domain.shared_kernel.projection.projection_cursor import ProjectionCursor
 from quantum.domain.shared_kernel.projection.projection_error import ProjectionError
-from quantum.domain.shared_kernel.projection.projection_state import ProjectionState
 
-S = TypeVar("S", bound=ProjectionState)
+S = TypeVar("S")
 
 
 class DomainProjection(DomainObject, ABC, Generic[S]):

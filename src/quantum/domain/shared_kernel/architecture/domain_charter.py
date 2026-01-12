@@ -25,7 +25,6 @@ class DomainRole(str, Enum):
     SERVICE = "service"
     FACTORY = "factory"
     EVENT = "event"
-    READ_MODEL = "read_model"
     PROJECTION = "projection"
     CURSOR = "cursor"
 
@@ -97,19 +96,6 @@ ROLE_DEFINITION = {
     - Are audit artifacts
     """
     ),
-    DomainRole.READ_MODEL: (
-        """
-    CQRS Read Model.
-
-    Properties:
-    - Derived from domain events
-    - Query-only
-    - Contains no business invariants
-    - Is NOT part of the Domain Model
-    - Lives on the read side only
-    - May be denormalized
-    """
-    ),
     DomainRole.PROJECTION: (
         """
     Properties:
@@ -121,7 +107,6 @@ ROLE_DEFINITION = {
     - No side effects
 
     A Projection defines HOW domain events are interpreted.
-    A ReadModel defines WHAT is stored for queries.
     """
     ),
     DomainRole.CURSOR: (
