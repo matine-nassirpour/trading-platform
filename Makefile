@@ -41,6 +41,7 @@ lint: ## Comprehensive linting (Ruff + Isort)
 
 
 # ╭────────────────────────────────────────────────────────────────────────────╮
+
 # │ Typing, Security, and Pre-commit                                           │
 # ╰────────────────────────────────────────────────────────────────────────────╯
 typecheck: ## Strict static typing (Mypy)

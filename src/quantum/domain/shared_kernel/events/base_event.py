@@ -1,9 +1,12 @@
 from abc import ABC
-from dataclasses import dataclass, fields
+from dataclasses import is_dataclass
 from typing import ClassVar
 
 from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
 from quantum.domain.shared_kernel.architecture.domain_object import DomainObject
+from quantum.domain.shared_kernel.architecture.immutable_dataclass import (
+    immutable_dataclass,
+)
 from quantum.domain.shared_kernel.primitives.immutable_domain_object import (
     ImmutableDomainObject,
 )
@@ -21,7 +24,7 @@ _FORBIDDEN_EVENT_FIELDS = {
 }
 
 
-@dataclass(frozen=True)
+@immutable_dataclass
 class BaseEvent(DomainObject, ImmutableDomainObject, ABC):
     """
     Canonical immutable Domain Event.
@@ -43,8 +46,13 @@ class BaseEvent(DomainObject, ImmutableDomainObject, ABC):
     # --- Architectural guard --------------------------------------------------
 
     def __post_init__(self) -> None:
-        for field in fields(self):
-            if field.name in _FORBIDDEN_EVENT_FIELDS:
+        cls = type(self)
+
+        if not is_dataclass(cls):
+            raise TypeError(f"{cls.__name__} must be a dataclass")
+
+        for name in cls.__dataclass_fields__:
+            if name in _FORBIDDEN_EVENT_FIELDS:
                 raise TypeError(
-                    f"{self.__class__.__name__} illegally defines {field.name}"
+                    f"{cls.__name__} illegally defines forbidden field '{name}'"
                 )

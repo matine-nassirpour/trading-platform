@@ -1,16 +1,19 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, fields, is_dataclass
+from dataclasses import is_dataclass
 
 from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
 from quantum.domain.shared_kernel.architecture.domain_object import DomainObject
+from quantum.domain.shared_kernel.architecture.immutable_dataclass import (
+    immutable_dataclass,
+)
 from quantum.domain.shared_kernel.primitives.immutable_domain_object import (
     ImmutableDomainObject,
 )
 
 
-@dataclass(frozen=True)
+@immutable_dataclass
 class ValueObject(DomainObject, ImmutableDomainObject, ABC):
     """
     Abstract base class for all Value Objects.
@@ -58,15 +61,17 @@ class ValueObject(DomainObject, ImmutableDomainObject, ABC):
     # --- Guard against override -----------------------------------------------
 
     def __init_subclass__(cls) -> None:
-        if not is_dataclass(cls):
-            raise TypeError(f"{cls.__name__} must be a @dataclass(frozen=True)")
         super().__init_subclass__()
 
     # --- Canonical string representations -------------------------------------
 
     def __repr__(self) -> str:
-        cls_name = self.__class__.__name__
+        cls = type(self)
+
+        if not is_dataclass(cls):
+            return super().__repr__()
+
         args = ", ".join(
-            f"{field.name}={getattr(self, field.name)!r}" for field in fields(self)
+            f"{name}={getattr(self, name)!r}" for name in cls.__dataclass_fields__
         )
-        return f"{cls_name}({args})"
+        return f"{cls.__name__}({args})"

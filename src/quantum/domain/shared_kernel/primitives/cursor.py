@@ -1,16 +1,18 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, is_dataclass
 
 from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
 from quantum.domain.shared_kernel.architecture.domain_object import DomainObject
+from quantum.domain.shared_kernel.architecture.immutable_dataclass import (
+    immutable_dataclass,
+)
 from quantum.domain.shared_kernel.primitives.immutable_domain_object import (
     ImmutableDomainObject,
 )
 
 
-@dataclass(frozen=True)
+@immutable_dataclass
 class Cursor(DomainObject, ImmutableDomainObject, ABC):
     """
     Canonical base class for all Domain Cursors.
@@ -31,8 +33,6 @@ class Cursor(DomainObject, ImmutableDomainObject, ABC):
     # --- Guard against misuse -------------------------------------------------
 
     def __init_subclass__(cls) -> None:
-        if not is_dataclass(cls):
-            raise TypeError(f"{cls.__name__} must be a @dataclass(frozen=True)")
         super().__init_subclass__()
 
     # --- Validation pipeline --------------------------------------------------
