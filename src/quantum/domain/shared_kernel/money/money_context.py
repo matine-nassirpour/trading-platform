@@ -20,7 +20,7 @@ class MoneyContext(ValueObject):
     reporting_currency: Currency
     allowed_currencies: frozenset[Currency]
 
-    def _validate(self) -> None:
+    def _validate_semantics(self) -> None:
         if not isinstance(self.reporting_currency, Currency):
             raise InvariantViolation("MoneyContext requires reporting Currency")
 

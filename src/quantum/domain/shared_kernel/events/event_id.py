@@ -24,7 +24,7 @@ class EventId(ValueObject):
     def role(cls) -> DomainRole:
         return DomainRole.VALUE_OBJECT
 
-    def _validate(self) -> None:
+    def _validate_semantics(self) -> None:
         if not isinstance(self.value, UUID):
             raise InvariantViolation("EventId must wrap a UUID")
 

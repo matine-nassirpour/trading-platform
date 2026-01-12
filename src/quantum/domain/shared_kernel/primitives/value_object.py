@@ -11,23 +11,64 @@ from quantum.domain.shared_kernel.architecture.domain_object import DomainObject
 class ValueObject(DomainObject, ABC):
     """
     Abstract base class for all Value Objects.
-    Concrete subclasses MUST redeclare role().
+
+    HARD GUARANTEE:
+    - __post_init__ is FINAL
+    - Validation pipeline is deterministic and non-bypassable
     """
+
+    # --- Architecture ---------------------------------------------------------
 
     @classmethod
     def role(cls) -> DomainRole:
         return DomainRole.VALUE_OBJECT
 
+    # --- FINAL initialization pipeline ----------------------------------------
+
     def __post_init__(self) -> None:
-        self._validate()
+        self.__validate()
+
+    def __validate(self) -> None:
+        """
+        FINAL validation entrypoint.
+
+        Order is guaranteed and non-overridable:
+        1. base invariants
+        2. subclass semantic invariants
+        """
+        self._validate_base()
+        self._validate_semantics()
+
+    # --- Hooks ----------------------------------------------------------------
+
+    def _validate_base(self) -> None:
+        """
+        Base-level invariants for all ValueObjects.
+        Default: none.
+        """
+        pass
 
     @abstractmethod
-    def _validate(self) -> None:
+    def _validate_semantics(self) -> None:
         """
-        Enforces all invariants of the Value Object.
-        Must be implemented by subclasses.
+        Domain-specific invariants.
+        MUST be implemented by concrete subclasses.
         """
         raise NotImplementedError
+
+    # --- Guard against override -----------------------------------------------
+
+    def __init_subclass__(cls) -> None:
+        forbidden = {"__post_init__", "__validate"}
+
+        for name in forbidden:
+            if name in cls.__dict__:
+                raise TypeError(
+                    f"{cls.__name__} is not allowed to override {name} "
+                    "(ValueObject initialization pipeline is final)"
+                )
+
+        super().__init_subclass__()
 
     # --- Canonical string representations -------------------------------------
 
@@ -39,8 +80,4 @@ class ValueObject(DomainObject, ABC):
         return f"{cls_name}({args})"
 
     def __str__(self) -> str:
-        """
-        Human-readable but deterministic representation.
-        Safe for logging/debugging.
-        """
         return self.__repr__()

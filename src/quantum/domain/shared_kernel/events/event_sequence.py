@@ -21,7 +21,7 @@ class EventSequence(ValueObject):
     def role(cls) -> DomainRole:
         return DomainRole.VALUE_OBJECT
 
-    def _validate(self) -> None:
+    def _validate_semantics(self) -> None:
         if not isinstance(self.value, int):
             raise InvariantViolation("EventSequence must be an integer")
 

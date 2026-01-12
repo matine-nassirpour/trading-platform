@@ -30,7 +30,7 @@ class EpochMs(ValueObject):
 
     # --- Invariants -----------------------------------------------------------
 
-    def _validate(self) -> None:
+    def _validate_semantics(self) -> None:
         if not isinstance(self.value, int):
             raise InvariantViolation("EpochMs must be an integer")
 

@@ -24,7 +24,7 @@ class ProjectionCursor(ValueObject):
     def role(cls) -> DomainRole:
         return DomainRole.CURSOR
 
-    def _validate(self) -> None:
+    def _validate_semantics(self) -> None:
         if not isinstance(self.last_event_id, EventId):
             raise InvariantViolation("Cursor requires EventId")
 

@@ -17,7 +17,7 @@ class Symbol(ValueObject):
     def role(cls) -> DomainRole:
         return DomainRole.VALUE_OBJECT
 
-    def _validate(self) -> None:
+    def _validate_semantics(self) -> None:
         v = self.value.strip().upper()
         if not _SYMBOL_RE.match(v):
             raise InvariantViolation(f"Invalid symbol: {self.value}")

@@ -21,7 +21,7 @@ class TimeInterval(ValueObject):
     valid_from: EpochMs
     valid_until: EpochMs | None = None
 
-    def _validate(self) -> None:
+    def _validate_semantics(self) -> None:
         if not isinstance(self.valid_from, EpochMs):
             raise InvariantViolation("valid_from must be an EpochMs")
 

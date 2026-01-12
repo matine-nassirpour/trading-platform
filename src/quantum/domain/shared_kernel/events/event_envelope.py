@@ -30,7 +30,7 @@ class EventEnvelope(ValueObject):
     def role(cls) -> DomainRole:
         return DomainRole.VALUE_OBJECT
 
-    def _validate(self) -> None:
+    def _validate_semantics(self) -> None:
         if not isinstance(self.id, EventId):
             raise InvariantViolation("EventEnvelope requires EventId")
 
