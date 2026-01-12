@@ -60,6 +60,7 @@ class RiskPolicy(DomainPolicy):
                 kind=RiskBreachKind.drawdown(),
                 current=current_drawdown,
                 limit=limits.max_drawdown,
+                policy=limits.threshold_policy,
             )
 
         return None
@@ -79,6 +80,7 @@ class RiskPolicy(DomainPolicy):
                 kind=RiskBreachKind.notional(),
                 current=notional,
                 limit=limits.max_notional,
+                policy=limits.threshold_policy,
             )
 
         return None
@@ -98,6 +100,7 @@ class RiskPolicy(DomainPolicy):
                 kind=RiskBreachKind.daily_loss(),
                 current=daily_loss,
                 limit=limits.max_daily_loss,
+                policy=limits.threshold_policy,
             )
 
         return None

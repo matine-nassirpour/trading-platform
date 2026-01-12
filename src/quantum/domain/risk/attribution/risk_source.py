@@ -6,7 +6,7 @@ from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=False)
 class RiskSource(ValueObject):
     """
     Concrete origin of a risk.

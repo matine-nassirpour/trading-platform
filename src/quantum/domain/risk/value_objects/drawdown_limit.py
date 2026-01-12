@@ -6,12 +6,12 @@ from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.money.contextual_monetary_amount import (
     ContextualMonetaryAmount,
 )
-from quantum.domain.shared_kernel.primitives.monetary_amount import MonetaryAmount
-from quantum.domain.shared_kernel.primitives.value_object import ValueObject
+from quantum.domain.shared_kernel.money.money_context import MoneyContext
+from quantum.domain.shared_kernel.value_objects.currency import Currency
 
 
-@dataclass(frozen=True)
-class DrawdownLimit(ValueObject):
+@dataclass(frozen=False)
+class DrawdownLimit(ContextualMonetaryAmount):
     """
     Maximum allowed drawdown.
 
@@ -21,15 +21,16 @@ class DrawdownLimit(ValueObject):
     - Non-algebraic
     """
 
-    value: ContextualMonetaryAmount
+    value: Decimal
+    currency: Currency
+    context: MoneyContext
 
     @classmethod
     def role(cls) -> DomainRole:
         return DomainRole.VALUE_OBJECT
 
     def _validate_semantics(self) -> None:
-        if not isinstance(self.value, MonetaryAmount):
-            raise InvariantViolation("DrawdownLimit value must be a MonetaryAmount")
+        super()._validate_semantics()
 
-        if self.value.value <= Decimal("0"):
+        if self.value <= Decimal("0"):
             raise InvariantViolation("DrawdownLimit must be strictly positive")

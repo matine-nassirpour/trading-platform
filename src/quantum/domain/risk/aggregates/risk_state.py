@@ -12,7 +12,6 @@ from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import (
     EventSourcedAggregateRoot,
 )
-from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
 from quantum.domain.shared_kernel.value_objects.realized_pnl import RealizedPnL
 
 
@@ -45,7 +44,7 @@ class RiskState(EventSourcedAggregateRoot):
 
     # --- Commands -------------------------------------------------------------
 
-    def register_pnl(self, *, pnl: RealizedPnL, at: EpochMs) -> None:
+    def register_pnl(self, *, pnl: RealizedPnL) -> None:
         """
         Registers a realized PnL.
         """
@@ -74,7 +73,6 @@ class RiskState(EventSourcedAggregateRoot):
 
         self._raise(
             EquityAdjustedEvent(
-                occurred_at=at,
                 pnl=pnl,
                 new_equity=new_equity,
                 new_equity_peak=new_equity_peak,
@@ -84,7 +82,6 @@ class RiskState(EventSourcedAggregateRoot):
         if drawdown_breach is not None:
             self._raise(
                 MaxDrawdownExceededEvent(
-                    occurred_at=at,
                     current_drawdown=future_drawdown,
                     limit=self.limits.max_drawdown,
                 )

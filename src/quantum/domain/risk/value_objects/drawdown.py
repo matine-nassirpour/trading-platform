@@ -10,7 +10,7 @@ from quantum.domain.shared_kernel.money.contextual_monetary_amount import (
 )
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=False)
 class Drawdown(ContextualMonetaryAmount):
     """
     Drawdown = equity_peak − equity.

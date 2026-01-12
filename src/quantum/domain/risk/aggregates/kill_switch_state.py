@@ -13,7 +13,6 @@ from quantum.domain.shared_kernel.errors.invariants import (
 from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import (
     EventSourcedAggregateRoot,
 )
-from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
 
 
 class KillSwitchState(EventSourcedAggregateRoot):
@@ -24,7 +23,6 @@ class KillSwitchState(EventSourcedAggregateRoot):
     """
 
     status: KillSwitchStatus
-    triggered_at: EpochMs | None
     reason: KillSwitchReason | None
 
     # --- Commands -------------------------------------------------------------
@@ -32,7 +30,6 @@ class KillSwitchState(EventSourcedAggregateRoot):
     def trigger(
         self,
         *,
-        at: EpochMs,
         reason: KillSwitchReason,
         detail: str | None = None,
     ) -> None:
@@ -41,7 +38,6 @@ class KillSwitchState(EventSourcedAggregateRoot):
 
         self._raise(
             KillSwitchTriggerEvent(
-                occurred_at=at,
                 reason=reason,
                 detail=detail,
             )
@@ -51,12 +47,10 @@ class KillSwitchState(EventSourcedAggregateRoot):
 
     def _apply_killswitcharmedevent(self, event: KillSwitchArmedEvent) -> None:
         self.status = KillSwitchStatus.armed()
-        self.triggered_at = None
         self.reason = None
 
     def _apply_killswitchtriggerevent(self, event: KillSwitchTriggerEvent) -> None:
         self.status = KillSwitchStatus.triggered()
-        self.triggered_at = event.occurred_at
         self.reason = event.reason
 
     # --- Invariants ----------------------------------------------------------
@@ -66,13 +60,13 @@ class KillSwitchState(EventSourcedAggregateRoot):
             raise InvariantViolation("KillSwitchState must have a valid status")
 
         if self.status == KillSwitchStatus.armed():
-            if self.triggered_at is not None or self.reason is not None:
+            if self.reason is not None:
                 raise InvariantViolation(
                     "Armed KillSwitch must not have trigger metadata"
                 )
 
         if self.status == KillSwitchStatus.triggered():
-            if self.triggered_at is None or self.reason is None:
+            if self.reason is None:
                 raise InvariantViolation(
-                    "Triggered KillSwitch must have timestamp and reason"
+                    "Triggered KillSwitch must have a trigger reason"
                 )

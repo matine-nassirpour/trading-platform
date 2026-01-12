@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 from quantum.domain.risk.value_objects.risk_breach_kind import RiskBreachKind
+from quantum.domain.risk.value_objects.risk_threshold_policy import RiskThresholdPolicy
 from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.money.contextual_monetary_amount import (
@@ -9,7 +10,7 @@ from quantum.domain.shared_kernel.money.contextual_monetary_amount import (
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=False)
 class RiskBreach(ValueObject):
     """
     Canonical representation of a detected risk breach.
@@ -18,6 +19,7 @@ class RiskBreach(ValueObject):
     kind: RiskBreachKind
     current: ContextualMonetaryAmount
     limit: ContextualMonetaryAmount
+    policy: RiskThresholdPolicy
 
     @classmethod
     def role(cls) -> DomainRole:
@@ -37,8 +39,8 @@ class RiskBreach(ValueObject):
                 "RiskBreach requires a limit ContextualMonetaryAmount"
             )
 
+        if not isinstance(self.policy, RiskThresholdPolicy):
+            raise InvariantViolation("RiskBreach requires a RiskThresholdPolicy")
+
         if self.current.context != self.limit.context:
             raise InvariantViolation("RiskBreach MoneyContext mismatch")
-
-        if self.current.value < self.limit.value:
-            raise InvariantViolation("Risk breach requires current ≥ limit")

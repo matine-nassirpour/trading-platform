@@ -11,7 +11,7 @@ from quantum.domain.shared_kernel.primitives.numeric_value_object import (
 from quantum.domain.shared_kernel.value_objects.currency import Currency
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=False)
 class MonetaryAmount(NumericValueObject, ABC):
     """
     Base class for all monetary quantities.

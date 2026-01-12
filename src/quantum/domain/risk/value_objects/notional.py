@@ -7,7 +7,7 @@ from quantum.domain.shared_kernel.primitives.monetary_amount import MonetaryAmou
 from quantum.domain.shared_kernel.value_objects.currency import Currency
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=False)
 class Notional(MonetaryAmount):
     """
     Gross notional exposure.
