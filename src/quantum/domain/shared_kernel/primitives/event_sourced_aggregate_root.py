@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from typing import Self
 
 from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
 from quantum.domain.shared_kernel.architecture.domain_object import DomainObject
@@ -61,7 +62,7 @@ class EventSourcedAggregateRoot(ValidatableAggregate, DomainObject):
     # --- Replay ---------------------------------------------------------------
 
     @classmethod
-    def rehydrate(cls, events: Iterable[BaseEvent]) -> EventSourcedAggregateRoot:
+    def rehydrate(cls, events: Iterable[BaseEvent]) -> Self:
         """
         Rebuilds an aggregate from its event stream.
         """

@@ -12,18 +12,25 @@ from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
 @dataclass(frozen=True)
 class EventEnvelope(ValueObject):
     """
-    Audit-grade event wrapper.
+    Audit-grade domain event envelope.
 
-    Guarantees:
-    - Global identity
-    - Stream ordering
-    - Timestamp
-    - Payload immutability
+    This object represents the act of recording a Domain Event
+    into an immutable event stream.
+
+    Semantic guarantees:
+    - id            → global identity of the record
+    - sequence      → strict ordering within a stream
+    - recorded_at   → when THIS SYSTEM recorded the event
+    - event         → the pure, atemporal domain fact
+
+    IMPORTANT:
+    The Domain Event itself carries NO temporal information.
+    All time lives in the envelope.
     """
 
     id: EventId
     sequence: EventSequence
-    occurred_at: EpochMs
+    recorded_at: EpochMs
     event: BaseEvent
 
     @classmethod
@@ -37,8 +44,8 @@ class EventEnvelope(ValueObject):
         if not isinstance(self.sequence, EventSequence):
             raise InvariantViolation("EventEnvelope requires EventSequence")
 
-        if not isinstance(self.occurred_at, EpochMs):
-            raise InvariantViolation("EventEnvelope requires EpochMs")
+        if not isinstance(self.recorded_at, EpochMs):
+            raise InvariantViolation("EventEnvelope requires recorded_at: EpochMs")
 
         if not isinstance(self.event, BaseEvent):
             raise InvariantViolation("EventEnvelope requires BaseEvent")

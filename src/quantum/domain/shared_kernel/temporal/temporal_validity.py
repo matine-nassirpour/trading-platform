@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 from quantum.domain.shared_kernel.temporal.time_interval import TimeInterval
@@ -17,6 +18,10 @@ class TemporalValidity(ValueObject):
     """
 
     interval: TimeInterval
+
+    @classmethod
+    def role(cls) -> DomainRole:
+        return DomainRole.VALUE_OBJECT
 
     def _validate_semantics(self) -> None:
         if not isinstance(self.interval, TimeInterval):
