@@ -102,22 +102,26 @@ ROLE_DEFINITION = {
     CQRS Read Model.
 
     Properties:
-    - Derived from events
+    - Derived from domain events
     - Query-only
     - Contains no business invariants
-    - Is not part of the domain model
+    - Is NOT part of the Domain Model
+    - Lives on the read side only
     - May be denormalized
     """
     ),
     DomainRole.PROJECTION: (
         """
-    Deterministic event → state transformer.
-
     Properties:
+    - IS part of the Domain Layer
+    - Encodes event → state semantics
+    - Pure and deterministic
     - Stateless
-    - Pure
-    - Replayable
+    - Fully replayable
     - No side effects
+
+    A Projection defines HOW domain events are interpreted.
+    A ReadModel defines WHAT is stored for queries.
     """
     ),
     DomainRole.CURSOR: (

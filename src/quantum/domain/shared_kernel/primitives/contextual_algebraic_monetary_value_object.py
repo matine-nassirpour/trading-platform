@@ -24,9 +24,11 @@ class ContextualAlgebraicMonetaryValueObject(ContextualMonetaryAmount, ABC):
 
     # --- Algebraic invariants -------------------------------------------------
 
-    def _check_currency_and_context(self, other: Self) -> None:
+    def _check_currency_and_context(self, other: ContextualMonetaryAmount) -> None:
         if not isinstance(other, ContextualAlgebraicMonetaryValueObject):
-            raise InvariantViolation("Operand must be a contextual monetary value")
+            raise InvariantViolation(
+                "Operand must be a ContextualAlgebraicMonetaryValueObject"
+            )
 
         if self.currency != other.currency:
             raise CurrencyMismatch(

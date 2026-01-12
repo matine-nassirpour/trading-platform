@@ -25,7 +25,7 @@ class ClosedSetValueObject(ValueObject, ABC):
     # MUST be overridden by subclasses
     _ALLOWED_VALUES: ClassVar[frozenset[str]]
 
-    def _validate(self) -> None:
+    def _validate_semantics(self) -> None:
         if not isinstance(self.value, str):
             raise InvariantViolation(
                 f"{self.__class__.__name__} value must be a string"
