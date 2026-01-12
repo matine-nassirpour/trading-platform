@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, fields
+from dataclasses import dataclass, fields, is_dataclass
 
 from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
 from quantum.domain.shared_kernel.architecture.domain_object import DomainObject
@@ -17,6 +17,9 @@ class ValueObject(DomainObject, ABC):
     - Validation pipeline is deterministic and non-bypassable
     """
 
+    # Internal guard: allows controlled mutation only during validation
+    __is_fully_initialized: bool = False
+
     # --- Architecture ---------------------------------------------------------
 
     @classmethod
@@ -26,7 +29,13 @@ class ValueObject(DomainObject, ABC):
     # --- FINAL initialization pipeline ----------------------------------------
 
     def __post_init__(self) -> None:
+        # Allow controlled mutation during validation
+        object.__setattr__(self, "_ValueObject__is_fully_initialized", False)
+
         self.__validate()
+
+        # Lock the object forever
+        object.__setattr__(self, "_ValueObject__is_fully_initialized", True)
 
     def __validate(self) -> None:
         """
@@ -59,13 +68,23 @@ class ValueObject(DomainObject, ABC):
     # --- Guard against override -----------------------------------------------
 
     def __init_subclass__(cls) -> None:
-        forbidden = {"__post_init__", "__validate"}
+        # Enforce dataclass(frozen=True)
+        if not is_dataclass(cls):
+            raise TypeError(f"{cls.__name__} must be a frozen dataclass")
 
+        params = getattr(cls, "__dataclass_params__", None)
+        if not params or not params.frozen:
+            raise TypeError(
+                f"{cls.__name__} must be declared with @dataclass(frozen=True)"
+            )
+
+        # Forbid any override of the construction & validation pipeline
+        forbidden = {"__init__", "__post_init__", "__validate"}
         for name in forbidden:
             if name in cls.__dict__:
                 raise TypeError(
                     f"{cls.__name__} is not allowed to override {name} "
-                    "(ValueObject initialization pipeline is final)"
+                    "(ValueObject construction pipeline is final)"
                 )
 
         super().__init_subclass__()
