@@ -2,34 +2,33 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.events.event_id import EventId
 from quantum.domain.shared_kernel.events.event_sequence import EventSequence
-from quantum.domain.shared_kernel.primitives.value_object import ValueObject
+from quantum.domain.shared_kernel.primitives.cursor import Cursor
 
 
 @dataclass(frozen=True)
-class ProjectionCursor(ValueObject):
+class ProjectionCursor(Cursor):
     """
     Strong projection cursor.
 
-    Represents exactly the last processed event.
+    Represents exactly the last processed event in a projection.
     """
 
     last_event_id: EventId
     last_sequence: EventSequence
 
-    @classmethod
-    def role(cls) -> DomainRole:
-        return DomainRole.CURSOR
+    # --- Invariants -----------------------------------------------------------
 
-    def _validate_semantics(self) -> None:
+    def _validate(self) -> None:
         if not isinstance(self.last_event_id, EventId):
             raise InvariantViolation("ProjectionCursor requires EventId")
 
         if not isinstance(self.last_sequence, EventSequence):
             raise InvariantViolation("ProjectionCursor requires EventSequence")
+
+    # --- Constructors --------------------------------------------------------
 
     @staticmethod
     def initial() -> ProjectionCursor:
