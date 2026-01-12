@@ -43,7 +43,11 @@ class BaseEvent(DomainObject, ABC):
         for field in fields(self):
             if field.name in _FORBIDDEN_EVENT_FIELDS:
                 raise TypeError(
-                    f"{self.__class__.__name__} illegally defines metadata field "
-                    f"{field.name!r}. Domain events must be pure payloads. "
-                    "Use EventEnvelope for identity, time and causality."
+                    f"{self.__class__.__name__} illegally defines metadata field {field.name!r}"
                 )
+
+        if not isinstance(self.event_name, str) or not self.event_name:
+            raise TypeError("Event must define a non-empty event_name")
+
+        if not isinstance(self.event_version, int) or self.event_version < 1:
+            raise TypeError("event_version must be an integer ≥ 1")

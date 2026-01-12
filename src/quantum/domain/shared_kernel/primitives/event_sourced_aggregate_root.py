@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from typing import Any, Self
 
 from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
@@ -11,6 +11,9 @@ from quantum.domain.shared_kernel.primitives.aggregate_state import _AggregateSt
 from quantum.domain.shared_kernel.primitives.validatable_aggregate import (
     ValidatableAggregate,
 )
+
+EventKey = tuple[str, int]  # (event_name, event_version)
+EventHandler = Callable[[Any, BaseEvent], None]
 
 
 class EventSourcedAggregateRoot(ValidatableAggregate, DomainObject):
@@ -26,6 +29,8 @@ class EventSourcedAggregateRoot(ValidatableAggregate, DomainObject):
     """
 
     __slots__ = ("_state", "_uncommitted_events", "_is_applying")
+
+    _EVENT_HANDLERS: dict[EventKey, EventHandler] = {}
 
     # --- Domain role ----------------------------------------------------------
 
@@ -81,27 +86,28 @@ class EventSourcedAggregateRoot(ValidatableAggregate, DomainObject):
         self._validate_state()
         self._uncommitted_events.append(event)
 
+    def _dispatch(self, event: BaseEvent) -> None:
+        key = (event.event_name, event.event_version)
+
+        handlers = self.__class__._EVENT_HANDLERS
+
+        if key not in handlers:
+            raise InvariantViolation(
+                f"{self.__class__.__name__} cannot apply event {key}"
+            )
+
+        handler = handlers[key]
+        handler(self, event)
+
     def _apply_with_guard(self, event: BaseEvent) -> None:
         """
         Applies an event inside a mutation-safe window.
         """
         object.__setattr__(self, "_is_applying", True)
         try:
-            self._apply(event)
+            self._dispatch(event)
         finally:
             object.__setattr__(self, "_is_applying", False)
-
-    def _apply(self, event: BaseEvent) -> None:
-        """
-        Dispatches event to the appropriate handler.
-        """
-        handler_name = f"_apply_{event.__class__.__name__.lower()}"
-        handler = getattr(self, handler_name, None)
-        if handler is None:
-            raise InvariantViolation(
-                f"{self.__class__.__name__} cannot apply {event.__class__.__name__}"
-            )
-        handler(event)
 
     # --- Replay ---------------------------------------------------------------
 
