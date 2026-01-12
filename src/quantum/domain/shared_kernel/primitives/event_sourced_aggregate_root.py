@@ -7,6 +7,7 @@ from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
 from quantum.domain.shared_kernel.architecture.domain_object import DomainObject
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.events.base_event import BaseEvent
+from quantum.domain.shared_kernel.primitives.aggregate_state import _AggregateState
 from quantum.domain.shared_kernel.primitives.validatable_aggregate import (
     ValidatableAggregate,
 )
@@ -24,8 +25,7 @@ class EventSourcedAggregateRoot(ValidatableAggregate, DomainObject):
     - State is validated after every event
     """
 
-    _is_applying_event: bool
-    _uncommitted_events: list[BaseEvent]
+    __slots__ = ("_state", "_uncommitted_events", "_is_applying")
 
     # --- Domain role ----------------------------------------------------------
 
@@ -36,21 +36,40 @@ class EventSourcedAggregateRoot(ValidatableAggregate, DomainObject):
     # --- Lifecycle ------------------------------------------------------------
 
     def __init__(self) -> None:
-        object.__setattr__(self, "_is_applying_event", False)
+        object.__setattr__(self, "_state", _AggregateState())
         object.__setattr__(self, "_uncommitted_events", [])
+        object.__setattr__(self, "_is_applying", False)
 
-    # --- Mutation barrier -----------------------------------------------------
+    # --- Attribute access -----------------------------------------------------
+
+    def __getattr__(self, name: str) -> Any:
+        """
+        All domain attributes are read from the protected state capsule.
+        """
+        state = object.__getattribute__(self, "_state")
+        if name in state._data:
+            return state.get(name)
+        raise AttributeError(name)
 
     def __setattr__(self, name: str, value: Any) -> None:
         """
-        Forbids any mutation unless we are inside event application.
+        Prevent ANY direct mutation of the aggregate.
         """
-        if not getattr(self, "_is_applying_event", False):
-            raise InvariantViolation(
-                f"Illegal mutation of aggregate {self.__class__.__name__}.{name}. "
-                "State may only be changed while applying a domain event."
-            )
-        object.__setattr__(self, name, value)
+        raise InvariantViolation(
+            f"Direct mutation of Aggregate '{self.__class__.__name__}' is forbidden. "
+            "All changes must occur through domain events."
+        )
+
+    # --- Controlled mutation API (used only by engine) ------------------------
+
+    def _mutate(self, name: str, value: Any) -> None:
+        """
+        Writes into the protected state capsule.
+        This method is only callable while applying an event.
+        """
+        if not self._is_applying:
+            raise InvariantViolation("Aggregate mutation outside event application")
+        self._state._set(name, value)
 
     # --- Event handling -------------------------------------------------------
 
@@ -66,11 +85,11 @@ class EventSourcedAggregateRoot(ValidatableAggregate, DomainObject):
         """
         Applies an event inside a mutation-safe window.
         """
-        object.__setattr__(self, "_is_applying_event", True)
+        object.__setattr__(self, "_is_applying", True)
         try:
             self._apply(event)
         finally:
-            object.__setattr__(self, "_is_applying_event", False)
+            object.__setattr__(self, "_is_applying", False)
 
     def _apply(self, event: BaseEvent) -> None:
         """
@@ -78,12 +97,10 @@ class EventSourcedAggregateRoot(ValidatableAggregate, DomainObject):
         """
         handler_name = f"_apply_{event.__class__.__name__.lower()}"
         handler = getattr(self, handler_name, None)
-
         if handler is None:
             raise InvariantViolation(
                 f"{self.__class__.__name__} cannot apply {event.__class__.__name__}"
             )
-
         handler(event)
 
     # --- Replay ---------------------------------------------------------------
