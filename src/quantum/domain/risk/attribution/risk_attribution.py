@@ -17,7 +17,7 @@ class RiskAttribution(ValueObject):
 
     sources: tuple[RiskSource, ...]
 
-    def _validate(self) -> None:
+    def _validate_semantics(self) -> None:
         if not isinstance(self.sources, tuple):
             raise InvariantViolation("RiskAttribution sources must be a tuple")
 

@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 from quantum.domain.risk.value_objects.risk_threshold_policy import RiskThresholdPolicy
+from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.money.contextual_monetary_amount import (
     ContextualMonetaryAmount,
@@ -26,7 +27,11 @@ class RiskLimits(ValueObject):
     max_daily_loss: ContextualMonetaryAmount
     threshold_policy: RiskThresholdPolicy
 
-    def _validate(self) -> None:
+    @classmethod
+    def role(cls) -> DomainRole:
+        return DomainRole.VALUE_OBJECT
+
+    def _validate_semantics(self) -> None:
         if not isinstance(self.context, MoneyContext):
             raise InvariantViolation("RiskLimits requires a MoneyContext")
 

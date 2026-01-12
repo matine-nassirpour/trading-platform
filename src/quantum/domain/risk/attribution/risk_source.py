@@ -20,7 +20,7 @@ class RiskSource(ValueObject):
     type: RiskSourceType
     reference: RiskReference
 
-    def _validate(self) -> None:
+    def _validate_semantics(self) -> None:
         if not isinstance(self.type, RiskSourceType):
             raise InvariantViolation("RiskSource requires a RiskSourceType")
 
