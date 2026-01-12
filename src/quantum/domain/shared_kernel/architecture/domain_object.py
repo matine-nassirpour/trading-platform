@@ -3,10 +3,8 @@ from __future__ import annotations
 import inspect
 
 from abc import ABC, abstractmethod
-from typing import Any
 
 from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
-from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 
 
 class DomainObject(ABC):
@@ -52,16 +50,3 @@ class DomainObject(ABC):
             raise TypeError(
                 f"{cls.__name__}.role() must return a DomainRole, got {type(role)}"
             )
-
-    # --- Controlled mutation window -------------------------------------------
-
-    def __setattr__(self, name: str, value: Any) -> None:
-        """
-        Forbids any mutation unless we are inside the initialization window.
-        """
-        if not getattr(self, self._INIT_FLAG, False):
-            raise InvariantViolation(
-                f"{self.__class__.__name__} is immutable. "
-                f"Illegal attempt to modify attribute '{name}'."
-            )
-        object.__setattr__(self, name, value)

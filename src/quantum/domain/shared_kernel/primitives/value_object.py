@@ -5,10 +5,13 @@ from dataclasses import dataclass, fields, is_dataclass
 
 from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
 from quantum.domain.shared_kernel.architecture.domain_object import DomainObject
+from quantum.domain.shared_kernel.primitives.immutable_domain_object import (
+    ImmutableDomainObject,
+)
 
 
 @dataclass(frozen=True)
-class ValueObject(DomainObject, ABC):
+class ValueObject(DomainObject, ImmutableDomainObject, ABC):
     """
     Abstract base class for all Value Objects.
 
@@ -27,22 +30,13 @@ class ValueObject(DomainObject, ABC):
     # --- FINAL initialization pipeline ----------------------------------------
 
     def __post_init__(self) -> None:
-        """
-        FINAL. Must never be overridden.
-
-        Opens a strictly controlled mutation window,
-        runs the validation pipeline, then closes it.
-        """
-        object.__setattr__(self, self._INIT_FLAG, True)
+        object.__setattr__(self, "_IMMUTABLE", False)
         try:
             self._run_validation()
         finally:
-            object.__setattr__(self, self._INIT_FLAG, False)
+            object.__setattr__(self, "_IMMUTABLE", True)
 
     def _run_validation(self) -> None:
-        """
-        FINAL. Orchestrates validation in a fixed, auditable order.
-        """
         self._validate_base()
         self._validate_semantics()
 
@@ -66,23 +60,8 @@ class ValueObject(DomainObject, ABC):
     # --- Guard against override -----------------------------------------------
 
     def __init_subclass__(cls) -> None:
-        # Enforce dataclass(frozen=True)
         if not is_dataclass(cls):
             raise TypeError(f"{cls.__name__} must be a @dataclass(frozen=True)")
-
-        params = getattr(cls, "__dataclass_params__", None)
-        if not params or not params.frozen:
-            raise TypeError(f"{cls.__name__} must be declared with frozen=True")
-
-        # Forbid overriding FINAL methods
-        forbidden = {"__post_init__", "_run_validation"}
-        for name in forbidden:
-            if name in cls.__dict__:
-                raise TypeError(
-                    f"{cls.__name__} is not allowed to override {name} "
-                    "(ValueObject validation pipeline is final)"
-                )
-
         super().__init_subclass__()
 
     # --- Canonical string representations -------------------------------------
@@ -93,6 +72,3 @@ class ValueObject(DomainObject, ABC):
             f"{field.name}={getattr(self, field.name)!r}" for field in fields(self)
         )
         return f"{cls_name}({args})"
-
-    def __str__(self) -> str:
-        return self.__repr__()

@@ -4,6 +4,9 @@ from typing import ClassVar
 
 from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
 from quantum.domain.shared_kernel.architecture.domain_object import DomainObject
+from quantum.domain.shared_kernel.primitives.immutable_domain_object import (
+    ImmutableDomainObject,
+)
 
 _FORBIDDEN_EVENT_FIELDS = {
     "id",
@@ -19,7 +22,7 @@ _FORBIDDEN_EVENT_FIELDS = {
 
 
 @dataclass(frozen=True)
-class BaseEvent(DomainObject, ABC):
+class BaseEvent(DomainObject, ImmutableDomainObject, ABC):
     """
     Canonical immutable Domain Event.
 
@@ -43,11 +46,5 @@ class BaseEvent(DomainObject, ABC):
         for field in fields(self):
             if field.name in _FORBIDDEN_EVENT_FIELDS:
                 raise TypeError(
-                    f"{self.__class__.__name__} illegally defines metadata field {field.name!r}"
+                    f"{self.__class__.__name__} illegally defines {field.name}"
                 )
-
-        if not isinstance(self.event_name, str) or not self.event_name:
-            raise TypeError("Event must define a non-empty event_name")
-
-        if not isinstance(self.event_version, int) or self.event_version < 1:
-            raise TypeError("event_version must be an integer ≥ 1")
