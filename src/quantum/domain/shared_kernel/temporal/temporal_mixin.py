@@ -3,20 +3,22 @@ from __future__ import annotations
 from abc import ABC
 from dataclasses import dataclass, replace
 
-from quantum.domain.shared_kernel.architecture.domain_object import DomainObject
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.temporal.temporal_validity import TemporalValidity
 from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
 
 
 @dataclass(frozen=True)
-class TemporalEntity(DomainObject, ABC):
+class TemporalMixin(ABC):
     """
-    Structural mixin for entities / aggregates with explicit temporal validity.
+    Structural mixin for temporally valid domain objects.
 
-    IMPORTANT:
-    - This class does NOT declare a DomainRole.
-    - Concrete subclasses (Entity or Aggregate) must do so.
+    This class:
+    - Does NOT declare a DomainRole
+    - Does NOT participate in the DomainObject hierarchy
+    - Is purely a structural capability
+
+    This prevents any possibility of violating the Domain Charter.
     """
 
     validity: TemporalValidity
@@ -26,9 +28,9 @@ class TemporalEntity(DomainObject, ABC):
 
     def _validate_temporal(self) -> None:
         if not isinstance(self.validity, TemporalValidity):
-            raise InvariantViolation("TemporalEntity requires TemporalValidity")
+            raise InvariantViolation("TemporalMixin requires TemporalValidity")
 
-    def close_validity(self, *, at: EpochMs) -> TemporalEntity:
+    def close_validity(self, *, at: EpochMs) -> TemporalMixin:
         return replace(
             self,
             validity=self.validity.close(at=at),
