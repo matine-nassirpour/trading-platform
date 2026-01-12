@@ -10,7 +10,7 @@ from quantum.domain.shared_kernel.money.money_context import MoneyContext
 from quantum.domain.shared_kernel.value_objects.currency import Currency
 
 
-@dataclass(frozen=False)
+@dataclass(frozen=True)
 class DrawdownLimit(ContextualMonetaryAmount):
     """
     Maximum allowed drawdown.

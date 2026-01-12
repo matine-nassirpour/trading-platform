@@ -10,7 +10,7 @@ from quantum.domain.shared_kernel.money.contextual_monetary_amount import (
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 
 
-@dataclass(frozen=False)
+@dataclass(frozen=True)
 class RiskBreach(ValueObject):
     """
     Canonical representation of a detected risk breach.

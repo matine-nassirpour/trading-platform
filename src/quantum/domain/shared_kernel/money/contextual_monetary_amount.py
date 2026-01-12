@@ -13,7 +13,7 @@ from quantum.domain.shared_kernel.primitives.monetary_amount import MonetaryAmou
 from quantum.domain.shared_kernel.value_objects.currency import Currency
 
 
-@dataclass(frozen=False)
+@dataclass(frozen=True)
 class ContextualMonetaryAmount(MonetaryAmount, ABC):
     """
     Monetary amount bound to a specific MoneyContext.

@@ -13,7 +13,7 @@ from quantum.domain.shared_kernel.value_objects.currency import Currency
 from quantum.domain.shared_kernel.value_objects.realized_pnl import RealizedPnL
 
 
-@dataclass(frozen=False)
+@dataclass(frozen=True)
 class Equity(ContextualMonetaryAmount):
     """
     Desk equity, bound to a MoneyContext.

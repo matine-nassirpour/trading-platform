@@ -10,7 +10,7 @@ from quantum.domain.shared_kernel.money.money_context import MoneyContext
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 
 
-@dataclass(frozen=False)
+@dataclass(frozen=True)
 class RiskLimits(ValueObject):
     """
     Canonical desk-level risk limits.
