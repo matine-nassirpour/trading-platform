@@ -38,8 +38,7 @@ class Cursor(DomainObject, ImmutableDomainObject, ABC):
     # --- Validation pipeline --------------------------------------------------
 
     def __post_init__(self) -> None:
-        with self._mutation_window():
-            self._validate()
+        self._validate()
 
     @abstractmethod
     def _validate(self) -> None:

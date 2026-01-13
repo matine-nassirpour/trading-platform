@@ -3,13 +3,13 @@ from __future__ import annotations
 from abc import ABC
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Any
 
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.primitives.mutation_key import MutationKey
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 
 
-@dataclass(frozen=True)
+@dataclass(slots=True)
 class NumericValueObject(ValueObject, ABC):
     """
     Canonical base class for all numeric Value Objects.
@@ -25,7 +25,7 @@ class NumericValueObject(ValueObject, ABC):
 
     # --- Base numeric invariants ----------------------------------------------
 
-    def _validate_base(self, key: Any) -> None:
+    def _validate_base(self, key: MutationKey) -> None:
         """
         Injected into the FINAL validation pipeline.
 

@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import is_dataclass
-from typing import Any
 
 from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
 from quantum.domain.shared_kernel.architecture.domain_object import DomainObject
 from quantum.domain.shared_kernel.primitives.immutable_domain_object import (
     ImmutableDomainObject,
 )
+from quantum.domain.shared_kernel.primitives.mutation_key import MutationKey
 
 
 class ValueObject(DomainObject, ImmutableDomainObject, ABC):
@@ -31,29 +31,20 @@ class ValueObject(DomainObject, ImmutableDomainObject, ABC):
     # --- FINAL initialization pipeline ----------------------------------------
 
     def __post_init__(self) -> None:
-        """
-        Final, sealed construction pipeline.
-
-        1. Acquires the unique mutation capability of this instance
-        2. Runs base invariants
-        3. Runs semantic invariants
-        4. Revokes mutation authority forever
-        """
-
-        # Acquire instance-local mutation capability
-        key = self._mutation_capability()
+        # Create mutation authority explicitly
+        object.__setattr__(self, "_mutation_key", MutationKey())
+        key = self._mutation_key
 
         try:
             self._validate_base(key)
             self._validate_semantics(key)
         finally:
-            # Irrevocably revoke mutation authority
-            # After this point the object is mathematically immutable
+            # Permanently revoke mutation authority
             object.__delattr__(self, "_mutation_key")
 
     # --- Hooks ----------------------------------------------------------------
 
-    def _validate_base(self, key: Any) -> None:
+    def _validate_base(self, key: MutationKey) -> None:
         """
         Base invariants for all ValueObjects.
         Default: none.
@@ -64,7 +55,7 @@ class ValueObject(DomainObject, ImmutableDomainObject, ABC):
         pass
 
     @abstractmethod
-    def _validate_semantics(self, key: Any) -> None:
+    def _validate_semantics(self, key: MutationKey) -> None:
         """
         Domain-specific invariants.
 
@@ -86,15 +77,3 @@ class ValueObject(DomainObject, ImmutableDomainObject, ABC):
         # Must remain a dataclass
         if not is_dataclass(cls):
             raise TypeError(f"{cls.__name__} must be a dataclass")
-
-    # --- Canonical string representations -------------------------------------
-
-    def __repr__(self) -> str:
-        cls = type(self)
-
-        if not is_dataclass(cls):
-            return super().__repr__()
-
-        fields = cls.__dataclass_fields__
-        args = ", ".join(f"{name}={getattr(self, name)!r}" for name in fields)
-        return f"{cls.__name__}({args})"

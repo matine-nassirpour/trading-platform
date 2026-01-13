@@ -8,25 +8,24 @@ from quantum.domain.shared_kernel.primitives.mutation_key import MutationKey
 
 class ImmutableDomainObject:
     """
-    Hard-immutable, thread-safe, re-entrant domain object.
+    Capability-based immutable domain object.
 
     Guarantees:
-    - Each instance has its own mutation authority.
-    - No global or class-level state is used.
-    - Safe under concurrency, async, and replay.
-    - Lexically scoped mutation window.
+    - Each instance owns a unique mutation capability
+    - No mutation is possible outside the construction window
+    - No dataclass or Python feature can bypass this contract
     """
 
-    __slots__ = ("_mutation_token",)
+    __slots__ = ("_mutation_key",)
 
     def __init__(self) -> None:
-        # Each instance gets its own unforgeable token
+        # This will only ever be called manually by our controlled pipeline
         object.__setattr__(self, "_mutation_key", MutationKey())
 
     def __setattr__(self, name: str, value: Any) -> None:
         raise InvariantViolation(
             f"{self.__class__.__name__} is immutable. "
-            "Use mutation context during construction."
+            "Mutation is only allowed during controlled construction."
         )
 
     # --- Internal mutation primitive ------------------------------------------

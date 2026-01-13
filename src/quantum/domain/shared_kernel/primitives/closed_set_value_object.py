@@ -3,9 +3,10 @@ from __future__ import annotations
 from abc import ABC
 from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Any, ClassVar
+from typing import ClassVar
 
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.primitives.mutation_key import MutationKey
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 
 
@@ -87,7 +88,7 @@ class ClosedSetValueObject(ValueObject, ABC):
 
     # --- Semantic invariants --------------------------------------------------
 
-    def _validate_semantics(self, key: Any) -> None:
+    def _validate_semantics(self, key: MutationKey) -> None:
         if not isinstance(self.value, str):
             raise InvariantViolation(
                 f"{self.__class__.__name__} value must be a string"
@@ -101,8 +102,8 @@ class ClosedSetValueObject(ValueObject, ABC):
                 f"Allowed values: {sorted(self._ALLOWED_VALUES)}"
             )
 
-        # Store canonical representation
-        object.__setattr__(self, "value", canonical)
+        # Canonicalization must go through capability
+        self._mutate(key, "value", canonical)
 
     # --- Canonical string form ------------------------------------------------
 

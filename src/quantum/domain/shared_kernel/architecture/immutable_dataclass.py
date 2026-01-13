@@ -8,7 +8,7 @@ from quantum.domain.shared_kernel.primitives.immutable_domain_object import (
     ImmutableDomainObject,
 )
 
-T = TypeVar("T")
+T = TypeVar("T", bound=type)
 
 
 def immutable_dataclass(cls: type[T]) -> type[T]:
@@ -23,27 +23,24 @@ def immutable_dataclass(cls: type[T]) -> type[T]:
     """
 
     # --- Enforce slots for memory safety and immutability
-    cls = dataclasses.dataclass(
+    decorated: type[T] = dataclasses.dataclass(
         cls,
-        frozen=False,  # CRITICAL: do NOT let dataclass override __setattr__
+        frozen=False,  # immutability is capability-based, NOT dataclass-based
         eq=True,
         slots=True,
         repr=False,
     )
 
-    # --- Hard guard: ensure we did not get a dataclass __setattr__
+    # --- Hard architectural guard
     if not issubclass(cls, ImmutableDomainObject):
-        raise TypeError(f"{cls.__name__} must inherit ImmutableDomainObject")
+        raise TypeError(
+            f"{cls.__name__} must inherit ImmutableDomainObject "
+            "to use @immutable_dataclass"
+        )
 
-    # --- Inject __post_init__ wrapper
-    original_post_init = getattr(cls, "__post_init__", None)
+    # DO NOT wrap __post_init__
+    # DO NOT delete _mutation_key
+    # DO NOT create _mutation_key
+    # That is the responsibility of the semantic base class.
 
-    def __post_init__(self) -> None:
-        if original_post_init:
-            original_post_init(self)
-
-        # Finalize: remove mutation authority
-        object.__delattr__(self, "_mutation_key")
-
-    cls.__post_init__ = __post_init__
-    return cls
+    return decorated
