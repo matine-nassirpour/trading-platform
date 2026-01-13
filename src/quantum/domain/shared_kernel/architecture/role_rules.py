@@ -56,12 +56,12 @@ ROLE_RULES: dict[DomainRole, RoleRule] = {
         allow_public_domain_methods=True,
     ),
     DomainRole.AGGREGATE: RoleRule(
-        allow_state=False,
+        allow_state=True,
         allow_mutation=True,
         allow_public_domain_methods=True,
     ),
     DomainRole.ENTITY: RoleRule(
-        allow_state=False,
+        allow_state=True,
         allow_mutation=False,
         allow_public_domain_methods=True,
     ),
