@@ -31,16 +31,14 @@ class ValueObject(DomainObject, ImmutableDomainObject, ABC):
     # --- FINAL initialization pipeline ----------------------------------------
 
     def __post_init__(self) -> None:
-        # Create mutation authority explicitly
-        object.__setattr__(self, "_mutation_key", MutationKey())
-        key = self._mutation_key
+        key: MutationKey = self._mutation_capability()
 
         try:
             self._validate_base(key)
             self._validate_semantics(key)
         finally:
-            # Permanently revoke mutation authority
-            object.__delattr__(self, "_mutation_key")
+            # Mutation authority is permanently revoked, never removed
+            self._revoke_mutation_capability()
 
     # --- Hooks ----------------------------------------------------------------
 
@@ -74,6 +72,5 @@ class ValueObject(DomainObject, ImmutableDomainObject, ABC):
         """
         super().__init_subclass__()
 
-        # Must remain a dataclass
         if not is_dataclass(cls):
             raise TypeError(f"{cls.__name__} must be a dataclass")

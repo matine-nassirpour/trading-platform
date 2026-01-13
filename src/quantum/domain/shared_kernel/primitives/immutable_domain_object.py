@@ -18,9 +18,10 @@ class ImmutableDomainObject:
 
     __slots__ = ("_mutation_key",)
 
-    def __init__(self) -> None:
-        # This will only ever be called manually by our controlled pipeline
-        object.__setattr__(self, "_mutation_key", MutationKey())
+    def __new__(cls, *args, **kwargs):
+        obj = super().__new__(cls)
+        object.__setattr__(obj, "_mutation_key", MutationKey())
+        return obj
 
     def __setattr__(self, name: str, value: Any) -> None:
         raise InvariantViolation(
@@ -32,7 +33,7 @@ class ImmutableDomainObject:
 
     def _mutate(self, key: MutationKey, name: str, value: Any) -> None:
         if not key._matches(self._mutation_key):
-            raise InvariantViolation("Invalid mutation authority")
+            raise InvariantViolation("Invalid or revoked mutation authority")
 
         object.__setattr__(self, name, value)
 
@@ -44,3 +45,8 @@ class ImmutableDomainObject:
         Not copyable, not serializable, not global.
         """
         return self._mutation_key
+
+    # --- Finalizer ------------------------------------------------------------
+
+    def _revoke_mutation_capability(self) -> None:
+        self._mutation_key._invalidate()
