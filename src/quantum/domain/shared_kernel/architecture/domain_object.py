@@ -5,6 +5,7 @@ import inspect
 from abc import ABC, abstractmethod
 
 from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
+from quantum.domain.shared_kernel.architecture.role_enforcer import enforce_domain_role
 
 
 class DomainObject(ABC):
@@ -51,3 +52,5 @@ class DomainObject(ABC):
             raise TypeError(
                 f"{cls.__name__}.role() must return a DomainRole, got {type(role)}"
             )
+
+        enforce_domain_role(cls)

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import is_dataclass
 
 from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
 from quantum.domain.shared_kernel.architecture.domain_object import DomainObject
@@ -32,24 +31,15 @@ class ValueObject(DomainObject, ImmutableDomainObject, ABC):
 
     def __post_init__(self) -> None:
         key: MutationKey = self._mutation_capability()
-
         try:
             self._validate_base(key)
             self._validate_semantics(key)
         finally:
-            # Mutation authority is permanently revoked, never removed
             self._revoke_mutation_capability()
 
     # --- Hooks ----------------------------------------------------------------
 
     def _validate_base(self, key: MutationKey) -> None:
-        """
-        Base invariants for all ValueObjects.
-        Default: none.
-
-        This method MAY mutate the instance using:
-            self._mutate(key, name, value)
-        """
         pass
 
     @abstractmethod
@@ -58,9 +48,6 @@ class ValueObject(DomainObject, ImmutableDomainObject, ABC):
         Domain-specific invariants.
 
         MUST be implemented by concrete subclasses.
-
-        This method MAY normalize or canonicalize fields using:
-            self._mutate(key, name, value)
         """
         raise NotImplementedError
 
@@ -69,22 +56,7 @@ class ValueObject(DomainObject, ImmutableDomainObject, ABC):
     def __init_subclass__(cls) -> None:
         super().__init_subclass__()
 
-        if not is_dataclass(cls):
+        if not getattr(cls, "__is_immutable_dataclass__", False):
             raise TypeError(
                 f"{cls.__name__} must be decorated with @immutable_dataclass"
-            )
-
-        # Ensure it was created by our decorator, not raw @dataclass
-        if getattr(cls, "__dataclass_params__", None) is None:
-            raise TypeError(f"{cls.__name__} must use @immutable_dataclass")
-
-        params = cls.__dataclass_params__
-        if params.frozen:
-            raise TypeError(
-                f"{cls.__name__} uses frozen dataclass — forbidden for ValueObjects"
-            )
-
-        if not params.slots:
-            raise TypeError(
-                f"{cls.__name__} must use slots=True via @immutable_dataclass"
             )

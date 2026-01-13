@@ -1,18 +1,28 @@
 from __future__ import annotations
 
-import secrets
-
 
 class MutationKey:
-    __slots__ = ("_token", "_alive")
+    """
+    Deterministic, non-forgeable mutation capability.
+
+    Properties:
+    - Unique per object instance
+    - Non-serializable
+    - Cannot be guessed or reconstructed
+    - Deterministic (no randomness)
+    """
+
+    __slots__ = ("_sentinel", "_alive")
 
     def __init__(self) -> None:
-        self._token = secrets.token_hex(32)
+        # object() creates a unique identity token
+        # guaranteed unique inside the process
+        self._sentinel = object()
         self._alive = True
 
     def _matches(self, other: MutationKey) -> bool:
-        return self._alive and other._alive and self._token == other._token
+        return self._alive and other._alive and self._sentinel is other._sentinel
 
     def _invalidate(self) -> None:
         self._alive = False
-        self._token = "<revoked>"
+        self._sentinel = None

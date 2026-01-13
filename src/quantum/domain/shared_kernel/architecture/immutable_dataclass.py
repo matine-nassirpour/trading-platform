@@ -4,6 +4,9 @@ import dataclasses
 
 from typing import TypeVar
 
+from quantum.domain.shared_kernel.primitives.construction_context import (
+    construction_window,
+)
 from quantum.domain.shared_kernel.primitives.immutable_domain_object import (
     ImmutableDomainObject,
 )
@@ -15,11 +18,11 @@ def immutable_dataclass(cls: type[T]) -> type[T]:
     """
     Certified immutable dataclass for Domain Objects.
 
-    HARD GUARANTEES:
+    Guarantees:
     - slots=True
-    - frozen=False (capability-based immutability only)
-    - No dataclass-generated __setattr__ or __delattr__
-    - Must inherit ImmutableDomainObject
+    - frozen=False
+    - dataclass __init__ runs inside a formal construction window
+    - capability-based immutability is preserved
     """
 
     if not issubclass(cls, ImmutableDomainObject):
@@ -49,5 +52,15 @@ def immutable_dataclass(cls: type[T]) -> type[T]:
         raise TypeError(
             f"{cls.__name__} must use slots=True for memory & safety guarantees."
         )
+
+    # Capture the generated __init__
+    original_init = decorated.__init__
+
+    # Replace __init__ with one that opens a construction window
+    def __init__(self, *args, **kwargs):
+        with construction_window():
+            original_init(self, *args, **kwargs)
+
+    decorated.__init__ = __init__
 
     return decorated

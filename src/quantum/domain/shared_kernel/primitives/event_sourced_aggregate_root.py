@@ -34,7 +34,7 @@ class EventSourcedAggregateRoot(
     - Event handlers are isolated per Aggregate class
     """
 
-    __slots__ = ("_state", "_uncommitted_events")
+    __slots__ = ("_state",)
 
     _EVENT_HANDLERS: ClassVar[Mapping[EventKey, Callable]]
 
@@ -57,7 +57,6 @@ class EventSourcedAggregateRoot(
     def __init__(self) -> None:
         super().__init__()
         object.__setattr__(self, "_state", _AggregateState())
-        object.__setattr__(self, "_uncommitted_events", [])
 
     # --- Attribute access -----------------------------------------------------
 
@@ -79,13 +78,13 @@ class EventSourcedAggregateRoot(
 
     # --- Event handling -------------------------------------------------------
 
-    def _raise(self, event: BaseEvent) -> None:
+    def _raise(self, event: BaseEvent) -> BaseEvent:
         """
-        Raises and applies a new domain event.
+        Applies a new domain event and returns it.
         """
         self._apply(event)
         self._validate_state()
-        self._uncommitted_events.append(event)
+        return event
 
     def _apply(self, event: BaseEvent) -> None:
         """
@@ -134,10 +133,3 @@ class EventSourcedAggregateRoot(
         raise NotImplementedError(
             f"{self.__class__.__name__} must implement _validate_state()"
         )
-
-    # --- Introspection --------------------------------------------------------
-
-    def pull_uncommitted_events(self) -> tuple[BaseEvent, ...]:
-        events = tuple(self._uncommitted_events)
-        self._uncommitted_events.clear()
-        return events

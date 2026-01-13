@@ -1,38 +1,34 @@
 from __future__ import annotations
 
 import contextvars
-import secrets
 
 from collections.abc import Iterator
 from contextlib import contextmanager
 
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 
-# Context variable storing the active aggregate mutation token
-_ACTIVE_AGGREGATE_MUTATION_TOKEN: contextvars.ContextVar[str | None] = (
-    contextvars.ContextVar(
-        "_ACTIVE_AGGREGATE_MUTATION_TOKEN",
-        default=None,
-    )
+# Context variable storing the active aggregate mutation identity
+_ACTIVE_AGGREGATE_MUTATION_TOKEN: contextvars.ContextVar[object | None] = (
+    contextvars.ContextVar("_ACTIVE_AGGREGATE_MUTATION_TOKEN", default=None)
 )
 
 
 class AggregateMutationGuard:
     """
-    Per-instance, non-forgeable, async-safe mutation authority
+    Per-instance, deterministic, non-forgeable mutation authority
     for Event-Sourced Aggregates.
     """
 
-    __slots__ = ("_mutation_token",)
+    __slots__ = ("_mutation_identity",)
 
     def __init__(self) -> None:
         super().__init__()
-        # Each aggregate instance gets its own unforgeable token
-        self._mutation_token: str = secrets.token_hex(32)
+        # Deterministic unique identity
+        self._mutation_identity = object()
 
     def _assert_mutating(self) -> None:
         active = _ACTIVE_AGGREGATE_MUTATION_TOKEN.get()
-        if active != self._mutation_token:
+        if active is not self._mutation_identity:
             raise InvariantViolation(
                 "Aggregate state mutation outside authorized mutation window"
             )
@@ -46,10 +42,10 @@ class AggregateMutationGuard:
         - instance-local
         - thread-safe
         - async-safe
-        - non-forgeable
+        - deterministic
         """
-        reset = _ACTIVE_AGGREGATE_MUTATION_TOKEN.set(self._mutation_token)
+        token = _ACTIVE_AGGREGATE_MUTATION_TOKEN.set(self._mutation_identity)
         try:
             yield
         finally:
-            _ACTIVE_AGGREGATE_MUTATION_TOKEN.reset(reset)
+            _ACTIVE_AGGREGATE_MUTATION_TOKEN.reset(token)
