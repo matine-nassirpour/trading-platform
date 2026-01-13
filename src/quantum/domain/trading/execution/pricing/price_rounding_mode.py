@@ -1,6 +1,7 @@
 from decimal import ROUND_CEILING, ROUND_FLOOR, ROUND_HALF_EVEN
 from typing import ClassVar
 
+from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
 from quantum.domain.shared_kernel.primitives.closed_set_value_object import (
     ClosedSetValueObject,
 )
@@ -18,6 +19,13 @@ class PriceRoundingMode(ClosedSetValueObject):
             "nearest",
         }
     )
+
+    def _closed_set_type(self) -> None:
+        pass
+
+    @classmethod
+    def role(cls) -> DomainRole:
+        return DomainRole.VALUE_OBJECT
 
     def decimal_rounding(self) -> str:
         """

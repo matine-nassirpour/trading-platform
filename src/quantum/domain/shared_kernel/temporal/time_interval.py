@@ -1,15 +1,16 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any
-
 from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
+from quantum.domain.shared_kernel.architecture.immutable_dataclass import (
+    immutable_dataclass,
+)
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.primitives.mutation_key import MutationKey
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
 
 
-@dataclass(frozen=True)
+@immutable_dataclass
 class TimeInterval(ValueObject):
     """
     Canonical closed-open time interval [valid_from, valid_until).
@@ -27,7 +28,7 @@ class TimeInterval(ValueObject):
     def role(cls) -> DomainRole:
         return DomainRole.VALUE_OBJECT
 
-    def _validate_semantics(self, key: Any) -> None:
+    def _validate_semantics(self, key: MutationKey) -> None:
         if not isinstance(self.valid_from, EpochMs):
             raise InvariantViolation("valid_from must be an EpochMs")
 

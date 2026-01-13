@@ -20,6 +20,9 @@ class KillSwitchReason(ClosedSetValueObject):
         }
     )
 
+    def _closed_set_type(self) -> None:
+        pass
+
     @classmethod
     def role(cls) -> DomainRole:
         return DomainRole.VALUE_OBJECT

@@ -1,10 +1,12 @@
 from __future__ import annotations
 
-from abc import ABC
+from abc import ABC, abstractmethod
 from collections.abc import Iterable
-from dataclasses import dataclass
 from typing import ClassVar
 
+from quantum.domain.shared_kernel.architecture.immutable_dataclass import (
+    immutable_dataclass,
+)
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.primitives.mutation_key import MutationKey
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
@@ -21,11 +23,6 @@ def _canonicalize(value: str) -> str:
 
 
 def _validate_allowed_values(values: Iterable[str], cls_name: str) -> frozenset[str]:
-    """
-    Enforces that _ALLOWED_VALUES is already canonical and valid.
-
-    This runs at CLASS DEFINITION TIME, not at runtime.
-    """
     if not isinstance(values, (set, frozenset)):
         raise TypeError(
             f"{cls_name}._ALLOWED_VALUES must be a set or frozenset of strings"
@@ -40,7 +37,6 @@ def _validate_allowed_values(values: Iterable[str], cls_name: str) -> frozenset[
             )
 
         c = _canonicalize(v)
-
         if c != v:
             raise TypeError(
                 f"{cls_name}._ALLOWED_VALUES must contain ONLY canonical values. "
@@ -55,7 +51,7 @@ def _validate_allowed_values(values: Iterable[str], cls_name: str) -> frozenset[
     return frozenset(canonical)
 
 
-@dataclass(slots=True)
+@immutable_dataclass
 class ClosedSetValueObject(ValueObject, ABC):
     """
     Canonical base class for closed-set domain concepts.
@@ -64,13 +60,22 @@ class ClosedSetValueObject(ValueObject, ABC):
     - Domain values are finite and explicitly enumerated
     - Canonical representation is globally enforced
     - Validation is deterministic and idempotent
-    - Contracts (JSON, FIX, APIs) see only canonical values
+    - This class is ABSTRACT and may never be instantiated
     """
 
     value: str
 
-    # MUST be overridden by subclasses
     _ALLOWED_VALUES: ClassVar[frozenset[str]]
+
+    @abstractmethod
+    def _closed_set_type(self) -> None:
+        """
+        Architectural tag.
+
+        Forces ClosedSetValueObject to be abstract so it never violates
+        DomainObject's 'no inherited role' rule.
+        """
+        raise NotImplementedError
 
     # --- Subclass contract enforcement ----------------------------------------
 
@@ -102,7 +107,6 @@ class ClosedSetValueObject(ValueObject, ABC):
                 f"Allowed values: {sorted(self._ALLOWED_VALUES)}"
             )
 
-        # Canonicalization must go through capability
         self._mutate(key, "value", canonical)
 
     # --- Canonical string form ------------------------------------------------

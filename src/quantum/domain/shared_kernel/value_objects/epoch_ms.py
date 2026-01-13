@@ -1,17 +1,19 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
-from typing import Any
 
 from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
+from quantum.domain.shared_kernel.architecture.immutable_dataclass import (
+    immutable_dataclass,
+)
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.primitives.mutation_key import MutationKey
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 
 _EPOCH_UTC = datetime(1970, 1, 1, tzinfo=UTC)
 
 
-@dataclass(frozen=True)
+@immutable_dataclass
 class EpochMs(ValueObject):
     """
     Milliseconds since Unix epoch (UTC).
@@ -31,7 +33,7 @@ class EpochMs(ValueObject):
 
     # --- Invariants -----------------------------------------------------------
 
-    def _validate_semantics(self, key: Any) -> None:
+    def _validate_semantics(self, key: MutationKey) -> None:
         if not isinstance(self.value, int):
             raise InvariantViolation("EpochMs must be an integer")
 

@@ -67,10 +67,24 @@ class ValueObject(DomainObject, ImmutableDomainObject, ABC):
     # --- Guard against override -----------------------------------------------
 
     def __init_subclass__(cls) -> None:
-        """
-        Enforces architectural correctness of all ValueObject subclasses.
-        """
         super().__init_subclass__()
 
         if not is_dataclass(cls):
-            raise TypeError(f"{cls.__name__} must be a dataclass")
+            raise TypeError(
+                f"{cls.__name__} must be decorated with @immutable_dataclass"
+            )
+
+        # Ensure it was created by our decorator, not raw @dataclass
+        if getattr(cls, "__dataclass_params__", None) is None:
+            raise TypeError(f"{cls.__name__} must use @immutable_dataclass")
+
+        params = cls.__dataclass_params__
+        if params.frozen:
+            raise TypeError(
+                f"{cls.__name__} uses frozen dataclass — forbidden for ValueObjects"
+            )
+
+        if not params.slots:
+            raise TypeError(
+                f"{cls.__name__} must use slots=True via @immutable_dataclass"
+            )

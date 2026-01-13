@@ -1,20 +1,22 @@
 from __future__ import annotations
 
 from abc import ABC
-from dataclasses import dataclass
 from decimal import Decimal
-from typing import Any
 
+from quantum.domain.shared_kernel.architecture.immutable_dataclass import (
+    immutable_dataclass,
+)
 from quantum.domain.shared_kernel.errors.invariants import (
     CurrencyMismatch,
     InvariantViolation,
 )
 from quantum.domain.shared_kernel.money.money_context import MoneyContext
 from quantum.domain.shared_kernel.primitives.monetary_amount import MonetaryAmount
+from quantum.domain.shared_kernel.primitives.mutation_key import MutationKey
 from quantum.domain.shared_kernel.value_objects.currency import Currency
 
 
-@dataclass(frozen=True)
+@immutable_dataclass
 class ContextualMonetaryAmount(MonetaryAmount, ABC):
     """
     Monetary amount bound to a specific MoneyContext.
@@ -26,7 +28,7 @@ class ContextualMonetaryAmount(MonetaryAmount, ABC):
     currency: Currency
     context: MoneyContext
 
-    def _validate_semantics(self, key: Any) -> None:
+    def _validate_semantics(self, key: MutationKey) -> None:
         """
         Validation pipeline:
 

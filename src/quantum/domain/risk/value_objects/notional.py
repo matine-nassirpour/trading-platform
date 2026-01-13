@@ -1,13 +1,16 @@
-from dataclasses import dataclass
 from decimal import Decimal
 
 from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
+from quantum.domain.shared_kernel.architecture.immutable_dataclass import (
+    immutable_dataclass,
+)
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.primitives.monetary_amount import MonetaryAmount
+from quantum.domain.shared_kernel.primitives.mutation_key import MutationKey
 from quantum.domain.shared_kernel.value_objects.currency import Currency
 
 
-@dataclass(frozen=True)
+@immutable_dataclass
 class Notional(MonetaryAmount):
     """
     Gross notional exposure.
@@ -21,10 +24,13 @@ class Notional(MonetaryAmount):
     value: Decimal
     currency: Currency
 
+    def _monetary_kind(self) -> None:
+        pass
+
     @classmethod
     def role(cls) -> DomainRole:
         return DomainRole.VALUE_OBJECT
 
-    def _validate_semantics(self) -> None:
+    def _validate_semantics(self, key: MutationKey) -> None:
         if self.value < Decimal("0"):
             raise InvariantViolation("Notional must be non-negative")

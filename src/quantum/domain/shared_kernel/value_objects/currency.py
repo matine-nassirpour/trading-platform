@@ -1,17 +1,19 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from re import fullmatch
-from typing import Any
 
 from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
+from quantum.domain.shared_kernel.architecture.immutable_dataclass import (
+    immutable_dataclass,
+)
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.primitives.mutation_key import MutationKey
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 
 _ISO_4217_RE = fullmatch
 
 
-@dataclass(frozen=True)
+@immutable_dataclass
 class Currency(ValueObject):
     """
     ISO 4217 currency code.
@@ -25,7 +27,7 @@ class Currency(ValueObject):
     def role(cls) -> DomainRole:
         return DomainRole.VALUE_OBJECT
 
-    def _validate_semantics(self, key: Any) -> None:
+    def _validate_semantics(self, key: MutationKey) -> None:
         if not isinstance(self.code, str):
             raise InvariantViolation("Currency code must be a string")
 

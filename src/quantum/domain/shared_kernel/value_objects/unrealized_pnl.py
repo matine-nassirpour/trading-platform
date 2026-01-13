@@ -1,18 +1,20 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from decimal import Decimal
-from typing import Any
 
 from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
+from quantum.domain.shared_kernel.architecture.immutable_dataclass import (
+    immutable_dataclass,
+)
 from quantum.domain.shared_kernel.money.money_context import MoneyContext
 from quantum.domain.shared_kernel.primitives.contextual_algebraic_monetary_value_object import (
     ContextualAlgebraicMonetaryValueObject,
 )
+from quantum.domain.shared_kernel.primitives.mutation_key import MutationKey
 from quantum.domain.shared_kernel.value_objects.currency import Currency
 
 
-@dataclass(frozen=True)
+@immutable_dataclass
 class UnrealizedPnL(ContextualAlgebraicMonetaryValueObject):
     """
     Unrealized PnL bound to a MoneyContext.
@@ -22,13 +24,16 @@ class UnrealizedPnL(ContextualAlgebraicMonetaryValueObject):
     currency: Currency
     context: MoneyContext
 
+    def _monetary_kind(self) -> None:
+        pass
+
     @classmethod
     def role(cls) -> DomainRole:
         return DomainRole.VALUE_OBJECT
 
     # --- Invariants -----------------------------------------------------------
 
-    def _validate_semantics(self, key: Any) -> None:
+    def _validate_semantics(self, key: MutationKey) -> None:
         """
         PnL ∈ ℝ, but:
         - must be a valid Decimal

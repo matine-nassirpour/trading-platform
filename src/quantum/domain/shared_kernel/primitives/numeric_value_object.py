@@ -1,15 +1,17 @@
 from __future__ import annotations
 
 from abc import ABC
-from dataclasses import dataclass
 from decimal import Decimal
 
+from quantum.domain.shared_kernel.architecture.immutable_dataclass import (
+    immutable_dataclass,
+)
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.primitives.mutation_key import MutationKey
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 
 
-@dataclass(slots=True)
+@immutable_dataclass
 class NumericValueObject(ValueObject, ABC):
     """
     Canonical base class for all numeric Value Objects.

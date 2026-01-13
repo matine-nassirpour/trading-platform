@@ -1,13 +1,14 @@
-from dataclasses import dataclass
-from typing import Any
-
 from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
+from quantum.domain.shared_kernel.architecture.immutable_dataclass import (
+    immutable_dataclass,
+)
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.primitives.mutation_key import MutationKey
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 from quantum.domain.shared_kernel.value_objects.currency import Currency
 
 
-@dataclass(frozen=True)
+@immutable_dataclass
 class MoneyContext(ValueObject):
     """
     Canonical monetary frame of reference for the entire trading desk.
@@ -26,7 +27,7 @@ class MoneyContext(ValueObject):
     def role(cls) -> DomainRole:
         return DomainRole.VALUE_OBJECT
 
-    def _validate_semantics(self, key: Any) -> None:
+    def _validate_semantics(self, key: MutationKey) -> None:
         if not isinstance(self.reporting_currency, Currency):
             raise InvariantViolation("MoneyContext requires reporting Currency")
 
