@@ -1,23 +1,44 @@
-from __future__ import annotations
-
-from typing import Any
+from abc import ABC, abstractmethod
 
 
-class _AggregateState:
+class AggregateState(ABC):
     """
-    Internal, write-protected aggregate state capsule.
+    Typed, declarative aggregate state capsule.
 
-    This object is NEVER exposed to user code.
-    All mutations must go through the AggregateRoot engine.
+    HARD GUARANTEES:
+    - State is explicit (fields are declared via __slots__)
+    - No dynamic attribute injection (__dict__ forbidden)
+    - Audit-grade: all state fields are discoverable by static inspection
     """
 
-    __slots__ = ("_data",)
+    __slots__ = ()
 
-    def __init__(self) -> None:
-        self._data: dict[str, Any] = {}
+    @abstractmethod
+    def _state_contract(self) -> None:
+        """
+        Architectural anchor.
 
-    def get(self, name: str) -> Any:
-        return self._data.get(name)
+        Must exist on all concrete AggregateState types.
+        It has no runtime semantics; it makes the state type
+        formally abstract and contract-bound.
+        """
+        raise NotImplementedError
 
-    def _set(self, name: str, value: Any) -> None:
-        self._data[name] = value
+    @classmethod
+    def _assert_valid_state_type(cls) -> None:
+        # Must be slots-based and non-empty, otherwise it becomes non-auditable.
+        if "__slots__" not in cls.__dict__:
+            raise TypeError(f"{cls.__name__} must declare __slots__")
+
+        slots = cls.__dict__["__slots__"]
+        if slots is None or slots == () or slots == "":
+            raise TypeError(f"{cls.__name__} must not have empty __slots__")
+
+        # Disallow instance __dict__
+        if isinstance(slots, str):
+            slots_tuple = (slots,)
+        else:
+            slots_tuple = tuple(slots)
+
+        if "__dict__" in slots_tuple:
+            raise TypeError(f"{cls.__name__} must not include '__dict__' in __slots__")

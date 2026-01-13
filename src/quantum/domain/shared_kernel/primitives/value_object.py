@@ -39,8 +39,15 @@ class ValueObject(DomainObject, ImmutableDomainObject, ABC):
         try:
             self._validate_base(key)
             self._validate_semantics(key)
+        except Exception:
+            # Object is NOT marked constructed
+            # Capability is still alive, but object is unusable forever
+            raise
         finally:
             self._revoke_mutation_capability()
+
+        # Only here is the object allowed to exist
+        self._mark_constructed()
 
     # --- Hooks ----------------------------------------------------------------
 

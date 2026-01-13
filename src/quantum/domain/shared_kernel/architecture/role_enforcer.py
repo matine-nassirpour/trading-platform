@@ -13,12 +13,24 @@ def _enforce_state_rules(cls: type, role: DomainRole, rule) -> None:
 
 
 def _enforce_method_rules(cls: type, role: DomainRole, rule) -> None:
-    if not rule.allow_methods:
-        for name, member in cls.__dict__.items():
-            if callable(member) and not name.startswith("_"):
-                raise TypeError(
-                    f"{cls.__name__} ({role.value}) must not define methods ({name})"
-                )
+    if rule.allow_public_domain_methods:
+        return
+
+    for name, member in cls.__dict__.items():
+        if not callable(member):
+            continue
+
+        # Always allow:
+        # - dunder methods
+        # - private methods
+        if name.startswith("__") or name.startswith("_"):
+            continue
+
+        # Public callable → forbidden
+        raise TypeError(
+            f"{cls.__name__} ({role.value}) must not define public domain methods "
+            f"('{name}'). Only private or dunder methods are allowed."
+        )
 
 
 def _enforce_mutation_rules(cls: type, role: DomainRole, rule) -> None:
@@ -40,12 +52,24 @@ def _enforce_slots(cls: type, role: DomainRole, rule) -> None:
 
 
 def _enforce_no_dict(cls: type, role: DomainRole, rule) -> None:
-    if rule.forbid_dict:
-        # Python injects __dict__ if not using slots or if '__dict__' is in slots
-        if hasattr(cls, "__dict__"):
-            raise TypeError(
-                f"{cls.__name__} ({role.value}) must not have a __dict__ (slots only)"
-            )
+    if not rule.forbid_dict:
+        return
+
+    # Must define __slots__
+    if "__slots__" not in cls.__dict__:
+        raise TypeError(
+            f"{cls.__name__} ({role.value}) must declare __slots__ to forbid __dict__"
+        )
+
+    slots = cls.__dict__["__slots__"]
+
+    if isinstance(slots, str):
+        slots = (slots,)
+
+    if "__dict__" in slots:
+        raise TypeError(
+            f"{cls.__name__} ({role.value}) must not include '__dict__' in __slots__"
+        )
 
 
 def enforce_domain_role(cls: type) -> None:

@@ -3,13 +3,16 @@ from __future__ import annotations
 from typing import Any
 
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.primitives.constructed_domain_object import (
+    ConstructedDomainObject,
+)
 from quantum.domain.shared_kernel.primitives.construction_context import (
     is_in_construction,
 )
 from quantum.domain.shared_kernel.primitives.mutation_key import MutationKey
 
 
-class ImmutableDomainObject:
+class ImmutableDomainObject(ConstructedDomainObject):
     """
     Capability-based immutable domain object with a formal construction window.
     """
