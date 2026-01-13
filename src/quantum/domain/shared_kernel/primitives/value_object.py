@@ -1,9 +1,14 @@
 from __future__ import annotations
 
+import inspect
+
 from abc import ABC, abstractmethod
 
 from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
 from quantum.domain.shared_kernel.architecture.domain_object import DomainObject
+from quantum.domain.shared_kernel.architecture.immutable_dataclass import (
+    is_immutable_dataclass,
+)
 from quantum.domain.shared_kernel.primitives.immutable_domain_object import (
     ImmutableDomainObject,
 )
@@ -56,7 +61,13 @@ class ValueObject(DomainObject, ImmutableDomainObject, ABC):
     def __init_subclass__(cls) -> None:
         super().__init_subclass__()
 
-        if not getattr(cls, "__is_immutable_dataclass__", False):
+        # Abstract base classes are allowed to skip the decorator
+        if inspect.isabstract(cls):
+            return
+
+        # Concrete ValueObjects MUST come from @immutable_dataclass
+        if not is_immutable_dataclass(cls):
             raise TypeError(
-                f"{cls.__name__} must be decorated with @immutable_dataclass"
+                f"{cls.__name__} must be decorated with @immutable_dataclass "
+                "to be a valid ValueObject"
             )

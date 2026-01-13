@@ -13,16 +13,18 @@ from quantum.domain.shared_kernel.primitives.immutable_domain_object import (
 
 T = TypeVar("T", bound=type)
 
+_IMMUTABLE_DATACLASS_MARKER = object()
+
 
 def immutable_dataclass(cls: type[T]) -> type[T]:
     """
     Certified immutable dataclass for Domain Objects.
 
-    Guarantees:
+    HARD GUARANTEES:
     - slots=True
-    - frozen=False
-    - dataclass __init__ runs inside a formal construction window
+    - dataclass-generated __init__ runs inside a construction window
     - capability-based immutability is preserved
+    - class is cryptographically (identity-wise) marked as immutable_dataclass
     """
 
     if not issubclass(cls, ImmutableDomainObject):
@@ -53,6 +55,8 @@ def immutable_dataclass(cls: type[T]) -> type[T]:
             f"{cls.__name__} must use slots=True for memory & safety guarantees."
         )
 
+    decorated.__immutable_dataclass_marker__ = _IMMUTABLE_DATACLASS_MARKER
+
     # Capture the generated __init__
     original_init = decorated.__init__
 
@@ -64,3 +68,13 @@ def immutable_dataclass(cls: type[T]) -> type[T]:
     decorated.__init__ = __init__
 
     return decorated
+
+
+# VERIFICATION API (used by ValueObject)
+
+
+def is_immutable_dataclass(cls: type) -> bool:
+    return (
+        getattr(cls, "__immutable_dataclass_marker__", None)
+        is _IMMUTABLE_DATACLASS_MARKER
+    )
