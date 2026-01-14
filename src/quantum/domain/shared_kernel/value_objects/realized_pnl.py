@@ -7,7 +7,6 @@ from quantum.domain.shared_kernel.money.contextual_monetary_amount import (
     ContextualMonetaryAmount,
 )
 from quantum.domain.shared_kernel.money.money_context import MoneyContext
-from quantum.domain.shared_kernel.value_objects.currency import Currency
 
 
 @dataclass(frozen=True, slots=True)
@@ -17,10 +16,6 @@ class RealizedPnL(ContextualMonetaryAmount):
 
     PnL is a contextual monetary flux.
     """
-
-    value: Decimal
-    currency: Currency
-    context: MoneyContext
 
     def _validate(self) -> None:
         # All base monetary & contextual invariants

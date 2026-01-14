@@ -26,7 +26,7 @@ class ValueObject(ABC):
         if not is_dataclass(cls):
             raise TypeError(f"{cls.__name__} must be a dataclass")
 
-        params = cls.__dataclass_params__  # type: ignore[attr-defined]
+        params = cls.__dataclass_params__
 
         # Must be frozen (immutable)
         if not params.frozen:
