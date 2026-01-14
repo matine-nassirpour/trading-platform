@@ -6,7 +6,7 @@ from quantum.domain.shared_kernel.value_objects.symbol import Symbol
 from quantum.domain.trading.value_objects.identifiers.intent_id import IntentId
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class OrderIntentEvent(BaseEvent):
     """
     Emitted when a TradingIntent is created.

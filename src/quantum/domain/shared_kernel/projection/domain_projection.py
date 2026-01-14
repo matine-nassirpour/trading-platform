@@ -2,8 +2,6 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from typing import Generic, TypeVar
 
-from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
-from quantum.domain.shared_kernel.architecture.domain_object import DomainObject
 from quantum.domain.shared_kernel.events.base_event import BaseEvent
 from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
 from quantum.domain.shared_kernel.projection.projection_cursor import ProjectionCursor
@@ -12,7 +10,7 @@ from quantum.domain.shared_kernel.projection.projection_error import ProjectionE
 S = TypeVar("S")
 
 
-class DomainProjection(DomainObject, ABC, Generic[S]):
+class DomainProjection(ABC, Generic[S]):
     """
     Audit-grade domain projection.
 
@@ -23,12 +21,6 @@ class DomainProjection(DomainObject, ABC, Generic[S]):
     - Has no side effects
     - Is fully replayable
     """
-
-    # --- Architectural role ---------------------------------------------------
-
-    @classmethod
-    def role(cls) -> DomainRole:
-        return DomainRole.PROJECTION
 
     # --- Internal Guarantees --------------------------------------------------
 

@@ -1,15 +1,12 @@
 from __future__ import annotations
 
-from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
-from quantum.domain.shared_kernel.architecture.immutable_dataclass import (
-    immutable_dataclass,
-)
+from dataclasses import dataclass
+
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.primitives.mutation_key import MutationKey
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 
 
-@immutable_dataclass
+@dataclass(frozen=True, slots=True)
 class EventSequence(ValueObject):
     """
     Strictly increasing, gapless sequence number within an event stream.
@@ -19,11 +16,7 @@ class EventSequence(ValueObject):
 
     value: int
 
-    @classmethod
-    def role(cls) -> DomainRole:
-        return DomainRole.VALUE_OBJECT
-
-    def _validate_semantics(self, key: MutationKey) -> None:
+    def _validate(self) -> None:
         if not isinstance(self.value, int):
             raise InvariantViolation("EventSequence must be an integer")
 

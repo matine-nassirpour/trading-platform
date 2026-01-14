@@ -13,7 +13,7 @@ from quantum.domain.trading.value_objects.identifiers.order_id import OrderId
 from quantum.domain.trading.value_objects.market.reference_price import ReferencePrice
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class OrderCreatedEvent(BaseEvent):
     """
     Emitted when an order is created inside a TradingIntent.

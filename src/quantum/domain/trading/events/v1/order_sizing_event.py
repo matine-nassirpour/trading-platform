@@ -7,7 +7,7 @@ from quantum.domain.shared_kernel.value_objects.volume import PositiveVolume
 from quantum.domain.trading.value_objects.identifiers.intent_id import IntentId
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class OrderSizingEvent(BaseEvent):
     """
     Emitted when an order volume is determined by a sizing logic.

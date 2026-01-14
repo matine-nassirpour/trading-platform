@@ -41,7 +41,6 @@ class TradingIntent(EventSourcedAggregateRoot):
 
         intent._raise(
             OrderIntentEvent(
-                occurred_at=occurred_at,
                 intent_id=intent_id,
                 symbol=symbol,
             )
@@ -51,20 +50,19 @@ class TradingIntent(EventSourcedAggregateRoot):
 
     # --- Commands -------------------------------------------------------------
 
-    def submit(self, *, at: EpochMs, client_order_id: str) -> None:
+    def submit(self, *, client_order_id: str) -> None:
         if self._submitted:
             raise InvalidStateTransition("TradingIntent already submitted")
 
         self._raise(
             OrderSubmitEvent(
-                occurred_at=at,
                 intent_id=self._intent_id,
                 client_order_id=client_order_id,
                 symbol=self._symbol,
             )
         )
 
-    def attach_order(self, *, order: Order, at: EpochMs) -> None:
+    def attach_order(self, *, order: Order) -> None:
         if not self._submitted:
             raise InvalidStateTransition("Cannot attach order before submission")
 
@@ -73,7 +71,6 @@ class TradingIntent(EventSourcedAggregateRoot):
 
         self._raise(
             OrderCreatedEvent(
-                occurred_at=at,
                 intent_id=self._intent_id,
                 order_id=order.order_id,
                 symbol=self._symbol,

@@ -6,7 +6,7 @@ from quantum.domain.shared_kernel.events.base_event import BaseEvent
 from quantum.domain.shared_kernel.value_objects.realized_pnl import RealizedPnL
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class EquityAdjustedEvent(BaseEvent):
     """
     Emitted whenever equity is adjusted by a realized PnL.

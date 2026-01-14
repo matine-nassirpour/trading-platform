@@ -55,7 +55,6 @@ class Order(EventSourcedAggregateRoot):
         order = Order()
         order._raise(
             OrderCreatedEvent(
-                occurred_at=occurred_at,
                 intent_id=intent_id,
                 order_id=order_id,
                 symbol=symbol,

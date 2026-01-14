@@ -6,10 +6,9 @@ from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.money.contextual_monetary_amount import (
     ContextualMonetaryAmount,
 )
-from quantum.domain.shared_kernel.policies.domain_policy import DomainPolicy
 
 
-class RiskPolicy(DomainPolicy):
+class RiskPolicy:
     """
     Canonical evaluation rules for desk-level risk limits.
     """
@@ -32,6 +31,9 @@ class RiskPolicy(DomainPolicy):
                 f"MoneyContext mismatch: {current.context} vs {limit.context}"
             )
 
+        if not isinstance(policy, RiskThresholdPolicy):
+            raise InvariantViolation("Invalid RiskThresholdPolicy")
+
         mode = policy.value  # canonical closed-set value
 
         if mode == "inclusive":
@@ -40,7 +42,7 @@ class RiskPolicy(DomainPolicy):
         if mode == "exclusive":
             return current.value > limit.value
 
-        # This is unreachable by construction, but protects against future corruption
+        # unreachable if closed set is correct
         raise InvariantViolation(f"Unknown RiskThresholdPolicy: {mode}")
 
     # --- Public evaluation rules ----------------------------------------------

@@ -9,7 +9,7 @@ from quantum.domain.trading.governance.lifecycle.strategy_lifecycle_state import
 )
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class StrategyLifecycle(ValueObject):
     """
     Canonical lifecycle contract for a trading strategy or model.

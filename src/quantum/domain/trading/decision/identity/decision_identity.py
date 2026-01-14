@@ -13,7 +13,7 @@ from quantum.domain.trading.decision.identity.model_version import ModelVersion
 from quantum.domain.trading.decision.identity.strategy_id import StrategyId
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class DecisionIdentity(ValueObject):
     """
     Canonical identity of a trading decision.

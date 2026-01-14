@@ -6,7 +6,7 @@ from quantum.domain.trading.execution.order.execution_id import ExecutionId
 from quantum.domain.trading.execution.settlement.fee import Fee
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class ExecutionCost(ValueObject):
     """
     Financial impact associated with an execution.

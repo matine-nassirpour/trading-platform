@@ -9,7 +9,7 @@ from quantum.domain.trading.decision.outcome.no_trade.no_trade_decision import (
 )
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class NoTradeDecisionEvent(BaseEvent):
     """
     Emitted when a trading decision results in an explicit NO-TRADE outcome.

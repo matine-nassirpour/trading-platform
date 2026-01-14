@@ -5,7 +5,7 @@ from quantum.domain.risk.value_objects.risk_breach import RiskBreach
 from quantum.domain.shared_kernel.events.base_event import BaseEvent
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class RiskBreachEvent(BaseEvent):
     """
     Emitted when a configured risk limit is breached.

@@ -7,7 +7,7 @@ from quantum.domain.trading.decision.identity.confidence.decision_confidence_lev
 )
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class DecisionConfidence(ValueObject):
     """
     Canonical Decision Confidence Envelope.

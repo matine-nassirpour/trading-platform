@@ -7,7 +7,7 @@ from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 from quantum.domain.trading.context.market_regime import MarketRegime
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class TradingContext(ValueObject):
     """
     Canonical trading decision context.

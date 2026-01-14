@@ -6,7 +6,7 @@ from quantum.domain.trading.execution.order.execution_fill import ExecutionFill
 from quantum.domain.trading.value_objects.identifiers.order_id import OrderId
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class OrderFillRegisteredEvent(BaseEvent):
     event_name: ClassVar[str] = "trading.order.fill_registered"
     event_version: ClassVar[int] = 1

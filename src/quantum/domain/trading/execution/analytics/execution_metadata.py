@@ -6,7 +6,7 @@ from quantum.domain.trading.execution.order.execution_id import ExecutionId
 from quantum.domain.trading.execution.taxonomy.liquidity_side import LiquiditySide
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class ExecutionMetadata(ValueObject):
     """
     Execution context metadata.

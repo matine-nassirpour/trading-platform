@@ -1,17 +1,14 @@
 from __future__ import annotations
 
-from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
-from quantum.domain.shared_kernel.architecture.immutable_dataclass import (
-    immutable_dataclass,
-)
+from dataclasses import dataclass
+
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.primitives.mutation_key import MutationKey
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 from quantum.domain.shared_kernel.temporal.time_interval import TimeInterval
 from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
 
 
-@immutable_dataclass
+@dataclass(frozen=True, slots=True)
 class TemporalValidity(ValueObject):
     """
     Canonical temporal validity contract.
@@ -21,11 +18,7 @@ class TemporalValidity(ValueObject):
 
     interval: TimeInterval
 
-    @classmethod
-    def role(cls) -> DomainRole:
-        return DomainRole.VALUE_OBJECT
-
-    def _validate_semantics(self, key: MutationKey) -> None:
+    def _validate(self) -> None:
         if not isinstance(self.interval, TimeInterval):
             raise InvariantViolation("TemporalValidity requires a TimeInterval")
 

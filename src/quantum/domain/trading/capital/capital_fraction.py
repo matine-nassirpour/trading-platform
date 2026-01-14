@@ -7,7 +7,7 @@ from quantum.domain.shared_kernel.primitives.numeric_value_object import (
 )
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class CapitalFraction(NumericValueObject):
     """
     Fraction of total capital allocated to a decision.
@@ -18,9 +18,7 @@ class CapitalFraction(NumericValueObject):
     - Independent of price / volume / leverage
     """
 
-    value: Decimal
-
-    def _validate_semantics(self) -> None:
+    def _validate(self) -> None:
         if self.value <= Decimal("0"):
             raise InvariantViolation("CapitalFraction must be strictly positive")
 

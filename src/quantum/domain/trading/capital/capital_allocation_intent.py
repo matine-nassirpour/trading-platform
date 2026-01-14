@@ -6,7 +6,7 @@ from quantum.domain.trading.capital.capital_fraction import CapitalFraction
 from quantum.domain.trading.capital.risk_budget_slice import RiskBudgetSlice
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class CapitalAllocationIntent(ValueObject):
     """
     Canonical capital allocation envelope for a trading decision.

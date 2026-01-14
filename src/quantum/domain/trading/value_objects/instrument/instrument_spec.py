@@ -19,7 +19,7 @@ from quantum.domain.trading.value_objects.market.volume_constraints import (
 )
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class InstrumentSpec(ValueObject):
     """
     Canonical institutional-grade tradable instrument specification.

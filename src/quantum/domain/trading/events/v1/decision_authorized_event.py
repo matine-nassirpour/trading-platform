@@ -10,7 +10,7 @@ from quantum.domain.trading.governance.boundary.decision_boundary_result import 
 from quantum.domain.trading.value_objects.identifiers.intent_id import IntentId
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class DecisionAuthorizedEvent(BaseEvent):
     """
     Emitted when a trading decision is evaluated against a DecisionBoundary.

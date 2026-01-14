@@ -9,7 +9,7 @@ from quantum.domain.trading.value_objects.identifiers.intent_id import IntentId
 from quantum.domain.trading.value_objects.identifiers.position_id import PositionId
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class SlTpConfigurationChangedEvent(BaseEvent):
     """
     Canonical event emitted whenever SL and/or TP configuration changes.

@@ -1,19 +1,15 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from decimal import Decimal
 
-from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
-from quantum.domain.shared_kernel.architecture.immutable_dataclass import (
-    immutable_dataclass,
-)
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.primitives.mutation_key import MutationKey
 from quantum.domain.shared_kernel.primitives.numeric_value_object import (
     NumericValueObject,
 )
 
 
-@immutable_dataclass
+@dataclass(frozen=True, slots=True)
 class PositiveVolume(NumericValueObject):
     """
     Volume strictly greater than zero.
@@ -21,16 +17,14 @@ class PositiveVolume(NumericValueObject):
 
     value: Decimal
 
-    @classmethod
-    def role(cls) -> DomainRole:
-        return DomainRole.VALUE_OBJECT
+    def _validate(self) -> None:
+        super()._validate()
 
-    def _validate_semantics(self, key: MutationKey) -> None:
         if self.value <= Decimal("0"):
             raise InvariantViolation("PositiveVolume must be strictly > 0")
 
 
-@immutable_dataclass
+@dataclass(frozen=True, slots=True)
 class NonNegativeVolume(NumericValueObject):
     """
     Volume greater than or equal to zero.
@@ -43,11 +37,9 @@ class NonNegativeVolume(NumericValueObject):
 
     value: Decimal
 
-    @classmethod
-    def role(cls) -> DomainRole:
-        return DomainRole.VALUE_OBJECT
+    def _validate(self) -> None:
+        super()._validate()
 
-    def _validate_semantics(self, key: MutationKey) -> None:
         if self.value < Decimal("0"):
             raise InvariantViolation("NonNegativeVolume must be ≥ 0")
 

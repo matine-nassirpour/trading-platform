@@ -7,7 +7,7 @@ from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class RiskAttribution(ValueObject):
     """
     Canonical attribution of a risk event.
@@ -17,16 +17,15 @@ class RiskAttribution(ValueObject):
 
     sources: tuple[RiskSource, ...]
 
-    def _validate_semantics(self) -> None:
-        if not isinstance(self.sources, tuple):
-            raise InvariantViolation("RiskAttribution sources must be a tuple")
-
+    def _validate(self) -> None:
         if not self.sources:
             raise InvariantViolation("RiskAttribution must contain at least one source")
 
         for source in self.sources:
             if not isinstance(source, RiskSource):
-                raise InvariantViolation("Invalid RiskSource in attribution")
+                raise InvariantViolation(
+                    f"Invalid RiskSource in attribution: {source!r}"
+                )
 
     @staticmethod
     def single(source: RiskSource) -> RiskAttribution:

@@ -8,7 +8,7 @@ from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 _STRATEGY_ID_RE = re.compile(r"^[a-z][a-z0-9_]{2,50}$")
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class StrategyId(ValueObject):
     """
     Canonical identifier of a trading strategy.

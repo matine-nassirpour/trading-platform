@@ -6,7 +6,6 @@ from quantum.domain.shared_kernel.money.money_context import MoneyContext
 from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import (
     EventSourcedAggregateRoot,
 )
-from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
 from quantum.domain.shared_kernel.value_objects.price import Price
 from quantum.domain.shared_kernel.value_objects.volume import PositiveVolume
 from quantum.domain.trading.events.v1.position_closed_event import PositionClosedEvent
@@ -28,7 +27,6 @@ class Position(EventSourcedAggregateRoot):
     @staticmethod
     def open(
         *,
-        occurred_at: EpochMs,
         position_id: PositionId,
         side: PositionSide,
         volume: PositiveVolume,
@@ -39,7 +37,6 @@ class Position(EventSourcedAggregateRoot):
 
         pos._raise(
             PositionOpenedEvent(
-                occurred_at=occurred_at,
                 position_id=position_id,
                 side=side,
                 volume=volume,
@@ -54,7 +51,6 @@ class Position(EventSourcedAggregateRoot):
         self,
         *,
         exit_price: Price,
-        occurred_at: EpochMs,
         context: MoneyContext,
     ) -> None:
         if self.closed:
@@ -70,7 +66,6 @@ class Position(EventSourcedAggregateRoot):
 
         self._raise(
             PositionClosedEvent(
-                occurred_at=occurred_at,
                 position_id=self.position_id,
                 side=self.side,
                 volume=self.volume,

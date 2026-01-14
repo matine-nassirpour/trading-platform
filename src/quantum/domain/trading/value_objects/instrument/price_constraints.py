@@ -5,7 +5,7 @@ from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class PriceConstraints(ValueObject):
     """
     Broker-enforced price distance constraints.

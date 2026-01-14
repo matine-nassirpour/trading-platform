@@ -6,7 +6,7 @@ from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class RiskSource(ValueObject):
     """
     Concrete origin of a risk.
@@ -20,7 +20,7 @@ class RiskSource(ValueObject):
     type: RiskSourceType
     reference: RiskReference
 
-    def _validate_semantics(self) -> None:
+    def _validate(self) -> None:
         if not isinstance(self.type, RiskSourceType):
             raise InvariantViolation("RiskSource requires a RiskSourceType")
 

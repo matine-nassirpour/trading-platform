@@ -1,21 +1,14 @@
-from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
-from quantum.domain.shared_kernel.architecture.immutable_dataclass import (
-    immutable_dataclass,
-)
+from dataclasses import dataclass
+
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.primitives.mutation_key import MutationKey
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 from quantum.domain.shared_kernel.value_objects.currency import Currency
 
 
-@immutable_dataclass
+@dataclass(frozen=True, slots=True)
 class MoneyContext(ValueObject):
     """
-    Canonical monetary frame of reference for the entire trading desk.
-
-    Examples:
-    - USD reporting
-    - EUR reporting
+    Canonical monetary frame of reference for the trading desk.
 
     All monetary values must belong to exactly one MoneyContext.
     """
@@ -23,13 +16,9 @@ class MoneyContext(ValueObject):
     reporting_currency: Currency
     allowed_currencies: frozenset[Currency]
 
-    @classmethod
-    def role(cls) -> DomainRole:
-        return DomainRole.VALUE_OBJECT
-
-    def _validate_semantics(self, key: MutationKey) -> None:
+    def _validate(self) -> None:
         if not isinstance(self.reporting_currency, Currency):
-            raise InvariantViolation("MoneyContext requires reporting Currency")
+            raise InvariantViolation("MoneyContext requires a reporting Currency")
 
         if not self.allowed_currencies:
             raise InvariantViolation(
@@ -37,4 +26,6 @@ class MoneyContext(ValueObject):
             )
 
         if self.reporting_currency not in self.allowed_currencies:
-            raise InvariantViolation("Reporting currency must be in allowed_currencies")
+            raise InvariantViolation(
+                "Reporting currency must be included in allowed_currencies"
+            )

@@ -1,33 +1,20 @@
-from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
-from quantum.domain.shared_kernel.architecture.immutable_dataclass import (
-    immutable_dataclass,
-)
+from dataclasses import dataclass
+
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.events.base_event import BaseEvent
 from quantum.domain.shared_kernel.events.event_id import EventId
 from quantum.domain.shared_kernel.events.event_sequence import EventSequence
-from quantum.domain.shared_kernel.primitives.mutation_key import MutationKey
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
 
 
-@immutable_dataclass
+@dataclass(frozen=True, slots=True)
 class EventEnvelope(ValueObject):
     """
     Audit-grade domain event envelope.
 
     This object represents the act of recording a Domain Event
     into an immutable event stream.
-
-    Semantic guarantees:
-    - id            → global identity of the record
-    - sequence      → strict ordering within a stream
-    - recorded_at   → when THIS SYSTEM recorded the event
-    - event         → the pure, atemporal domain fact
-
-    IMPORTANT:
-    The Domain Event itself carries NO temporal information.
-    All time lives in the envelope.
     """
 
     id: EventId
@@ -35,11 +22,7 @@ class EventEnvelope(ValueObject):
     recorded_at: EpochMs
     event: BaseEvent
 
-    @classmethod
-    def role(cls) -> DomainRole:
-        return DomainRole.VALUE_OBJECT
-
-    def _validate_semantics(self, key: MutationKey) -> None:
+    def _validate(self) -> None:
         if not isinstance(self.id, EventId):
             raise InvariantViolation("EventEnvelope requires EventId")
 

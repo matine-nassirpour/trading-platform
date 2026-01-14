@@ -5,7 +5,7 @@ from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 from quantum.domain.shared_kernel.value_objects.currency import Currency
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class CurrencyPair(ValueObject):
     """
     Base / quote currency definition.

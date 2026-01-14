@@ -7,7 +7,7 @@ from quantum.domain.shared_kernel.primitives.numeric_value_object import (
 )
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class RiskBudgetSlice(NumericValueObject):
     """
     Fraction of the total risk budget consumed by a decision.
@@ -19,9 +19,7 @@ class RiskBudgetSlice(NumericValueObject):
     This is NOT monetary.
     """
 
-    value: Decimal
-
-    def _validate_semantics(self) -> None:
+    def _validate(self) -> None:
         if self.value <= Decimal("0"):
             raise InvariantViolation("RiskBudgetSlice must be strictly positive")
 

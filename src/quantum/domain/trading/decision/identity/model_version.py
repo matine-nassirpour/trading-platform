@@ -8,7 +8,7 @@ from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 _VERSION_RE = re.compile(r"^v\d+(\.\d+){0,2}$")
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class ModelVersion(ValueObject):
     """
     Canonical model / logic version.

@@ -6,7 +6,7 @@ from quantum.domain.risk.value_objects.risk_breach_kind import RiskBreachKind
 from quantum.domain.shared_kernel.events.base_event import BaseEvent
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class RiskAttributionEvent(BaseEvent):
     """
     Emitted to explicitly attribute the origin of a detected risk.

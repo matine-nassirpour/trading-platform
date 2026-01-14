@@ -1,14 +1,8 @@
-from __future__ import annotations
-
-from abc import ABC, abstractmethod
+from abc import ABC
 from collections.abc import Iterable
 from typing import ClassVar
 
-from quantum.domain.shared_kernel.architecture.immutable_dataclass import (
-    immutable_dataclass,
-)
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.primitives.mutation_key import MutationKey
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 
 
@@ -51,49 +45,35 @@ def _validate_allowed_values(values: Iterable[str], cls_name: str) -> frozenset[
     return frozenset(canonical)
 
 
-@immutable_dataclass
 class ClosedSetValueObject(ValueObject, ABC):
     """
     Canonical base class for closed-set domain concepts.
 
-    HARD GUARANTEES:
+    Guarantees:
     - Domain values are finite and explicitly enumerated
     - Canonical representation is globally enforced
     - Validation is deterministic and idempotent
-    - This class is ABSTRACT and may never be instantiated
     """
 
     value: str
-
     _ALLOWED_VALUES: ClassVar[frozenset[str]]
-
-    @abstractmethod
-    def _closed_set_type(self) -> None:
-        """
-        Architectural tag.
-
-        Forces ClosedSetValueObject to be abstract so it never violates
-        DomainObject's 'no inherited role' rule.
-        """
-        raise NotImplementedError
 
     # --- Subclass contract enforcement ----------------------------------------
 
     def __init_subclass__(cls) -> None:
-        if not hasattr(cls, "_ALLOWED_VALUES"):
-            raise TypeError(
-                f"{cls.__name__} must define _ALLOWED_VALUES as a frozenset[str]"
-            )
+        super().__init_subclass__()
+
+        # Only enforce on concrete subclasses
+        if "_ALLOWED_VALUES" not in cls.__dict__:
+            return
 
         cls._ALLOWED_VALUES = _validate_allowed_values(
             cls._ALLOWED_VALUES, cls.__name__
         )
 
-        super().__init_subclass__()
-
     # --- Semantic invariants --------------------------------------------------
 
-    def _validate_semantics(self, key: MutationKey) -> None:
+    def _validate(self) -> None:
         if not isinstance(self.value, str):
             raise InvariantViolation(
                 f"{self.__class__.__name__} value must be a string"
@@ -107,7 +87,8 @@ class ClosedSetValueObject(ValueObject, ABC):
                 f"Allowed values: {sorted(self._ALLOWED_VALUES)}"
             )
 
-        self._mutate(key, "value", canonical)
+        # Canonicalize
+        object.__setattr__(self, "value", canonical)
 
     # --- Canonical string form ------------------------------------------------
 

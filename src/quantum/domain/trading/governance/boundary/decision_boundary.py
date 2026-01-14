@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from dataclasses import dataclass
 
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
@@ -9,7 +7,7 @@ from quantum.domain.trading.context.market_regime import MarketRegime
 from quantum.domain.trading.decision.identity.strategy_id import StrategyId
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class DecisionBoundary(ValueObject):
     """
     Canonical Decision Authorization Boundary.

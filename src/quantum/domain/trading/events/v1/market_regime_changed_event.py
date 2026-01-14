@@ -5,7 +5,7 @@ from quantum.domain.shared_kernel.events.base_event import BaseEvent
 from quantum.domain.trading.context.market_regime import MarketRegime
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class MarketRegimeChangedEvent(BaseEvent):
     """
     Emitted when the global market regime changes.

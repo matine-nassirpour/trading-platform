@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
-from quantum.domain.shared_kernel.architecture.domain_object import DomainObject
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
 from quantum.domain.shared_kernel.value_objects.price import Price
@@ -61,16 +59,10 @@ class OrderIntentParameters:
     time_in_force: TimeInForce = TimeInForce("gtc")
 
 
-class OrderIntentFactory(DomainObject):
+class OrderIntentFactory:
     """
     Canonical domain factory for OrderIntentEvent.
     """
-
-    @classmethod
-    def role(cls) -> DomainRole:
-        return DomainRole.FACTORY
-
-    # --- Validation rules -----------------------------------------------------
 
     @staticmethod
     def _validate_price_requirements(params: OrderIntentParameters) -> None:
@@ -150,14 +142,12 @@ class OrderIntentFactory(DomainObject):
             raise InvariantViolation(boundary_result.reason)
 
         decision_authorized_event = DecisionAuthorizedEvent(
-            occurred_at=occurred_at,
             intent_id=params.intent_id,
             result=boundary_result,
         )
 
         # --- Intent emission --------------------------------------------------
         order_intent_event = OrderIntentEvent(
-            occurred_at=occurred_at,
             intent_id=params.intent_id,
             symbol=params.symbol,
             order_type=params.order_type,

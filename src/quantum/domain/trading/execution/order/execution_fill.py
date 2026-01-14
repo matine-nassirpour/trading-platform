@@ -8,7 +8,7 @@ from quantum.domain.shared_kernel.value_objects.volume import PositiveVolume
 from quantum.domain.trading.execution.order.execution_id import ExecutionId
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class ExecutionFill(ValueObject):
     """
     Atomic economic execution fill.

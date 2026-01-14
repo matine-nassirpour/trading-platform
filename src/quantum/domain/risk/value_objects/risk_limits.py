@@ -1,18 +1,15 @@
+from dataclasses import dataclass
+
 from quantum.domain.risk.value_objects.risk_threshold_policy import RiskThresholdPolicy
-from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
-from quantum.domain.shared_kernel.architecture.immutable_dataclass import (
-    immutable_dataclass,
-)
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.money.contextual_monetary_amount import (
     ContextualMonetaryAmount,
 )
 from quantum.domain.shared_kernel.money.money_context import MoneyContext
-from quantum.domain.shared_kernel.primitives.mutation_key import MutationKey
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 
 
-@immutable_dataclass
+@dataclass(frozen=True, slots=True)
 class RiskLimits(ValueObject):
     """
     Canonical desk-level risk limits.
@@ -29,11 +26,7 @@ class RiskLimits(ValueObject):
     max_daily_loss: ContextualMonetaryAmount
     threshold_policy: RiskThresholdPolicy
 
-    @classmethod
-    def role(cls) -> DomainRole:
-        return DomainRole.VALUE_OBJECT
-
-    def _validate_semantics(self, key: MutationKey) -> None:
+    def _validate(self) -> None:
         if not isinstance(self.context, MoneyContext):
             raise InvariantViolation("RiskLimits requires a MoneyContext")
 

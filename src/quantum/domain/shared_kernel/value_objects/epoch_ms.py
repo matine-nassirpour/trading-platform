@@ -1,39 +1,28 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
-from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
-from quantum.domain.shared_kernel.architecture.immutable_dataclass import (
-    immutable_dataclass,
-)
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.primitives.mutation_key import MutationKey
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 
 _EPOCH_UTC = datetime(1970, 1, 1, tzinfo=UTC)
 
 
-@immutable_dataclass
+@dataclass(frozen=True, slots=True)
 class EpochMs(ValueObject):
     """
     Milliseconds since Unix epoch (UTC).
 
-    Design guarantees:
+    Guarantees:
     - Integer-only representation
     - No floating-point arithmetic
     - Deterministic and platform-independent
-    - Suitable for safety / certifiable contexts
     """
 
     value: int
 
-    @classmethod
-    def role(cls) -> DomainRole:
-        return DomainRole.VALUE_OBJECT
-
-    # --- Invariants -----------------------------------------------------------
-
-    def _validate_semantics(self, key: MutationKey) -> None:
+    def _validate(self) -> None:
         if not isinstance(self.value, int):
             raise InvariantViolation("EpochMs must be an integer")
 
@@ -45,10 +34,6 @@ class EpochMs(ValueObject):
     def to_datetime(self) -> datetime:
         """
         Converts EpochMs to a timezone-aware UTC datetime.
-
-        Implementation:
-        - integer seconds + integer milliseconds
-        - no float conversion
         """
         seconds, milliseconds = divmod(self.value, 1000)
 
@@ -61,11 +46,6 @@ class EpochMs(ValueObject):
     def from_datetime(cls, dt: datetime) -> EpochMs:
         """
         Converts a timezone-aware datetime to EpochMs.
-
-        Requirements:
-        - dt MUST be timezone-aware
-        - dt is normalized to UTC
-        - conversion uses integer arithmetic only
         """
         if not isinstance(dt, datetime):
             raise InvariantViolation("dt must be a datetime instance")
@@ -77,7 +57,6 @@ class EpochMs(ValueObject):
 
         delta: timedelta = dt_utc - _EPOCH_UTC
 
-        # Total milliseconds using integer arithmetic only
         total_ms = (
             delta.days * 86_400_000
             + delta.seconds * 1_000

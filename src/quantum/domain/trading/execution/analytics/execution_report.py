@@ -7,7 +7,7 @@ from quantum.domain.trading.execution.order.execution_id import ExecutionId
 from quantum.domain.trading.execution.taxonomy.execution_type import ExecutionType
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class ExecutionReport(ValueObject):
     """
     Canonical execution report.

@@ -8,7 +8,7 @@ from quantum.domain.trading.governance.lifecycle.strategy_lifecycle_state import
 )
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class StrategyLifecycleChangedEvent(BaseEvent):
     """
     Emitted whenever a strategy lifecycle state changes.

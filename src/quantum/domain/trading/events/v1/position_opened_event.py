@@ -8,7 +8,7 @@ from quantum.domain.trading.execution.order.position_side import PositionSide
 from quantum.domain.trading.value_objects.identifiers.position_id import PositionId
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class PositionOpenedEvent(BaseEvent):
     event_name: ClassVar[str] = "trading.position.opened"
     event_version: ClassVar[int] = 1

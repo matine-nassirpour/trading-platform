@@ -1,80 +1,24 @@
-from __future__ import annotations
-
-import inspect
-
 from abc import ABC, abstractmethod
 
-from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
-from quantum.domain.shared_kernel.architecture.domain_object import DomainObject
-from quantum.domain.shared_kernel.architecture.immutable_dataclass import (
-    is_immutable_dataclass,
-)
-from quantum.domain.shared_kernel.primitives.immutable_domain_object import (
-    ImmutableDomainObject,
-)
-from quantum.domain.shared_kernel.primitives.mutation_key import MutationKey
 
-
-class ValueObject(DomainObject, ImmutableDomainObject, ABC):
+class ValueObject(ABC):
     """
     Canonical base class for all Value Objects.
 
-    HARD GUARANTEES:
-    - Strict immutability enforced by capability-based mutation authority
-    - All invariants are executed exactly once during construction
-    - No invariant can be bypassed
-    - No mutation is possible after construction
+    Guarantees:
+    - Immutable
+    - Comparable by value
+    - Fully validated at construction
+    - No partial or invalid state possible
     """
 
-    # --- Architecture ---------------------------------------------------------
-
-    @classmethod
-    def role(cls) -> DomainRole:
-        return DomainRole.VALUE_OBJECT
-
-    # --- FINAL initialization pipeline ----------------------------------------
-
-    def __post_init__(self) -> None:
-        key: MutationKey = self._mutation_capability()
-        try:
-            self._validate_base(key)
-            self._validate_semantics(key)
-        except Exception:
-            # Object is NOT marked constructed
-            # Capability is still alive, but object is unusable forever
-            raise
-        finally:
-            self._revoke_mutation_capability()
-
-        # Only here is the object allowed to exist
-        self._mark_constructed()
-
-    # --- Hooks ----------------------------------------------------------------
-
-    def _validate_base(self, key: MutationKey) -> None:
-        pass
-
     @abstractmethod
-    def _validate_semantics(self, key: MutationKey) -> None:
+    def _validate(self) -> None:
         """
-        Domain-specific invariants.
-
-        MUST be implemented by concrete subclasses.
+        Enforce all domain invariants.
+        Must raise a domain error on any violation.
         """
         raise NotImplementedError
 
-    # --- Guard against override -----------------------------------------------
-
-    def __init_subclass__(cls) -> None:
-        super().__init_subclass__()
-
-        # Abstract base classes are allowed to skip the decorator
-        if inspect.isabstract(cls):
-            return
-
-        # Concrete ValueObjects MUST come from @immutable_dataclass
-        if not is_immutable_dataclass(cls):
-            raise TypeError(
-                f"{cls.__name__} must be decorated with @immutable_dataclass "
-                "to be a valid ValueObject"
-            )
+    def __post_init__(self) -> None:
+        self._validate()

@@ -7,7 +7,7 @@ from quantum.domain.trading.decision.outcome.no_trade.no_trade_reason import (
 )
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class NoTradeDecision(ValueObject):
     """
     Canonical NO-TRADE decision envelope.

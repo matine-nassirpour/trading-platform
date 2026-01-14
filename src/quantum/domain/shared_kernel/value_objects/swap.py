@@ -1,21 +1,16 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from decimal import Decimal
 
-from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
-from quantum.domain.shared_kernel.architecture.immutable_dataclass import (
-    immutable_dataclass,
+from quantum.domain.shared_kernel.money.contextual_monetary_amount import (
+    ContextualMonetaryAmount,
 )
 from quantum.domain.shared_kernel.money.money_context import MoneyContext
-from quantum.domain.shared_kernel.primitives.contextual_algebraic_monetary_value_object import (
-    ContextualAlgebraicMonetaryValueObject,
-)
-from quantum.domain.shared_kernel.primitives.mutation_key import MutationKey
-from quantum.domain.shared_kernel.value_objects.currency import Currency
 
 
-@immutable_dataclass
-class Swap(ContextualAlgebraicMonetaryValueObject):
+@dataclass(frozen=True, slots=True)
+class Swap(ContextualMonetaryAmount):
     """
     Swap / rollover monetary adjustment.
 
@@ -23,39 +18,16 @@ class Swap(ContextualAlgebraicMonetaryValueObject):
     - Can be positive or negative
     - Currency-aware
     - Context-aware
-    - Algebraically composable only with compatible Swap
     """
 
-    value: Decimal
-    currency: Currency
-    context: MoneyContext
-
-    def _monetary_kind(self) -> None:
-        pass
-
-    @classmethod
-    def role(cls) -> DomainRole:
-        return DomainRole.VALUE_OBJECT
-
-    # --- Invariants -----------------------------------------------------------
-
-    def _validate_semantics(self, key: MutationKey) -> None:
-        """
-        Swap ∈ ℝ, but:
-        - must be a valid Decimal
-        - must belong to a valid Currency
-        - must belong to a valid MoneyContext
-        """
-        super()._validate_semantics(key)
-        # No further restriction on sign
+    def _validate(self) -> None:
+        super()._validate()
+        # No restriction on sign
 
     # --- Algebraic operations -------------------------------------------------
 
     def add(self, other: Swap) -> Swap:
-        """
-        Returns a new Swap equal to this ⊕ other.
-        """
-        self._assert_algebraically_compatible(other)
+        self._assert_same_context_and_currency(other)
         return Swap(
             value=self.value + other.value,
             currency=self.currency,
@@ -63,10 +35,7 @@ class Swap(ContextualAlgebraicMonetaryValueObject):
         )
 
     def subtract(self, other: Swap) -> Swap:
-        """
-        Returns a new Swap equal to this ⊖ other.
-        """
-        self._assert_algebraically_compatible(other)
+        self._assert_same_context_and_currency(other)
         return Swap(
             value=self.value - other.value,
             currency=self.currency,
@@ -75,9 +44,6 @@ class Swap(ContextualAlgebraicMonetaryValueObject):
 
     @staticmethod
     def zero(context: MoneyContext) -> Swap:
-        """
-        Canonical zero Swap for a given MoneyContext.
-        """
         return Swap(
             value=Decimal("0"),
             currency=context.reporting_currency,

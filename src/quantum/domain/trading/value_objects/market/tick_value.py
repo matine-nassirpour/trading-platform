@@ -8,16 +8,15 @@ from quantum.domain.shared_kernel.primitives.numeric_value_object import (
 from quantum.domain.shared_kernel.value_objects.currency import Currency
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class TickValue(NumericValueObject):
     """
     Monetary value of one tick movement for one contract.
     """
 
-    value: Decimal
     currency: Currency
 
-    def _validate_semantics(self) -> None:
+    def _validate(self) -> None:
         if self.value <= Decimal("0"):
             raise InvariantViolation("TickValue must be strictly positive")
 

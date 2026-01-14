@@ -7,7 +7,7 @@ from quantum.domain.shared_kernel.money.contextual_monetary_amount import (
 )
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class MaxDrawdownExceededEvent(BaseEvent):
     """
     Emitted when the drawdown exceeds or equals the configured maximum.

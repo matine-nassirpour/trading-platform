@@ -4,15 +4,13 @@ from dataclasses import dataclass
 from decimal import Decimal
 
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.primitives.algebraic_monetary_value_object import (
-    AlgebraicMonetaryValueObject,
+from quantum.domain.shared_kernel.money.contextual_monetary_amount import (
+    ContextualMonetaryAmount,
 )
-from quantum.domain.shared_kernel.primitives.monetary_amount import MonetaryAmount
-from quantum.domain.shared_kernel.value_objects.currency import Currency
 
 
-@dataclass(frozen=True)
-class Fee(AlgebraicMonetaryValueObject):
+@dataclass(frozen=True, slots=True)
+class Fee(ContextualMonetaryAmount):
     """
     Canonical execution fee.
 
@@ -22,33 +20,21 @@ class Fee(AlgebraicMonetaryValueObject):
     - Algebraically composable
     """
 
-    value: Decimal
-    currency: Currency
-
-    # --- Invariants -----------------------------------------------------------
-
-    def _validate_semantics(self) -> None:
+    def _validate(self) -> None:
         if self.value < Decimal("0"):
             raise InvariantViolation("Fee must be non-negative")
 
     # --- Algebraic operations -------------------------------------------------
 
-    def add(self, other: MonetaryAmount) -> Fee:
-        if not isinstance(other, Fee):
-            raise InvariantViolation("Fee can only be added to Fee")
-
-        self._check_currency(other)
-
+    def add(self, other: Fee) -> Fee:
+        self._assert_same_context_and_currency(other)
         return Fee(
             value=self.value + other.value,
             currency=self.currency,
         )
 
-    def subtract(self, other: MonetaryAmount) -> Fee:
-        if not isinstance(other, Fee):
-            raise InvariantViolation("Fee can only be subtracted from Fee")
-
-        self._check_currency(other)
+    def subtract(self, other: Fee) -> Fee:
+        self._assert_same_context_and_currency(other)
 
         result = self.value - other.value
 

@@ -7,14 +7,12 @@ from quantum.domain.shared_kernel.primitives.numeric_value_object import (
 )
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class ContractSize(NumericValueObject):
     """
     Number of underlying units per contract / lot.
     """
 
-    value: Decimal
-
-    def _validate_semantics(self) -> None:
+    def _validate(self) -> None:
         if self.value <= Decimal("0"):
             raise InvariantViolation("ContractSize must be strictly positive")
