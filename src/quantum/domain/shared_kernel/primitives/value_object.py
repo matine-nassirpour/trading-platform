@@ -6,7 +6,7 @@ class ValueObject(ABC):
     Canonical base class for all Value Objects.
 
     Guarantees:
-    - Immutable
+    - Immutable (all subclasses should be frozen + slots)
     - Comparable by value
     - Fully validated at construction
     - No partial or invalid state possible

@@ -37,6 +37,9 @@ class TimeInterval(ValueObject):
     # --- Semantics ------------------------------------------------------------
 
     def contains(self, instant: EpochMs) -> bool:
+        if not isinstance(instant, EpochMs):
+            raise InvariantViolation("instant must be an EpochMs")
+
         if instant.value < self.valid_from.value:
             return False
 

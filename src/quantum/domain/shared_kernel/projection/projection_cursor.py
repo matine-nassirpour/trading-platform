@@ -8,7 +8,7 @@ from quantum.domain.shared_kernel.events.event_sequence import EventSequence
 from quantum.domain.shared_kernel.primitives.cursor import Cursor
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class ProjectionCursor(Cursor):
     """
     Strong projection cursor.
