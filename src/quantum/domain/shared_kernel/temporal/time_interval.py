@@ -21,6 +21,8 @@ class TimeInterval(ValueObject):
     valid_from: EpochMs
     valid_until: EpochMs | None = None
 
+    # --- Invariants -----------------------------------------------------------
+
     def _validate(self) -> None:
         if not isinstance(self.valid_from, EpochMs):
             raise InvariantViolation("valid_from must be an EpochMs")
@@ -55,11 +57,15 @@ class TimeInterval(ValueObject):
         """
         Returns a new interval closed at the given instant.
         """
-        if at.value <= self.valid_from.value:
-            raise InvariantViolation("Cannot close interval before it starts")
+
+        if not isinstance(at, EpochMs):
+            raise InvariantViolation("at must be an EpochMs")
 
         if self.valid_until is not None:
             raise InvariantViolation("Interval already closed")
+
+        if at.value <= self.valid_from.value:
+            raise InvariantViolation("Cannot close interval before or at its start")
 
         return TimeInterval(
             valid_from=self.valid_from,

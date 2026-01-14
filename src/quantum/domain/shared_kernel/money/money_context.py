@@ -18,14 +18,27 @@ class MoneyContext(ValueObject):
 
     def _validate(self) -> None:
         if not isinstance(self.reporting_currency, Currency):
-            raise InvariantViolation("MoneyContext requires a reporting Currency")
+            raise InvariantViolation(
+                "MoneyContext.reporting_currency must be a Currency"
+            )
+
+        if not isinstance(self.allowed_currencies, frozenset):
+            raise InvariantViolation(
+                "MoneyContext.allowed_currencies must be a frozenset[Currency]"
+            )
 
         if not self.allowed_currencies:
             raise InvariantViolation(
-                "MoneyContext requires at least one allowed currency"
+                "MoneyContext.allowed_currencies must not be empty"
             )
+
+        for c in self.allowed_currencies:
+            if not isinstance(c, Currency):
+                raise InvariantViolation(
+                    f"MoneyContext.allowed_currencies must contain only Currency, got {type(c)}"
+                )
 
         if self.reporting_currency not in self.allowed_currencies:
             raise InvariantViolation(
-                "Reporting currency must be included in allowed_currencies"
+                "MoneyContext.reporting_currency must be included in allowed_currencies"
             )

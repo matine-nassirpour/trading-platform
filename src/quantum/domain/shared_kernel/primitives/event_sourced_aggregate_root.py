@@ -50,7 +50,16 @@ class EventSourcedAggregateRoot(Generic[S], ValidatableAggregate, ABC):
         """
         raise NotImplementedError
 
+    # --- Single-event application (the ONLY semantic gate) --------------------
+
     def apply(self, event: BaseEvent) -> EventSourcedAggregateRoot[S]:
+        """
+        Applies a single domain event to this aggregate.
+
+        This method is the ONLY gateway through which an event may
+        affect aggregate state.
+        """
+
         if not isinstance(event, BaseEvent):
             raise InvariantViolation("Only BaseEvent can be applied")
 
@@ -66,18 +75,30 @@ class EventSourcedAggregateRoot(Generic[S], ValidatableAggregate, ABC):
 
         return self.__class__(new_state)
 
-    # --- Replay ---------------------------------------------------------------
+    # --- Replay (strictly defined in terms of apply) --------------------------
 
     @classmethod
-    def rehydrate(cls, events: Iterable[BaseEvent], empty_state: S):
-        state = empty_state
-        for event in events:
-            handlers = cls._handlers()
-            handler = handlers.get(type(event))
-            if handler is None:
-                raise InvariantViolation(
-                    f"{cls.__name__} cannot handle event {type(event).__name__}"
-                )
-            state = handler(state, event)
+    def rehydrate(
+        cls,
+        *,
+        events: Iterable[BaseEvent],
+        empty_state: S,
+    ) -> EventSourcedAggregateRoot[S]:
+        """
+        Rebuilds an aggregate from its event stream.
 
-        return cls(state)
+        HARD GUARANTEES:
+        - Every event is validated via apply()
+        - No bypass of domain invariants
+        - Replay semantics == live semantics
+        """
+
+        if not isinstance(empty_state, AggregateState):
+            raise InvariantViolation("empty_state must be an AggregateState")
+
+        aggregate = cls(empty_state)
+
+        for event in events:
+            aggregate = aggregate.apply(event)
+
+        return aggregate
