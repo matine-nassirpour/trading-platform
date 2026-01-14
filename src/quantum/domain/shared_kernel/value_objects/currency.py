@@ -1,32 +1,26 @@
-from dataclasses import dataclass
-from re import fullmatch
+from typing import ClassVar
 
-from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.primitives.value_object import ValueObject
-
-_ISO_4217_RE = fullmatch
+from quantum.domain.shared_kernel.primitives.closed_set_value_object import (
+    ClosedSetValueObject,
+)
 
 
-@dataclass(frozen=True, slots=True)
-class Currency(ValueObject):
+class Currency(ClosedSetValueObject):
     """
-    ISO 4217 currency code.
+    Canonical domain currency.
 
-    Examples: USD, EUR, JPY, CHF
+    It does NOT know about ISO-4217 or any external standard.
     """
 
-    code: str
-
-    def _validate(self) -> None:
-        if not isinstance(self.code, str):
-            raise InvariantViolation("Currency code must be a string")
-
-        value = self.code.strip().upper()
-
-        if not _ISO_4217_RE(r"[A-Z]{3}", value):
-            raise InvariantViolation(f"Invalid ISO 4217 currency code: {self.code}")
-
-        object.__setattr__(self, "code", value)
-
-    def __str__(self) -> str:
-        return self.code
+    _ALLOWED_VALUES: ClassVar[frozenset[str]] = frozenset(
+        {
+            "usd",
+            "eur",
+            "jpy",
+            "chf",
+            "gbp",
+            "cad",
+            "aud",
+            "nzd",
+        }
+    )
