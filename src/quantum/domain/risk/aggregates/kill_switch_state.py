@@ -83,7 +83,10 @@ class KillSwitchState(EventSourcedAggregateRoot[KillSwitchStateData]):
     # --- Event → State transitions --------------------------------------------
 
     @staticmethod
-    def _apply_armed() -> KillSwitchStateData:
+    def _apply_armed(
+        state: KillSwitchStateData,
+        event: KillSwitchArmedEvent,
+    ) -> KillSwitchStateData:
         return KillSwitchStateData(
             status=KillSwitchStatus.armed(),
             reason=None,
@@ -91,6 +94,7 @@ class KillSwitchState(EventSourcedAggregateRoot[KillSwitchStateData]):
 
     @staticmethod
     def _apply_triggered(
+        state: KillSwitchStateData,
         event: KillSwitchTriggerEvent,
     ) -> KillSwitchStateData:
         return KillSwitchStateData(

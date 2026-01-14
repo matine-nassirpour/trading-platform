@@ -24,21 +24,37 @@ class AggregateState(ABC):
         """
         raise NotImplementedError
 
-    @classmethod
-    def _assert_valid_state_type(cls) -> None:
-        # Must be slots-based and non-empty, otherwise it becomes non-auditable.
+    # --- Compile-time structural contract -------------------------------------
+
+    def __init_subclass__(cls) -> None:
+        super().__init_subclass__()
+
+        # Do not validate the abstract base class itself
+        if cls is AggregateState:
+            return
+
+        # Must explicitly declare __slots__
         if "__slots__" not in cls.__dict__:
-            raise TypeError(f"{cls.__name__} must declare __slots__")
+            raise TypeError(f"{cls.__name__} must explicitly declare __slots__")
 
         slots = cls.__dict__["__slots__"]
+
+        # Slots must not be empty
         if slots is None or slots == () or slots == "":
             raise TypeError(f"{cls.__name__} must not have empty __slots__")
 
-        # Disallow instance __dict__
+        # Normalize to tuple
         if isinstance(slots, str):
             slots_tuple = (slots,)
         else:
             slots_tuple = tuple(slots)
 
+        # __dict__ is forbidden
         if "__dict__" in slots_tuple:
             raise TypeError(f"{cls.__name__} must not include '__dict__' in __slots__")
+
+        # __weakref__ is forbidden (breaks auditability)
+        if "__weakref__" in slots_tuple:
+            raise TypeError(
+                f"{cls.__name__} must not include '__weakref__' in __slots__"
+            )
