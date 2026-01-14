@@ -30,6 +30,18 @@ class KillSwitchStateData(AggregateState):
     def _state_contract(self) -> None:
         pass
 
+    @staticmethod
+    def empty() -> KillSwitchStateData:
+        """
+        Canonical empty KillSwitch state.
+
+        Represents: 'no kill switch exists yet'.
+        """
+        return KillSwitchStateData(
+            status=None,  # type: ignore[arg-type]
+            reason=None,
+        )
+
 
 class KillSwitchState(EventSourcedAggregateRoot[KillSwitchStateData]):
     """
@@ -45,17 +57,14 @@ class KillSwitchState(EventSourcedAggregateRoot[KillSwitchStateData]):
     @staticmethod
     def initialize() -> KillSwitchState:
         """
-        A KillSwitch MUST start armed.
+        Creates a KillSwitch by replaying its mandatory genesis event.
 
-        This is encoded by emitting the KillSwitchArmedEvent
-        as the genesis event.
+        This is the ONLY legal way to create a KillSwitch.
         """
-        empty = KillSwitchStateData(
-            status=KillSwitchStatus.armed(),
-            reason=None,
+        return KillSwitchState.rehydrate(
+            events=[KillSwitchArmedEvent()],
+            empty_state=KillSwitchStateData.empty(),
         )
-
-        return KillSwitchState(empty)
 
     # --- Commands -------------------------------------------------------------
 
@@ -114,6 +123,15 @@ class KillSwitchState(EventSourcedAggregateRoot[KillSwitchStateData]):
     def _validate_state(self) -> None:
         s = self.state
 
+        # Pre-genesis state: only allowed before any event
+        if s.status is None:
+            if s.reason is not None:
+                raise InvariantViolation(
+                    "Pre-genesis KillSwitch must not have a reason"
+                )
+            return
+
+        # Normal states
         if not isinstance(s.status, KillSwitchStatus):
             raise InvariantViolation("KillSwitchState must have a valid status")
 

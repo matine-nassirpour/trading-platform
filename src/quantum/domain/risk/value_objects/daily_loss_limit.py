@@ -8,18 +8,18 @@ from quantum.domain.shared_kernel.money.contextual_monetary_amount import (
 
 
 @dataclass(frozen=True, slots=True)
-class Notional(ContextualMonetaryAmount):
+class DailyLossLimit(ContextualMonetaryAmount):
     """
-    Gross notional exposure.
+    Maximum allowed realized loss per trading day.
 
     Properties:
-    - Always non-negative
-    - Currency-aware
-    - NOT algebraically composable
+    - Strictly positive
+    - Contextual
+    - Non-algebraic
     """
 
     def _validate(self) -> None:
         super()._validate()
 
-        if self.value < Decimal("0"):
-            raise InvariantViolation("Notional must be non-negative")
+        if self.value <= Decimal("0"):
+            raise InvariantViolation("DailyLossLimit must be strictly positive")

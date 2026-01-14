@@ -1,11 +1,15 @@
+from decimal import Decimal
+
+from quantum.domain.risk.value_objects.daily_loss import DailyLoss
+from quantum.domain.risk.value_objects.daily_loss_limit import DailyLossLimit
+from quantum.domain.risk.value_objects.drawdown import Drawdown
+from quantum.domain.risk.value_objects.drawdown_limit import DrawdownLimit
+from quantum.domain.risk.value_objects.notional import Notional
 from quantum.domain.risk.value_objects.risk_breach import RiskBreach
 from quantum.domain.risk.value_objects.risk_breach_kind import RiskBreachKind
 from quantum.domain.risk.value_objects.risk_limits import RiskLimits
 from quantum.domain.risk.value_objects.risk_threshold_policy import RiskThresholdPolicy
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.money.contextual_monetary_amount import (
-    ContextualMonetaryAmount,
-)
 
 
 class RiskPolicy:
@@ -14,54 +18,33 @@ class RiskPolicy:
     """
 
     @staticmethod
-    def _is_breached(
-        *,
-        current: ContextualMonetaryAmount,
-        limit: ContextualMonetaryAmount,
-        policy: RiskThresholdPolicy,
-    ) -> bool:
-        if not isinstance(current, ContextualMonetaryAmount):
-            raise InvariantViolation("RiskPolicy requires ContextualMonetaryAmount")
-
-        if not isinstance(limit, ContextualMonetaryAmount):
-            raise InvariantViolation("RiskPolicy requires ContextualMonetaryAmount")
-
-        if current.context != limit.context:
-            raise InvariantViolation(
-                f"MoneyContext mismatch: {current.context} vs {limit.context}"
-            )
-
-        if not isinstance(policy, RiskThresholdPolicy):
-            raise InvariantViolation("Invalid RiskThresholdPolicy")
-
-        mode = policy.value  # canonical closed-set value
+    def _breach(value: Decimal, limit: Decimal, policy: RiskThresholdPolicy) -> bool:
+        mode = policy.value
 
         if mode == "inclusive":
-            return current.value >= limit.value
+            return value >= limit
 
         if mode == "exclusive":
-            return current.value > limit.value
+            return value > limit
 
-        # unreachable if closed set is correct
         raise InvariantViolation(f"Unknown RiskThresholdPolicy: {mode}")
 
     # --- Public evaluation rules ----------------------------------------------
 
     @staticmethod
     def evaluate_drawdown(
-        *,
-        current_drawdown: ContextualMonetaryAmount,
-        limits: RiskLimits,
+        *, current: Drawdown, limits: RiskLimits
     ) -> RiskBreach | None:
-        if RiskPolicy._is_breached(
-            current=current_drawdown,
-            limit=limits.max_drawdown,
-            policy=limits.threshold_policy,
-        ):
+        if not isinstance(current, Drawdown):
+            raise InvariantViolation("evaluate_drawdown requires Drawdown")
+
+        limit: DrawdownLimit = limits.max_drawdown
+
+        if RiskPolicy._breach(current.value, limit.value, limits.threshold_policy):
             return RiskBreach(
                 kind=RiskBreachKind.drawdown(),
-                current=current_drawdown,
-                limit=limits.max_drawdown,
+                current=current,
+                limit=limit,
                 policy=limits.threshold_policy,
             )
 
@@ -69,19 +52,18 @@ class RiskPolicy:
 
     @staticmethod
     def evaluate_notional(
-        *,
-        notional: ContextualMonetaryAmount,
-        limits: RiskLimits,
+        *, current: Notional, limits: RiskLimits
     ) -> RiskBreach | None:
-        if RiskPolicy._is_breached(
-            current=notional,
-            limit=limits.max_notional,
-            policy=limits.threshold_policy,
-        ):
+        if not isinstance(current, Notional):
+            raise InvariantViolation("evaluate_notional requires Notional")
+
+        limit: Notional = limits.max_notional
+
+        if RiskPolicy._breach(current.value, limit.value, limits.threshold_policy):
             return RiskBreach(
                 kind=RiskBreachKind.notional(),
-                current=notional,
-                limit=limits.max_notional,
+                current=current,
+                limit=limit,
                 policy=limits.threshold_policy,
             )
 
@@ -89,19 +71,18 @@ class RiskPolicy:
 
     @staticmethod
     def evaluate_daily_loss(
-        *,
-        daily_loss: ContextualMonetaryAmount,
-        limits: RiskLimits,
+        *, current: DailyLoss, limits: RiskLimits
     ) -> RiskBreach | None:
-        if RiskPolicy._is_breached(
-            current=daily_loss,
-            limit=limits.max_daily_loss,
-            policy=limits.threshold_policy,
-        ):
+        if not isinstance(current, DailyLoss):
+            raise InvariantViolation("evaluate_daily_loss requires DailyLoss")
+
+        limit: DailyLossLimit = limits.max_daily_loss
+
+        if RiskPolicy._breach(current.value, limit.value, limits.threshold_policy):
             return RiskBreach(
                 kind=RiskBreachKind.daily_loss(),
-                current=daily_loss,
-                limit=limits.max_daily_loss,
+                current=current,
+                limit=limit,
                 policy=limits.threshold_policy,
             )
 
