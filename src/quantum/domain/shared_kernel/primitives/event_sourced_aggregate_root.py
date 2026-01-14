@@ -6,15 +6,13 @@ from typing import Generic, TypeVar
 
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.events.base_event import BaseEvent
+from quantum.domain.shared_kernel.events.event_sequence import EventSequence
 from quantum.domain.shared_kernel.primitives.aggregate_state import AggregateState
-from quantum.domain.shared_kernel.primitives.validatable_aggregate import (
-    ValidatableAggregate,
-)
 
 S = TypeVar("S", bound=AggregateState)
 
 
-class EventSourcedAggregateRoot(Generic[S], ValidatableAggregate, ABC):
+class EventSourcedAggregateRoot(Generic[S], ABC):
     """
     Canonical base class for Event-Sourced Aggregates.
 
@@ -28,8 +26,10 @@ class EventSourcedAggregateRoot(Generic[S], ValidatableAggregate, ABC):
     _state: S
 
     def __init__(self, state: S) -> None:
+        if not isinstance(state, AggregateState):
+            raise InvariantViolation("state must be an AggregateState")
+
         self._state = state
-        self._validate_state()
 
     # --- State access ---------------------------------------------------------
 
@@ -71,8 +71,26 @@ class EventSourcedAggregateRoot(Generic[S], ValidatableAggregate, ABC):
                 f"{self.__class__.__name__} cannot handle event {event_type.__name__}"
             )
 
+        # --- Compute new state
         new_state = handlers[event_type](self._state, event)
 
+        # --- Enforce event sequence continuity
+        prev_seq = self._state.last_event_sequence()
+        new_seq = new_state.last_event_sequence()
+
+        if not isinstance(prev_seq, EventSequence):
+            raise InvariantViolation(
+                "State.last_event_sequence() must return EventSequence"
+            )
+
+        if not isinstance(new_seq, EventSequence):
+            raise InvariantViolation(
+                "NewState.last_event_sequence() must return EventSequence"
+            )
+
+        new_seq.assert_is_next_of(prev_seq)
+
+        # --- Construct new aggregate (will re-validate invariants)
         return self.__class__(new_state)
 
     # --- Replay (strictly defined in terms of apply) --------------------------

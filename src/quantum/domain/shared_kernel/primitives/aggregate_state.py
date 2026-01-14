@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 
+from quantum.domain.shared_kernel.events.event_sequence import EventSequence
+
 
 class AggregateState(ABC):
     """
@@ -13,14 +15,26 @@ class AggregateState(ABC):
 
     __slots__ = ()
 
-    @abstractmethod
-    def _state_contract(self) -> None:
-        """
-        Architectural anchor.
+    # --- Runtime invariant enforcement ---------------------------------------
 
-        Must exist on all concrete AggregateState types.
-        It has no runtime semantics; it makes the state type
-        formally abstract and contract-bound.
+    @abstractmethod
+    def _validate(self) -> None:
+        """
+        Enforces ALL aggregate invariants.
+
+        Must raise InvariantViolation on any breach.
+        """
+        raise NotImplementedError
+
+    def __post_init__(self) -> None:
+        self._validate()
+
+    # --- Mandatory domain contracts -------------------------------------------
+
+    @abstractmethod
+    def last_event_sequence(self) -> EventSequence:
+        """
+        Returns the last applied EventSequence for this state.
         """
         raise NotImplementedError
 
