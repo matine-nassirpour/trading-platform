@@ -1,3 +1,5 @@
+import inspect
+
 from abc import ABC, abstractmethod
 
 from quantum.domain.shared_kernel.events.event_sequence import EventSequence
@@ -27,6 +29,9 @@ class AggregateState(ABC):
 
         # Do not validate the abstract base class itself
         if cls is AggregateState:
+            return
+
+        if inspect.isabstract(cls):
             return
 
         enforce_frozen_slot_dataclass_contract(cls)

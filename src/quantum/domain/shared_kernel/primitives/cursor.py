@@ -1,3 +1,5 @@
+import inspect
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
@@ -22,6 +24,9 @@ class Cursor(ABC):
 
         # Do not validate the abstract base class itself
         if cls is Cursor:
+            return
+
+        if inspect.isabstract(cls):
             return
 
         enforce_frozen_slot_dataclass_contract(cls)

@@ -1,3 +1,5 @@
+import inspect
+
 from abc import ABC, abstractmethod
 
 from quantum.domain.shared_kernel.primitives.structural_contract import (
@@ -25,6 +27,9 @@ class ValueObject(ABC):
 
         # Do not validate the abstract base class itself
         if cls is ValueObject:
+            return
+
+        if inspect.isabstract(cls):
             return
 
         enforce_frozen_slot_dataclass_contract(cls)

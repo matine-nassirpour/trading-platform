@@ -1,8 +1,13 @@
+import inspect
+
 from abc import ABC
 from dataclasses import dataclass, fields
 from typing import ClassVar
 
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.primitives.structural_contract import (
+    enforce_frozen_slot_dataclass_contract,
+)
 
 _FORBIDDEN_EVENT_FIELDS = {
     "id",
@@ -29,6 +34,17 @@ class BaseEvent(ABC):
 
     event_name: ClassVar[str]
     event_version: ClassVar[int] = 1
+
+    def __init_subclass__(cls) -> None:
+        super().__init_subclass__()
+
+        if cls is BaseEvent:
+            return
+
+        if inspect.isabstract(cls):
+            return
+
+        enforce_frozen_slot_dataclass_contract(cls)
 
     def __post_init__(self) -> None:
         for f in fields(self):
