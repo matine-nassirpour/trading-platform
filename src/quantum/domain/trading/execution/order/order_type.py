@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import ClassVar
 
 from quantum.domain.shared_kernel.primitives.closed_set_value_object import (
@@ -5,6 +6,7 @@ from quantum.domain.shared_kernel.primitives.closed_set_value_object import (
 )
 
 
+@dataclass(frozen=True, slots=True)
 class OrderType(ClosedSetValueObject):
     _ALLOWED_VALUES: ClassVar[frozenset[str]] = frozenset(
         {

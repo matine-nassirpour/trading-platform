@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from decimal import ROUND_CEILING, ROUND_FLOOR, ROUND_HALF_EVEN
 from typing import ClassVar
 
@@ -6,6 +7,7 @@ from quantum.domain.shared_kernel.primitives.closed_set_value_object import (
 )
 
 
+@dataclass(frozen=True, slots=True)
 class PriceRoundingMode(ClosedSetValueObject):
     """
     Canonical directional rounding mode for executable prices.

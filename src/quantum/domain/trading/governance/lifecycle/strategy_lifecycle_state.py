@@ -1,13 +1,14 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import ClassVar
 
-from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
 from quantum.domain.shared_kernel.primitives.closed_set_value_object import (
     ClosedSetValueObject,
 )
 
 
+@dataclass(frozen=True, slots=True)
 class StrategyLifecycleState(ClosedSetValueObject):
     """
     Canonical lifecycle state of a trading strategy or model.
@@ -26,13 +27,6 @@ class StrategyLifecycleState(ClosedSetValueObject):
             "sunset",  # permanently forbidden (historical only)
         }
     )
-
-    def _closed_set_type(self) -> None:
-        pass
-
-    @classmethod
-    def role(cls) -> DomainRole:
-        return DomainRole.VALUE_OBJECT
 
     # --- Named constructors ---------------------------------------------------
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import ClassVar
 
 from quantum.domain.shared_kernel.primitives.closed_set_value_object import (
@@ -7,6 +8,7 @@ from quantum.domain.shared_kernel.primitives.closed_set_value_object import (
 )
 
 
+@dataclass(frozen=True, slots=True)
 class RiskSourceType(ClosedSetValueObject):
     """
     High-level category of risk origin.
