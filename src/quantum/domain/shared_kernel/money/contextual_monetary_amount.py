@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from abc import ABC
 from dataclasses import dataclass
 from decimal import Decimal
 
@@ -14,7 +13,7 @@ from quantum.domain.shared_kernel.value_objects.currency import Currency
 
 
 @dataclass(frozen=True, slots=True)
-class ContextualMonetaryAmount(MonetaryAmount, ABC):
+class ContextualMonetaryAmount(MonetaryAmount):
     """
     Monetary amount bound to a specific MoneyContext.
 

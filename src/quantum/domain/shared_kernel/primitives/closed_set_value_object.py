@@ -1,5 +1,5 @@
-from abc import ABC
 from collections.abc import Iterable
+from dataclasses import dataclass
 from typing import ClassVar
 
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
@@ -45,7 +45,8 @@ def _validate_allowed_values(values: Iterable[str], cls_name: str) -> frozenset[
     return frozenset(canonical)
 
 
-class ClosedSetValueObject(ValueObject, ABC):
+@dataclass(frozen=True, slots=True)
+class ClosedSetValueObject(ValueObject):
     """
     Canonical base class for closed-set domain concepts.
 

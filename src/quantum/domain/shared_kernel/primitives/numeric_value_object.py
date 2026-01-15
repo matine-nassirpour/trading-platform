@@ -1,11 +1,12 @@
-from abc import ABC
+from dataclasses import dataclass
 from decimal import Decimal
 
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 
 
-class NumericValueObject(ValueObject, ABC):
+@dataclass(frozen=True, slots=True)
+class NumericValueObject(ValueObject):
     """
     Canonical base class for all numeric Value Objects.
 

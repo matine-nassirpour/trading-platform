@@ -1,4 +1,4 @@
-from abc import ABC
+from dataclasses import dataclass
 from decimal import Decimal
 
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
@@ -8,7 +8,8 @@ from quantum.domain.shared_kernel.primitives.numeric_value_object import (
 from quantum.domain.shared_kernel.value_objects.currency import Currency
 
 
-class MonetaryAmount(NumericValueObject, ABC):
+@dataclass(frozen=True, slots=True)
+class MonetaryAmount(NumericValueObject):
     """
     Abstract base class for all monetary quantities.
 
