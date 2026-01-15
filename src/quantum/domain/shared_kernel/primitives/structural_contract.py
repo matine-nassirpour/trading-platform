@@ -1,5 +1,6 @@
 from collections.abc import Iterable
 from dataclasses import is_dataclass
+from typing import Protocol, cast
 
 
 class StructuralContractViolation(TypeError):
@@ -8,14 +9,19 @@ class StructuralContractViolation(TypeError):
     """
 
 
+class _DataclassParamsProtocol(Protocol):
+    frozen: bool
+    slots: bool
+
+
 # ------------------------------------------------------------------------------
 # Internal helpers
 # ------------------------------------------------------------------------------
-def _get_dataclass_params(cls: type):
+def _get_dataclass_params(cls: type) -> _DataclassParamsProtocol:
     params = getattr(cls, "__dataclass_params__", None)
     if params is None:
         raise StructuralContractViolation(f"{cls.__name__} must be a dataclass")
-    return params
+    return cast(_DataclassParamsProtocol, params)
 
 
 def _get_slots(cls: type) -> Iterable[str]:
