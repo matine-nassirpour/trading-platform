@@ -17,7 +17,7 @@ class Cursor(ABC):
     (e.g. event sequence, market feed, etc).
     """
 
-    # --- Compile-time structural contract -------------------------------------
+    # --- Import-time structural contract -------------------------------------
 
     def __init_subclass__(cls) -> None:
         super().__init_subclass__()

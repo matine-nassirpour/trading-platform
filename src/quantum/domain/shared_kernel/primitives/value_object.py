@@ -20,7 +20,7 @@ class ValueObject(ABC):
     - No partial or invalid state possible
     """
 
-    # --- Compile-time structural contract -------------------------------------
+    # --- Import-time structural contract -------------------------------------
 
     def __init_subclass__(cls) -> None:
         super().__init_subclass__()

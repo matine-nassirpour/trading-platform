@@ -22,7 +22,7 @@ class AggregateState(ABC):
 
     __slots__ = ()
 
-    # --- Compile-time structural contract -------------------------------------
+    # --- Import-time structural contract -------------------------------------
 
     def __init_subclass__(cls) -> None:
         super().__init_subclass__()

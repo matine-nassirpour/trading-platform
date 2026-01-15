@@ -4,6 +4,7 @@ from typing import Generic, TypeVar
 
 from quantum.domain.shared_kernel.events.base_event import BaseEvent
 from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
+from quantum.domain.shared_kernel.events.event_sequence import EventSequence
 from quantum.domain.shared_kernel.projection.projection_cursor import ProjectionCursor
 from quantum.domain.shared_kernel.projection.projection_error import ProjectionError
 
@@ -25,12 +26,18 @@ class DomainProjection(ABC, Generic[S]):
     # --- Internal Guarantees --------------------------------------------------
 
     @staticmethod
-    def _assert_sequential(envelope: EventEnvelope, expected_sequence: int) -> None:
-        seq = envelope.sequence.value
+    def _assert_sequential(envelope: EventEnvelope, expected: EventSequence) -> None:
+        if not isinstance(expected, EventSequence):
+            raise ProjectionError("Expected sequence must be an EventSequence")
 
-        if seq != expected_sequence:
+        actual = envelope.sequence
+
+        if not isinstance(actual, EventSequence):
+            raise ProjectionError("Envelope.sequence must be an EventSequence")
+
+        if actual.value != expected.value:
             raise ProjectionError(
-                f"Event sequence violation: expected {expected_sequence}, got {seq}"
+                f"EventSequence violation: expected {expected.value}, got {actual.value}"
             )
 
     @staticmethod
@@ -62,22 +69,20 @@ class DomainProjection(ABC, Generic[S]):
         """
         Rebuilds the projection state from genesis by replaying
         the entire event stream.
-
-        This is the ONLY correct way to rebuild from scratch.
         """
 
         state = self.initial_state()
         cursor = ProjectionCursor.initial()
 
-        expected_sequence = cursor.last_sequence.value + 1
+        expected = cursor.last_sequence.next()
 
         for envelope in events:
-            self._assert_sequential(envelope, expected_sequence)
+            self._assert_sequential(envelope, expected)
 
             state = self.apply(state, envelope.event)
             cursor = self._advance_cursor(envelope)
 
-            expected_sequence += 1
+            expected = expected.next()
 
         return state, cursor
 
@@ -92,8 +97,6 @@ class DomainProjection(ABC, Generic[S]):
     ) -> tuple[S, ProjectionCursor]:
         """
         Continues a projection from a known (state, cursor) pair.
-
-        This is the ONLY correct way to apply events incrementally.
         """
 
         if not isinstance(cursor, ProjectionCursor):
@@ -101,14 +104,14 @@ class DomainProjection(ABC, Generic[S]):
                 "project_incremental requires a valid ProjectionCursor"
             )
 
-        expected_sequence = cursor.last_sequence.value + 1
+        expected = cursor.last_sequence.next()
 
         for envelope in events:
-            self._assert_sequential(envelope, expected_sequence)
+            self._assert_sequential(envelope, expected)
 
             state = self.apply(state, envelope.event)
             cursor = self._advance_cursor(envelope)
 
-            expected_sequence += 1
+            expected = expected.next()
 
         return state, cursor
