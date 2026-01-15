@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import ClassVar
 
 from quantum.domain.shared_kernel.primitives.closed_set_value_object import (
     ClosedSetValueObject,
@@ -14,12 +13,16 @@ class DealEntry(ClosedSetValueObject):
     Deal entry direction.
     """
 
-    _ALLOWED_VALUES: ClassVar[frozenset[str]] = frozenset(
-        {
-            "in",
-            "out",
-        }
-    )
+    @classmethod
+    def _allowed_values(cls) -> frozenset[str]:
+        return frozenset(
+            {
+                "in",
+                "out",
+            }
+        )
+
+    # --- Named constructors ---------------------------------------------------
 
     @classmethod
     def in_(cls) -> DealEntry:

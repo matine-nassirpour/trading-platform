@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import ClassVar
 
 from quantum.domain.shared_kernel.primitives.closed_set_value_object import (
     ClosedSetValueObject,
@@ -24,14 +23,16 @@ class DecisionConfidenceLevel(ClosedSetValueObject):
     - Fully decoupled from model internals
     """
 
-    _ALLOWED_VALUES: ClassVar[frozenset[str]] = frozenset(
-        {
-            "low",  # high uncertainty / fragile context
-            "medium",  # standard operating conditions
-            "high",  # strong conviction / stable regime
-            "experimental",  # explicitly flagged experimental decision
-        }
-    )
+    @classmethod
+    def _allowed_values(cls) -> frozenset[str]:
+        return frozenset(
+            {
+                "low",  # high uncertainty / fragile context
+                "medium",  # standard operating conditions
+                "high",  # strong conviction / stable regime
+                "experimental",  # explicitly flagged experimental decision
+            }
+        )
 
     # --- Named constructors ---------------------------------------------------
 

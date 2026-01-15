@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import ClassVar
 
 from quantum.domain.shared_kernel.primitives.closed_set_value_object import (
     ClosedSetValueObject,
@@ -19,18 +18,20 @@ class NoTradeReason(ClosedSetValueObject):
     - This is an EXPLICIT DECISION OUTCOME
     """
 
-    _ALLOWED_VALUES: ClassVar[frozenset[str]] = frozenset(
-        {
-            "no_signal",  # no actionable signal
-            "regime_unfavorable",  # market regime not suitable
-            "risk_blocked",  # risk policy veto
-            "boundary_blocked",  # decision boundary veto
-            "strategy_inactive",  # lifecycle / eligibility
-            "confidence_too_low",  # declared confidence insufficient
-            "capital_unavailable",  # capital / risk budget exhausted
-            "manual_override",  # human veto
-        }
-    )
+    @classmethod
+    def _allowed_values(cls) -> frozenset[str]:
+        return frozenset(
+            {
+                "no_signal",  # no actionable signal
+                "regime_unfavorable",  # market regime not suitable
+                "risk_blocked",  # risk policy veto
+                "boundary_blocked",  # decision boundary veto
+                "strategy_inactive",  # lifecycle / eligibility
+                "confidence_too_low",  # declared confidence insufficient
+                "capital_unavailable",  # capital / risk budget exhausted
+                "manual_override",  # human veto
+            }
+        )
 
     # --- Named constructors ---------------------------------------------------
 

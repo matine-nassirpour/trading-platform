@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import ClassVar
 
 from quantum.domain.shared_kernel.primitives.closed_set_value_object import (
     ClosedSetValueObject,
@@ -11,18 +10,28 @@ class Currency(ClosedSetValueObject):
     """
     Canonical domain currency.
 
-    It does NOT know about ISO-4217 or any external standard.
+    IMPORTANT:
+    - This is NOT ISO-4217.
+    - This is the desk's internal canonical currency set.
+    - Any external broker or feed currency must be mapped to this
+      set via an Anti-Corruption Layer in the interfaces/infrastructure layer.
     """
 
-    _ALLOWED_VALUES: ClassVar[frozenset[str]] = frozenset(
-        {
-            "usd",
-            "eur",
-            "jpy",
-            "chf",
-            "gbp",
-            "cad",
-            "aud",
-            "nzd",
-        }
-    )
+    @classmethod
+    def _allowed_values(cls) -> frozenset[str]:
+        """
+        Returns the complete finite set of currencies
+        allowed by the trading desk.
+        """
+        return frozenset(
+            {
+                "usd",
+                "eur",
+                "jpy",
+                "chf",
+                "gbp",
+                "cad",
+                "aud",
+                "nzd",
+            }
+        )

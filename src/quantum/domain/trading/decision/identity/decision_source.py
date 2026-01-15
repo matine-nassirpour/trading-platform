@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import ClassVar
 
 from quantum.domain.shared_kernel.primitives.closed_set_value_object import (
     ClosedSetValueObject,
@@ -14,14 +13,18 @@ class DecisionSource(ClosedSetValueObject):
     Describes HOW the trading decision was made.
     """
 
-    _ALLOWED_VALUES: ClassVar[frozenset[str]] = frozenset(
-        {
-            "systematic",  # fully automated model
-            "discretionary",  # human decision
-            "hybrid",  # human + model
-            "risk_override",  # forced by risk engine
-        }
-    )
+    @classmethod
+    def _allowed_values(cls) -> frozenset[str]:
+        return frozenset(
+            {
+                "systematic",  # fully automated model
+                "discretionary",  # human decision
+                "hybrid",  # human + model
+                "risk_override",  # forced by risk engine
+            }
+        )
+
+    # --- Named constructors ---------------------------------------------------
 
     @classmethod
     def systematic(cls) -> DecisionSource:

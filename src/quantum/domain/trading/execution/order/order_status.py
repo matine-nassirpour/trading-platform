@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import ClassVar
 
 from quantum.domain.shared_kernel.primitives.closed_set_value_object import (
     ClosedSetValueObject,
@@ -10,15 +9,20 @@ from quantum.domain.shared_kernel.primitives.closed_set_value_object import (
 
 @dataclass(frozen=True, slots=True)
 class OrderStatus(ClosedSetValueObject):
-    _ALLOWED_VALUES: ClassVar[frozenset[str]] = frozenset(
-        {
-            "pending",
-            "partially_filled",
-            "filled",
-            "rejected",
-            "cancelled",
-        }
-    )
+
+    @classmethod
+    def _allowed_values(cls) -> frozenset[str]:
+        return frozenset(
+            {
+                "pending",
+                "partially_filled",
+                "filled",
+                "rejected",
+                "cancelled",
+            }
+        )
+
+    # --- Named constructors ---------------------------------------------------
 
     @classmethod
     def pending(cls) -> OrderStatus:

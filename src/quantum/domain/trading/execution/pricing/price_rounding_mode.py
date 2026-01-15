@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from decimal import ROUND_CEILING, ROUND_FLOOR, ROUND_HALF_EVEN
-from typing import ClassVar
 
 from quantum.domain.shared_kernel.primitives.closed_set_value_object import (
     ClosedSetValueObject,
@@ -13,13 +12,15 @@ class PriceRoundingMode(ClosedSetValueObject):
     Canonical directional rounding mode for executable prices.
     """
 
-    _ALLOWED_VALUES: ClassVar[frozenset[str]] = frozenset(
-        {
-            "floor",
-            "ceiling",
-            "nearest",
-        }
-    )
+    @classmethod
+    def _allowed_values(cls) -> frozenset[str]:
+        return frozenset(
+            {
+                "floor",
+                "ceiling",
+                "nearest",
+            }
+        )
 
     def decimal_rounding(self) -> str:
         """
@@ -32,5 +33,5 @@ class PriceRoundingMode(ClosedSetValueObject):
         if self.value == "nearest":
             return ROUND_HALF_EVEN
 
-        # Defensive: should be unreachable
+        # Defensive: should be unreachable due to closed-set invariant
         raise RuntimeError(f"Unsupported PriceRoundingMode: {self.value}")

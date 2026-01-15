@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import ClassVar
 
 from quantum.domain.shared_kernel.primitives.closed_set_value_object import (
     ClosedSetValueObject,
@@ -12,11 +11,13 @@ class KillSwitchReason(ClosedSetValueObject):
     Canonical kill switch trigger reason.
     """
 
-    _ALLOWED_VALUES: ClassVar[frozenset[str]] = frozenset(
-        {
-            "risk_limit",
-            "network",
-            "broker_rejects",
-            "manual",
-        }
-    )
+    @classmethod
+    def _allowed_values(cls) -> frozenset[str]:
+        return frozenset(
+            {
+                "risk_limit",
+                "network",
+                "broker_rejects",
+                "manual",
+            }
+        )

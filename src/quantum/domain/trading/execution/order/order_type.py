@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import ClassVar
 
 from quantum.domain.shared_kernel.primitives.closed_set_value_object import (
     ClosedSetValueObject,
@@ -8,19 +7,22 @@ from quantum.domain.shared_kernel.primitives.closed_set_value_object import (
 
 @dataclass(frozen=True, slots=True)
 class OrderType(ClosedSetValueObject):
-    _ALLOWED_VALUES: ClassVar[frozenset[str]] = frozenset(
-        {
-            "buy",
-            "sell",
-            "buy_limit",
-            "sell_limit",
-            "buy_stop",
-            "sell_stop",
-            "buy_stop_limit",
-            "sell_stop_limit",
-            "close_by",
-        }
-    )
+
+    @classmethod
+    def _allowed_values(cls) -> frozenset[str]:
+        return frozenset(
+            {
+                "buy",
+                "sell",
+                "buy_limit",
+                "sell_limit",
+                "buy_stop",
+                "sell_stop",
+                "buy_stop_limit",
+                "sell_stop_limit",
+                "close_by",
+            }
+        )
 
     # --- Semantic helpers -----------------------------------------------------
 

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import ClassVar
 
 from quantum.domain.shared_kernel.primitives.closed_set_value_object import (
     ClosedSetValueObject,
@@ -18,15 +17,17 @@ class StrategyLifecycleState(ClosedSetValueObject):
     - Independent from performance or signals
     """
 
-    _ALLOWED_VALUES: ClassVar[frozenset[str]] = frozenset(
-        {
-            "inactive",  # defined but not tradable
-            "active",  # fully authorized
-            "deprecated",  # allowed but discouraged / limited
-            "suspended",  # temporarily forbidden
-            "sunset",  # permanently forbidden (historical only)
-        }
-    )
+    @classmethod
+    def _allowed_values(cls) -> frozenset[str]:
+        return frozenset(
+            {
+                "inactive",  # defined but not tradable
+                "active",  # fully authorized
+                "deprecated",  # allowed but discouraged / limited
+                "suspended",  # temporarily forbidden
+                "sunset",  # permanently forbidden (historical only)
+            }
+        )
 
     # --- Named constructors ---------------------------------------------------
 

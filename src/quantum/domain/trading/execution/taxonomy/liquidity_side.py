@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import ClassVar
 
 from quantum.domain.shared_kernel.primitives.closed_set_value_object import (
     ClosedSetValueObject,
@@ -14,13 +13,17 @@ class LiquiditySide(ClosedSetValueObject):
     Liquidity side of an execution.
     """
 
-    _ALLOWED_VALUES: ClassVar[frozenset[str]] = frozenset(
-        {
-            "maker",
-            "taker",
-            "unknown",
-        }
-    )
+    @classmethod
+    def _allowed_values(cls) -> frozenset[str]:
+        return frozenset(
+            {
+                "maker",
+                "taker",
+                "unknown",
+            }
+        )
+
+    # --- Named constructors ---------------------------------------------------
 
     @classmethod
     def maker(cls) -> LiquiditySide:

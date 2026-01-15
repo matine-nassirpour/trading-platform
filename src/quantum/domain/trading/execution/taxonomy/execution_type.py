@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import ClassVar
 
 from quantum.domain.shared_kernel.primitives.closed_set_value_object import (
     ClosedSetValueObject,
@@ -16,17 +15,20 @@ class ExecutionType(ClosedSetValueObject):
     Mirrors FIX ExecType semantics without infra coupling.
     """
 
-    _ALLOWED_VALUES: ClassVar[frozenset[str]] = frozenset(
-        {
-            "new",
-            "partial_fill",
-            "fill",
-            "cancel",
-            "reject",
-        }
-    )
+    @classmethod
+    def _allowed_values(cls) -> frozenset[str]:
+        return frozenset(
+            {
+                "new",
+                "partial_fill",
+                "fill",
+                "cancel",
+                "reject",
+            }
+        )
 
-    # Optional named constructors (recommended)
+    # --- Named constructors ---------------------------------------------------
+
     @classmethod
     def new(cls) -> ExecutionType:
         return cls("new")

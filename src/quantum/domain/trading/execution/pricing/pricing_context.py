@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import ClassVar
 
 from quantum.domain.shared_kernel.primitives.closed_set_value_object import (
     ClosedSetValueObject,
@@ -16,13 +15,17 @@ class PricingContext(ClosedSetValueObject):
     Defines WHY a price is quantized, not HOW.
     """
 
-    _ALLOWED_VALUES: ClassVar[frozenset[str]] = frozenset(
-        {
-            "neutral",
-            "execution_sl",
-            "execution_tp",
-        }
-    )
+    @classmethod
+    def _allowed_values(cls) -> frozenset[str]:
+        return frozenset(
+            {
+                "neutral",
+                "execution_sl",
+                "execution_tp",
+            }
+        )
+
+    # --- Named constructors ---------------------------------------------------
 
     @classmethod
     def neutral(cls) -> PricingContext:

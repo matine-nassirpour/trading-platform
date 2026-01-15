@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import ClassVar
 
 from quantum.domain.shared_kernel.primitives.closed_set_value_object import (
     ClosedSetValueObject,
@@ -14,12 +13,16 @@ class RiskThresholdPolicy(ClosedSetValueObject):
     Defines how risk thresholds are evaluated.
     """
 
-    _ALLOWED_VALUES: ClassVar[frozenset[str]] = frozenset(
-        {
-            "inclusive",  # breach at >= limit
-            "exclusive",  # breach at > limit
-        }
-    )
+    @classmethod
+    def _allowed_values(cls) -> frozenset[str]:
+        return frozenset(
+            {
+                "inclusive",  # breach at >= limit
+                "exclusive",  # breach at > limit
+            }
+        )
+
+    # --- Named constructors ---------------------------------------------------
 
     @classmethod
     def inclusive(cls) -> RiskThresholdPolicy:
