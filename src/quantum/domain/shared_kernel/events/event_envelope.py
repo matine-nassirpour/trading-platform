@@ -34,3 +34,6 @@ class EventEnvelope(ValueObject):
 
         if not isinstance(self.event, BaseEvent):
             raise InvariantViolation("EventEnvelope requires BaseEvent")
+
+        if self.sequence.is_initial():
+            raise InvariantViolation("EventEnvelope.sequence must be >= 1")
