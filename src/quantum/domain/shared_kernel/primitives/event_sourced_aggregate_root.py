@@ -6,6 +6,7 @@ from typing import Generic, TypeVar
 
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.events.base_event import BaseEvent
+from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
 from quantum.domain.shared_kernel.events.event_sequence import EventSequence
 from quantum.domain.shared_kernel.primitives.aggregate_state import AggregateState
 
@@ -41,27 +42,34 @@ class EventSourcedAggregateRoot(Generic[S], ABC):
 
     @classmethod
     @abstractmethod
-    def _handlers(cls) -> dict[type[BaseEvent], Callable[[S, BaseEvent], S]]:
+    def _handlers(
+        cls,
+    ) -> dict[type[BaseEvent], Callable[[S, BaseEvent, EventEnvelope], S]]:
         """
         Returns the event → state transition map.
 
         Each handler must be pure:
-        (state, event) → new_state
+            (state, event, envelope) → new_state
         """
         raise NotImplementedError
 
     # --- Single-event application (the ONLY semantic gate) --------------------
 
-    def apply(self, event: BaseEvent) -> EventSourcedAggregateRoot[S]:
+    def apply(self, envelope: EventEnvelope) -> EventSourcedAggregateRoot[S]:
         """
-        Applies a single domain event to this aggregate.
+        Applies a single EventEnvelope to this aggregate.
 
         This method is the ONLY gateway through which an event may
         affect aggregate state.
         """
 
+        if not isinstance(envelope, EventEnvelope):
+            raise InvariantViolation("apply() requires an EventEnvelope")
+
+        event = envelope.event
+
         if not isinstance(event, BaseEvent):
-            raise InvariantViolation("Only BaseEvent can be applied")
+            raise InvariantViolation("EventEnvelope.event must be a BaseEvent")
 
         handlers = self._handlers()
         event_type = type(event)
@@ -71,12 +79,9 @@ class EventSourcedAggregateRoot(Generic[S], ABC):
                 f"{self.__class__.__name__} cannot handle event {event_type.__name__}"
             )
 
-        # --- Compute new state
-        new_state = handlers[event_type](self._state, event)
-
         # --- Enforce event sequence continuity
         prev_seq = self._state.last_event_sequence()
-        new_seq = new_state.last_event_sequence()
+        new_seq = envelope.sequence
 
         if not isinstance(prev_seq, EventSequence):
             raise InvariantViolation(
@@ -84,13 +89,17 @@ class EventSourcedAggregateRoot(Generic[S], ABC):
             )
 
         if not isinstance(new_seq, EventSequence):
-            raise InvariantViolation(
-                "NewState.last_event_sequence() must return EventSequence"
-            )
+            raise InvariantViolation("Envelope.sequence must be an EventSequence")
 
         new_seq.assert_is_next_of(prev_seq)
 
-        # --- Construct new aggregate (will re-validate invariants)
+        # --- Compute new state (pure function)
+        new_state = handlers[event_type](self._state, event, envelope)
+
+        if not isinstance(new_state, AggregateState):
+            raise InvariantViolation("Event handler must return an AggregateState")
+
+        # --- Construct new aggregate (AggregateState invariants are re-validated)
         return self.__class__(new_state)
 
     # --- Replay (strictly defined in terms of apply) --------------------------
@@ -99,11 +108,11 @@ class EventSourcedAggregateRoot(Generic[S], ABC):
     def rehydrate(
         cls,
         *,
-        events: Iterable[BaseEvent],
+        events: Iterable[EventEnvelope],
         empty_state: S,
     ) -> EventSourcedAggregateRoot[S]:
         """
-        Rebuilds an aggregate from its event stream.
+        Rebuilds an aggregate from its full event stream.
 
         HARD GUARANTEES:
         - Every event is validated via apply()

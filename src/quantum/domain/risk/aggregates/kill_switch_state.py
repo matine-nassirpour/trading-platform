@@ -12,6 +12,8 @@ from quantum.domain.shared_kernel.errors.invariants import (
     InvalidStateTransition,
     InvariantViolation,
 )
+from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
+from quantum.domain.shared_kernel.events.event_sequence import EventSequence
 from quantum.domain.shared_kernel.primitives.aggregate_state import AggregateState
 from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import (
     EventSourcedAggregateRoot,
@@ -22,32 +24,44 @@ from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import
 class KillSwitchStateData(AggregateState):
     """
     Immutable event-sourced state of the Kill Switch.
+
+    Valid states:
+    - Pre-genesis (status=None, reason=None)
+    - Armed (status=armed, reason=None)
+    - Triggered (status=triggered, reason=KillSwitchReason)
     """
 
-    status: KillSwitchStatus
+    last_sequence: EventSequence
+    status: KillSwitchStatus | None
     reason: KillSwitchReason | None
 
-    def _state_contract(self) -> None:
-        pass
+    def last_event_sequence(self) -> EventSequence:
+        return self.last_sequence
 
-    @staticmethod
-    def empty() -> KillSwitchStateData:
-        """
-        Canonical empty KillSwitch state.
+    def _validate(self) -> None:
+        if not isinstance(self.last_sequence, EventSequence):
+            raise InvariantViolation(
+                "KillSwitchStateData.last_sequence must be EventSequence"
+            )
 
-        Represents: 'no kill switch exists yet'.
-        """
-        return KillSwitchStateData(
-            status=None,  # type: ignore[arg-type]
-            reason=None,
-        )
+        if self.status is None:
+            if self.reason is not None:
+                raise InvariantViolation("Pre-genesis KillSwitch cannot have a reason")
+
+        if self.status == KillSwitchStatus.armed():
+            if self.reason is not None:
+                raise InvariantViolation("Armed KillSwitch must not have a reason")
+
+        if self.status == KillSwitchStatus.triggered():
+            if self.reason is None:
+                raise InvariantViolation("Triggered KillSwitch must have a reason")
 
 
 class KillSwitchState(EventSourcedAggregateRoot[KillSwitchStateData]):
     """
     Fully event-sourced Kill Switch aggregate.
 
-    Valid state transitions:
+    Valid transitions:
         (none) → armed
         armed → triggered
     """
@@ -95,8 +109,10 @@ class KillSwitchState(EventSourcedAggregateRoot[KillSwitchStateData]):
     def _apply_armed(
         state: KillSwitchStateData,
         event: KillSwitchArmedEvent,
+        envelope: EventEnvelope,
     ) -> KillSwitchStateData:
         return KillSwitchStateData(
+            last_sequence=envelope.sequence,
             status=KillSwitchStatus.armed(),
             reason=None,
         )
@@ -105,8 +121,10 @@ class KillSwitchState(EventSourcedAggregateRoot[KillSwitchStateData]):
     def _apply_triggered(
         state: KillSwitchStateData,
         event: KillSwitchTriggerEvent,
+        envelope: EventEnvelope,
     ) -> KillSwitchStateData:
         return KillSwitchStateData(
+            last_sequence=envelope.sequence,
             status=KillSwitchStatus.triggered(),
             reason=event.reason,
         )
@@ -117,32 +135,3 @@ class KillSwitchState(EventSourcedAggregateRoot[KillSwitchStateData]):
             KillSwitchArmedEvent: cls._apply_armed,
             KillSwitchTriggerEvent: cls._apply_triggered,
         }
-
-    # --- Invariants ----------------------------------------------------------
-
-    def _validate_state(self) -> None:
-        s = self.state
-
-        # Pre-genesis state: only allowed before any event
-        if s.status is None:
-            if s.reason is not None:
-                raise InvariantViolation(
-                    "Pre-genesis KillSwitch must not have a reason"
-                )
-            return
-
-        # Normal states
-        if not isinstance(s.status, KillSwitchStatus):
-            raise InvariantViolation("KillSwitchState must have a valid status")
-
-        if s.status == KillSwitchStatus.armed():
-            if s.reason is not None:
-                raise InvariantViolation(
-                    "Armed KillSwitch must not have trigger metadata"
-                )
-
-        if s.status == KillSwitchStatus.triggered():
-            if s.reason is None:
-                raise InvariantViolation(
-                    "Triggered KillSwitch must have a trigger reason"
-                )

@@ -11,6 +11,8 @@ from quantum.domain.risk.value_objects.drawdown import Drawdown
 from quantum.domain.risk.value_objects.equity import Equity
 from quantum.domain.risk.value_objects.risk_limits import RiskLimits
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
+from quantum.domain.shared_kernel.events.event_sequence import EventSequence
 from quantum.domain.shared_kernel.primitives.aggregate_state import AggregateState
 from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import (
     EventSourcedAggregateRoot,
@@ -21,17 +23,47 @@ from quantum.domain.shared_kernel.value_objects.realized_pnl import RealizedPnL
 @dataclass(frozen=True, slots=True)
 class RiskStateData(AggregateState):
     """
-    Fully event-sourced immutable state of RiskState.
+    Fully event-sourced immutable state of the Risk aggregate.
 
-    All invariants must be preserved by event application.
+    Invariants:
+    - equity_peak >= equity
+    - drawdown = equity_peak - equity >= 0
+    - all monetary values share the same MoneyContext
+    - last_sequence is monotonic
     """
 
+    last_sequence: EventSequence
     limits: RiskLimits
     equity: Equity
     equity_peak: Equity
 
-    def _state_contract(self) -> None:
-        pass
+    def last_event_sequence(self) -> EventSequence:
+        return self.last_sequence
+
+    def _validate(self) -> None:
+        # Sequence must exist
+        if not isinstance(self.last_sequence, EventSequence):
+            raise InvariantViolation(
+                "RiskStateData.last_sequence must be EventSequence"
+            )
+
+        # Context & currency consistency
+        if self.equity.currency != self.equity_peak.currency:
+            raise InvariantViolation("Equity and EquityPeak currency mismatch")
+
+        if self.equity.context != self.equity_peak.context:
+            raise InvariantViolation("Equity and EquityPeak MoneyContext mismatch")
+
+        if self.limits.context != self.equity.context:
+            raise InvariantViolation("RiskLimits MoneyContext mismatch")
+
+        # Drawdown invariant
+        if self.equity_peak.value < self.equity.value:
+            raise InvariantViolation("Equity peak cannot be below current equity")
+
+        drawdown = self.equity_peak.value - self.equity.value
+        if drawdown < 0:
+            raise InvariantViolation("Computed drawdown must be non-negative")
 
 
 class RiskState(EventSourcedAggregateRoot[RiskStateData]):
@@ -49,13 +81,14 @@ class RiskState(EventSourcedAggregateRoot[RiskStateData]):
     @staticmethod
     def initialize(*, limits: RiskLimits, initial_equity: Equity) -> RiskState:
         """
-        Creates the initial RiskState.
+        Creates the initial RiskState with sequence = 0.
 
         This is NOT state injection – this produces the canonical empty state
         and lets the first EquityAdjustedEvent establish the state.
         """
 
         empty = RiskStateData(
+            last_sequence=EventSequence.initial(),
             limits=limits,
             equity=initial_equity,
             equity_peak=initial_equity,
@@ -98,7 +131,7 @@ class RiskState(EventSourcedAggregateRoot[RiskStateData]):
         ]
 
         breach = RiskPolicy.evaluate_drawdown(
-            current_drawdown=future_drawdown,
+            current=future_drawdown,
             limits=state.limits,
         )
 
@@ -118,8 +151,10 @@ class RiskState(EventSourcedAggregateRoot[RiskStateData]):
     def _apply_equity_adjusted(
         state: RiskStateData,
         event: EquityAdjustedEvent,
+        envelope: EventEnvelope,
     ) -> RiskStateData:
         return RiskStateData(
+            last_sequence=envelope.sequence,
             limits=state.limits,
             equity=event.new_equity,
             equity_peak=event.new_equity_peak,
@@ -129,9 +164,15 @@ class RiskState(EventSourcedAggregateRoot[RiskStateData]):
     def _apply_drawdown_breached(
         state: RiskStateData,
         event: MaxDrawdownExceededEvent,
+        envelope: EventEnvelope,
     ) -> RiskStateData:
-        # Governance event only — no state mutation
-        return state
+        # Governance-only event: no mutation except sequence
+        return RiskStateData(
+            last_sequence=envelope.sequence,
+            limits=state.limits,
+            equity=state.equity,
+            equity_peak=state.equity_peak,
+        )
 
     @classmethod
     def _handlers(cls):
@@ -139,17 +180,3 @@ class RiskState(EventSourcedAggregateRoot[RiskStateData]):
             EquityAdjustedEvent: cls._apply_equity_adjusted,
             MaxDrawdownExceededEvent: cls._apply_drawdown_breached,
         }
-
-    # --- Invariants -----------------------------------------------------------
-
-    def _validate_state(self) -> None:
-        s = self.state
-
-        if s.equity.currency != s.equity_peak.currency:
-            raise InvariantViolation("Currency mismatch in RiskState")
-
-        if s.limits.max_drawdown.currency != s.equity.currency:
-            raise InvariantViolation("Drawdown currency mismatch")
-
-        if s.equity_peak.value < s.equity.value:
-            raise InvariantViolation("Equity peak cannot be below current equity")
