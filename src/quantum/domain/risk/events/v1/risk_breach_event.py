@@ -9,6 +9,8 @@ from quantum.domain.shared_kernel.events.base_event import BaseEvent
 class RiskBreachEvent(BaseEvent):
     """
     Emitted when a configured risk limit is breached.
+
+    Payload is a fully typed ADT RiskBreach.
     """
 
     event_name: ClassVar[str] = "risk.breach"

@@ -1,11 +1,13 @@
 from decimal import Decimal
 
 from quantum.domain.risk.value_objects.daily_loss import DailyLoss
+from quantum.domain.risk.value_objects.daily_loss_breach import DailyLossBreach
 from quantum.domain.risk.value_objects.daily_loss_limit import DailyLossLimit
 from quantum.domain.risk.value_objects.drawdown import Drawdown
+from quantum.domain.risk.value_objects.drawdown_breach import DrawdownBreach
 from quantum.domain.risk.value_objects.drawdown_limit import DrawdownLimit
 from quantum.domain.risk.value_objects.notional import Notional
-from quantum.domain.risk.value_objects.risk_breach import RiskBreach
+from quantum.domain.risk.value_objects.notional_breach import NotionalBreach
 from quantum.domain.risk.value_objects.risk_breach_kind import RiskBreachKind
 from quantum.domain.risk.value_objects.risk_limits import RiskLimits
 from quantum.domain.risk.value_objects.risk_threshold_policy import RiskThresholdPolicy
@@ -34,34 +36,12 @@ class RiskPolicy:
     @staticmethod
     def evaluate_drawdown(
         *, current: Drawdown, limits: RiskLimits
-    ) -> RiskBreach | None:
-        if not isinstance(current, Drawdown):
-            raise InvariantViolation("evaluate_drawdown requires Drawdown")
-
+    ) -> DrawdownBreach | None:
         limit: DrawdownLimit = limits.max_drawdown
 
         if RiskPolicy._breach(current.value, limit.value, limits.threshold_policy):
-            return RiskBreach(
+            return DrawdownBreach(
                 kind=RiskBreachKind.drawdown(),
-                current=current,
-                limit=limit,
-                policy=limits.threshold_policy,
-            )
-
-        return None
-
-    @staticmethod
-    def evaluate_notional(
-        *, current: Notional, limits: RiskLimits
-    ) -> RiskBreach | None:
-        if not isinstance(current, Notional):
-            raise InvariantViolation("evaluate_notional requires Notional")
-
-        limit: Notional = limits.max_notional
-
-        if RiskPolicy._breach(current.value, limit.value, limits.threshold_policy):
-            return RiskBreach(
-                kind=RiskBreachKind.notional(),
                 current=current,
                 limit=limit,
                 policy=limits.threshold_policy,
@@ -72,15 +52,28 @@ class RiskPolicy:
     @staticmethod
     def evaluate_daily_loss(
         *, current: DailyLoss, limits: RiskLimits
-    ) -> RiskBreach | None:
-        if not isinstance(current, DailyLoss):
-            raise InvariantViolation("evaluate_daily_loss requires DailyLoss")
-
+    ) -> DailyLossBreach | None:
         limit: DailyLossLimit = limits.max_daily_loss
 
         if RiskPolicy._breach(current.value, limit.value, limits.threshold_policy):
-            return RiskBreach(
+            return DailyLossBreach(
                 kind=RiskBreachKind.daily_loss(),
+                current=current,
+                limit=limit,
+                policy=limits.threshold_policy,
+            )
+
+        return None
+
+    @staticmethod
+    def evaluate_notional(
+        *, current: Notional, limits: RiskLimits
+    ) -> NotionalBreach | None:
+        limit: Notional = limits.max_notional
+
+        if RiskPolicy._breach(current.value, limit.value, limits.threshold_policy):
+            return NotionalBreach(
+                kind=RiskBreachKind.notional(),
                 current=current,
                 limit=limit,
                 policy=limits.threshold_policy,
