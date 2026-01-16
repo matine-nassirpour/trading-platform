@@ -3,14 +3,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from quantum.domain.risk.events.v1.equity_adjusted_event import EquityAdjustedEvent
-from quantum.domain.risk.events.v1.max_drawdown_exceeded_event import (
-    MaxDrawdownExceededEvent,
-)
+from quantum.domain.risk.events.v1.risk_breach_event import RiskBreachEvent
 from quantum.domain.risk.policies.risk_policy import RiskPolicy
 from quantum.domain.risk.value_objects.drawdown import Drawdown
 from quantum.domain.risk.value_objects.equity import Equity
 from quantum.domain.risk.value_objects.risk_limits import RiskLimits
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.events.base_event import BaseEvent
 from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
 from quantum.domain.shared_kernel.events.event_sequence import EventSequence
 from quantum.domain.shared_kernel.primitives.aggregate_state import AggregateState
@@ -111,18 +110,18 @@ class RiskState(EventSourcedAggregateRoot[RiskStateData]):
             raise InvariantViolation("MoneyContext mismatch")
 
         if pnl.currency != state.equity.currency:
-            raise InvariantViolation("PnL currency mismatch")
+            raise InvariantViolation("Currency mismatch")
 
         new_equity = state.equity.add(pnl)
         new_peak = max(state.equity_peak, new_equity, key=lambda e: e.value)
 
-        future_drawdown = Drawdown(
+        drawdown = Drawdown(
             value=new_peak.value - new_equity.value,
             currency=new_equity.currency,
             context=new_equity.context,
         )
 
-        events = [
+        events: list[BaseEvent] = [
             EquityAdjustedEvent(
                 pnl=pnl,
                 new_equity=new_equity,
@@ -131,17 +130,12 @@ class RiskState(EventSourcedAggregateRoot[RiskStateData]):
         ]
 
         breach = RiskPolicy.evaluate_drawdown(
-            current=future_drawdown,
+            current=drawdown,
             limits=state.limits,
         )
 
         if breach is not None:
-            events.append(
-                MaxDrawdownExceededEvent(
-                    current_drawdown=future_drawdown,
-                    limit=state.limits.max_drawdown,
-                )
-            )
+            events.append(RiskBreachEvent(breach=breach))
 
         return events
 
@@ -161,12 +155,12 @@ class RiskState(EventSourcedAggregateRoot[RiskStateData]):
         )
 
     @staticmethod
-    def _apply_drawdown_breached(
+    def _apply_breach(
         state: RiskStateData,
-        event: MaxDrawdownExceededEvent,
+        event: RiskBreachEvent,
         envelope: EventEnvelope,
     ) -> RiskStateData:
-        # Governance-only event: no mutation except sequence
+        # Governance-only: no mutation except sequence
         return RiskStateData(
             last_sequence=envelope.sequence,
             limits=state.limits,
@@ -178,5 +172,5 @@ class RiskState(EventSourcedAggregateRoot[RiskStateData]):
     def _handlers(cls):
         return {
             EquityAdjustedEvent: cls._apply_equity_adjusted,
-            MaxDrawdownExceededEvent: cls._apply_drawdown_breached,
+            RiskBreachEvent: cls._apply_breach,
         }
