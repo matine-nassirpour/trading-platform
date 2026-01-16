@@ -12,6 +12,7 @@ from quantum.domain.shared_kernel.errors.invariants import (
     InvalidStateTransition,
     InvariantViolation,
 )
+from quantum.domain.shared_kernel.events.base_event import BaseEvent
 from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
 from quantum.domain.shared_kernel.events.event_sequence import EventSequence
 from quantum.domain.shared_kernel.primitives.aggregate_state import AggregateState
@@ -56,6 +57,21 @@ class KillSwitchStateData(AggregateState):
             if self.reason is None:
                 raise InvariantViolation("Triggered KillSwitch must have a reason")
 
+    @staticmethod
+    def empty() -> KillSwitchStateData:
+        """
+        Canonical pre-genesis empty state.
+
+        This state represents the aggregate BEFORE any event
+        has been applied. It must only be used as the starting
+        point for event replay.
+        """
+        return KillSwitchStateData(
+            last_sequence=EventSequence.initial(),
+            status=None,
+            reason=None,
+        )
+
 
 class KillSwitchState(EventSourcedAggregateRoot[KillSwitchStateData]):
     """
@@ -69,16 +85,15 @@ class KillSwitchState(EventSourcedAggregateRoot[KillSwitchStateData]):
     # --- Factory --------------------------------------------------------------
 
     @staticmethod
-    def initialize() -> KillSwitchState:
-        """
-        Creates a KillSwitch by replaying its mandatory genesis event.
+    def empty() -> KillSwitchState:
+        return KillSwitchState(KillSwitchStateData.empty())
 
-        This is the ONLY legal way to create a KillSwitch.
+    @staticmethod
+    def genesis_events() -> list[BaseEvent]:
         """
-        return KillSwitchState.rehydrate(
-            events=[KillSwitchArmedEvent()],
-            empty_state=KillSwitchStateData.empty(),
-        )
+        Canonical genesis events for the KillSwitch aggregate.
+        """
+        return [KillSwitchArmedEvent()]
 
     # --- Commands -------------------------------------------------------------
 
