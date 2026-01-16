@@ -1,5 +1,3 @@
-from quantum.domain.shared_kernel.architecture.domain_charter import DomainRole
-from quantum.domain.shared_kernel.architecture.domain_object import DomainObject
 from quantum.domain.trading.context.trading_context import TradingContext
 from quantum.domain.trading.decision.identity.decision_identity import DecisionIdentity
 from quantum.domain.trading.governance.boundary.decision_boundary import (
@@ -10,7 +8,7 @@ from quantum.domain.trading.governance.boundary.decision_boundary_result import 
 )
 
 
-class DecisionBoundaryPolicy(DomainObject):
+class DecisionBoundaryPolicy:
     """
     Canonical policy for evaluating Decision Boundaries.
 
@@ -20,10 +18,6 @@ class DecisionBoundaryPolicy(DomainObject):
     - No side effects
     - No runtime assumptions
     """
-
-    @classmethod
-    def role(cls) -> DomainRole:
-        return DomainRole.POLICY
 
     @staticmethod
     def evaluate(
