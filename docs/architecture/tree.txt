@@ -294,7 +294,6 @@ trading-platform/
 │       │   │   │   ├── notional.py
 │       │   │   │   ├── notional_breach.py
 │       │   │   │   ├── risk_breach.py
-│       │   │   │   ├── risk_breach_kind.py
 │       │   │   │   ├── risk_limits.py
 │       │   │   │   └── risk_threshold_policy.py
 │       │   │   └── __init__.py

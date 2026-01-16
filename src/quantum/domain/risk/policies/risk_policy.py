@@ -8,7 +8,6 @@ from quantum.domain.risk.value_objects.drawdown_breach import DrawdownBreach
 from quantum.domain.risk.value_objects.drawdown_limit import DrawdownLimit
 from quantum.domain.risk.value_objects.notional import Notional
 from quantum.domain.risk.value_objects.notional_breach import NotionalBreach
-from quantum.domain.risk.value_objects.risk_breach_kind import RiskBreachKind
 from quantum.domain.risk.value_objects.risk_limits import RiskLimits
 from quantum.domain.risk.value_objects.risk_threshold_policy import RiskThresholdPolicy
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
@@ -41,7 +40,6 @@ class RiskPolicy:
 
         if RiskPolicy._breach(current.value, limit.value, limits.threshold_policy):
             return DrawdownBreach(
-                kind=RiskBreachKind.drawdown(),
                 current=current,
                 limit=limit,
                 policy=limits.threshold_policy,
@@ -57,7 +55,6 @@ class RiskPolicy:
 
         if RiskPolicy._breach(current.value, limit.value, limits.threshold_policy):
             return DailyLossBreach(
-                kind=RiskBreachKind.daily_loss(),
                 current=current,
                 limit=limit,
                 policy=limits.threshold_policy,
@@ -73,7 +70,6 @@ class RiskPolicy:
 
         if RiskPolicy._breach(current.value, limit.value, limits.threshold_policy):
             return NotionalBreach(
-                kind=RiskBreachKind.notional(),
                 current=current,
                 limit=limit,
                 policy=limits.threshold_policy,
