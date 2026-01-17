@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from quantum.domain.risk.core.drawdown import Drawdown
+from quantum.domain.risk.core.equity import Equity
 from quantum.domain.risk.events.v1.equity_adjusted_event import EquityAdjustedEvent
 from quantum.domain.risk.events.v1.risk_breach_event import RiskBreachEvent
-from quantum.domain.risk.policies.risk_policy import RiskPolicy
-from quantum.domain.risk.value_objects.drawdown import Drawdown
-from quantum.domain.risk.value_objects.equity import Equity
-from quantum.domain.risk.value_objects.risk_limits import RiskLimits
+from quantum.domain.risk.governance.policies.risk_policy import RiskPolicy
+from quantum.domain.risk.limits.risk_limits import RiskLimits
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.events.base_event import BaseEvent
 from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope

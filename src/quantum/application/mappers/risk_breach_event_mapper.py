@@ -1,5 +1,5 @@
+from quantum.domain.risk.breaches.risk_breach import RiskBreach
 from quantum.domain.risk.events.v1.risk_breach_event import RiskBreachEvent
-from quantum.domain.risk.value_objects.risk_breach import RiskBreach
 from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
 
 

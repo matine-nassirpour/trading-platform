@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Protocol, runtime_checkable
 
-from quantum.domain.risk.value_objects.risk_limits import RiskLimits
+from quantum.domain.risk.limits.risk_limits import RiskLimits
 
 
 @runtime_checkable

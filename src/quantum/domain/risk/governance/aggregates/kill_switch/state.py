@@ -3,11 +3,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from quantum.domain.risk.events.v1.killswitch_armed_event import KillSwitchArmedEvent
-from quantum.domain.risk.events.v1.killswitch_trigger_event import (
-    KillSwitchTriggerEvent,
+from quantum.domain.risk.events.v1.killswitch_triggered_event import (
+    KillSwitchTriggeredEvent,
 )
-from quantum.domain.risk.value_objects.kill_switch_reason import KillSwitchReason
-from quantum.domain.risk.value_objects.kill_switch_status import KillSwitchStatus
+from quantum.domain.risk.governance.aggregates.kill_switch.reason import (
+    KillSwitchReason,
+)
+from quantum.domain.risk.governance.aggregates.kill_switch.status import (
+    KillSwitchStatus,
+)
 from quantum.domain.shared_kernel.errors.invariants import (
     InvalidStateTransition,
     InvariantViolation,
@@ -112,7 +116,7 @@ class KillSwitchState(EventSourcedAggregateRoot[KillSwitchStateData]):
             raise InvalidStateTransition("KillSwitch already triggered")
 
         return [
-            KillSwitchTriggerEvent(
+            KillSwitchTriggeredEvent(
                 reason=reason,
                 detail=detail,
             )
@@ -135,7 +139,7 @@ class KillSwitchState(EventSourcedAggregateRoot[KillSwitchStateData]):
     @staticmethod
     def _apply_triggered(
         state: KillSwitchStateData,
-        event: KillSwitchTriggerEvent,
+        event: KillSwitchTriggeredEvent,
         envelope: EventEnvelope,
     ) -> KillSwitchStateData:
         return KillSwitchStateData(
@@ -148,5 +152,5 @@ class KillSwitchState(EventSourcedAggregateRoot[KillSwitchStateData]):
     def _handlers(cls):
         return {
             KillSwitchArmedEvent: cls._apply_armed,
-            KillSwitchTriggerEvent: cls._apply_triggered,
+            KillSwitchTriggeredEvent: cls._apply_triggered,
         }

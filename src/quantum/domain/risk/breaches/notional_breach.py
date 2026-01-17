@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
-from quantum.domain.risk.value_objects.notional import Notional
-from quantum.domain.risk.value_objects.risk_breach import RiskBreach
+from quantum.domain.risk.breaches.risk_breach import RiskBreach
+from quantum.domain.risk.core.notional import Notional
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 
 

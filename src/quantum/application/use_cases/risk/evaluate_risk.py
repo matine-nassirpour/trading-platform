@@ -4,7 +4,7 @@ from quantum.application.ports.outbound.domain_event_publisher import (
     DomainEventPublisher,
 )
 from quantum.application.ports.outbound.unit_of_work import UnitOfWork
-from quantum.domain.risk.policies.risk_policy import RiskPolicy
+from quantum.domain.risk.governance.policies.risk_policy import RiskPolicy
 
 
 class EvaluateRiskUseCase:

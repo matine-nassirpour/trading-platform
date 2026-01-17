@@ -1,7 +1,7 @@
 from abc import ABC
 from dataclasses import dataclass
 
-from quantum.domain.risk.value_objects.risk_threshold_policy import RiskThresholdPolicy
+from quantum.domain.risk.limits.risk_threshold_policy import RiskThresholdPolicy
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import ClassVar
 
-from quantum.domain.risk.value_objects.equity import Equity
+from quantum.domain.risk.core.equity import Equity
 from quantum.domain.shared_kernel.events.base_event import BaseEvent
 from quantum.domain.shared_kernel.value_objects.realized_pnl import RealizedPnL
 

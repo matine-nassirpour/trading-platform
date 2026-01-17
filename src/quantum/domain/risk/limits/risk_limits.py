@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 
-from quantum.domain.risk.value_objects.daily_loss_limit import DailyLossLimit
-from quantum.domain.risk.value_objects.drawdown_limit import DrawdownLimit
-from quantum.domain.risk.value_objects.notional import Notional
-from quantum.domain.risk.value_objects.risk_threshold_policy import RiskThresholdPolicy
+from quantum.domain.risk.core.notional import Notional
+from quantum.domain.risk.limits.daily_loss_limit import DailyLossLimit
+from quantum.domain.risk.limits.drawdown_limit import DrawdownLimit
+from quantum.domain.risk.limits.risk_threshold_policy import RiskThresholdPolicy
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.money.money_context import MoneyContext
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject

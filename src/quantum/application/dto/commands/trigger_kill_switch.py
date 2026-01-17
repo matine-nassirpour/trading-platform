@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 
-from quantum.domain.risk.value_objects.kill_switch_reason import KillSwitchReason
+from quantum.domain.risk.governance.aggregates.kill_switch.reason import (
+    KillSwitchReason,
+)
 from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
 
 

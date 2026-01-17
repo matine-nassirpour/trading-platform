@@ -258,42 +258,50 @@ trading-platform/
 │       │   └── __init__.py
 │       ├── domain/
 │       │   ├── risk/
-│       │   │   ├── aggregates/
-│       │   │   │   ├── __init__.py
-│       │   │   │   ├── kill_switch_state.py
-│       │   │   │   └── risk_state.py
 │       │   │   ├── attribution/
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── risk_attribution.py
 │       │   │   │   ├── risk_reference.py
 │       │   │   │   ├── risk_source.py
 │       │   │   │   └── risk_source_type.py
+│       │   │   ├── breaches/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── daily_loss_breach.py
+│       │   │   │   ├── drawdown_breach.py
+│       │   │   │   ├── notional_breach.py
+│       │   │   │   └── risk_breach.py
+│       │   │   ├── core/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── daily_loss.py
+│       │   │   │   ├── drawdown.py
+│       │   │   │   ├── equity.py
+│       │   │   │   └── notional.py
 │       │   │   ├── events/
 │       │   │   │   ├── v1/
 │       │   │   │   │   ├── __init__.py
 │       │   │   │   │   ├── equity_adjusted_event.py
 │       │   │   │   │   ├── killswitch_armed_event.py
-│       │   │   │   │   ├── killswitch_trigger_event.py
+│       │   │   │   │   ├── killswitch_triggered_event.py
 │       │   │   │   │   ├── risk_attribution_event.py
 │       │   │   │   │   └── risk_breach_event.py
 │       │   │   │   └── __init__.py
-│       │   │   ├── policies/
+│       │   │   ├── governance/
+│       │   │   │   ├── aggregates/
+│       │   │   │   │   ├── kill_switch/
+│       │   │   │   │   │   ├── __init__.py
+│       │   │   │   │   │   ├── reason.py
+│       │   │   │   │   │   ├── state.py
+│       │   │   │   │   │   └── status.py
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   └── risk_state.py
+│       │   │   │   ├── policies/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   └── risk_policy.py
+│       │   │   │   └── __init__.py
+│       │   │   ├── limits/
 │       │   │   │   ├── __init__.py
-│       │   │   │   └── risk_policy.py
-│       │   │   ├── value_objects/
-│       │   │   │   ├── __init__.py
-│       │   │   │   ├── daily_loss.py
-│       │   │   │   ├── daily_loss_breach.py
 │       │   │   │   ├── daily_loss_limit.py
-│       │   │   │   ├── drawdown.py
-│       │   │   │   ├── drawdown_breach.py
 │       │   │   │   ├── drawdown_limit.py
-│       │   │   │   ├── equity.py
-│       │   │   │   ├── kill_switch_reason.py
-│       │   │   │   ├── kill_switch_status.py
-│       │   │   │   ├── notional.py
-│       │   │   │   ├── notional_breach.py
-│       │   │   │   ├── risk_breach.py
 │       │   │   │   ├── risk_limits.py
 │       │   │   │   └── risk_threshold_policy.py
 │       │   │   └── __init__.py

@@ -1,15 +1,15 @@
 from decimal import Decimal
 
-from quantum.domain.risk.value_objects.daily_loss import DailyLoss
-from quantum.domain.risk.value_objects.daily_loss_breach import DailyLossBreach
-from quantum.domain.risk.value_objects.daily_loss_limit import DailyLossLimit
-from quantum.domain.risk.value_objects.drawdown import Drawdown
-from quantum.domain.risk.value_objects.drawdown_breach import DrawdownBreach
-from quantum.domain.risk.value_objects.drawdown_limit import DrawdownLimit
-from quantum.domain.risk.value_objects.notional import Notional
-from quantum.domain.risk.value_objects.notional_breach import NotionalBreach
-from quantum.domain.risk.value_objects.risk_limits import RiskLimits
-from quantum.domain.risk.value_objects.risk_threshold_policy import RiskThresholdPolicy
+from quantum.domain.risk.breaches.daily_loss_breach import DailyLossBreach
+from quantum.domain.risk.breaches.drawdown_breach import DrawdownBreach
+from quantum.domain.risk.breaches.notional_breach import NotionalBreach
+from quantum.domain.risk.core.daily_loss import DailyLoss
+from quantum.domain.risk.core.drawdown import Drawdown
+from quantum.domain.risk.core.notional import Notional
+from quantum.domain.risk.limits.daily_loss_limit import DailyLossLimit
+from quantum.domain.risk.limits.drawdown_limit import DrawdownLimit
+from quantum.domain.risk.limits.risk_limits import RiskLimits
+from quantum.domain.risk.limits.risk_threshold_policy import RiskThresholdPolicy
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 
 

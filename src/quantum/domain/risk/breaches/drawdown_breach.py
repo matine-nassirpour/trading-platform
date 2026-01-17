@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 
-from quantum.domain.risk.value_objects.drawdown import Drawdown
-from quantum.domain.risk.value_objects.drawdown_limit import DrawdownLimit
-from quantum.domain.risk.value_objects.risk_breach import RiskBreach
+from quantum.domain.risk.breaches.risk_breach import RiskBreach
+from quantum.domain.risk.core.drawdown import Drawdown
+from quantum.domain.risk.limits.drawdown_limit import DrawdownLimit
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 
 

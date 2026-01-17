@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Protocol, runtime_checkable
 
-from quantum.domain.risk.aggregates.kill_switch_state import KillSwitchState
+from quantum.domain.risk.governance.aggregates import KillSwitchState
 
 
 @runtime_checkable
