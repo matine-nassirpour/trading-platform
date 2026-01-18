@@ -19,7 +19,8 @@ class EventEnvelope(ValueObject):
 
     id: EventId
     sequence: EventSequence
-    recorded_at: EpochMs
+    occurred_at: EpochMs  # When the business fact occurred
+    recorded_at: EpochMs  # When the system records the event in its immutable log
     event: BaseEvent
 
     def _validate(self) -> None:
@@ -28,6 +29,9 @@ class EventEnvelope(ValueObject):
 
         if not isinstance(self.sequence, EventSequence):
             raise InvariantViolation("EventEnvelope requires EventSequence")
+
+        if not isinstance(self.occurred_at, EpochMs):
+            raise InvariantViolation("EventEnvelope requires occurred_at: EpochMs")
 
         if not isinstance(self.recorded_at, EpochMs):
             raise InvariantViolation("EventEnvelope requires recorded_at: EpochMs")
