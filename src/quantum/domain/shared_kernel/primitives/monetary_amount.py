@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from decimal import Decimal
 
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.primitives.numeric_value_object import (
@@ -19,7 +18,6 @@ class MonetaryAmount(NumericValueObject):
     - Immutable
     """
 
-    value: Decimal
     currency: Currency
 
     def _validate(self) -> None:

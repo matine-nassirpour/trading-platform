@@ -21,6 +21,8 @@ class Fee(ContextualMonetaryAmount):
     """
 
     def _validate(self) -> None:
+        super()._validate()
+
         if self.value < Decimal("0"):
             raise InvariantViolation("Fee must be non-negative")
 
@@ -31,6 +33,7 @@ class Fee(ContextualMonetaryAmount):
         return Fee(
             value=self.value + other.value,
             currency=self.currency,
+            context=self.context,
         )
 
     def subtract(self, other: Fee) -> Fee:
@@ -44,4 +47,5 @@ class Fee(ContextualMonetaryAmount):
         return Fee(
             value=result,
             currency=self.currency,
+            context=self.context,
         )

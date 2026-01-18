@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from decimal import Decimal
 
 from quantum.domain.shared_kernel.errors.invariants import (
     CurrencyMismatch,
@@ -9,7 +8,6 @@ from quantum.domain.shared_kernel.errors.invariants import (
 )
 from quantum.domain.shared_kernel.money.money_context import MoneyContext
 from quantum.domain.shared_kernel.primitives.monetary_amount import MonetaryAmount
-from quantum.domain.shared_kernel.value_objects.currency import Currency
 
 
 @dataclass(frozen=True, slots=True)
@@ -20,8 +18,6 @@ class ContextualMonetaryAmount(MonetaryAmount):
     Prevents cross-currency and cross-context contamination.
     """
 
-    value: Decimal
-    currency: Currency
     context: MoneyContext
 
     def _validate(self) -> None:
