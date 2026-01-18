@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from typing import ClassVar
 
 from quantum.domain.shared_kernel.events.base_event import BaseEvent
-from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
 from quantum.domain.shared_kernel.value_objects.symbol import Symbol
 from quantum.domain.trading.value_objects.identifiers.intent_id import IntentId
 
@@ -13,7 +12,4 @@ class OrderSubmitEvent(BaseEvent):
     event_version: ClassVar[int] = 1
 
     intent_id: IntentId
-    client_order_id: str
     symbol: Symbol
-
-    response_epoch_ms: EpochMs | None = None  # completed in the ACK

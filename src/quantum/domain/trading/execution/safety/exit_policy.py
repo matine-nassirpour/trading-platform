@@ -37,7 +37,11 @@ class ExitPolicy:
             instrument=instrument,
             context=PricingContext.neutral(),
         )
-        return Price(quantized)
+        return Price(
+            value=quantized,
+            currency=instrument.context.reporting_currency,
+            context=instrument.context,
+        )
 
     @staticmethod
     def _quantize_sl_tp(
@@ -53,12 +57,14 @@ class ExitPolicy:
 
         q_sl = (
             Price(
-                PricingPolicy.quantize_price(
+                value=PricingPolicy.quantize_price(
                     value=sl.value,
                     instrument=instrument,
                     context=PricingContext.execution_sl(),
                     side=side,
-                )
+                ),
+                currency=instrument.context.reporting_currency,
+                context=instrument.context,
             )
             if sl is not None
             else None
@@ -71,7 +77,9 @@ class ExitPolicy:
                     instrument=instrument,
                     context=PricingContext.execution_tp(),
                     side=side,
-                )
+                ),
+                currency=instrument.context.reporting_currency,
+                context=instrument.context,
             )
             if tp is not None
             else None
