@@ -10,7 +10,7 @@ from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
 from quantum.domain.shared_kernel.primitives.aggregate_state import AggregateState
 
 S = TypeVar("S", bound=AggregateState)
-E = TypeVar("E", bound=BaseEvent)
+E = TypeVar("E", bound=BaseEvent, contravariant=True)
 
 
 class EventHandler(Protocol[S, E]):

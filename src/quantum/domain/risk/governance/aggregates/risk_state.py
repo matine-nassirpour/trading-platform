@@ -146,9 +146,10 @@ class RiskState(EventSourcedAggregateRoot[RiskStateData]):
     @staticmethod
     def _apply_equity_adjusted(
         state: RiskStateData,
-        event: EquityAdjustedEvent,
+        event: BaseEvent,
         envelope: EventEnvelope,
     ) -> RiskStateData:
+        assert isinstance(event, EquityAdjustedEvent)
         return RiskStateData(
             last_sequence=envelope.sequence,
             limits=state.limits,
@@ -159,10 +160,11 @@ class RiskState(EventSourcedAggregateRoot[RiskStateData]):
     @staticmethod
     def _apply_breach(
         state: RiskStateData,
-        event: RiskBreachEvent,
+        event: BaseEvent,
         envelope: EventEnvelope,
     ) -> RiskStateData:
         # Governance-only: no mutation except sequence
+        assert isinstance(event, RiskBreachEvent)
         return RiskStateData(
             last_sequence=envelope.sequence,
             limits=state.limits,

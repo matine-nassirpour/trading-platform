@@ -129,9 +129,10 @@ class KillSwitchState(EventSourcedAggregateRoot[KillSwitchStateData]):
     @staticmethod
     def _apply_armed(
         state: KillSwitchStateData,
-        event: KillSwitchArmedEvent,
+        event: BaseEvent,
         envelope: EventEnvelope,
     ) -> KillSwitchStateData:
+        assert isinstance(event, KillSwitchArmedEvent)
         return KillSwitchStateData(
             last_sequence=envelope.sequence,
             status=KillSwitchStatus.armed(),
@@ -141,9 +142,10 @@ class KillSwitchState(EventSourcedAggregateRoot[KillSwitchStateData]):
     @staticmethod
     def _apply_triggered(
         state: KillSwitchStateData,
-        event: KillSwitchTriggeredEvent,
+        event: BaseEvent,
         envelope: EventEnvelope,
     ) -> KillSwitchStateData:
+        assert isinstance(event, KillSwitchTriggeredEvent)
         return KillSwitchStateData(
             last_sequence=envelope.sequence,
             status=KillSwitchStatus.triggered(),
