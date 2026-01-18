@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 
 from quantum.domain.risk.events.v1.killswitch_armed_event import KillSwitchArmedEvent
@@ -150,7 +151,10 @@ class KillSwitchState(EventSourcedAggregateRoot[KillSwitchStateData]):
         )
 
     @classmethod
-    def _handlers(cls) -> dict[type[BaseEvent], EventHandler]:
+    def _handlers(cls) -> Mapping[
+        type[BaseEvent],
+        EventHandler[KillSwitchStateData, BaseEvent],
+    ]:
         return {
             KillSwitchArmedEvent: cls._apply_armed,
             KillSwitchTriggeredEvent: cls._apply_triggered,

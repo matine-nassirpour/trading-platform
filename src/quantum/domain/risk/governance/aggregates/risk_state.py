@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 
 from quantum.domain.risk.core.drawdown import Drawdown
@@ -170,7 +171,12 @@ class RiskState(EventSourcedAggregateRoot[RiskStateData]):
         )
 
     @classmethod
-    def _handlers(cls) -> dict[type[BaseEvent], EventHandler]:
+    def _handlers(
+        cls,
+    ) -> Mapping[
+        type[BaseEvent],
+        EventHandler[RiskStateData, BaseEvent],
+    ]:
         return {
             EquityAdjustedEvent: cls._apply_equity_adjusted,
             RiskBreachEvent: cls._apply_breach,

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
@@ -10,6 +11,7 @@ from quantum.domain.shared_kernel.events.event_sequence import EventSequence
 from quantum.domain.shared_kernel.money.money_context import MoneyContext
 from quantum.domain.shared_kernel.primitives.aggregate_state import AggregateState
 from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import (
+    EventHandler,
     EventSourcedAggregateRoot,
 )
 from quantum.domain.shared_kernel.value_objects.price import Price
@@ -237,7 +239,12 @@ class Position(EventSourcedAggregateRoot[PositionStateData]):
         )
 
     @classmethod
-    def _handlers(cls):
+    def _handlers(
+        cls,
+    ) -> Mapping[
+        type[BaseEvent],
+        EventHandler[PositionStateData, BaseEvent],
+    ]:
         return {
             PositionOpenedEvent: cls._apply_opened,
             PositionClosedEvent: cls._apply_closed,
