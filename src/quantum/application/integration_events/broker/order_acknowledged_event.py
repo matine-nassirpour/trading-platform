@@ -11,8 +11,8 @@ from quantum.domain.trading.value_objects.identifiers.order_id import OrderId
 
 
 @dataclass(frozen=True)
-class OrderAckEvent(IntegrationEvent):
-    event_name: ClassVar[str] = "trading.order_ack"
+class OrderAcknowledgedEvent(IntegrationEvent):
+    event_name: ClassVar[str] = "trading.order_acknowledged"
     event_version: ClassVar[int] = 1
 
     intent_id: IntentId

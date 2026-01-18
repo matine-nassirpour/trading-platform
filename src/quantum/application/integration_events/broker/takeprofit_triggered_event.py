@@ -17,8 +17,8 @@ from quantum.domain.trading.value_objects.identifiers.position_id import Positio
 
 
 @dataclass(frozen=True)
-class StopLossTriggerEvent(IntegrationEvent):
-    event_name: ClassVar[str] = "trading.stoploss_trigger"
+class TakeProfitTriggeredEvent(IntegrationEvent):
+    event_name: ClassVar[str] = "trading.takeprofit_triggered"
     event_version: ClassVar[int] = 1
 
     intent_id: IntentId
@@ -28,7 +28,7 @@ class StopLossTriggerEvent(IntegrationEvent):
     symbol: Symbol
 
     trigger_price: Price
-    sl_price: Price
+    tp_price: Price
     volume_closed: PositiveVolume
 
     trigger_epoch_ms: EpochMs

@@ -13,8 +13,8 @@ from quantum.domain.trading.value_objects.identifiers.intent_id import IntentId
 
 
 @dataclass(frozen=True)
-class OrderRejectEvent(IntegrationEvent):
-    event_name: ClassVar[str] = "trading.order_reject"
+class OrderRejectedEvent(IntegrationEvent):
+    event_name: ClassVar[str] = "trading.order.rejected"
     event_version: ClassVar[int] = 1
 
     intent_id: IntentId
