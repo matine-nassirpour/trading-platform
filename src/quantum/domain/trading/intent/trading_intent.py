@@ -20,8 +20,10 @@ from quantum.domain.shared_kernel.value_objects.symbol import Symbol
 from quantum.domain.shared_kernel.value_objects.volume import PositiveVolume
 from quantum.domain.trading.decision.identity.decision_identity import DecisionIdentity
 from quantum.domain.trading.events.v1.order_created_event import OrderCreatedEvent
-from quantum.domain.trading.events.v1.order_intent_event import OrderIntentEvent
-from quantum.domain.trading.events.v1.order_submit_event import OrderSubmitEvent
+from quantum.domain.trading.events.v1.order_intent_created_event import (
+    OrderIntentCreatedEvent,
+)
+from quantum.domain.trading.events.v1.order_submitted_event import OrderSubmittedEvent
 from quantum.domain.trading.execution.order.order_type import OrderType
 from quantum.domain.trading.execution.order.position_side import PositionSide
 from quantum.domain.trading.execution.order.time_in_force import TimeInForce
@@ -93,7 +95,7 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentStateData]):
         """
 
         return [
-            OrderIntentEvent(
+            OrderIntentCreatedEvent(
                 intent_id=intent_id,
                 symbol=symbol,
                 decision_identity=decision_identity,
@@ -116,7 +118,7 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentStateData]):
             raise InvalidStateTransition("TradingIntent already submitted")
 
         return [
-            OrderSubmitEvent(
+            OrderSubmittedEvent(
                 intent_id=state.intent_id,
                 symbol=state.symbol,
             )
@@ -192,7 +194,7 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentStateData]):
         if state is not None:
             raise InvariantViolation("TradingIntent already exists")
 
-        assert isinstance(event, OrderIntentEvent)
+        assert isinstance(event, OrderIntentCreatedEvent)
 
         return TradingIntentStateData(
             last_sequence=envelope.sequence,
@@ -217,7 +219,7 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentStateData]):
         This method represents a PURE EVENT → STATE TRANSITION.
         """
 
-        assert isinstance(event, OrderSubmitEvent)
+        assert isinstance(event, OrderSubmittedEvent)
         return TradingIntentStateData(
             last_sequence=envelope.sequence,
             intent_id=state.intent_id,
@@ -256,7 +258,7 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentStateData]):
         cls,
     ) -> Mapping[type[BaseEvent], EventHandler[TradingIntentStateData, BaseEvent]]:
         return {
-            OrderIntentEvent: cls._apply_created,
-            OrderSubmitEvent: cls._apply_submitted,
+            OrderIntentCreatedEvent: cls._apply_created,
+            OrderSubmittedEvent: cls._apply_submitted,
             OrderCreatedEvent: cls._apply_attached,
         }

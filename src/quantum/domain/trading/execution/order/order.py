@@ -209,7 +209,7 @@ class Order(EventSourcedAggregateRoot[OrderStateData]):
         )
 
     @staticmethod
-    def _apply_register_filled(
+    def _apply_fill_registered(
         state: OrderStateData,
         event: BaseEvent,
         envelope: EventEnvelope,
@@ -273,6 +273,6 @@ class Order(EventSourcedAggregateRoot[OrderStateData]):
     ) -> Mapping[type[BaseEvent], EventHandler[OrderStateData, BaseEvent]]:
         return {
             OrderCreatedEvent: cls._apply_created,
-            OrderFillRegisteredEvent: cls._apply_register_filled,
+            OrderFillRegisteredEvent: cls._apply_fill_registered,
             OrderCancelledEvent: cls._apply_cancelled,
         }

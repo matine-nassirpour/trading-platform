@@ -1,5 +1,7 @@
 from quantum.domain.risk.breaches.risk_breach import RiskBreach
-from quantum.domain.risk.events.v1.risk_breach_event import RiskBreachEvent
+from quantum.domain.risk.events.v1.risk_breach_detected_event import (
+    RiskBreachDetectedEvent,
+)
 from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
 
 
@@ -19,8 +21,8 @@ class RiskBreachEventMapper:
         *,
         breach: RiskBreach,
         at: EpochMs,
-    ) -> RiskBreachEvent:
-        return RiskBreachEvent(
+    ) -> RiskBreachDetectedEvent:
+        return RiskBreachDetectedEvent(
             occurred_at=at,
             breach=breach,
         )

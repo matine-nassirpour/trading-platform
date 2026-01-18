@@ -22,7 +22,7 @@ class SlTpConfigurationChangedEvent(BaseEvent):
     - risk-driven overrides
     """
 
-    event_name: ClassVar[str] = "trading.sl_tp_configuration_changed"
+    event_name: ClassVar[str] = "trading.position.sl_tp_changed"
     event_version: ClassVar[int] = 1
 
     symbol: Symbol

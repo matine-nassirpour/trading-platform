@@ -13,7 +13,7 @@ class MarketRegimeChangedEvent(BaseEvent):
     This event represents a STRUCTURAL change in trading conditions.
     """
 
-    event_name: ClassVar[str] = "trading.market_regime_changed"
+    event_name: ClassVar[str] = "trading.market_regime.changed"
     event_version: ClassVar[int] = 1
 
     previous: MarketRegime

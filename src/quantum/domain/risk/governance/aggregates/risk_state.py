@@ -6,7 +6,9 @@ from dataclasses import dataclass
 from quantum.domain.risk.core.drawdown import Drawdown
 from quantum.domain.risk.core.equity import Equity
 from quantum.domain.risk.events.v1.equity_adjusted_event import EquityAdjustedEvent
-from quantum.domain.risk.events.v1.risk_breach_event import RiskBreachEvent
+from quantum.domain.risk.events.v1.risk_breach_detected_event import (
+    RiskBreachDetectedEvent,
+)
 from quantum.domain.risk.governance.policies.risk_policy import RiskPolicy
 from quantum.domain.risk.limits.risk_limits import RiskLimits
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
@@ -137,7 +139,7 @@ class RiskState(EventSourcedAggregateRoot[RiskStateData]):
         )
 
         if breach is not None:
-            events.append(RiskBreachEvent(breach=breach))
+            events.append(RiskBreachDetectedEvent(breach=breach))
 
         return events
 
@@ -163,7 +165,7 @@ class RiskState(EventSourcedAggregateRoot[RiskStateData]):
         event: BaseEvent,
         envelope: EventEnvelope,
     ) -> RiskStateData:
-        assert isinstance(event, RiskBreachEvent)
+        assert isinstance(event, RiskBreachDetectedEvent)
         return RiskStateData(
             last_sequence=envelope.sequence,
             limits=state.limits,
@@ -180,5 +182,5 @@ class RiskState(EventSourcedAggregateRoot[RiskStateData]):
     ]:
         return {
             EquityAdjustedEvent: cls._apply_equity_adjusted,
-            RiskBreachEvent: cls._apply_breach,
+            RiskBreachDetectedEvent: cls._apply_breach,
         }

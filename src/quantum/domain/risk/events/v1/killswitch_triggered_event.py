@@ -9,7 +9,7 @@ from quantum.domain.shared_kernel.events.base_event import BaseEvent
 
 @dataclass(frozen=True, slots=True)
 class KillSwitchTriggeredEvent(BaseEvent):
-    event_name: ClassVar[str] = "risk.killswitch_trigger"
+    event_name: ClassVar[str] = "risk.killswitch.triggered"
     event_version: ClassVar[int] = 1
 
     reason: KillSwitchReason

@@ -14,7 +14,7 @@ class StrategyLifecycleChangedEvent(BaseEvent):
     Emitted whenever a strategy lifecycle state changes.
     """
 
-    event_name: ClassVar[str] = "trading.strategy_lifecycle_changed"
+    event_name: ClassVar[str] = "trading.strategy.lifecycle_changed"
     event_version: ClassVar[int] = 1
 
     strategy_id: StrategyId

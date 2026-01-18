@@ -14,7 +14,7 @@ class EquityAdjustedEvent(BaseEvent):
     This is the SINGLE source of truth for equity evolution.
     """
 
-    event_name: ClassVar[str] = "risk.equity_adjusted"
+    event_name: ClassVar[str] = "risk.equity.adjusted"
     event_version: ClassVar[int] = 1
 
     pnl: RealizedPnL

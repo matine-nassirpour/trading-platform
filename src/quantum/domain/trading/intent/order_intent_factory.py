@@ -12,7 +12,9 @@ from quantum.domain.trading.decision.identity.decision_identity import DecisionI
 from quantum.domain.trading.events.v1.decision_authorized_event import (
     DecisionAuthorizedEvent,
 )
-from quantum.domain.trading.events.v1.order_intent_event import OrderIntentEvent
+from quantum.domain.trading.events.v1.order_intent_created_event import (
+    OrderIntentCreatedEvent,
+)
 from quantum.domain.trading.execution.order.order_type import OrderType
 from quantum.domain.trading.execution.order.position_side import PositionSide
 from quantum.domain.trading.execution.order.time_in_force import TimeInForce
@@ -114,7 +116,7 @@ class OrderIntentFactory:
         instrument: InstrumentSpec,
         decision_boundary: DecisionBoundary,
         occurred_at: EpochMs,
-    ) -> tuple[OrderIntentEvent, DecisionAuthorizedEvent]:
+    ) -> tuple[OrderIntentCreatedEvent, DecisionAuthorizedEvent]:
         """
         Validates and creates an OrderIntentEvent.
 
@@ -147,7 +149,7 @@ class OrderIntentFactory:
         )
 
         # --- Intent emission --------------------------------------------------
-        order_intent_event = OrderIntentEvent(
+        order_intent_event = OrderIntentCreatedEvent(
             intent_id=params.intent_id,
             symbol=params.symbol,
             order_type=params.order_type,

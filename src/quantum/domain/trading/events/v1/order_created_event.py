@@ -23,7 +23,7 @@ class OrderCreatedEvent(BaseEvent):
     - With a specific side and order type
     """
 
-    event_name: ClassVar[str] = "trading.order_created"
+    event_name: ClassVar[str] = "trading.order.created"
     event_version: ClassVar[int] = 1
 
     intent_id: IntentId

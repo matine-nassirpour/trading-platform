@@ -12,5 +12,5 @@ class KillSwitchArmedEvent(BaseEvent):
     This event is REQUIRED to create a valid KillSwitchState.
     """
 
-    event_name: ClassVar[str] = "risk.killswitch_armed"
+    event_name: ClassVar[str] = "risk.killswitch.armed"
     event_version: ClassVar[int] = 1
