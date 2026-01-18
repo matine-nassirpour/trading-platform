@@ -19,6 +19,8 @@ class CapitalFraction(NumericValueObject):
     """
 
     def _validate(self) -> None:
+        super()._validate()
+
         if self.value <= Decimal("0"):
             raise InvariantViolation("CapitalFraction must be strictly positive")
 

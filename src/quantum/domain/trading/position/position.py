@@ -164,7 +164,7 @@ class Position(EventSourcedAggregateRoot[PositionStateData]):
     @staticmethod
     def _apply_opened(
         state: PositionStateData | None,
-        event: PositionOpenedEvent,
+        event: BaseEvent,
         envelope: EventEnvelope,
     ) -> PositionStateData:
         """
@@ -192,6 +192,8 @@ class Position(EventSourcedAggregateRoot[PositionStateData]):
         if state is not None:
             raise InvariantViolation("Position already initialized")
 
+        assert isinstance(event, PositionOpenedEvent)
+
         return PositionStateData(
             last_sequence=envelope.sequence,
             position_id=event.position_id,
@@ -204,7 +206,7 @@ class Position(EventSourcedAggregateRoot[PositionStateData]):
     @staticmethod
     def _apply_closed(
         state: PositionStateData,
-        event: PositionClosedEvent,
+        event: BaseEvent,
         envelope: EventEnvelope,
     ) -> PositionStateData:
         """
@@ -228,6 +230,8 @@ class Position(EventSourcedAggregateRoot[PositionStateData]):
         - All semantic meaning MUST already be captured in the event
         - This method only applies recorded facts
         """
+
+        assert isinstance(event, PositionClosedEvent)
 
         return PositionStateData(
             last_sequence=envelope.sequence,

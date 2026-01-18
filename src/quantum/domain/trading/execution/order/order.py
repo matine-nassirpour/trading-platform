@@ -1,16 +1,22 @@
 from __future__ import annotations
 
-from decimal import Decimal
+from collections.abc import Mapping
+from dataclasses import dataclass
 
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.errors.order_errors import (
     OrderNotFillable,
     OrderOverfill,
 )
+from quantum.domain.shared_kernel.events.base_event import BaseEvent
+from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
+from quantum.domain.shared_kernel.events.event_sequence import EventSequence
+from quantum.domain.shared_kernel.primitives.aggregate_state import AggregateState
 from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import (
+    EventHandler,
     EventSourcedAggregateRoot,
 )
-from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
+from quantum.domain.shared_kernel.value_objects.symbol import Symbol
 from quantum.domain.shared_kernel.value_objects.volume import (
     NonNegativeVolume,
     PositiveVolume,
@@ -24,36 +30,89 @@ from quantum.domain.trading.execution.order.execution_fill import ExecutionFill
 from quantum.domain.trading.execution.order.order_status import OrderStatus
 from quantum.domain.trading.execution.order.order_type import OrderType
 from quantum.domain.trading.execution.order.position_side import PositionSide
+from quantum.domain.trading.value_objects.identifiers.intent_id import IntentId
 from quantum.domain.trading.value_objects.identifiers.order_id import OrderId
 
 
-class Order(EventSourcedAggregateRoot):
-    """
-    Canonical event-sourced Order aggregate.
-    """
+@dataclass(frozen=True, slots=True)
+class OrderStateData(AggregateState):
+    last_sequence: EventSequence
 
-    _order_id: OrderId
-    _order_type: OrderType
-    _side: PositionSide
-    _requested_volume: PositiveVolume
-    _fills: tuple[ExecutionFill, ...]
-    _status: OrderStatus
+    order_id: OrderId
+    order_type: OrderType
+    side: PositionSide
+
+    requested_volume: PositiveVolume
+    filled_volume: NonNegativeVolume
+
+    status: OrderStatus
+
+    def last_event_sequence(self) -> EventSequence:
+        return self.last_sequence
+
+    # --- Aggregate invariants -------------------------------------------------
+
+    def _assert_status_consistency(self) -> None:
+        if (
+            self.status.is_filled()
+            and self.filled_volume.value != self.requested_volume.value
+        ):
+            raise InvariantViolation("Filled order must be fully filled")
+
+        if (
+            self.status.is_cancelled()
+            and self.filled_volume.value == self.requested_volume.value
+        ):
+            raise InvariantViolation("Cancelled order cannot be fully filled")
+
+    def _validate(self) -> None:
+        if not isinstance(self.order_id, OrderId):
+            raise InvariantViolation("OrderId missing")
+
+        if not isinstance(self.order_type, OrderType):
+            raise InvariantViolation("OrderType missing")
+
+        if not isinstance(self.side, PositionSide):
+            raise InvariantViolation("PositionSide missing")
+
+        if not isinstance(self.requested_volume, PositiveVolume):
+            raise InvariantViolation("Requested volume missing")
+
+        if not isinstance(self.filled_volume, NonNegativeVolume):
+            raise InvariantViolation("Filled volume missing")
+
+        if self.filled_volume.value > self.requested_volume.value:
+            raise InvariantViolation("Order overfilled")
+
+        if not isinstance(self.status, OrderStatus):
+            raise InvariantViolation("OrderStatus missing")
+
+        self._assert_status_consistency()
+
+
+class Order(EventSourcedAggregateRoot[OrderStateData]):
+    """
+    Event-sourced Order aggregate.
+
+    Responsibilities:
+    - enforce order lifecycle
+    - track fills
+    - guarantee volume & status consistency
+    """
 
     # --- Factory --------------------------------------------------------------
 
     @staticmethod
     def create(
         *,
-        intent_id,
+        intent_id: IntentId,
         order_id: OrderId,
-        symbol,
+        symbol: Symbol,
         order_type: OrderType,
         side: PositionSide,
         volume: PositiveVolume,
-        occurred_at: EpochMs,
-    ) -> Order:
-        order = Order()
-        order._raise(
+    ) -> list[BaseEvent]:
+        return [
             OrderCreatedEvent(
                 intent_id=intent_id,
                 order_id=order_id,
@@ -62,109 +121,111 @@ class Order(EventSourcedAggregateRoot):
                 side=side,
                 volume=volume,
             )
-        )
-        return order
+        ]
 
     # --- Commands -------------------------------------------------------------
 
-    def register_fill(self, *, fill: ExecutionFill) -> None:
-        if not self._status.is_fillable():
-            raise OrderNotFillable("Order not fillable")
+    def register_fill(self, *, fill: ExecutionFill) -> list[BaseEvent]:
+        state = self.state
 
-        if fill.volume.value > self.remaining_volume.value:
+        if not state.status.is_fillable():
+            raise OrderNotFillable("Order is not fillable")
+
+        if state.filled_volume.value + fill.volume.value > state.requested_volume.value:
             raise OrderOverfill("Fill exceeds remaining volume")
 
-        self._raise(
+        return [
             OrderFillRegisteredEvent(
-                occurred_at=fill.executed_at,
-                order_id=self._order_id,
+                order_id=state.order_id,
                 fill=fill,
             )
-        )
+        ]
 
-    def cancel(self, *, occurred_at: EpochMs) -> None:
-        if self._status.is_terminal():
+    def cancel(self) -> list[BaseEvent]:
+        state = self.state
+
+        if state.status.is_terminal():
             raise OrderNotFillable("Order already terminal")
 
-        self._raise(
+        return [
             OrderCancelledEvent(
-                occurred_at=occurred_at,
-                order_id=self._order_id,
+                order_id=state.order_id,
             )
+        ]
+
+    # --- Event → State transitions --------------------------------------------
+
+    @staticmethod
+    def _apply_created(
+        state: OrderStateData | None,
+        event: BaseEvent,
+        envelope: EventEnvelope,
+    ) -> OrderStateData:
+        if state is not None:
+            raise InvariantViolation("Order already exists")
+
+        assert isinstance(event, OrderCreatedEvent)
+
+        return OrderStateData(
+            last_sequence=envelope.sequence,
+            order_id=event.order_id,
+            order_type=event.order_type,
+            side=event.side,
+            requested_volume=event.volume,
+            filled_volume=NonNegativeVolume.zero(),
+            status=OrderStatus.pending(),
         )
 
-    # --- Derived properties ---------------------------------------------------
+    @staticmethod
+    def _apply_register_filled(
+        state: OrderStateData,
+        event: BaseEvent,
+        envelope: EventEnvelope,
+    ) -> OrderStateData:
+        assert isinstance(event, OrderFillRegisteredEvent)
 
-    @property
-    def remaining_volume(self) -> NonNegativeVolume:
-        remaining = self._requested_volume.value - self.filled_volume.value
-        return NonNegativeVolume(remaining)
+        new_filled = state.filled_volume.value + event.fill.volume.value
 
-    @property
-    def filled_volume(self) -> NonNegativeVolume:
-        total = sum((f.volume.value for f in self._fills), start=Decimal("0"))
-        return NonNegativeVolume(total)
-
-    # --- Event application ----------------------------------------------------
-
-    def _apply_ordercreatedevent(self, event: OrderCreatedEvent) -> None:
-        self._order_id = event.order_id
-        self._order_type = event.order_type
-        self._side = event.side
-        self._requested_volume = event.volume
-        self._fills = ()
-        self._status = OrderStatus.pending()
-
-    def _apply_orderfillregisteredevent(self, event: OrderFillRegisteredEvent) -> None:
-        self._fills = self._fills + (event.fill,)
-        self._status = (
+        status = (
             OrderStatus.filled()
-            if self.remaining_volume.value == Decimal("0")
+            if new_filled == state.requested_volume.value
             else OrderStatus.partially_filled()
         )
 
-    def _apply_ordercancelledevent(self, event: OrderCancelledEvent) -> None:
-        self._status = OrderStatus.cancelled()
+        return OrderStateData(
+            last_sequence=envelope.sequence,
+            order_id=state.order_id,
+            order_type=state.order_type,
+            side=state.side,
+            requested_volume=state.requested_volume,
+            filled_volume=NonNegativeVolume(new_filled),
+            status=status,
+        )
 
-    # --- Aggregate invariants -------------------------------------------------
+    @staticmethod
+    def _apply_cancelled(
+        state: OrderStateData,
+        event: BaseEvent,
+        envelope: EventEnvelope,
+    ) -> OrderStateData:
+        assert isinstance(event, OrderCancelledEvent)
 
-    def _validate_state(self) -> None:
-        self._assert_identity()
-        self._assert_structure()
-        self._assert_volume_integrity()
-        self._assert_status_consistency()
+        return OrderStateData(
+            last_sequence=envelope.sequence,
+            order_id=state.order_id,
+            order_type=state.order_type,
+            side=state.side,
+            requested_volume=state.requested_volume,
+            filled_volume=state.filled_volume,
+            status=OrderStatus.cancelled(),
+        )
 
-    def _assert_identity(self) -> None:
-        if not isinstance(self._order_id, OrderId):
-            raise InvariantViolation("OrderId missing")
-
-    def _assert_structure(self) -> None:
-        if not isinstance(self._order_type, OrderType):
-            raise InvariantViolation("OrderType missing")
-
-        if not isinstance(self._side, PositionSide):
-            raise InvariantViolation("PositionSide missing")
-
-        if not isinstance(self._requested_volume, PositiveVolume):
-            raise InvariantViolation("Requested volume missing")
-
-        if not isinstance(self._status, OrderStatus):
-            raise InvariantViolation("OrderStatus missing")
-
-    def _assert_volume_integrity(self) -> None:
-        filled = sum(f.volume.value for f in self._fills)
-
-        if filled < 0:
-            raise InvariantViolation("Filled volume cannot be negative")
-
-        if filled > self._requested_volume.value:
-            raise InvariantViolation("Order overfilled")
-
-    def _assert_status_consistency(self) -> None:
-        filled = sum(f.volume.value for f in self._fills)
-
-        if self._status.is_filled() and filled != self._requested_volume.value:
-            raise InvariantViolation("Filled order must be fully filled")
-
-        if self._status.is_cancelled() and filled == self._requested_volume.value:
-            raise InvariantViolation("Cancelled order cannot be fully filled")
+    @classmethod
+    def _handlers(
+        cls,
+    ) -> Mapping[type[BaseEvent], EventHandler[OrderStateData, BaseEvent]]:
+        return {
+            OrderCreatedEvent: cls._apply_created,
+            OrderFillRegisteredEvent: cls._apply_register_filled,
+            OrderCancelledEvent: cls._apply_cancelled,
+        }
