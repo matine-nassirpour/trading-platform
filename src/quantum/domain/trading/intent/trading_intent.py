@@ -84,6 +84,13 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentStateData]):
         symbol: Symbol,
         decision_identity: DecisionIdentity,
     ) -> list[BaseEvent]:
+        """
+        Answers the question:
+            "Can a trading intent be created for this decision,
+             and what facts must be recorded to represent it?"
+
+        This method represents a DOMAIN COMMAND.
+        """
 
         return [
             OrderIntentEvent(
@@ -97,7 +104,10 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentStateData]):
 
     def submit(self) -> list[BaseEvent]:
         """
-        Marks the intent as submitted to execution.
+        Answers the question:
+            "Can this trading intent be submitted for execution?"
+
+        This method represents a DOMAIN COMMAND.
         """
 
         state = self.state
@@ -127,7 +137,11 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentStateData]):
         time_in_force: TimeInForce | None = None,
     ) -> list[BaseEvent]:
         """
-        Attaches an order to a submitted intent.
+        Answers the question:
+            "Can an order be attached to this trading intent,
+             and if so, how must it be recorded?"
+
+        This method represents a DOMAIN COMMAND.
         """
 
         state = self.state
@@ -167,6 +181,14 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentStateData]):
         event: BaseEvent,
         envelope: EventEnvelope,
     ) -> TradingIntentStateData:
+        """
+        Answers the question:
+            "Given that a trading intent was created,
+             what is the resulting aggregate state?"
+
+        This method represents a PURE EVENT → STATE TRANSITION.
+        """
+
         if state is not None:
             raise InvariantViolation("TradingIntent already exists")
 
@@ -187,6 +209,14 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentStateData]):
         event: BaseEvent,
         envelope: EventEnvelope,
     ) -> TradingIntentStateData:
+        """
+        Answers the question:
+            "Given that the intent was submitted,
+             how does the aggregate state change?"
+
+        This method represents a PURE EVENT → STATE TRANSITION.
+        """
+
         assert isinstance(event, OrderSubmitEvent)
         return TradingIntentStateData(
             last_sequence=envelope.sequence,
@@ -203,6 +233,14 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentStateData]):
         event: BaseEvent,
         envelope: EventEnvelope,
     ) -> TradingIntentStateData:
+        """
+        Answers the question:
+            "Given that an order was attached to this intent,
+             how does the aggregate state evolve?"
+
+        This method represents a PURE EVENT → STATE TRANSITION.
+        """
+
         assert isinstance(event, OrderCreatedEvent)
         return TradingIntentStateData(
             last_sequence=envelope.sequence,

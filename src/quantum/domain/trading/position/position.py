@@ -78,24 +78,10 @@ class Position(EventSourcedAggregateRoot[PositionStateData]):
     ) -> list[BaseEvent]:
         """
         Answers the question:
-        "Do we have the right to open a position, and if so, what must be recorded in the event stream?"
+            "Do we have the right to open a position,
+            and if so, what must be recorded in the event stream?"
 
         This method represents a DOMAIN COMMAND.
-
-        Responsibilities:
-        - Evaluate all business rules required to open a position
-        - Decide whether the operation is allowed
-        - Produce the domain events that must be persisted if allowed
-
-        Guarantees:
-        - Does NOT mutate any aggregate state
-        - Produces immutable domain events only
-        - May refuse the operation by raising a domain error
-        - May produce one or more events
-
-        Important:
-        - This method is NOT replayed
-        - This method expresses intent, not fact
         """
 
         return [
@@ -117,23 +103,10 @@ class Position(EventSourcedAggregateRoot[PositionStateData]):
     ) -> list[BaseEvent]:
         """
         Answers the question:
-        "Do we have the right to close this position at this time, and if so, what must be recorded in the event stream?"
+            "Do we have the right to close this position at this time,
+            and if so, what must be recorded in the event stream?"
 
         This method represents a DOMAIN COMMAND.
-
-        Responsibilities:
-        - Validate that the position can be closed
-        - Compute the realized PnL in the given MoneyContext
-        - Produce the domain events that must be persisted
-
-        Guarantees:
-        - Does NOT mutate aggregate state
-        - Produces immutable domain events only
-        - May refuse the operation by raising a domain error
-
-        Important:
-        - The PnL computation is contextual and MUST happen here
-        - This method is NOT replayed
         """
 
         state = self.state
@@ -169,24 +142,9 @@ class Position(EventSourcedAggregateRoot[PositionStateData]):
     ) -> PositionStateData:
         """
         Answers the question:
-        "Given that this event has occurred, what is the new aggregate state?"
+            "Given that this event has occurred, what is the new aggregate state?"
 
         This method represents a PURE EVENT → STATE TRANSITION.
-
-        Responsibilities:
-        - Construct the new immutable aggregate state
-        - Enforce structural and aggregate invariants via construction
-
-        Guarantees:
-        - Pure and deterministic
-        - Side-effect free
-        - Replayable with identical results
-        - Does NOT make any business decisions
-        - Does NOT validate whether the event *should* have happened
-
-        Important:
-        - This method MUST NOT fail for valid historical events
-        - This method is part of the causal model, not governance
         """
 
         if state is not None:
@@ -211,24 +169,9 @@ class Position(EventSourcedAggregateRoot[PositionStateData]):
     ) -> PositionStateData:
         """
         Answers the question:
-        "Given that this event has occurred, what is the new aggregate state?"
+            "Given that this event has occurred, what is the new aggregate state?"
 
         This method represents a PURE EVENT → STATE TRANSITION.
-
-        Responsibilities:
-        - Transition the aggregate into its closed state
-        - Update the event sequence
-
-        Guarantees:
-        - Pure and deterministic
-        - Side-effect free
-        - Replayable
-        - No business logic
-        - No calculations
-
-        Important:
-        - All semantic meaning MUST already be captured in the event
-        - This method only applies recorded facts
         """
 
         assert isinstance(event, PositionClosedEvent)

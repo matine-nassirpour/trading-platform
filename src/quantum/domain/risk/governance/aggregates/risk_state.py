@@ -163,7 +163,6 @@ class RiskState(EventSourcedAggregateRoot[RiskStateData]):
         event: BaseEvent,
         envelope: EventEnvelope,
     ) -> RiskStateData:
-        # Governance-only: no mutation except sequence
         assert isinstance(event, RiskBreachEvent)
         return RiskStateData(
             last_sequence=envelope.sequence,

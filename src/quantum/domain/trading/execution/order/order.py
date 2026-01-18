@@ -112,6 +112,14 @@ class Order(EventSourcedAggregateRoot[OrderStateData]):
         side: PositionSide,
         volume: PositiveVolume,
     ) -> list[BaseEvent]:
+        """
+        Answers the question:
+            "Can an order be created for this trading intent, and if so,
+             what facts must be recorded?"
+
+        This method represents a DOMAIN COMMAND.
+        """
+
         return [
             OrderCreatedEvent(
                 intent_id=intent_id,
@@ -126,6 +134,14 @@ class Order(EventSourcedAggregateRoot[OrderStateData]):
     # --- Commands -------------------------------------------------------------
 
     def register_fill(self, *, fill: ExecutionFill) -> list[BaseEvent]:
+        """
+        Answers the question:
+            "Can this order accept an execution fill at this time,
+             and if so, how should it be recorded?"
+
+        This method represents a DOMAIN COMMAND.
+        """
+
         state = self.state
 
         if not state.status.is_fillable():
@@ -142,6 +158,14 @@ class Order(EventSourcedAggregateRoot[OrderStateData]):
         ]
 
     def cancel(self) -> list[BaseEvent]:
+        """
+        Answers the question:
+            "Can this order be cancelled at this time,
+             and what must be recorded if so?"
+
+        This method represents a DOMAIN COMMAND.
+        """
+
         state = self.state
 
         if state.status.is_terminal():
@@ -161,6 +185,14 @@ class Order(EventSourcedAggregateRoot[OrderStateData]):
         event: BaseEvent,
         envelope: EventEnvelope,
     ) -> OrderStateData:
+        """
+        Answers the question:
+            "Given that an order creation event occurred,
+             what is the resulting aggregate state?"
+
+        This method represents a PURE EVENT → STATE TRANSITION.
+        """
+
         if state is not None:
             raise InvariantViolation("Order already exists")
 
@@ -182,6 +214,13 @@ class Order(EventSourcedAggregateRoot[OrderStateData]):
         event: BaseEvent,
         envelope: EventEnvelope,
     ) -> OrderStateData:
+        """
+        Answers the question:
+            "Given that a fill occurred, how does it affect the order state?"
+
+        This method represents a PURE EVENT → STATE TRANSITION.
+        """
+
         assert isinstance(event, OrderFillRegisteredEvent)
 
         new_filled = state.filled_volume.value + event.fill.volume.value
@@ -208,6 +247,14 @@ class Order(EventSourcedAggregateRoot[OrderStateData]):
         event: BaseEvent,
         envelope: EventEnvelope,
     ) -> OrderStateData:
+        """
+        Answers the question:
+            "Given that the order was cancelled,
+             what is the resulting aggregate state?"
+
+        This method represents a PURE EVENT → STATE TRANSITION.
+        """
+
         assert isinstance(event, OrderCancelledEvent)
 
         return OrderStateData(
