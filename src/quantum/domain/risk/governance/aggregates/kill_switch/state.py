@@ -21,6 +21,7 @@ from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
 from quantum.domain.shared_kernel.events.event_sequence import EventSequence
 from quantum.domain.shared_kernel.primitives.aggregate_state import AggregateState
 from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import (
+    EventHandler,
     EventSourcedAggregateRoot,
 )
 
@@ -149,7 +150,7 @@ class KillSwitchState(EventSourcedAggregateRoot[KillSwitchStateData]):
         )
 
     @classmethod
-    def _handlers(cls):
+    def _handlers(cls) -> dict[type[BaseEvent], EventHandler]:
         return {
             KillSwitchArmedEvent: cls._apply_armed,
             KillSwitchTriggeredEvent: cls._apply_triggered,

@@ -14,6 +14,7 @@ from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
 from quantum.domain.shared_kernel.events.event_sequence import EventSequence
 from quantum.domain.shared_kernel.primitives.aggregate_state import AggregateState
 from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import (
+    EventHandler,
     EventSourcedAggregateRoot,
 )
 from quantum.domain.shared_kernel.value_objects.realized_pnl import RealizedPnL
@@ -169,7 +170,7 @@ class RiskState(EventSourcedAggregateRoot[RiskStateData]):
         )
 
     @classmethod
-    def _handlers(cls):
+    def _handlers(cls) -> dict[type[BaseEvent], EventHandler]:
         return {
             EquityAdjustedEvent: cls._apply_equity_adjusted,
             RiskBreachEvent: cls._apply_breach,

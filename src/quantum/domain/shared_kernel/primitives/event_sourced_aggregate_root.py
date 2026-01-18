@@ -11,6 +11,7 @@ from quantum.domain.shared_kernel.events.event_sequence import EventSequence
 from quantum.domain.shared_kernel.primitives.aggregate_state import AggregateState
 
 S = TypeVar("S", bound=AggregateState)
+EventHandler = Callable[..., AggregateState]
 
 
 class EventSourcedAggregateRoot(Generic[S], ABC):
@@ -42,9 +43,7 @@ class EventSourcedAggregateRoot(Generic[S], ABC):
 
     @classmethod
     @abstractmethod
-    def _handlers(
-        cls,
-    ) -> dict[type[BaseEvent], Callable[[S, BaseEvent, EventEnvelope], S]]:
+    def _handlers(cls) -> dict[type[BaseEvent], EventHandler]:
         """
         Returns the event → state transition map.
 
