@@ -106,7 +106,7 @@ class KillSwitchState(EventSourcedAggregateRoot[KillSwitchStateData]):
         *,
         reason: KillSwitchReason,
         detail: str | None = None,
-    ) -> list:
+    ) -> list[BaseEvent]:
         state = self.state
 
         if not isinstance(reason, KillSwitchReason):

@@ -97,7 +97,7 @@ class RiskState(EventSourcedAggregateRoot[RiskStateData]):
 
     # --- Commands -------------------------------------------------------------
 
-    def register_pnl(self, *, pnl: RealizedPnL) -> list:
+    def register_pnl(self, *, pnl: RealizedPnL) -> list[BaseEvent]:
         """
         Registers a realized PnL.
 
