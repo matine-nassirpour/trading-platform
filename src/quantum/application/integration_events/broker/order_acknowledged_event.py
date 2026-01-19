@@ -18,7 +18,7 @@ class OrderAcknowledgedEvent(IntegrationEvent):
     - Not yet accepted economically.
     """
 
-    event_name: ClassVar[str] = "trading.order_acknowledged"
+    event_name: ClassVar[str] = "trading.order.acknowledged"
     event_version: ClassVar[int] = 1
 
     intent_id: IntentId

@@ -24,7 +24,7 @@ class StopLossTriggeredEvent(IntegrationEvent):
     - not business decisions
     """
 
-    event_name: ClassVar[str] = "trading.stoploss_triggered"
+    event_name: ClassVar[str] = "trading.stoploss.triggered"
     event_version: ClassVar[int] = 1
 
     intent_id: IntentId

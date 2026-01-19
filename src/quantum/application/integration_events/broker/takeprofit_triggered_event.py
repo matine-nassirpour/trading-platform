@@ -24,7 +24,7 @@ class TakeProfitTriggeredEvent(IntegrationEvent):
     - not business decisions
     """
 
-    event_name: ClassVar[str] = "trading.takeprofit_triggered"
+    event_name: ClassVar[str] = "trading.takeprofit.triggered"
     event_version: ClassVar[int] = 1
 
     intent_id: IntentId
