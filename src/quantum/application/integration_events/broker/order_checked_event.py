@@ -14,6 +14,12 @@ from quantum.domain.trading.value_objects.identifiers.intent_id import IntentId
 
 @dataclass(frozen=True)
 class OrderCheckedEvent(IntegrationEvent):
+    """
+    - margin check
+    - market open
+    - lot size ok
+    """
+
     event_name: ClassVar[str] = "trading.order.checked"
     event_version: ClassVar[int] = 1
 
@@ -24,4 +30,3 @@ class OrderCheckedEvent(IntegrationEvent):
     response_epoch_ms: EpochMs
 
     outcome: OrderCheckOutcome
-    reason: str | None = None
