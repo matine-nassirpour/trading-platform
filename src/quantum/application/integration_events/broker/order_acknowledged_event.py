@@ -12,6 +12,12 @@ from quantum.domain.trading.value_objects.identifiers.order_id import OrderId
 
 @dataclass(frozen=True)
 class OrderAcknowledgedEvent(IntegrationEvent):
+    """
+    - The order was received by an external platform.
+    - Not yet executed.
+    - Not yet accepted economically.
+    """
+
     event_name: ClassVar[str] = "trading.order_acknowledged"
     event_version: ClassVar[int] = 1
 

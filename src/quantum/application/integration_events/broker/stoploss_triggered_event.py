@@ -18,6 +18,12 @@ from quantum.domain.trading.value_objects.identifiers.position_id import Positio
 
 @dataclass(frozen=True)
 class StopLossTriggeredEvent(IntegrationEvent):
+    """
+    - triggered by the broker
+    - related to execution
+    - not business decisions
+    """
+
     event_name: ClassVar[str] = "trading.stoploss_triggered"
     event_version: ClassVar[int] = 1
 

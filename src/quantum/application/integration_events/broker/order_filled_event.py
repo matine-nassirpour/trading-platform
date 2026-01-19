@@ -20,6 +20,8 @@ from quantum.domain.trading.value_objects.identifiers.order_id import OrderId
 
 @dataclass(frozen=True)
 class OrderFilledEvent(IntegrationEvent):
+    """The broker says it's executed"""
+
     event_name: ClassVar[str] = "trading.order.filled"
     event_version: ClassVar[int] = 1
 
