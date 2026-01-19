@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
 from quantum.domain.shared_kernel.value_objects.price import Price
 from quantum.domain.shared_kernel.value_objects.symbol import Symbol
 from quantum.domain.shared_kernel.value_objects.volume import PositiveVolume
@@ -115,7 +114,6 @@ class OrderIntentFactory:
         params: OrderIntentParameters,
         instrument: InstrumentSpec,
         decision_boundary: DecisionBoundary,
-        occurred_at: EpochMs,
     ) -> tuple[OrderIntentCreatedEvent, DecisionAuthorizedEvent]:
         """
         Validates and creates an OrderIntentEvent.
@@ -145,6 +143,8 @@ class OrderIntentFactory:
 
         decision_authorized_event = DecisionAuthorizedEvent(
             intent_id=params.intent_id,
+            trading_context=params.trading_context,
+            decision_identity=params.decision_identity,
             result=boundary_result,
         )
 
@@ -152,17 +152,7 @@ class OrderIntentFactory:
         order_intent_event = OrderIntentCreatedEvent(
             intent_id=params.intent_id,
             symbol=params.symbol,
-            order_type=params.order_type,
-            side=params.side,
-            trading_context=params.trading_context,
             decision_identity=params.decision_identity,
-            volume=params.volume,
-            reference_price=params.reference_price,
-            stop_price=params.stop_price,
-            limit_price=params.limit_price,
-            sl=params.sl,
-            tp=params.tp,
-            time_in_force=params.time_in_force,
         )
 
         return order_intent_event, decision_authorized_event
