@@ -37,10 +37,12 @@ from quantum.domain.trading.value_objects.identifiers.order_id import OrderId
 
 
 @dataclass(frozen=True, slots=True)
-class OrderStateData(AggregateState):
+class OrderState(AggregateState):
     last_sequence: EventSequence
 
     order_id: OrderId
+    symbol: Symbol
+
     order_type: OrderType
     side: PositionSide
 
@@ -54,7 +56,33 @@ class OrderStateData(AggregateState):
 
     # --- Aggregate invariants -------------------------------------------------
 
+    def _validate_identity(self) -> None:
+        if not isinstance(self.order_id, OrderId):
+            raise InvariantViolation("OrderId is required")
+
+        if not isinstance(self.symbol, Symbol):
+            raise InvariantViolation("Order must be bound to a Symbol")
+
+        if not isinstance(self.order_type, OrderType):
+            raise InvariantViolation("OrderType is required")
+
+        if not isinstance(self.side, PositionSide):
+            raise InvariantViolation("PositionSide is required")
+
+    def _validate_volume(self) -> None:
+        if not isinstance(self.requested_volume, PositiveVolume):
+            raise InvariantViolation("Requested volume is required")
+
+        if not isinstance(self.filled_volume, NonNegativeVolume):
+            raise InvariantViolation("Filled volume is required")
+
+        if self.filled_volume.value > self.requested_volume.value:
+            raise InvariantViolation("Order cannot be overfilled")
+
     def _assert_status_consistency(self) -> None:
+        if not isinstance(self.status, OrderStatus):
+            raise InvariantViolation("OrderStatus is required")
+
         if (
             self.status.is_filled()
             and self.filled_volume.value != self.requested_volume.value
@@ -68,31 +96,12 @@ class OrderStateData(AggregateState):
             raise InvariantViolation("Cancelled order cannot be fully filled")
 
     def _validate(self) -> None:
-        if not isinstance(self.order_id, OrderId):
-            raise InvariantViolation("OrderId missing")
-
-        if not isinstance(self.order_type, OrderType):
-            raise InvariantViolation("OrderType missing")
-
-        if not isinstance(self.side, PositionSide):
-            raise InvariantViolation("PositionSide missing")
-
-        if not isinstance(self.requested_volume, PositiveVolume):
-            raise InvariantViolation("Requested volume missing")
-
-        if not isinstance(self.filled_volume, NonNegativeVolume):
-            raise InvariantViolation("Filled volume missing")
-
-        if self.filled_volume.value > self.requested_volume.value:
-            raise InvariantViolation("Order overfilled")
-
-        if not isinstance(self.status, OrderStatus):
-            raise InvariantViolation("OrderStatus missing")
-
+        self._validate_identity()
+        self._validate_volume()
         self._assert_status_consistency()
 
 
-class Order(EventSourcedAggregateRoot[OrderStateData]):
+class Order(EventSourcedAggregateRoot[OrderState]):
     """
     Event-sourced Order aggregate.
 
@@ -119,7 +128,7 @@ class Order(EventSourcedAggregateRoot[OrderStateData]):
             "Can an order be created for this trading intent, and if so,
              what facts must be recorded?"
 
-        This method represents a DOMAIN COMMAND.
+        Represents the decision to expose capital on a given instrument.
         """
 
         return [
@@ -137,20 +146,20 @@ class Order(EventSourcedAggregateRoot[OrderStateData]):
 
     def register_fill(self, *, fill: ExecutionFill) -> list[BaseEvent]:
         """
-        Answers the question:
-            "Can this order accept an execution fill at this time,
-             and if so, how should it be recorded?"
+        Registers a fill against this order.
 
-        This method represents a DOMAIN COMMAND.
+        Domain guarantees:
+        - Order must be fillable
+        - Fill must not exceed remaining quantity
         """
 
         state = self.state
 
         if not state.status.is_fillable():
-            raise OrderNotFillable("Order is not fillable")
+            raise OrderNotFillable("Order is not in a fillable state")
 
         if state.filled_volume.value + fill.volume.value > state.requested_volume.value:
-            raise OrderOverfill("Fill exceeds remaining volume")
+            raise OrderOverfill("Fill exceeds remaining order volume")
 
         return [
             OrderFillRegisteredEvent(
@@ -161,15 +170,10 @@ class Order(EventSourcedAggregateRoot[OrderStateData]):
 
     def cancel(self) -> list[BaseEvent]:
         """
-        Answers the question:
-            "Can this order be cancelled at this time,
-             and what must be recorded if so?"
-
-        This method represents a DOMAIN COMMAND.
+        Cancels the order if it is not terminal.
         """
 
         state = self.state
-
         if state.status.is_terminal():
             raise OrderNotFillable("Order already terminal")
 
@@ -183,10 +187,10 @@ class Order(EventSourcedAggregateRoot[OrderStateData]):
 
     @staticmethod
     def _apply_created(
-        state: OrderStateData | None,
+        state: OrderState | None,
         event: BaseEvent,
         envelope: EventEnvelope,
-    ) -> OrderStateData:
+    ) -> OrderState:
         """
         Answers the question:
             "Given that an order creation event occurred,
@@ -200,9 +204,10 @@ class Order(EventSourcedAggregateRoot[OrderStateData]):
 
         assert isinstance(event, OrderCreatedEvent)
 
-        return OrderStateData(
+        return OrderState(
             last_sequence=envelope.sequence,
             order_id=event.order_id,
+            symbol=event.symbol,
             order_type=event.order_type,
             side=event.side,
             requested_volume=event.volume,
@@ -212,10 +217,10 @@ class Order(EventSourcedAggregateRoot[OrderStateData]):
 
     @staticmethod
     def _apply_fill_registered(
-        state: OrderStateData,
+        state: OrderState,
         event: BaseEvent,
         envelope: EventEnvelope,
-    ) -> OrderStateData:
+    ) -> OrderState:
         """
         Answers the question:
             "Given that a fill occurred, how does it affect the order state?"
@@ -227,28 +232,29 @@ class Order(EventSourcedAggregateRoot[OrderStateData]):
 
         new_filled = state.filled_volume.value + event.fill.volume.value
 
-        status = (
+        new_status = (
             OrderStatus.filled()
             if new_filled == state.requested_volume.value
             else OrderStatus.partially_filled()
         )
 
-        return OrderStateData(
+        return OrderState(
             last_sequence=envelope.sequence,
             order_id=state.order_id,
+            symbol=state.symbol,
             order_type=state.order_type,
             side=state.side,
             requested_volume=state.requested_volume,
             filled_volume=NonNegativeVolume(new_filled),
-            status=status,
+            status=new_status,
         )
 
     @staticmethod
     def _apply_cancelled(
-        state: OrderStateData,
+        state: OrderState,
         event: BaseEvent,
         envelope: EventEnvelope,
-    ) -> OrderStateData:
+    ) -> OrderState:
         """
         Answers the question:
             "Given that the order was cancelled,
@@ -259,9 +265,10 @@ class Order(EventSourcedAggregateRoot[OrderStateData]):
 
         assert isinstance(event, OrderCancelledEvent)
 
-        return OrderStateData(
+        return OrderState(
             last_sequence=envelope.sequence,
             order_id=state.order_id,
+            symbol=state.symbol,
             order_type=state.order_type,
             side=state.side,
             requested_volume=state.requested_volume,
@@ -272,7 +279,7 @@ class Order(EventSourcedAggregateRoot[OrderStateData]):
     @classmethod
     def _handlers(
         cls,
-    ) -> Mapping[type[BaseEvent], EventHandler[OrderStateData, BaseEvent]]:
+    ) -> Mapping[type[BaseEvent], EventHandler[OrderState, BaseEvent]]:
         return {
             OrderCreatedEvent: cls._apply_created,
             OrderFillRegisteredEvent: cls._apply_fill_registered,
