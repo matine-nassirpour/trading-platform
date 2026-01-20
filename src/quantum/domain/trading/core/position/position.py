@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from collections.abc import Mapping
 from dataclasses import dataclass
 
@@ -28,7 +26,7 @@ from quantum.domain.trading.value_objects.identifiers.position_id import Positio
 
 
 @dataclass(frozen=True, slots=True)
-class PositionStateData(AggregateState):
+class PositionState(AggregateState):
     """
     Immutable, fully event-sourced Position state.
     """
@@ -65,7 +63,7 @@ class PositionStateData(AggregateState):
             raise InvariantViolation("Closed flag must be boolean")
 
 
-class Position(EventSourcedAggregateRoot[PositionStateData]):
+class Position(EventSourcedAggregateRoot[PositionState]):
     """
     Event-sourced Position aggregate.
     """
@@ -140,10 +138,10 @@ class Position(EventSourcedAggregateRoot[PositionStateData]):
 
     @staticmethod
     def _apply_opened(
-        state: PositionStateData | None,
+        state: PositionState | None,
         event: BaseEvent,
         envelope: EventEnvelope,
-    ) -> PositionStateData:
+    ) -> PositionState:
         """
         Answers the question:
             "Given that this event has occurred, what is the new aggregate state?"
@@ -156,7 +154,7 @@ class Position(EventSourcedAggregateRoot[PositionStateData]):
 
         assert isinstance(event, PositionOpenedEvent)
 
-        return PositionStateData(
+        return PositionState(
             last_sequence=envelope.sequence,
             position_id=event.position_id,
             side=event.side,
@@ -167,10 +165,10 @@ class Position(EventSourcedAggregateRoot[PositionStateData]):
 
     @staticmethod
     def _apply_closed(
-        state: PositionStateData,
+        state: PositionState,
         event: BaseEvent,
         envelope: EventEnvelope,
-    ) -> PositionStateData:
+    ) -> PositionState:
         """
         Answers the question:
             "Given that this event has occurred, what is the new aggregate state?"
@@ -180,7 +178,7 @@ class Position(EventSourcedAggregateRoot[PositionStateData]):
 
         assert isinstance(event, PositionClosedEvent)
 
-        return PositionStateData(
+        return PositionState(
             last_sequence=envelope.sequence,
             position_id=state.position_id,
             side=state.side,
@@ -194,7 +192,7 @@ class Position(EventSourcedAggregateRoot[PositionStateData]):
         cls,
     ) -> Mapping[
         type[BaseEvent],
-        EventHandler[PositionStateData, BaseEvent],
+        EventHandler[PositionState, BaseEvent],
     ]:
         return {
             PositionOpenedEvent: cls._apply_opened,
