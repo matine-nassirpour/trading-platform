@@ -124,11 +124,10 @@ class Order(EventSourcedAggregateRoot[OrderState]):
         volume: PositiveVolume,
     ) -> list[BaseEvent]:
         """
-        Answers the question:
-            "Can an order be created for this trading intent, and if so,
-             what facts must be recorded?"
+        Create a new Order aggregate.
 
-        Represents the decision to expose capital on a given instrument.
+        This method represents the domain-level decision to expose capital
+        by creating an order with a specific intent, side and volume.
         """
 
         return [
@@ -146,11 +145,10 @@ class Order(EventSourcedAggregateRoot[OrderState]):
 
     def register_fill(self, *, fill: ExecutionFill) -> list[BaseEvent]:
         """
-        Registers a fill against this order.
+        Registers an execution fill against this order.
 
-        Domain guarantees:
-        - Order must be fillable
-        - Fill must not exceed remaining quantity
+        This method represents the domain acknowledgment that
+        a portion (or the entirety) of the order has been executed.
         """
 
         state = self.state
@@ -170,7 +168,12 @@ class Order(EventSourcedAggregateRoot[OrderState]):
 
     def cancel(self) -> list[BaseEvent]:
         """
-        Cancels the order if it is not terminal.
+        Cancels the order if it has not yet reached a terminal state.
+
+        Semantics:
+        - Cancellation is a domain decision
+        - A cancelled order cannot be filled afterwards
+        - Partial fills remain valid and preserved
         """
 
         state = self.state
