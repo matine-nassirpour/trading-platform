@@ -13,72 +13,83 @@ from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import
     EventHandler,
     EventSourcedAggregateRoot,
 )
-from quantum.domain.shared_kernel.value_objects.price import Price
-from quantum.domain.shared_kernel.value_objects.symbol import Symbol
-from quantum.domain.shared_kernel.value_objects.volume import PositiveVolume
 from quantum.domain.trading.core.decision.identity.decision_identity import (
     DecisionIdentity,
 )
-from quantum.domain.trading.events.v1.decision.order_intent_created_event import (
-    OrderIntentCreatedEvent,
+from quantum.domain.trading.core.decision.trading_context import TradingContext
+from quantum.domain.trading.events.v1.decision.decision_authorized_event import (
+    DecisionAuthorizedEvent,
 )
-from quantum.domain.trading.events.v1.execution.order_created_event import (
-    OrderCreatedEvent,
+from quantum.domain.trading.events.v1.decision.decision_rejected_event import (
+    DecisionRejectedEvent,
 )
-from quantum.domain.trading.events.v1.execution.order_submitted_event import (
-    OrderSubmittedEvent,
+from quantum.domain.trading.events.v1.decision.trading_intent_created_event import (
+    TradingIntentCreatedEvent,
 )
-from quantum.domain.trading.execution.order.order_type import OrderType
-from quantum.domain.trading.execution.order.position_side import PositionSide
-from quantum.domain.trading.execution.order.time_in_force import TimeInForce
-from quantum.domain.trading.market.value_objects.reference_price import ReferencePrice
+from quantum.domain.trading.governance.boundary.decision_boundary_result import (
+    DecisionBoundaryResult,
+)
 from quantum.domain.trading.value_objects.identifiers.intent_id import IntentId
-from quantum.domain.trading.value_objects.identifiers.order_id import OrderId
 
 
 @dataclass(frozen=True, slots=True)
-class TradingIntentStateData(AggregateState):
+class TradingIntentState(AggregateState):
+    """
+    Immutable state of a TradingIntent.
+
+    This state represents a GOVERNED DECISION,
+    not an execution instruction.
+    """
+
     last_sequence: EventSequence
 
     intent_id: IntentId
-    symbol: Symbol
     decision_identity: DecisionIdentity
+    context: TradingContext
 
-    submitted: bool
-    orders: frozenset[OrderId]
+    authorized: bool
+    rejected: bool
 
     def last_event_sequence(self) -> EventSequence:
         return self.last_sequence
 
     def _validate(self) -> None:
         if not isinstance(self.intent_id, IntentId):
-            raise InvariantViolation("Invalid IntentId")
-
-        if not isinstance(self.symbol, Symbol):
-            raise InvariantViolation("Invalid Symbol")
+            raise InvariantViolation("TradingIntent requires a valid IntentId")
 
         if not isinstance(self.decision_identity, DecisionIdentity):
-            raise InvariantViolation("Invalid DecisionIdentity")
+            raise InvariantViolation("TradingIntent requires DecisionIdentity")
 
-        if not isinstance(self.submitted, bool):
-            raise InvariantViolation("Invalid submitted flag")
+        if not isinstance(self.context, TradingContext):
+            raise InvariantViolation("TradingIntent requires TradingContext")
 
-        if not isinstance(self.orders, frozenset):
-            raise InvariantViolation("Orders must be a frozen set")
+        if not isinstance(self.authorized, bool):
+            raise InvariantViolation("authorized flag must be boolean")
 
-        for oid in self.orders:
-            if not isinstance(oid, OrderId):
-                raise InvariantViolation("Invalid OrderId in orders set")
+        if not isinstance(self.rejected, bool):
+            raise InvariantViolation("rejected flag must be boolean")
+
+        if self.authorized and self.rejected:
+            raise InvariantViolation(
+                "TradingIntent cannot be both authorized and rejected"
+            )
 
 
-class TradingIntent(EventSourcedAggregateRoot[TradingIntentStateData]):
+class TradingIntent(EventSourcedAggregateRoot[TradingIntentState]):
     """
-    Event-sourced TradingIntent aggregate.
+    TradingIntent — Decision Aggregate (PURE DOMAIN)
 
-    Represents:
-    - a governed trading decision
-    - the root of all derived orders
-    - an auditable decision boundary
+    Responsibilities:
+    - Represent a trading decision
+    - Carry decision identity and context
+    - Track authorization outcome
+    - Emit governance events
+
+    Explicitly DOES NOT:
+    - create orders
+    - know about execution
+    - perform pricing
+    - handle risk or sizing
     """
 
     # --- Factory --------------------------------------------------------------
@@ -87,95 +98,67 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentStateData]):
     def create(
         *,
         intent_id: IntentId,
-        symbol: Symbol,
         decision_identity: DecisionIdentity,
+        context: TradingContext,
     ) -> list[BaseEvent]:
         """
-        Answers the question:
-            "Can a trading intent be created for this decision,
-             and what facts must be recorded to represent it?"
+        Creates a new trading intent.
 
-        This method represents a DOMAIN COMMAND.
+        This represents:
+        - a decision has been made
+        - it must now be evaluated by governance
         """
 
         return [
-            OrderIntentCreatedEvent(
+            TradingIntentCreatedEvent(
                 intent_id=intent_id,
-                symbol=symbol,
                 decision_identity=decision_identity,
+                trading_context=context,
             )
         ]
 
     # --- Commands -------------------------------------------------------------
 
-    def submit(self) -> list[BaseEvent]:
+    def authorize(self, *, result: DecisionBoundaryResult) -> list[BaseEvent]:
         """
-        Answers the question:
-            "Can this trading intent be submitted for execution?"
+        Confirms that the trading intent is authorized.
 
-        This method represents a DOMAIN COMMAND.
+        This does NOT trigger execution.
+        It only certifies that the decision is valid.
         """
 
         state = self.state
 
-        if state.submitted:
-            raise InvalidStateTransition("TradingIntent already submitted")
+        if state.authorized:
+            raise InvalidStateTransition("TradingIntent already authorized")
+
+        if state.rejected:
+            raise InvalidStateTransition("Rejected TradingIntent cannot be authorized")
 
         return [
-            OrderSubmittedEvent(
-                intent_id=state.intent_id,
-                symbol=state.symbol,
+            DecisionAuthorizedEvent(
+                intent_id=self.state.intent_id,
+                result=result,
             )
         ]
 
-    def attach_order(
-        self,
-        *,
-        order_id: OrderId,
-        order_type: OrderType,
-        side: PositionSide,
-        volume: PositiveVolume,
-        reference_price: ReferencePrice | None = None,
-        stop_price: Price | None = None,
-        limit_price: Price | None = None,
-        sl: Price | None = None,
-        tp: Price | None = None,
-        time_in_force: TimeInForce | None = None,
-    ) -> list[BaseEvent]:
+    def reject(self, *, result: DecisionBoundaryResult) -> list[BaseEvent]:
         """
-        Answers the question:
-            "Can an order be attached to this trading intent,
-             and if so, how must it be recorded?"
-
-        This method represents a DOMAIN COMMAND.
+        Explicit rejection of the trading decision.
         """
 
         state = self.state
 
-        if not state.submitted:
-            raise InvalidStateTransition("Cannot attach order before intent submission")
+        if state.authorized:
+            raise InvalidStateTransition("Authorized TradingIntent cannot be rejected")
 
-        if order_id in state.orders:
-            raise InvariantViolation("Order already attached to TradingIntent")
-
-        time_in_force = (
-            time_in_force if time_in_force is not None else TimeInForce("gtc")
-        )
+        if state.rejected:
+            raise InvalidStateTransition("TradingIntent already rejected")
 
         return [
-            OrderCreatedEvent(
-                intent_id=state.intent_id,
-                order_id=order_id,
-                symbol=state.symbol,
-                order_type=order_type,
-                side=side,
-                volume=volume,
-                reference_price=reference_price,
-                stop_price=stop_price,
-                limit_price=limit_price,
-                sl=sl,
-                tp=tp,
-                time_in_force=time_in_force,
+            DecisionRejectedEvent(
+                intent_id=self.state.intent_id,
+                result=result,
             )
         ]
 
@@ -183,86 +166,64 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentStateData]):
 
     @staticmethod
     def _apply_created(
-        state: TradingIntentStateData | None,
+        state: TradingIntentState | None,
         event: BaseEvent,
         envelope: EventEnvelope,
-    ) -> TradingIntentStateData:
-        """
-        Answers the question:
-            "Given that a trading intent was created,
-             what is the resulting aggregate state?"
-
-        This method represents a PURE EVENT → STATE TRANSITION.
-        """
-
+    ) -> TradingIntentState:
         if state is not None:
             raise InvariantViolation("TradingIntent already exists")
 
-        assert isinstance(event, OrderIntentCreatedEvent)
+        assert isinstance(event, TradingIntentCreatedEvent)
 
-        return TradingIntentStateData(
+        return TradingIntentState(
             last_sequence=envelope.sequence,
             intent_id=event.intent_id,
-            symbol=event.symbol,
             decision_identity=event.decision_identity,
-            submitted=False,
-            orders=frozenset(),
+            context=event.trading_context,
+            authorized=False,
+            rejected=False,
         )
 
     @staticmethod
-    def _apply_submitted(
-        state: TradingIntentStateData,
+    def _apply_authorized(
+        state: TradingIntentState,
         event: BaseEvent,
         envelope: EventEnvelope,
-    ) -> TradingIntentStateData:
-        """
-        Answers the question:
-            "Given that the intent was submitted,
-             how does the aggregate state change?"
+    ) -> TradingIntentState:
+        assert isinstance(event, DecisionAuthorizedEvent)
 
-        This method represents a PURE EVENT → STATE TRANSITION.
-        """
-
-        assert isinstance(event, OrderSubmittedEvent)
-        return TradingIntentStateData(
+        return TradingIntentState(
             last_sequence=envelope.sequence,
             intent_id=state.intent_id,
-            symbol=state.symbol,
             decision_identity=state.decision_identity,
-            submitted=True,
-            orders=state.orders,
+            context=state.context,
+            authorized=True,
+            rejected=False,
         )
 
     @staticmethod
-    def _apply_attached(
-        state: TradingIntentStateData,
+    def _apply_rejected(
+        state: TradingIntentState,
         event: BaseEvent,
         envelope: EventEnvelope,
-    ) -> TradingIntentStateData:
-        """
-        Answers the question:
-            "Given that an order was attached to this intent,
-             how does the aggregate state evolve?"
+    ) -> TradingIntentState:
+        assert isinstance(event, DecisionRejectedEvent)
 
-        This method represents a PURE EVENT → STATE TRANSITION.
-        """
-
-        assert isinstance(event, OrderCreatedEvent)
-        return TradingIntentStateData(
+        return TradingIntentState(
             last_sequence=envelope.sequence,
             intent_id=state.intent_id,
-            symbol=state.symbol,
             decision_identity=state.decision_identity,
-            submitted=state.submitted,
-            orders=state.orders | {event.order_id},
+            context=state.context,
+            authorized=False,
+            rejected=True,
         )
 
     @classmethod
     def _handlers(
         cls,
-    ) -> Mapping[type[BaseEvent], EventHandler[TradingIntentStateData, BaseEvent]]:
+    ) -> Mapping[type[BaseEvent], EventHandler[TradingIntentState, BaseEvent]]:
         return {
-            OrderIntentCreatedEvent: cls._apply_created,
-            OrderSubmittedEvent: cls._apply_submitted,
-            OrderCreatedEvent: cls._apply_attached,
+            TradingIntentCreatedEvent: cls._apply_created,
+            DecisionAuthorizedEvent: cls._apply_authorized,
+            DecisionRejectedEvent: cls._apply_rejected,
         }
