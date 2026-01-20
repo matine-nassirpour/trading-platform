@@ -2,15 +2,15 @@ from dataclasses import dataclass
 
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
-from quantum.domain.trading.core.capital.capital_allocation_intent import (
-    CapitalAllocationIntent,
-)
-from quantum.domain.trading.core.decision.identity.confidence.decision_confidence import (
+from quantum.domain.trading.decision.identity.decision_confidence import (
     DecisionConfidence,
 )
-from quantum.domain.trading.core.decision.identity.decision_source import DecisionSource
-from quantum.domain.trading.core.decision.identity.model_version import ModelVersion
-from quantum.domain.trading.core.decision.identity.strategy_id import StrategyId
+from quantum.domain.trading.decision.identity.decision_source import DecisionSource
+from quantum.domain.trading.decision.identity.model_version import ModelVersion
+from quantum.domain.trading.decision.identity.strategy_id import StrategyId
+from quantum.domain.trading.risk.capital.capital_allocation_intent import (
+    CapitalAllocationIntent,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -29,7 +29,6 @@ class DecisionIdentity(ValueObject):
     strategy_id: StrategyId
     model_version: ModelVersion
     source: DecisionSource
-
     confidence: DecisionConfidence
     capital_allocation: CapitalAllocationIntent
 

@@ -13,10 +13,8 @@ from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import
     EventHandler,
     EventSourcedAggregateRoot,
 )
-from quantum.domain.trading.core.decision.identity.decision_identity import (
-    DecisionIdentity,
-)
-from quantum.domain.trading.core.decision.trading_context import TradingContext
+from quantum.domain.trading.decision.context.trading_context import TradingContext
+from quantum.domain.trading.decision.identity.decision_identity import DecisionIdentity
 from quantum.domain.trading.events.v1.decision.decision_authorized_event import (
     DecisionAuthorizedEvent,
 )
@@ -26,7 +24,7 @@ from quantum.domain.trading.events.v1.decision.decision_rejected_event import (
 from quantum.domain.trading.events.v1.decision.trading_intent_created_event import (
     TradingIntentCreatedEvent,
 )
-from quantum.domain.trading.governance.boundary.decision_boundary_result import (
+from quantum.domain.trading.risk.boundary.decision_boundary_result import (
     DecisionBoundaryResult,
 )
 from quantum.domain.trading.value_objects.identifiers.intent_id import IntentId

@@ -356,38 +356,27 @@ trading-platform/
 │       │   │   │   └── volume.py
 │       │   │   └── __init__.py
 │       │   ├── trading/
-│       │   │   ├── core/
-│       │   │   │   ├── capital/
-│       │   │   │   │   ├── __init__.py
-│       │   │   │   │   ├── capital_allocation_intent.py
-│       │   │   │   │   ├── capital_fraction.py
-│       │   │   │   │   └── risk_budget_slice.py
-│       │   │   │   ├── decision/
-│       │   │   │   │   ├── identity/
-│       │   │   │   │   │   ├── confidence/
-│       │   │   │   │   │   │   ├── __init__.py
-│       │   │   │   │   │   │   ├── decision_confidence.py
-│       │   │   │   │   │   │   └── decision_confidence_level.py
-│       │   │   │   │   │   ├── __init__.py
-│       │   │   │   │   │   ├── decision_identity.py
-│       │   │   │   │   │   ├── decision_source.py
-│       │   │   │   │   │   ├── model_version.py
-│       │   │   │   │   │   └── strategy_id.py
-│       │   │   │   │   ├── outcome/
-│       │   │   │   │   │   ├── no_trade/
-│       │   │   │   │   │   │   ├── __init__.py
-│       │   │   │   │   │   │   ├── no_trade_decision.py
-│       │   │   │   │   │   │   └── no_trade_reason.py
-│       │   │   │   │   │   └── __init__.py
+│       │   │   ├── decision/
+│       │   │   │   ├── context/
 │       │   │   │   │   ├── __init__.py
 │       │   │   │   │   └── trading_context.py
+│       │   │   │   ├── identity/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── decision_confidence.py
+│       │   │   │   │   ├── decision_confidence_level.py
+│       │   │   │   │   ├── decision_identity.py
+│       │   │   │   │   ├── decision_source.py
+│       │   │   │   │   ├── model_version.py
+│       │   │   │   │   └── strategy_id.py
 │       │   │   │   ├── intent/
 │       │   │   │   │   ├── __init__.py
 │       │   │   │   │   └── trading_intent.py
-│       │   │   │   ├── position/
-│       │   │   │   │   ├── __init__.py
-│       │   │   │   │   ├── pnl_service.py
-│       │   │   │   │   └── position.py
+│       │   │   │   ├── outcome/
+│       │   │   │   │   ├── no_trade/
+│       │   │   │   │   │   ├── __init__.py
+│       │   │   │   │   │   ├── no_trade_decision.py
+│       │   │   │   │   │   └── no_trade_reason.py
+│       │   │   │   │   └── __init__.py
 │       │   │   │   └── __init__.py
 │       │   │   ├── events/
 │       │   │   │   ├── v1/
@@ -396,8 +385,8 @@ trading-platform/
 │       │   │   │   │   │   ├── decision_authorized_event.py
 │       │   │   │   │   │   ├── decision_rejected_event.py
 │       │   │   │   │   │   ├── no_trade_decision_event.py
-│       │   │   │   │   │   ├── order_intent_created_event.py
-│       │   │   │   │   │   └── order_sized_event.py
+│       │   │   │   │   │   ├── order_sized_event.py
+│       │   │   │   │   │   └── trading_intent_created_event.py
 │       │   │   │   │   ├── execution/
 │       │   │   │   │   │   ├── __init__.py
 │       │   │   │   │   │   ├── order_cancelled_event.py
@@ -430,6 +419,10 @@ trading-platform/
 │       │   │   │   │   ├── order_type.py
 │       │   │   │   │   ├── position_side.py
 │       │   │   │   │   └── time_in_force.py
+│       │   │   │   ├── position/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── pnl_service.py
+│       │   │   │   │   └── position.py
 │       │   │   │   ├── pricing/
 │       │   │   │   │   ├── __init__.py
 │       │   │   │   │   ├── price_rounding_mode.py
@@ -455,19 +448,6 @@ trading-platform/
 │       │   │   │   │   ├── liquidity_side.py
 │       │   │   │   │   └── order_check_outcome.py
 │       │   │   │   └── __init__.py
-│       │   │   ├── governance/
-│       │   │   │   ├── boundary/
-│       │   │   │   │   ├── __init__.py
-│       │   │   │   │   ├── decision_boundary.py
-│       │   │   │   │   ├── decision_boundary_policy.py
-│       │   │   │   │   └── decision_boundary_result.py
-│       │   │   │   ├── lifecycle/
-│       │   │   │   │   ├── __init__.py
-│       │   │   │   │   ├── strategy_eligibility_policy.py
-│       │   │   │   │   ├── strategy_eligibility_result.py
-│       │   │   │   │   ├── strategy_lifecycle.py
-│       │   │   │   │   └── strategy_lifecycle_state.py
-│       │   │   │   └── __init__.py
 │       │   │   ├── market/
 │       │   │   │   ├── instrument/
 │       │   │   │   │   ├── __init__.py
@@ -482,6 +462,24 @@ trading-platform/
 │       │   │   │   │   └── volume_constraints.py
 │       │   │   │   ├── __init__.py
 │       │   │   │   └── market_regime.py
+│       │   │   ├── risk/
+│       │   │   │   ├── boundary/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── decision_boundary.py
+│       │   │   │   │   ├── decision_boundary_policy.py
+│       │   │   │   │   └── decision_boundary_result.py
+│       │   │   │   ├── capital/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── capital_allocation_intent.py
+│       │   │   │   │   ├── capital_fraction.py
+│       │   │   │   │   └── risk_budget_slice.py
+│       │   │   │   ├── lifecycle/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── strategy_eligibility_policy.py
+│       │   │   │   │   ├── strategy_eligibility_result.py
+│       │   │   │   │   ├── strategy_lifecycle.py
+│       │   │   │   │   └── strategy_lifecycle_state.py
+│       │   │   │   └── __init__.py
 │       │   │   ├── value_objects/
 │       │   │   │   ├── identifiers/
 │       │   │   │   │   ├── __init__.py

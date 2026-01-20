@@ -3,8 +3,8 @@ from dataclasses import dataclass
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 from quantum.domain.shared_kernel.temporal.temporal_validity import TemporalValidity
-from quantum.domain.trading.core.decision.identity.strategy_id import StrategyId
-from quantum.domain.trading.governance.lifecycle.strategy_lifecycle_state import (
+from quantum.domain.trading.decision.identity.strategy_id import StrategyId
+from quantum.domain.trading.risk.lifecycle.strategy_lifecycle_state import (
     StrategyLifecycleState,
 )
 

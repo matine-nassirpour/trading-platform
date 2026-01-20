@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
-from quantum.domain.trading.core.decision.identity.confidence.decision_confidence_level import (
+from quantum.domain.trading.decision.identity.decision_confidence_level import (
     DecisionConfidenceLevel,
 )
 

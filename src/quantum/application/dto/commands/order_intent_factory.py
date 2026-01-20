@@ -6,10 +6,8 @@ from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.value_objects.price import Price
 from quantum.domain.shared_kernel.value_objects.symbol import Symbol
 from quantum.domain.shared_kernel.value_objects.volume import PositiveVolume
-from quantum.domain.trading.core.decision.identity.decision_identity import (
-    DecisionIdentity,
-)
-from quantum.domain.trading.core.decision.trading_context import TradingContext
+from quantum.domain.trading.decision.context.trading_context import TradingContext
+from quantum.domain.trading.decision.identity.decision_identity import DecisionIdentity
 from quantum.domain.trading.events.v1.decision.decision_authorized_event import (
     DecisionAuthorizedEvent,
 )
@@ -20,14 +18,12 @@ from quantum.domain.trading.execution.order.order_type import OrderType
 from quantum.domain.trading.execution.order.position_side import PositionSide
 from quantum.domain.trading.execution.order.time_in_force import TimeInForce
 from quantum.domain.trading.execution.safety.exit_policy import ExitPolicy
-from quantum.domain.trading.governance.boundary.decision_boundary import (
-    DecisionBoundary,
-)
-from quantum.domain.trading.governance.boundary.decision_boundary_policy import (
-    DecisionBoundaryPolicy,
-)
 from quantum.domain.trading.market.instrument.instrument_spec import InstrumentSpec
 from quantum.domain.trading.market.value_objects.reference_price import ReferencePrice
+from quantum.domain.trading.risk.boundary.decision_boundary import DecisionBoundary
+from quantum.domain.trading.risk.boundary.decision_boundary_policy import (
+    DecisionBoundaryPolicy,
+)
 from quantum.domain.trading.value_objects.identifiers.intent_id import IntentId
 
 

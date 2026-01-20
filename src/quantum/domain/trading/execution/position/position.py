@@ -14,7 +14,6 @@ from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import
 )
 from quantum.domain.shared_kernel.value_objects.price import Price
 from quantum.domain.shared_kernel.value_objects.volume import PositiveVolume
-from quantum.domain.trading.core.position.pnl_service import PnLService
 from quantum.domain.trading.events.v1.position.position_closed_event import (
     PositionClosedEvent,
 )
@@ -22,6 +21,7 @@ from quantum.domain.trading.events.v1.position.position_opened_event import (
     PositionOpenedEvent,
 )
 from quantum.domain.trading.execution.order.position_side import PositionSide
+from quantum.domain.trading.execution.position.pnl_service import PnLService
 from quantum.domain.trading.value_objects.identifiers.position_id import PositionId
 
 
