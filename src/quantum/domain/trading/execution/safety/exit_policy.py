@@ -3,10 +3,8 @@ from quantum.domain.shared_kernel.value_objects.price import Price
 from quantum.domain.trading.execution.order.position_side import PositionSide
 from quantum.domain.trading.execution.pricing.pricing_context import PricingContext
 from quantum.domain.trading.execution.pricing.pricing_policy import PricingPolicy
-from quantum.domain.trading.value_objects.instrument.instrument_spec import (
-    InstrumentSpec,
-)
-from quantum.domain.trading.value_objects.market.reference_price import ReferencePrice
+from quantum.domain.trading.market.instrument.instrument_spec import InstrumentSpec
+from quantum.domain.trading.market.value_objects.reference_price import ReferencePrice
 
 
 class ExitPolicy:

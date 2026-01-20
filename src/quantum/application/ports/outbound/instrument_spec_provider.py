@@ -3,9 +3,7 @@ from __future__ import annotations
 from typing import Protocol, runtime_checkable
 
 from quantum.domain.shared_kernel.value_objects.symbol import Symbol
-from quantum.domain.trading.value_objects.instrument.instrument_spec import (
-    InstrumentSpec,
-)
+from quantum.domain.trading.market.instrument.instrument_spec import InstrumentSpec
 
 
 @runtime_checkable

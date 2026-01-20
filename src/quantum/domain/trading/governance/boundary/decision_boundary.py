@@ -3,8 +3,8 @@ from dataclasses import dataclass
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 from quantum.domain.shared_kernel.temporal.temporal_validity import TemporalValidity
-from quantum.domain.trading.context.market_regime import MarketRegime
-from quantum.domain.trading.decision.identity.strategy_id import StrategyId
+from quantum.domain.trading.core.decision.identity.strategy_id import StrategyId
+from quantum.domain.trading.market.market_regime import MarketRegime
 
 
 @dataclass(frozen=True, slots=True)

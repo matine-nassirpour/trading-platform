@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from collections.abc import Mapping
 from dataclasses import dataclass
 
@@ -21,9 +19,13 @@ from quantum.domain.shared_kernel.value_objects.volume import (
     NonNegativeVolume,
     PositiveVolume,
 )
-from quantum.domain.trading.events.v1.order_cancelled_event import OrderCancelledEvent
-from quantum.domain.trading.events.v1.order_created_event import OrderCreatedEvent
-from quantum.domain.trading.events.v1.order_fill_registered_event import (
+from quantum.domain.trading.events.v1.execution.order_cancelled_event import (
+    OrderCancelledEvent,
+)
+from quantum.domain.trading.events.v1.execution.order_created_event import (
+    OrderCreatedEvent,
+)
+from quantum.domain.trading.events.v1.execution.order_fill_registered_event import (
     OrderFillRegisteredEvent,
 )
 from quantum.domain.trading.execution.order.execution_fill import ExecutionFill

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Protocol, runtime_checkable
 
-from quantum.domain.trading.position.position import Position
+from quantum.domain.trading.core.position.position import Position
 from quantum.domain.trading.value_objects.identifiers.position_id import PositionId
 
 

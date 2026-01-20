@@ -8,9 +8,7 @@ from quantum.domain.trading.execution.pricing.quantization_service import (
     QuantizationService,
 )
 from quantum.domain.trading.execution.pricing.rounding_strategy import _RoundingStrategy
-from quantum.domain.trading.value_objects.instrument.instrument_spec import (
-    InstrumentSpec,
-)
+from quantum.domain.trading.market.instrument.instrument_spec import InstrumentSpec
 
 
 class PricingPolicy:
