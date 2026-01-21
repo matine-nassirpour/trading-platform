@@ -1,5 +1,3 @@
-import inspect
-
 from abc import ABC, abstractmethod
 
 from quantum.domain.shared_kernel.primitives.structural_contract import (
@@ -12,37 +10,50 @@ class ValueObject(ABC):
     Canonical base class for all Value Objects.
 
     HARD GUARANTEES:
-    - Must be a frozen dataclass
-    - Must use __slots__ (no instance __dict__)
-    - No __weakref__
-    - Fully validated at construction
-    - Value-based equality
-    - No partial or invalid state possible
+    - Frozen dataclass
+    - Slots only
+    - No __dict__, no __weakref__
+    - Validation cannot be bypassed
+    - Validation always executed exactly once
     """
 
-    # --- Import-time structural contract -------------------------------------
+    # --- Class creation enforcement -------------------------------------------
 
     def __init_subclass__(cls) -> None:
         super().__init_subclass__()
 
-        # Do not validate the abstract base class itself
         if cls is ValueObject:
             return
 
-        if inspect.isabstract(cls):
-            return
+        if "__post_init__" in cls.__dict__:
+            raise TypeError(
+                f"{cls.__name__} must NOT override __post_init__. "
+                f"Use _validate() instead."
+            )
 
         enforce_frozen_slot_dataclass_contract(cls)
 
-    # --- Invariant ------------------------------------------------------------
+    # --- Domain Contract ------------------------------------------------------
 
     @abstractmethod
     def _validate(self) -> None:
         """
-        Enforce all domain invariants.
-        Must raise a domain error on any violation.
+        Enforces all domain invariants.
+
+        Must raise DomainError / InvariantViolation on failure.
         """
         raise NotImplementedError
 
-    def __post_init__(self) -> None:
+    # --- Construction Guarantee -----------------------------------------------
+
+    def _run_validation(self) -> None:
+        """
+        Non-overridable validation entrypoint.
+        """
         self._validate()
+
+    def __post_init__(self) -> None:
+        """
+        FINAL — must never be overridden.
+        """
+        self._run_validation()

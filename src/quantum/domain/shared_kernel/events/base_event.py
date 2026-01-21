@@ -1,5 +1,3 @@
-import inspect
-
 from abc import ABC
 from dataclasses import dataclass, fields
 from typing import ClassVar
@@ -39,9 +37,6 @@ class BaseEvent(ABC):
         super().__init_subclass__()
 
         if cls is BaseEvent:
-            return
-
-        if inspect.isabstract(cls):
             return
 
         enforce_frozen_slot_dataclass_contract(cls)

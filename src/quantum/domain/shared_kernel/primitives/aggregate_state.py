@@ -1,5 +1,3 @@
-import inspect
-
 from abc import ABC, abstractmethod
 
 from quantum.domain.shared_kernel.events.event_sequence import EventSequence
@@ -13,42 +11,55 @@ class AggregateState(ABC):
     Typed, immutable, audit-grade aggregate state capsule.
 
     HARD GUARANTEES:
-    - Must be a frozen dataclass
-    - Must use __slots__
+    - Frozen dataclass
+    - Slots only
     - No __dict__, no __weakref__
-    - All invariants enforced at construction
-    - State is fully statically discoverable
+    - Validation cannot be bypassed
+    - Validation always executed exactly once
     """
 
     __slots__ = ()
 
-    # --- Import-time structural contract -------------------------------------
+    # --- Class creation enforcement -------------------------------------------
 
     def __init_subclass__(cls) -> None:
         super().__init_subclass__()
 
-        # Do not validate the abstract base class itself
         if cls is AggregateState:
             return
 
-        if inspect.isabstract(cls):
-            return
+        if "__post_init__" in cls.__dict__:
+            raise TypeError(
+                f"{cls.__name__} must NOT override __post_init__. "
+                f"Use _validate() instead."
+            )
 
         enforce_frozen_slot_dataclass_contract(cls)
 
-    # --- Runtime invariant enforcement ---------------------------------------
+    # --- Domain Contract ------------------------------------------------------
 
     @abstractmethod
     def _validate(self) -> None:
         """
-        Enforces ALL aggregate invariants.
+        Enforces all aggregate invariants.
 
-        Must raise InvariantViolation on any breach.
+        Must raise DomainError / InvariantViolation on failure.
         """
         raise NotImplementedError
 
-    def __post_init__(self) -> None:
+    # --- Construction Guarantee -----------------------------------------------
+
+    def _run_validation(self) -> None:
+        """
+        Non-overridable validation entrypoint.
+        """
         self._validate()
+
+    def __post_init__(self) -> None:
+        """
+        FINAL — must never be overridden.
+        """
+        self._run_validation()
 
     # --- Mandatory domain contracts -------------------------------------------
 

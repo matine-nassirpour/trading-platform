@@ -1,5 +1,3 @@
-import inspect
-
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
@@ -17,30 +15,43 @@ class Cursor(ABC):
     (e.g. event sequence, market feed, etc).
     """
 
-    # --- Import-time structural contract -------------------------------------
+    # --- Class creation enforcement -------------------------------------------
 
     def __init_subclass__(cls) -> None:
         super().__init_subclass__()
 
-        # Do not validate the abstract base class itself
         if cls is Cursor:
             return
 
-        if inspect.isabstract(cls):
-            return
+        if "__post_init__" in cls.__dict__:
+            raise TypeError(
+                f"{cls.__name__} must NOT override __post_init__. "
+                f"Use _validate() instead."
+            )
 
         enforce_frozen_slot_dataclass_contract(cls)
 
-    def __post_init__(self) -> None:
-        self._validate()
-
-    # --- Invariant ------------------------------------------------------------
+    # --- Domain Contract ------------------------------------------------------
 
     @abstractmethod
     def _validate(self) -> None:
         """
         Enforces all cursor invariants.
 
-        Must be deterministic and side-effect free.
+        Must raise DomainError / InvariantViolation on failure.
         """
         raise NotImplementedError
+
+    # --- Construction Guarantee -----------------------------------------------
+
+    def _run_validation(self) -> None:
+        """
+        Non-overridable validation entrypoint.
+        """
+        self._validate()
+
+    def __post_init__(self) -> None:
+        """
+        FINAL — must never be overridden.
+        """
+        self._run_validation()
