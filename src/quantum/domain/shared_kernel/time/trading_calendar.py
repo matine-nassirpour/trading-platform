@@ -1,0 +1,71 @@
+from dataclasses import dataclass
+from datetime import date
+
+from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.primitives.value_object import ValueObject
+from quantum.domain.shared_kernel.time.market_session import MarketSession
+from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
+
+
+@dataclass(frozen=True, slots=True)
+class TradingCalendar(ValueObject):
+    """
+    Canonical trading calendar.
+
+    Defines:
+    - which days are tradable
+    - which sessions are active
+    - whether trading is allowed at a given time
+    """
+
+    name: str
+    sessions: tuple[MarketSession, ...]
+    holidays: frozenset[date]
+
+    def _validate(self) -> None:
+        if not self.name:
+            raise InvariantViolation("TradingCalendar requires a name")
+
+        if not self.sessions:
+            raise InvariantViolation("TradingCalendar must define at least one session")
+
+        for s in self.sessions:
+            if not isinstance(s, MarketSession):
+                raise InvariantViolation("Invalid MarketSession")
+
+        for h in self.holidays:
+            if not isinstance(h, date):
+                raise InvariantViolation("Invalid holiday date")
+
+    def is_trading_day(self, d: date) -> bool:
+        """
+        Returns True if the date is a valid trading day.
+        """
+        if d.weekday() >= 5:  # Saturday / Sunday
+            return False
+
+        if d in self.holidays:
+            return False
+
+        return True
+
+    def is_market_open(self, at: EpochMs) -> bool:
+        """
+        Returns True if market is open at given time.
+        """
+        dt = at.to_datetime()
+        day = dt.date()
+        time_utc = dt.time()
+
+        if not self.is_trading_day(day):
+            return False
+
+        for session in self.sessions:
+            if session.contains(time_utc):
+                return True
+
+        return False
+
+    def assert_market_open(self, at: EpochMs) -> None:
+        if not self.is_market_open(at):
+            raise InvariantViolation("Market is closed at this time")

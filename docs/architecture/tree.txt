@@ -303,6 +303,9 @@ trading-platform/
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── daily_loss_limit.py
 │       │   │   │   ├── drawdown_limit.py
+│       │   │   │   ├── exposure_limit.py
+│       │   │   │   ├── leverage_limit.py
+│       │   │   │   ├── limit_evaluation.py
 │       │   │   │   ├── risk_limits.py
 │       │   │   │   └── risk_threshold_policy.py
 │       │   │   └── __init__.py
@@ -316,7 +319,10 @@ trading-platform/
 │       │   │   │   └── risk_errors.py
 │       │   │   ├── events/
 │       │   │   │   ├── __init__.py
+│       │   │   │   ├── actor_id.py
 │       │   │   │   ├── base_event.py
+│       │   │   │   ├── causation_id.py
+│       │   │   │   ├── correlation_id.py
 │       │   │   │   ├── event_envelope.py
 │       │   │   │   ├── event_id.py
 │       │   │   │   └── event_sequence.py
@@ -344,6 +350,11 @@ trading-platform/
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── temporal_validity.py
 │       │   │   │   └── time_interval.py
+│       │   │   ├── time/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── market_session.py
+│       │   │   │   ├── trading_calendar.py
+│       │   │   │   └── trading_clock.py
 │       │   │   ├── value_objects/
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── currency.py
@@ -448,6 +459,13 @@ trading-platform/
 │       │   │   │   │   ├── liquidity_side.py
 │       │   │   │   │   └── order_check_outcome.py
 │       │   │   │   └── __init__.py
+│       │   │   ├── ledger/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── cash_entry.py
+│       │   │   │   ├── fee_entry.py
+│       │   │   │   ├── ledger_event.py
+│       │   │   │   ├── ledger_snapshot.py
+│       │   │   │   └── pnl_entry.py
 │       │   │   ├── market/
 │       │   │   │   ├── instrument/
 │       │   │   │   │   ├── __init__.py
@@ -462,6 +480,14 @@ trading-platform/
 │       │   │   │   │   └── volume_constraints.py
 │       │   │   │   ├── __init__.py
 │       │   │   │   └── market_regime.py
+│       │   │   ├── portfolio/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── account.py
+│       │   │   │   ├── balance.py
+│       │   │   │   ├── exposure.py
+│       │   │   │   ├── margin.py
+│       │   │   │   ├── portfolio.py
+│       │   │   │   └── portfolio_snapshot.py
 │       │   │   ├── risk/
 │       │   │   │   ├── boundary/
 │       │   │   │   │   ├── __init__.py
