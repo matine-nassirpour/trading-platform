@@ -1,6 +1,4 @@
-from collections.abc import Iterable
 from dataclasses import is_dataclass
-from typing import Protocol, cast
 
 
 class StructuralContractViolation(TypeError):
@@ -9,72 +7,52 @@ class StructuralContractViolation(TypeError):
     """
 
 
-class _DataclassParamsProtocol(Protocol):
-    frozen: bool
-    slots: bool
-
-
-# ------------------------------------------------------------------------------
-# Internal helpers
-# ------------------------------------------------------------------------------
-def _get_dataclass_params(cls: type) -> _DataclassParamsProtocol:
-    params = getattr(cls, "__dataclass_params__", None)
-    if params is None:
-        raise StructuralContractViolation(f"{cls.__name__} must be a dataclass")
-    return cast(_DataclassParamsProtocol, params)
-
-
-def _get_slots(cls: type) -> Iterable[str]:
-    slots = cls.__dict__.get("__slots__")
-
-    if slots is None:
-        raise StructuralContractViolation(f"{cls.__name__} must define __slots__")
-
-    if isinstance(slots, str):
-        return (slots,)
-
-    return tuple(slots)
-
-
 # ------------------------------------------------------------------------------
 # Public contract
 # ------------------------------------------------------------------------------
 def enforce_frozen_slot_dataclass_contract(cls: type) -> None:
     """
-    Enforces the canonical structural contract for all immutable
-    domain primitives.
+    Enforces the canonical structural contract for domain primitives.
 
     HARD GUARANTEES:
     - Must be a dataclass
     - Must be frozen
-    - Must use __slots__
-    - Must not have __dict__
-    - Must not have __weakref__
+    - Must use slots=True
+    - Must NOT expose __dict__
+    - Must NOT expose __weakref__
     """
 
-    # Must be dataclass
+    # --- 1. Must be dataclass
     if not is_dataclass(cls):
         raise StructuralContractViolation(f"{cls.__name__} must be a dataclass")
 
-    params = _get_dataclass_params(cls)
-
-    # Must be frozen
-    if not params.frozen:
-        raise StructuralContractViolation(f"{cls.__name__} must be frozen=True")
-
-    # Must use slots
-    if not params.slots:
-        raise StructuralContractViolation(f"{cls.__name__} must be slots=True")
-
-    # Must not expose __dict__ or __weakref__
-    slots = _get_slots(cls)
-
-    if "__dict__" in slots:
+    params = getattr(cls, "__dataclass_params__", None)
+    if params is None:
         raise StructuralContractViolation(
-            f"{cls.__name__} must not include '__dict__' in __slots__"
+            f"{cls.__name__} is missing __dataclass_params__"
         )
 
-    if "__weakref__" in slots:
+    # --- 2. Must be frozen
+    if not getattr(params, "frozen", False):
         raise StructuralContractViolation(
-            f"{cls.__name__} must not include '__weakref__' in __slots__"
+            f"{cls.__name__} must be declared with frozen=True"
+        )
+
+    # --- 3. Must use slots
+    if not getattr(params, "slots", False):
+        raise StructuralContractViolation(
+            f"{cls.__name__} must be declared with slots=True"
+        )
+
+    # --- 4. Must NOT expose __dict__
+    if hasattr(cls, "__dict__"):
+        raise StructuralContractViolation(
+            f"{cls.__name__} exposes __dict__. " f"Slots enforcement is broken."
+        )
+
+    # --- 5. Must NOT expose __weakref__
+    if hasattr(cls, "__weakref__"):
+        raise StructuralContractViolation(
+            f"{cls.__name__} exposes __weakref__. "
+            f"This violates immutability guarantees."
         )

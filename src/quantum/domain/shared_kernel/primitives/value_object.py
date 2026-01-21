@@ -10,9 +10,6 @@ class ValueObject(ABC):
     Canonical base class for all Value Objects.
 
     HARD GUARANTEES:
-    - Frozen dataclass
-    - Slots only
-    - No __dict__, no __weakref__
     - Validation cannot be bypassed
     - Validation always executed exactly once
     """

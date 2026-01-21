@@ -11,14 +11,9 @@ class AggregateState(ABC):
     Typed, immutable, audit-grade aggregate state capsule.
 
     HARD GUARANTEES:
-    - Frozen dataclass
-    - Slots only
-    - No __dict__, no __weakref__
     - Validation cannot be bypassed
     - Validation always executed exactly once
     """
-
-    __slots__ = ()
 
     # --- Class creation enforcement -------------------------------------------
 
