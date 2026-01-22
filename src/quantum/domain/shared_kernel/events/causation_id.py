@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-import uuid
-
 from dataclasses import dataclass
 
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.events.event_id import EventId
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 
 
@@ -18,14 +17,14 @@ class CausationId(ValueObject):
         - Allows full causal chain reconstruction
     """
 
-    value: uuid.UUID
+    value: EventId
 
     def _validate(self) -> None:
-        if not isinstance(self.value, uuid.UUID):
-            raise InvariantViolation("CausationId must be a UUID")
+        if not isinstance(self.value, EventId):
+            raise InvariantViolation("CausationId must be an EventId")
 
     @staticmethod
-    def from_event_id(event_id: uuid.UUID) -> CausationId:
+    def from_event_id(event_id: EventId) -> CausationId:
         return CausationId(event_id)
 
     @staticmethod
@@ -33,7 +32,7 @@ class CausationId(ValueObject):
         """
         Used for genesis / system-originated events.
         """
-        return CausationId(uuid.uuid4())
+        return CausationId(EventId.nil())
 
     def __str__(self) -> str:
         return str(self.value)
