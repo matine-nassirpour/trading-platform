@@ -3,7 +3,7 @@ from datetime import date
 
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
-from quantum.domain.shared_kernel.time.market_session import MarketSession
+from quantum.domain.shared_kernel.temporal.market_session import MarketSession
 from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
 
 
