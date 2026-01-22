@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 from quantum.domain.risk.breaches.risk_breach import RiskBreach
 from quantum.domain.risk.core.notional import Notional
+from quantum.domain.risk.limits.notional_limit import NotionalLimit
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 
 
@@ -18,19 +19,16 @@ class NotionalBreach(RiskBreach):
     """
 
     current: Notional
-    limit: Notional
+    limit: NotionalLimit
 
     def _validate(self) -> None:
-        # 1. Shared RiskBreach invariants
         super()._validate()
 
-        # 2. Type safety
         if not isinstance(self.current, Notional):
             raise InvariantViolation("NotionalBreach.current must be a Notional")
 
         if not isinstance(self.limit, Notional):
             raise InvariantViolation("NotionalBreach.limit must be a Notional")
 
-        # 3. Context consistency
         if self.current.context != self.limit.context:
             raise InvariantViolation("Notional MoneyContext mismatch")

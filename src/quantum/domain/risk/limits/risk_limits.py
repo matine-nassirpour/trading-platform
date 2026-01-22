@@ -1,8 +1,10 @@
 from dataclasses import dataclass
 
-from quantum.domain.risk.core.notional import Notional
 from quantum.domain.risk.limits.daily_loss_limit import DailyLossLimit
 from quantum.domain.risk.limits.drawdown_limit import DrawdownLimit
+from quantum.domain.risk.limits.exposure_limit import ExposureLimit
+from quantum.domain.risk.limits.leverage_limit import LeverageLimit
+from quantum.domain.risk.limits.notional_limit import NotionalLimit
 from quantum.domain.risk.limits.risk_threshold_policy import RiskThresholdPolicy
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.money.money_context import MoneyContext
@@ -21,23 +23,39 @@ class RiskLimits(ValueObject):
     """
 
     context: MoneyContext
+
     max_drawdown: DrawdownLimit
-    max_notional: Notional
+    max_notional: NotionalLimit
     max_daily_loss: DailyLossLimit
+    max_exposure: ExposureLimit
+    max_leverage: LeverageLimit
+
     threshold_policy: RiskThresholdPolicy
 
-    def _validate(self) -> None:
+    def _validate_types(self) -> None:
         if not isinstance(self.context, MoneyContext):
             raise InvariantViolation("RiskLimits requires a MoneyContext")
 
         if not isinstance(self.max_drawdown, DrawdownLimit):
             raise InvariantViolation("max_drawdown must be DrawdownLimit")
 
-        if not isinstance(self.max_notional, Notional):
+        if not isinstance(self.max_notional, NotionalLimit):
             raise InvariantViolation("max_notional must be Notional")
 
         if not isinstance(self.max_daily_loss, DailyLossLimit):
             raise InvariantViolation("max_daily_loss must be DailyLossLimit")
+
+        if not isinstance(self.max_exposure, ExposureLimit):
+            raise InvariantViolation("RiskLimits requires a ExposureLimit")
+
+        if not isinstance(self.max_leverage, LeverageLimit):
+            raise InvariantViolation("RiskLimits requires a LeverageLimit")
+
+        if not isinstance(self.threshold_policy, RiskThresholdPolicy):
+            raise InvariantViolation("RiskLimits requires a RiskThresholdPolicy")
+
+    def _validate(self) -> None:
+        self._validate_types()
 
         for name, limit in {
             "max_drawdown": self.max_drawdown,
@@ -48,6 +66,3 @@ class RiskLimits(ValueObject):
                 raise InvariantViolation(
                     f"{name} MoneyContext mismatch: {limit.context} vs {self.context}"
                 )
-
-        if not isinstance(self.threshold_policy, RiskThresholdPolicy):
-            raise InvariantViolation("RiskLimits requires a RiskThresholdPolicy")

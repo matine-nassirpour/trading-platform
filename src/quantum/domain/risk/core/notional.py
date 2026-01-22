@@ -10,12 +10,15 @@ from quantum.domain.shared_kernel.money.contextual_monetary_amount import (
 @dataclass(frozen=True, slots=True)
 class Notional(ContextualMonetaryAmount):
     """
-    Gross notional exposure.
+    Contractual notional amount.
 
-    Properties:
-    - Always non-negative
-    - Currency-aware
-    - NOT algebraically composable
+    Represents the *gross contractual size* of a position or exposure.
+    It is a structural quantity used for:
+
+    - trade sizing
+    - margin and fee calculations
+    - regulatory and reporting purposes
+    - exposure decomposition
     """
 
     def _validate(self) -> None:

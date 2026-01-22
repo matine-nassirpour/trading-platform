@@ -22,16 +22,13 @@ class DailyLossBreach(RiskBreach):
     limit: DailyLossLimit
 
     def _validate(self) -> None:
-        # 1. Shared RiskBreach invariants
         super()._validate()
 
-        # 2. Type safety
         if not isinstance(self.current, DailyLoss):
             raise InvariantViolation("DailyLossBreach.current must be a DailyLoss")
 
         if not isinstance(self.limit, DailyLossLimit):
             raise InvariantViolation("DailyLossBreach.limit must be a DailyLossLimit")
 
-        # 3. Context consistency
         if self.current.context != self.limit.context:
             raise InvariantViolation("DailyLoss MoneyContext mismatch")

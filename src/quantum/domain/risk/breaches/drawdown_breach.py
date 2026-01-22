@@ -22,16 +22,13 @@ class DrawdownBreach(RiskBreach):
     limit: DrawdownLimit
 
     def _validate(self) -> None:
-        # 1. Shared RiskBreach invariants
         super()._validate()
 
-        # 2. Type safety (defensive, explicit)
         if not isinstance(self.current, Drawdown):
             raise InvariantViolation("DrawdownBreach.current must be a Drawdown")
 
         if not isinstance(self.limit, DrawdownLimit):
             raise InvariantViolation("DrawdownBreach.limit must be a DrawdownLimit")
 
-        # 3. Context consistency
         if self.current.context != self.limit.context:
             raise InvariantViolation("Drawdown MoneyContext mismatch")

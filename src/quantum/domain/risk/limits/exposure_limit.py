@@ -10,11 +10,13 @@ from quantum.domain.shared_kernel.money.contextual_monetary_amount import (
 @dataclass(frozen=True, slots=True)
 class ExposureLimit(ContextualMonetaryAmount):
     """
-    Maximum allowed market exposure.
+    Maximum allowed risk exposure.
 
-    Examples:
-    - max notional exposure
-    - max position exposure
+    Exposure represents the *effective economic risk* carried by the system,
+    after taking into account leverage, direction, and risk aggregation.
+
+    This limit defines a HARD RISK BOUNDARY used by the risk governance layer
+    to determine whether trading activity must be restricted or stopped.
     """
 
     def _validate(self) -> None:
