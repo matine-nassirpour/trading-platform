@@ -14,19 +14,18 @@ class EventEnvelope(ValueObject):
     """
     Audit-grade domain event envelope.
 
-    This object represents the act of recording a Domain Event
-    into an immutable event stream.
+    Represents the act of recording a Domain Event into an immutable event stream.
     """
 
     id: EventId
     sequence: EventSequence
     occurred_at: EpochMs  # When the business fact occurred
-    recorded_at: EpochMs  # When the system records the event in its immutable log
+    recorded_at: EpochMs  # When the system persisted the event
 
     event: BaseEvent
     metadata: EventMetadata
 
-    def _validate(self) -> None:
+    def _validate_types(self) -> None:
         if not isinstance(self.id, EventId):
             raise InvariantViolation("EventEnvelope requires EventId")
 
@@ -45,5 +44,15 @@ class EventEnvelope(ValueObject):
         if not isinstance(self.metadata, EventMetadata):
             raise InvariantViolation("EventEnvelope requires EventMetadata")
 
+    def _validate_sequence(self) -> None:
         if self.sequence.is_initial():
             raise InvariantViolation("EventEnvelope.sequence must be >= 1")
+
+    def _validate_temporal_consistency(self) -> None:
+        if self.recorded_at.value < self.occurred_at.value:
+            raise InvariantViolation("EventEnvelope.recorded_at must be >= occurred_at")
+
+    def _validate(self) -> None:
+        self._validate_types()
+        self._validate_sequence()
+        self._validate_temporal_consistency()
