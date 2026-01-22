@@ -28,10 +28,21 @@ class PortfolioState(AggregateState):
 
     def _validate(self) -> None:
         if not isinstance(self.account, Account):
-            raise InvariantViolation("Portfolio requires an Account")
+            raise InvariantViolation("Portfolio requires Account")
+
+        if not self.balances:
+            raise InvariantViolation("Portfolio must have balances")
+
+        for b in self.balances.values():
+            if not isinstance(b, Balance):
+                raise InvariantViolation("Invalid Balance")
+
+        for e in self.exposures.values():
+            if not isinstance(e, Exposure):
+                raise InvariantViolation("Invalid Exposure")
 
         if not isinstance(self.margin, Margin):
-            raise InvariantViolation("Portfolio requires Margin")
+            raise InvariantViolation("Invalid Margin")
 
 
 class Portfolio(EventSourcedAggregateRoot[PortfolioState]):
