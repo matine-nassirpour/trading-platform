@@ -29,4 +29,4 @@ class Margin(ContextualMonetaryAmount):
     @property
     def utilization_ratio(self) -> Decimal:
         total = self.used.value + self.available.value
-        return 0 if total == 0 else self.used.value / total
+        return Decimal("0") if total == 0 else self.used.value / total
