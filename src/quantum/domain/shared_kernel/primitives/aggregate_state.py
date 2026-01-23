@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 
 from quantum.domain.shared_kernel.events.event_sequence import EventSequence
 from quantum.domain.shared_kernel.primitives._validated_frozen_dataclass import (
@@ -6,6 +7,7 @@ from quantum.domain.shared_kernel.primitives._validated_frozen_dataclass import 
 )
 
 
+@dataclass(frozen=True, slots=True)
 class AggregateState(_ValidatedFrozenDataclass, ABC):
     """
     Typed, immutable, audit-grade aggregate state capsule.
