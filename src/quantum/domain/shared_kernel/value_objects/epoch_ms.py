@@ -6,21 +6,23 @@ from datetime import UTC, datetime, timedelta
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 
-_EPOCH_UTC = datetime(1970, 1, 1, tzinfo=UTC)
 _SECONDS_PER_DAY = 86_400
 _MILLISECONDS_PER_SECOND = 1_000
 _MILLISECONDS_PER_DAY = _SECONDS_PER_DAY * _MILLISECONDS_PER_SECOND
+
+_EPOCH_UTC = datetime(1970, 1, 1, tzinfo=UTC)
 
 
 @dataclass(frozen=True, slots=True)
 class EpochMs(ValueObject):
     """
-    Milliseconds since Unix epoch (UTC).
+    Canonical epoch timestamp in milliseconds since Unix epoch (UTC).
 
-    Guarantees:
-    - Integer-only representation
-    - No floating-point arithmetic
-    - Deterministic and platform-independent
+    HARD GUARANTEES:
+    - integer only
+    - UTC only
+    - no floating point arithmetic
+    - deterministic conversions
     """
 
     value: int
@@ -36,11 +38,9 @@ class EpochMs(ValueObject):
 
     def to_datetime(self) -> datetime:
         """
-        Converts this EpochMs to a timezone-aware UTC datetime.
+        Converts to a timezone-aware UTC datetime.
 
-        Guaranteed:
-        - tzinfo = UTC
-        - No floating point arithmetic
+        No floating-point arithmetic is used.
         """
         seconds, millis = divmod(self.value, _MILLISECONDS_PER_SECOND)
 
@@ -49,32 +49,29 @@ class EpochMs(ValueObject):
             milliseconds=millis,
         )
 
-    def to_utc_minute(self) -> int:
+    def to_utc_second_of_day(self) -> int:
         """
-        Returns the UTC minute-of-day [0..1439].
-
-        Used for:
-        - market sessions
-        - trading calendars
-        - deterministic temporal logic
-        """
-        return (self.value // _MILLISECONDS_PER_SECOND) % _SECONDS_PER_DAY // 60
-
-    def to_utc_second(self) -> int:
-        """
-        Returns the UTC second-of-day [0..86399].
+        Returns second-of-day [0..86399].
         """
         return (self.value // _MILLISECONDS_PER_SECOND) % _SECONDS_PER_DAY
+
+    def to_utc_minute_of_day(self) -> int:
+        """
+        Returns minute-of-day [0..1439].
+        """
+        return self.to_utc_second_of_day() // 60
 
     @staticmethod
     def from_datetime(dt: datetime) -> EpochMs:
         """
-        Creates EpochMs from a timezone-aware datetime.
+        Creates EpochMs from a UTC datetime.
 
-        Requirements:
-        - dt must be tz-aware
-        - dt must be in UTC
+        STRICT:
+        - tz-aware only
+        - must be UTC
+        - no floating-point conversion
         """
+
         if not isinstance(dt, datetime):
             raise InvariantViolation("dt must be a datetime")
 
@@ -85,4 +82,11 @@ class EpochMs(ValueObject):
             raise InvariantViolation("datetime must be in UTC")
 
         delta = dt - _EPOCH_UTC
-        return EpochMs(int(delta.total_seconds() * _MILLISECONDS_PER_SECOND))
+
+        total_ms = (
+            delta.days * _MILLISECONDS_PER_DAY
+            + delta.seconds * _MILLISECONDS_PER_SECOND
+            + delta.microseconds // 1000
+        )
+
+        return EpochMs(total_ms)

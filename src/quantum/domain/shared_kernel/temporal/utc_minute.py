@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
+from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
 
 
 @dataclass(frozen=True, slots=True)
@@ -33,13 +34,13 @@ class UtcMinuteOfDay(ValueObject):
             )
 
     @staticmethod
-    def from_epoch_ms(epoch_ms: int) -> UtcMinuteOfDay:
+    def from_epoch(epoch: EpochMs) -> UtcMinuteOfDay:
         """
-        Converts epoch milliseconds to UTC minute-of-day.
-        """
-        if not isinstance(epoch_ms, int):
-            raise InvariantViolation("epoch_ms must be an integer")
+        Canonical conversion from EpochMs.
 
-        seconds = (epoch_ms // 1000) % 86400
-        minute = seconds // 60
-        return UtcMinuteOfDay(minute)
+        This is the ONLY allowed conversion path.
+        """
+        if not isinstance(epoch, EpochMs):
+            raise InvariantViolation("epoch must be an EpochMs")
+
+        return UtcMinuteOfDay(epoch.to_utc_minute_of_day())
