@@ -21,16 +21,13 @@ class ContextualMonetaryAmount(MonetaryAmount):
     context: MoneyContext
 
     def _validate(self) -> None:
-        # Step 1 — base monetary invariants
         super()._validate()
 
-        # Step 2 — context must be valid
         if not isinstance(self.context, MoneyContext):
             raise InvariantViolation(
                 f"{self.__class__.__name__} requires a MoneyContext"
             )
 
-        # Step 3 — currency must be allowed in this context
         if self.currency not in self.context.allowed_currencies:
             raise InvariantViolation(
                 f"Currency {self.currency} not allowed in MoneyContext {self.context}"
