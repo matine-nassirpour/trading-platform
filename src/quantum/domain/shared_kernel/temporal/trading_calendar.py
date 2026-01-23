@@ -4,6 +4,7 @@ from datetime import date
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 from quantum.domain.shared_kernel.temporal.market_session import MarketSession
+from quantum.domain.shared_kernel.temporal.utc_minute import UtcMinuteOfDay
 from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
 
 
@@ -27,7 +28,7 @@ class TradingCalendar(ValueObject):
             raise InvariantViolation("TradingCalendar requires a name")
 
         if not self.sessions:
-            raise InvariantViolation("TradingCalendar must define at least one session")
+            raise InvariantViolation("At least one MarketSession is required")
 
         for s in self.sessions:
             if not isinstance(s, MarketSession):
@@ -35,7 +36,7 @@ class TradingCalendar(ValueObject):
 
         for h in self.holidays:
             if not isinstance(h, date):
-                raise InvariantViolation("Invalid holiday date")
+                raise InvariantViolation("Invalid holiday")
 
     def is_trading_day(self, d: date) -> bool:
         """
@@ -55,16 +56,13 @@ class TradingCalendar(ValueObject):
         """
         dt = at.to_datetime()
         day = dt.date()
-        time_utc = dt.time()
 
         if not self.is_trading_day(day):
             return False
 
-        for session in self.sessions:
-            if session.contains(time_utc):
-                return True
+        minute = UtcMinuteOfDay.from_epoch_ms(at.value)
 
-        return False
+        return any(session.contains(minute) for session in self.sessions)
 
     def assert_market_open(self, at: EpochMs) -> None:
         if not self.is_market_open(at):

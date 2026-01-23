@@ -1,8 +1,8 @@
 from dataclasses import dataclass
-from datetime import time
 
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
+from quantum.domain.shared_kernel.temporal.utc_minute import UtcMinuteOfDay
 
 
 @dataclass(frozen=True, slots=True)
@@ -15,29 +15,35 @@ class MarketSession(ValueObject):
     """
 
     name: str
-    opens_at: time
-    closes_at: time
+    opens_at: UtcMinuteOfDay
+    closes_at: UtcMinuteOfDay
 
     def _validate(self) -> None:
         if not self.name or not isinstance(self.name, str):
             raise InvariantViolation("MarketSession requires a name")
 
-        if not isinstance(self.opens_at, time):
-            raise InvariantViolation("opens_at must be a time")
+        if not isinstance(self.opens_at, UtcMinuteOfDay):
+            raise InvariantViolation("opens_at must be UtcMinuteOfDay")
 
-        if not isinstance(self.closes_at, time):
-            raise InvariantViolation("closes_at must be a time")
+        if not isinstance(self.closes_at, UtcMinuteOfDay):
+            raise InvariantViolation("closes_at must be UtcMinuteOfDay")
 
-        if self.opens_at == self.closes_at:
-            raise InvariantViolation("Session cannot open and close at same time")
+        if self.opens_at.value == self.closes_at.value:
+            raise InvariantViolation("Session cannot open and close at same minute")
 
-    def contains(self, t: time) -> bool:
+    def contains(self, minute: UtcMinuteOfDay) -> bool:
         """
-        Returns True if the given time falls inside the session.
         Supports overnight sessions.
         """
-        if self.opens_at < self.closes_at:
-            return self.opens_at <= t < self.closes_at
+        if not isinstance(minute, UtcMinuteOfDay):
+            raise InvariantViolation("minute must be UtcMinuteOfDay")
+
+        start = self.opens_at.value
+        end = self.closes_at.value
+        t = minute.value
+
+        if start < end:
+            return start <= t < end
         else:
-            # Overnight session
-            return t >= self.opens_at or t < self.closes_at
+            # Overnight session (e.g. 22:00 → 05:00)
+            return t >= start or t < end
