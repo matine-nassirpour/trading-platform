@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 
 from quantum.domain.risk.breaches.risk_breach import RiskBreach
-from quantum.domain.risk.core.exposure import Exposure
 from quantum.domain.risk.limits.exposure_limit import ExposureLimit
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.money.exposure import Exposure
 
 
 @dataclass(frozen=True, slots=True)

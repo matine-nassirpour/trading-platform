@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 
 from quantum.domain.risk.breaches.risk_breach import RiskBreach
-from quantum.domain.risk.core.drawdown import Drawdown
 from quantum.domain.risk.limits.drawdown_limit import DrawdownLimit
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.money.drawdown import Drawdown
 
 
 @dataclass(frozen=True, slots=True)

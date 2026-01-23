@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 
 from quantum.domain.risk.breaches.risk_breach import RiskBreach
-from quantum.domain.risk.core.notional import Notional
 from quantum.domain.risk.limits.notional_limit import NotionalLimit
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.money.notional import Notional
 
 
 @dataclass(frozen=True, slots=True)
@@ -27,8 +27,8 @@ class NotionalBreach(RiskBreach):
         if not isinstance(self.current, Notional):
             raise InvariantViolation("NotionalBreach.current must be a Notional")
 
-        if not isinstance(self.limit, Notional):
-            raise InvariantViolation("NotionalBreach.limit must be a Notional")
+        if not isinstance(self.limit, NotionalLimit):
+            raise InvariantViolation("NotionalBreach.limit must be a NotionalLimit")
 
         if self.current.context != self.limit.context:
             raise InvariantViolation("Notional MoneyContext mismatch")

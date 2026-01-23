@@ -3,8 +3,6 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass
 
-from quantum.domain.risk.core.drawdown import Drawdown
-from quantum.domain.risk.core.equity import Equity
 from quantum.domain.risk.events.v1.equity_adjusted_event import EquityAdjustedEvent
 from quantum.domain.risk.events.v1.risk_breach_detected_event import (
     RiskBreachDetectedEvent,
@@ -15,6 +13,8 @@ from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.events.base_event import BaseEvent
 from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
 from quantum.domain.shared_kernel.events.event_sequence import EventSequence
+from quantum.domain.shared_kernel.money.drawdown import Drawdown
+from quantum.domain.shared_kernel.money.equity import Equity
 from quantum.domain.shared_kernel.primitives.aggregate_state import AggregateState
 from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import (
     EventHandler,

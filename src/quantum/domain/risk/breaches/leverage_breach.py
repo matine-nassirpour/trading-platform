@@ -1,10 +1,10 @@
 from dataclasses import dataclass
 
 from quantum.domain.risk.breaches.risk_breach import RiskBreach
-from quantum.domain.risk.core.equity import Equity
-from quantum.domain.risk.core.exposure import Exposure
 from quantum.domain.risk.limits.leverage_limit import LeverageLimit
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.money.equity import Equity
+from quantum.domain.shared_kernel.money.exposure import Exposure
 
 
 @dataclass(frozen=True, slots=True)
@@ -35,7 +35,7 @@ class LeverageBreach(RiskBreach):
             raise InvariantViolation("LeverageBreach.equity must be Decimal")
 
         if self.exposure.context != self.equity.context:
-            raise InvariantViolation("Exposure and LeverageLimit context mismatch")
+            raise InvariantViolation("Exposure context mismatch")
 
         if self.equity.value <= 0:
             raise InvariantViolation("Equity must be strictly positive")

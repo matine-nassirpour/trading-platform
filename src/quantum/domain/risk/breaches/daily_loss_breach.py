@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 
 from quantum.domain.risk.breaches.risk_breach import RiskBreach
-from quantum.domain.risk.core.daily_loss import DailyLoss
 from quantum.domain.risk.limits.daily_loss_limit import DailyLossLimit
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.money.daily_loss import DailyLoss
 
 
 @dataclass(frozen=True, slots=True)
