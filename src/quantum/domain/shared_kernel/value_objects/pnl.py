@@ -15,3 +15,13 @@ class RealizedPnL(SignedContextualAmount):
 
     # No extra invariants
     pass
+
+
+@dataclass(frozen=True, slots=True)
+class UnrealizedPnL(SignedContextualAmount):
+    """
+    Unrealized profit and loss bound to a MoneyContext.
+    """
+
+    # No extra invariants
+    pass

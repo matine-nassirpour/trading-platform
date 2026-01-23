@@ -20,7 +20,7 @@ from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import
     EventHandler,
     EventSourcedAggregateRoot,
 )
-from quantum.domain.shared_kernel.value_objects.realized_pnl import RealizedPnL
+from quantum.domain.shared_kernel.value_objects.pnl import RealizedPnL
 
 
 @dataclass(frozen=True, slots=True)

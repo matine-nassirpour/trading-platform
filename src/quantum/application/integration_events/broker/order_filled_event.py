@@ -5,8 +5,8 @@ from quantum.application.integration_events.base_integration_event import (
     IntegrationEvent,
 )
 from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
+from quantum.domain.shared_kernel.value_objects.pnl import RealizedPnL
 from quantum.domain.shared_kernel.value_objects.price import Price
-from quantum.domain.shared_kernel.value_objects.realized_pnl import RealizedPnL
 from quantum.domain.shared_kernel.value_objects.swap import Swap
 from quantum.domain.shared_kernel.value_objects.symbol import Symbol
 from quantum.domain.shared_kernel.value_objects.volume import PositiveVolume

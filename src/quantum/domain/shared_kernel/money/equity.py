@@ -6,7 +6,7 @@ from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.money.contextual_monetary_amount import (
     ContextualMonetaryAmount,
 )
-from quantum.domain.shared_kernel.value_objects.realized_pnl import RealizedPnL
+from quantum.domain.shared_kernel.value_objects.pnl import RealizedPnL
 
 
 @dataclass(frozen=True, slots=True)
