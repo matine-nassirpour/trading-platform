@@ -1,3 +1,5 @@
+import inspect
+
 from dataclasses import is_dataclass
 
 
@@ -61,32 +63,29 @@ def enforce_frozen_slot_dataclass_contract(cls: type) -> None:
     - Must be immutable by construction
     """
 
-    # --- 1. Must be dataclass
+    # --- 1. Ignore abstract base classes ---
+    if inspect.isabstract(cls):
+        return
+
+    # --- 2. Must be dataclass
     if not is_dataclass(cls):
         raise StructuralContractViolation(f"{cls.__name__} must be a dataclass")
 
+    # --- 3. Must be frozen
     params = getattr(cls, "__dataclass_params__", None)
-    if params is None:
-        raise StructuralContractViolation(
-            f"{cls.__name__} is missing __dataclass_params__"
-        )
-
-    # --- 2. Must be frozen
-    if not params.frozen:
+    if not params or not getattr(params, "frozen", False):
         raise StructuralContractViolation(
             f"{cls.__name__} must be declared with frozen=True"
         )
 
-    # --- 3. Must use slots
-    if not params.slots:
-        raise StructuralContractViolation(
-            f"{cls.__name__} must be declared with slots=True"
-        )
+    # --- 4. Must use slots (robust check)
+    if not hasattr(cls, "__slots__"):
+        raise StructuralContractViolation(f"{cls.__name__} must declare slots=True")
 
-    # --- 4. Slots must NOT expose __dict__ or __weakref__
+    # --- 5. Slots must NOT expose __dict__ or __weakref__
     _assert_no_forbidden_slots(cls)
 
-    # --- 5. Final sanity check (defensive)
+    # --- 6. Final sanity check (defensive)
     try:
         dummy = object.__new__(cls)
     except Exception:

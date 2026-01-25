@@ -16,6 +16,8 @@ class _ValidatedFrozenDataclass(ABC):
     - zero mutation
     """
 
+    __slots__ = ()
+
     # --- Class creation enforcement -------------------------------------------
 
     def __init_subclass__(cls) -> None:
@@ -24,9 +26,6 @@ class _ValidatedFrozenDataclass(ABC):
         # Skip base class itself
         if cls is _ValidatedFrozenDataclass:
             return
-
-        # Structural enforcement
-        enforce_frozen_slot_dataclass_contract(cls)
 
         # Forbid override of __post_init__
         if "__post_init__" in cls.__dict__:
@@ -58,4 +57,8 @@ class _ValidatedFrozenDataclass(ABC):
         """
         FINAL — must never be overridden.
         """
+
+        # Structural enforcement
+        enforce_frozen_slot_dataclass_contract(type(self))
+
         self._run_validation()

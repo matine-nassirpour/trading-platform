@@ -60,7 +60,7 @@ class TradingCalendar(ValueObject):
         if not self.is_trading_day(day):
             return False
 
-        minute = UtcMinuteOfDay.from_epoch_ms(at.value)
+        minute = UtcMinuteOfDay.from_epoch(at)
 
         return any(session.contains(minute) for session in self.sessions)
 
