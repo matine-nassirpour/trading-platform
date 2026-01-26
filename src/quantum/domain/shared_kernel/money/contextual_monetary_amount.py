@@ -6,8 +6,8 @@ from quantum.domain.shared_kernel.errors.invariants import (
     CurrencyMismatch,
     InvariantViolation,
 )
+from quantum.domain.shared_kernel.money.monetary_amount import MonetaryAmount
 from quantum.domain.shared_kernel.money.money_context import MoneyContext
-from quantum.domain.shared_kernel.primitives.monetary_amount import MonetaryAmount
 
 
 @dataclass(frozen=True, slots=True)

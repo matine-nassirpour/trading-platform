@@ -1,6 +1,7 @@
 import inspect
 
 from dataclasses import is_dataclass
+from functools import cache
 
 
 class StructuralContractViolation(TypeError):
@@ -37,20 +38,21 @@ def _assert_no_forbidden_slots(cls: type) -> None:
     if "__dict__" in slots:
         raise StructuralContractViolation(
             f"{cls.__name__} exposes __dict__ via __slots__. "
-            "This violates immutability and memory guarantees."
+            "This violates immutability guarantees."
         )
 
     if "__weakref__" in slots:
         raise StructuralContractViolation(
             f"{cls.__name__} exposes __weakref__. "
-            "Weak references are forbidden for domain primitives."
+            "Weak references are forbidden in domain primitives."
         )
 
 
 # ------------------------------------------------------------------------------
 # Public contract
 # ------------------------------------------------------------------------------
-def enforce_frozen_slot_dataclass_contract(cls: type) -> None:
+@cache
+def _validate_structural_contract(cls: type) -> None:
     """
     Enforces the canonical structural contract for domain primitives.
 

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
 from quantum.domain.shared_kernel.primitives.structural_contract import (
-    enforce_frozen_slot_dataclass_contract,
+    _validate_structural_contract,
 )
 
 
@@ -58,7 +58,7 @@ class _ValidatedFrozenDataclass(ABC):
         FINAL — must never be overridden.
         """
 
-        # Structural enforcement
-        enforce_frozen_slot_dataclass_contract(type(self))
+        # Enforce structural contract ONCE
+        _validate_structural_contract(type(self))
 
         self._run_validation()
