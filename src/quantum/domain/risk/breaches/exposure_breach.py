@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 
 from quantum.domain.risk.breaches.risk_breach import RiskBreach
 from quantum.domain.risk.limits.exposure_limit import ExposureLimit
+from quantum.domain.risk.limits.risk_threshold_policy import RiskThresholdPolicy
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.money.risk_exposure import RiskExposure
 
@@ -31,3 +34,22 @@ class ExposureBreach(RiskBreach):
 
         if self.current.context != self.limit.context:
             raise InvariantViolation("Exposure MoneyContext mismatch")
+
+    # --- Factory --------------------------------------------------------------
+
+    @staticmethod
+    def detect(
+        *,
+        current: RiskExposure,
+        limit: ExposureLimit,
+        policy: RiskThresholdPolicy,
+    ) -> ExposureBreach | None:
+
+        if not policy.is_breached(current.value, limit.value):
+            return None
+
+        return ExposureBreach(
+            current=current,
+            limit=limit,
+            policy=policy,
+        )

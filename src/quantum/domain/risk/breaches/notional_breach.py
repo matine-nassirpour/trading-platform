@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 
 from quantum.domain.risk.breaches.risk_breach import RiskBreach
 from quantum.domain.risk.limits.notional_limit import NotionalLimit
+from quantum.domain.risk.limits.risk_threshold_policy import RiskThresholdPolicy
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.money.notional import Notional
 
@@ -32,3 +35,22 @@ class NotionalBreach(RiskBreach):
 
         if self.current.context != self.limit.context:
             raise InvariantViolation("Notional MoneyContext mismatch")
+
+    # --- Factory --------------------------------------------------------------
+
+    @staticmethod
+    def detect(
+        *,
+        current: Notional,
+        limit: NotionalLimit,
+        policy: RiskThresholdPolicy,
+    ) -> NotionalBreach | None:
+
+        if not policy.is_breached(current.value, limit.value):
+            return None
+
+        return NotionalBreach(
+            current=current,
+            limit=limit,
+            policy=policy,
+        )

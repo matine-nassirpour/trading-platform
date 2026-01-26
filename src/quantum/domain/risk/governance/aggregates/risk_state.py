@@ -3,18 +3,25 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass
 
+from quantum.domain.risk.breaches.daily_loss_breach import DailyLossBreach
+from quantum.domain.risk.breaches.drawdown_breach import DrawdownBreach
+from quantum.domain.risk.breaches.exposure_breach import ExposureBreach
+from quantum.domain.risk.breaches.leverage_breach import LeverageBreach
+from quantum.domain.risk.breaches.notional_breach import NotionalBreach
 from quantum.domain.risk.events.v1.equity_adjusted_event import EquityAdjustedEvent
 from quantum.domain.risk.events.v1.risk_breach_detected_event import (
     RiskBreachDetectedEvent,
 )
-from quantum.domain.risk.governance.policies.risk_policy import RiskPolicy
 from quantum.domain.risk.limits.risk_limits import RiskLimits
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.events.base_event import BaseEvent
 from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
 from quantum.domain.shared_kernel.events.event_sequence import EventSequence
+from quantum.domain.shared_kernel.money.daily_loss import DailyLoss
 from quantum.domain.shared_kernel.money.drawdown import Drawdown
 from quantum.domain.shared_kernel.money.equity import Equity
+from quantum.domain.shared_kernel.money.notional import Notional
+from quantum.domain.shared_kernel.money.risk_exposure import RiskExposure
 from quantum.domain.shared_kernel.primitives.aggregate_state import AggregateState
 from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import (
     EventHandler,
@@ -64,10 +71,6 @@ class RiskStateData(AggregateState):
         if self.equity_peak.value < self.equity.value:
             raise InvariantViolation("Equity peak cannot be below current equity")
 
-        drawdown = self.equity_peak.value - self.equity.value
-        if drawdown < 0:
-            raise InvariantViolation("Computed drawdown must be non-negative")
-
 
 class RiskState(EventSourcedAggregateRoot[RiskStateData]):
     """
@@ -101,7 +104,15 @@ class RiskState(EventSourcedAggregateRoot[RiskStateData]):
 
     # --- Commands -------------------------------------------------------------
 
-    def register_pnl(self, *, pnl: RealizedPnL) -> list[BaseEvent]:
+    def register_pnl(
+        self,
+        *,
+        pnl: RealizedPnL,
+        drawdown: Drawdown,
+        daily_loss: DailyLoss,
+        exposure: RiskExposure,
+        notional: Notional,
+    ) -> list[BaseEvent]:
         """
         Registers a realized PnL.
 
@@ -119,12 +130,6 @@ class RiskState(EventSourcedAggregateRoot[RiskStateData]):
         new_equity = state.equity.add(pnl)
         new_peak = max(state.equity_peak, new_equity, key=lambda e: e.value)
 
-        drawdown = Drawdown(
-            value=new_peak.value - new_equity.value,
-            currency=new_equity.currency,
-            context=new_equity.context,
-        )
-
         events: list[BaseEvent] = [
             EquityAdjustedEvent(
                 pnl=pnl,
@@ -133,12 +138,40 @@ class RiskState(EventSourcedAggregateRoot[RiskStateData]):
             )
         ]
 
-        breach = RiskPolicy.evaluate_drawdown(
+        if breach := DrawdownBreach.detect(
             current=drawdown,
-            limits=state.limits,
-        )
+            limit=state.limits.max_drawdown,
+            policy=state.limits.threshold_policy,
+        ):
+            events.append(RiskBreachDetectedEvent(breach=breach))
 
-        if breach is not None:
+        if breach := DailyLossBreach.detect(
+            current=daily_loss,
+            limit=state.limits.max_daily_loss,
+            policy=state.limits.threshold_policy,
+        ):
+            events.append(RiskBreachDetectedEvent(breach=breach))
+
+        if breach := ExposureBreach.detect(
+            current=exposure,
+            limit=state.limits.max_exposure,
+            policy=state.limits.threshold_policy,
+        ):
+            events.append(RiskBreachDetectedEvent(breach=breach))
+
+        if breach := NotionalBreach.detect(
+            current=notional,
+            limit=state.limits.max_notional,
+            policy=state.limits.threshold_policy,
+        ):
+            events.append(RiskBreachDetectedEvent(breach=breach))
+
+        if breach := LeverageBreach.detect(
+            exposure=exposure,
+            equity=new_equity,
+            limit=state.limits.max_leverage,
+            policy=state.limits.threshold_policy,
+        ):
             events.append(RiskBreachDetectedEvent(breach=breach))
 
         return events

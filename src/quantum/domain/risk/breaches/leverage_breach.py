@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 
 from quantum.domain.risk.breaches.risk_breach import RiskBreach
 from quantum.domain.risk.limits.leverage_limit import LeverageLimit
+from quantum.domain.risk.limits.risk_threshold_policy import RiskThresholdPolicy
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.money.equity import Equity
 from quantum.domain.shared_kernel.money.risk_exposure import RiskExposure
@@ -39,3 +42,26 @@ class LeverageBreach(RiskBreach):
 
         if self.equity.value <= 0:
             raise InvariantViolation("Equity must be strictly positive")
+
+    # --- Factory --------------------------------------------------------------
+
+    @staticmethod
+    def detect(
+        *,
+        exposure: RiskExposure,
+        equity: Equity,
+        limit: LeverageLimit,
+        policy: RiskThresholdPolicy,
+    ) -> LeverageBreach | None:
+
+        leverage = exposure.value / equity.value
+
+        if not policy.is_breached(leverage, limit.value):
+            return None
+
+        return LeverageBreach(
+            exposure=exposure,
+            equity=equity,
+            limit=limit,
+            policy=policy,
+        )

@@ -1,4 +1,6 @@
-from abc import ABC
+from __future__ import annotations
+
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 from quantum.domain.risk.limits.risk_threshold_policy import RiskThresholdPolicy
@@ -22,3 +24,17 @@ class RiskBreach(ValueObject, ABC):
     def _validate(self) -> None:
         if not isinstance(self.policy, RiskThresholdPolicy):
             raise InvariantViolation("RiskBreach.policy must be a RiskThresholdPolicy")
+
+    # --- Factory --------------------------------------------------------------
+
+    @staticmethod
+    @abstractmethod
+    def detect(**kwargs) -> RiskBreach | None:
+        """
+        Attempt to detect a breach.
+
+        Returns:
+            - RiskBreach if violation occurred
+            - None otherwise
+        """
+        raise NotImplementedError
