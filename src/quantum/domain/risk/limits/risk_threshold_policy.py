@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal
 
+from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.primitives.closed_set_value_object import (
     ClosedSetValueObject,
 )
@@ -28,7 +29,7 @@ class RiskThresholdPolicy(ClosedSetValueObject):
             return value >= limit
         if self.value == "exclusive":
             return value > limit
-        raise ValueError(f"Unknown policy: {self.value}")
+        raise InvariantViolation(f"Unknown policy: {self.value}")
 
     # --- Named constructors ---------------------------------------------------
 

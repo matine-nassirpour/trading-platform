@@ -40,7 +40,7 @@ class RiskLimits(ValueObject):
             raise InvariantViolation("max_drawdown must be DrawdownLimit")
 
         if not isinstance(self.max_notional, NotionalLimit):
-            raise InvariantViolation("max_notional must be Notional")
+            raise InvariantViolation("max_notional must be NotionalLimit")
 
         if not isinstance(self.max_daily_loss, DailyLossLimit):
             raise InvariantViolation("max_daily_loss must be DailyLossLimit")

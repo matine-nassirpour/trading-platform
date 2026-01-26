@@ -35,13 +35,13 @@ class LeverageBreach(RiskBreach):
             raise InvariantViolation("LeverageBreach.limit must be LeverageLimit")
 
         if not isinstance(self.equity, Equity):
-            raise InvariantViolation("LeverageBreach.equity must be Decimal")
-
-        if self.exposure.context != self.equity.context:
-            raise InvariantViolation("Exposure context mismatch")
+            raise InvariantViolation("LeverageBreach.equity must be Equity")
 
         if self.equity.value <= 0:
             raise InvariantViolation("Equity must be strictly positive")
+
+        if self.exposure.context != self.equity.context:
+            raise InvariantViolation("Exposure context mismatch")
 
     # --- Factory --------------------------------------------------------------
 
