@@ -39,3 +39,6 @@ class LeverageBreach(RiskBreach):
 
         if self.equity.value <= 0:
             raise InvariantViolation("Equity must be strictly positive")
+
+        if self.exposure.value / self.equity.value <= self.limit.value:
+            raise InvariantViolation("Leverage not exceeded")

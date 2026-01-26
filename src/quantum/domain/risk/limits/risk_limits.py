@@ -61,6 +61,7 @@ class RiskLimits(ValueObject):
             "max_drawdown": self.max_drawdown,
             "max_notional": self.max_notional,
             "max_daily_loss": self.max_daily_loss,
+            "max_exposure": self.max_exposure,
         }.items():
             if limit.context != self.context:
                 raise InvariantViolation(
