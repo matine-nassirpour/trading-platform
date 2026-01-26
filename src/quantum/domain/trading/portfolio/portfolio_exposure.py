@@ -8,7 +8,7 @@ from quantum.domain.shared_kernel.value_objects.symbol import Symbol
 
 
 @dataclass(frozen=True, slots=True)
-class Exposure(ValueObject):
+class PortfolioExposure(ValueObject):
     """
     Represents exposure for a symbol or portfolio slice.
     """

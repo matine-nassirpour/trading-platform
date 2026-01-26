@@ -3,8 +3,8 @@ from dataclasses import dataclass
 
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.trading.portfolio.balance import Balance
-from quantum.domain.trading.portfolio.exposure import Exposure
 from quantum.domain.trading.portfolio.margin import Margin
+from quantum.domain.trading.portfolio.portfolio_exposure import PortfolioExposure
 
 
 @dataclass(frozen=True, slots=True)
@@ -14,7 +14,7 @@ class PortfolioSnapshot:
     """
 
     balances: Mapping[str, Balance]
-    exposures: Mapping[str, Exposure]
+    exposures: Mapping[str, PortfolioExposure]
     margin: Margin
 
     def total_equity(self) -> Balance:

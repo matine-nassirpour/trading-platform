@@ -23,8 +23,8 @@ from quantum.domain.trading.events.v1.portfolio.portfolio_created_event import (
 )
 from quantum.domain.trading.portfolio.account import Account
 from quantum.domain.trading.portfolio.balance import Balance
-from quantum.domain.trading.portfolio.exposure import Exposure
 from quantum.domain.trading.portfolio.margin import Margin
+from quantum.domain.trading.portfolio.portfolio_exposure import PortfolioExposure
 from quantum.domain.trading.portfolio.portfolio_snapshot import PortfolioSnapshot
 
 
@@ -34,7 +34,7 @@ class PortfolioState(AggregateState):
 
     account: Account
     balances: Mapping[str, Balance]
-    exposures: Mapping[str, Exposure]
+    exposures: Mapping[str, PortfolioExposure]
     margin: Margin
 
     def last_event_sequence(self) -> EventSequence:
@@ -52,7 +52,7 @@ class PortfolioState(AggregateState):
                 raise InvariantViolation("Invalid Balance")
 
         for e in self.exposures.values():
-            if not isinstance(e, Exposure):
+            if not isinstance(e, PortfolioExposure):
                 raise InvariantViolation("Invalid Exposure")
 
         if not isinstance(self.margin, Margin):
@@ -124,7 +124,7 @@ class Portfolio(EventSourcedAggregateRoot[PortfolioState]):
         assert isinstance(event, ExposureUpdatedEvent)
 
         exposures = dict(state.exposures)
-        exposures[event.symbol.value] = Exposure(
+        exposures[event.symbol.value] = PortfolioExposure(
             symbol=event.symbol,
             notional=event.notional,
             leverage=event.notional.value,

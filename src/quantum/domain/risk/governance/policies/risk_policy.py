@@ -16,8 +16,8 @@ from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.money.daily_loss import DailyLoss
 from quantum.domain.shared_kernel.money.drawdown import Drawdown
 from quantum.domain.shared_kernel.money.equity import Equity
-from quantum.domain.shared_kernel.money.exposure import Exposure
 from quantum.domain.shared_kernel.money.notional import Notional
+from quantum.domain.shared_kernel.money.risk_exposure import RiskExposure
 
 
 class RiskPolicy:
@@ -100,7 +100,7 @@ class RiskPolicy:
 
     @staticmethod
     def evaluate_exposure(
-        *, current: Exposure, limits: RiskLimits
+        *, current: RiskExposure, limits: RiskLimits
     ) -> ExposureBreach | None:
         limit: ExposureLimit = limits.max_exposure
 
@@ -120,7 +120,7 @@ class RiskPolicy:
     @staticmethod
     def evaluate_leverage(
         *,
-        exposure: Exposure,
+        exposure: RiskExposure,
         equity: Equity,
         limits: RiskLimits,
     ) -> LeverageBreach | None:

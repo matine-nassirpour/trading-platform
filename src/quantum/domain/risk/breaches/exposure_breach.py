@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from quantum.domain.risk.breaches.risk_breach import RiskBreach
 from quantum.domain.risk.limits.exposure_limit import ExposureLimit
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.money.exposure import Exposure
+from quantum.domain.shared_kernel.money.risk_exposure import RiskExposure
 
 
 @dataclass(frozen=True, slots=True)
@@ -17,13 +17,13 @@ class ExposureBreach(RiskBreach):
     - both share the same MoneyContext
     """
 
-    current: Exposure
+    current: RiskExposure
     limit: ExposureLimit
 
     def _validate(self) -> None:
         super()._validate()
 
-        if not isinstance(self.current, Exposure):
+        if not isinstance(self.current, RiskExposure):
             raise InvariantViolation("ExposureBreach.current must be an Exposure")
 
         if not isinstance(self.limit, ExposureLimit):

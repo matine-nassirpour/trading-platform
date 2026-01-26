@@ -4,7 +4,7 @@ from quantum.domain.risk.breaches.risk_breach import RiskBreach
 from quantum.domain.risk.limits.leverage_limit import LeverageLimit
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.money.equity import Equity
-from quantum.domain.shared_kernel.money.exposure import Exposure
+from quantum.domain.shared_kernel.money.risk_exposure import RiskExposure
 
 
 @dataclass(frozen=True, slots=True)
@@ -18,14 +18,14 @@ class LeverageBreach(RiskBreach):
     This breach indicates excessive capital amplification.
     """
 
-    exposure: Exposure
+    exposure: RiskExposure
     equity: Equity
     limit: LeverageLimit
 
     def _validate(self) -> None:
         super()._validate()
 
-        if not isinstance(self.exposure, Exposure):
+        if not isinstance(self.exposure, RiskExposure):
             raise InvariantViolation("LeverageBreach.exposure must be Exposure")
 
         if not isinstance(self.limit, LeverageLimit):

@@ -8,7 +8,7 @@ from quantum.domain.shared_kernel.money.contextual_monetary_amount import (
 
 
 @dataclass(frozen=True, slots=True)
-class Exposure(ContextualMonetaryAmount):
+class RiskExposure(ContextualMonetaryAmount):
     """
     Effective economic exposure.
 
