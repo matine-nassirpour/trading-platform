@@ -8,6 +8,7 @@ from quantum.domain.risk.breaches.drawdown_breach import DrawdownBreach
 from quantum.domain.risk.breaches.exposure_breach import ExposureBreach
 from quantum.domain.risk.breaches.leverage_breach import LeverageBreach
 from quantum.domain.risk.breaches.notional_breach import NotionalBreach
+from quantum.domain.risk.breaches.risk_breach import RiskBreach
 from quantum.domain.risk.events.v1.equity_adjusted_event import EquityAdjustedEvent
 from quantum.domain.risk.events.v1.risk_breach_detected_event import (
     RiskBreachDetectedEvent,
@@ -137,6 +138,8 @@ class RiskState(EventSourcedAggregateRoot[RiskStateData]):
                 new_equity_peak=new_peak,
             )
         ]
+
+        breach: RiskBreach | None = None
 
         if breach := DrawdownBreach.detect(
             current=drawdown,
