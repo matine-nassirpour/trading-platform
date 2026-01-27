@@ -11,8 +11,10 @@ from quantum.domain.decision.events.v1.decision_rejected_event import (
 from quantum.domain.decision.events.v1.trading_intent_created_event import (
     TradingIntentCreatedEvent,
 )
+from quantum.domain.decision.governance.decision_policy_result import (
+    DecisionPolicyResult,
+)
 from quantum.domain.decision.identity.decision_identity import DecisionIdentity
-from quantum.domain.risk.boundary.decision_boundary_result import DecisionBoundaryResult
 from quantum.domain.shared_kernel.errors.invariants import (
     InvalidStateTransition,
     InvariantViolation,
@@ -115,7 +117,7 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentState]):
 
     # --- Commands -------------------------------------------------------------
 
-    def authorize(self, *, result: DecisionBoundaryResult) -> list[BaseEvent]:
+    def authorize(self, *, result: DecisionPolicyResult) -> list[BaseEvent]:
         """
         Confirms that the trading intent is authorized.
 
@@ -138,7 +140,7 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentState]):
             )
         ]
 
-    def reject(self, *, result: DecisionBoundaryResult) -> list[BaseEvent]:
+    def reject(self, *, result: DecisionPolicyResult) -> list[BaseEvent]:
         """
         Explicit rejection of the trading decision.
         """

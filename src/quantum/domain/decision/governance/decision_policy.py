@@ -8,12 +8,11 @@ from quantum.domain.shared_kernel.temporal.temporal_validity import TemporalVali
 
 
 @dataclass(frozen=True, slots=True)
-class DecisionBoundary(ValueObject):
+class DecisionPolicy(ValueObject):
     """
-    Canonical Decision Authorization Boundary.
+    Canonical Decision Authorization policy.
 
     This object answers ONE and only ONE question:
-
         "Was this trading decision AUTHORIZED at this time?"
 
     This is:
@@ -23,11 +22,11 @@ class DecisionBoundary(ValueObject):
     - A GOVERNANCE CONTRACT
 
     Audit meaning:
-    - If a decision breaches a boundary, the decision is INVALID,
+    - If a decision breaches a policy, the decision is INVALID,
       regardless of profitability or execution correctness.
     """
 
-    boundary_id: str
+    policy_id: str
 
     strategy_id: StrategyId
     allowed_regimes: frozenset[MarketRegime]
@@ -39,23 +38,21 @@ class DecisionBoundary(ValueObject):
     experimental: bool = False
 
     def _validate(self) -> None:
-        if not isinstance(self.boundary_id, str) or not self.boundary_id.strip():
-            raise InvariantViolation(
-                "DecisionBoundary requires a non-empty boundary_id"
-            )
+        if not isinstance(self.policy_id, str) or not self.policy_id.strip():
+            raise InvariantViolation("DecisionPolicy requires a non-empty policy_id")
 
         if not isinstance(self.strategy_id, StrategyId):
-            raise InvariantViolation("DecisionBoundary requires a StrategyId")
+            raise InvariantViolation("DecisionPolicy requires a StrategyId")
 
         if not isinstance(self.allowed_regimes, frozenset):
             raise InvariantViolation("allowed_regimes must be a frozenset")
 
         if not self.allowed_regimes:
-            raise InvariantViolation("DecisionBoundary must allow at least one regime")
+            raise InvariantViolation("DecisionPolicy must allow at least one regime")
 
         for regime in self.allowed_regimes:
             if not isinstance(regime, MarketRegime):
                 raise InvariantViolation("Invalid MarketRegime in allowed_regimes")
 
         if not isinstance(self.validity, TemporalValidity):
-            raise InvariantViolation("DecisionBoundary requires TemporalValidity")
+            raise InvariantViolation("DecisionPolicy requires TemporalValidity")

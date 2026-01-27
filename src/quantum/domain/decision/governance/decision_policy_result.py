@@ -5,9 +5,9 @@ from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 
 
 @dataclass(frozen=True, slots=True)
-class DecisionBoundaryResult(ValueObject):
+class DecisionPolicyResult(ValueObject):
     """
-    Result of a DecisionBoundary evaluation.
+    Result of a DecisionPolicy evaluation.
 
     Explicit and replayable.
     """
@@ -20,6 +20,4 @@ class DecisionBoundaryResult(ValueObject):
             raise InvariantViolation("authorized must be a boolean")
 
         if not isinstance(self.reason, str) or not self.reason.strip():
-            raise InvariantViolation(
-                "DecisionBoundaryResult requires a non-empty reason"
-            )
+            raise InvariantViolation("DecisionPolicyResult requires a non-empty reason")

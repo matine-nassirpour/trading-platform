@@ -6,11 +6,13 @@ from quantum.domain.decision import TradingContext
 from quantum.domain.decision.events.v1.decision_authorized_event import (
     DecisionAuthorizedEvent,
 )
+from quantum.domain.decision.governance.decision_policy import DecisionPolicy
+from quantum.domain.decision.governance.decision_policy_evaluator import (
+    DecisionPolicyEvaluator,
+)
 from quantum.domain.decision.identity.decision_identity import DecisionIdentity
 from quantum.domain.market.instrument.instrument_spec import InstrumentSpec
 from quantum.domain.market.value_objects.reference_price import ReferencePrice
-from quantum.domain.risk.boundary.decision_boundary import DecisionBoundary
-from quantum.domain.risk.boundary.decision_boundary_policy import DecisionBoundaryPolicy
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.identifiers.intent_id import IntentId
 from quantum.domain.shared_kernel.value_objects.price import Price
@@ -107,7 +109,7 @@ class OrderIntentFactory:
         *,
         params: OrderIntentParameters,
         instrument: InstrumentSpec,
-        decision_boundary: DecisionBoundary,
+        decision_boundary: DecisionPolicy,
     ) -> tuple[OrderIntentCreatedEvent, DecisionAuthorizedEvent]:
         """
         Validates and creates an OrderIntentEvent.
@@ -126,7 +128,7 @@ class OrderIntentFactory:
         OrderIntentFactory._validate_sl_tp(params, instrument)
 
         # --- Decision boundary evaluation -------------------------------------
-        boundary_result = DecisionBoundaryPolicy.evaluate(
+        boundary_result = DecisionPolicyEvaluator.evaluate(
             boundary=decision_boundary,
             decision=params.decision_identity,
             context=params.trading_context,
