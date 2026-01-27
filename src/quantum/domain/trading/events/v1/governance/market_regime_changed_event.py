@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from typing import ClassVar
 
+from quantum.domain.market.market_regime import MarketRegime
 from quantum.domain.shared_kernel.events.base_event import BaseEvent
-from quantum.domain.trading.market.market_regime import MarketRegime
 
 
 @dataclass(frozen=True, slots=True)

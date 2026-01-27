@@ -8,7 +8,7 @@ from quantum.application.ports.outbound.trading_intent_repository import (
     TradingIntentRepository,
 )
 from quantum.application.ports.outbound.unit_of_work import UnitOfWork
-from quantum.domain.trading.decision.intent.trading_intent import TradingIntent
+from quantum.domain.decision.intent import TradingIntent
 
 
 class SubmitTradingIntentUseCase:

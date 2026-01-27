@@ -1,6 +1,7 @@
 from decimal import Decimal
 from typing import Final
 
+from quantum.domain.market.instrument.instrument_spec import InstrumentSpec
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.trading.execution.order.position_side import PositionSide
 from quantum.domain.trading.execution.pricing.pricing_context import PricingContext
@@ -8,7 +9,6 @@ from quantum.domain.trading.execution.pricing.quantization_service import (
     QuantizationService,
 )
 from quantum.domain.trading.execution.pricing.rounding_strategy import _RoundingStrategy
-from quantum.domain.trading.market.instrument.instrument_spec import InstrumentSpec
 
 
 class PricingPolicy:

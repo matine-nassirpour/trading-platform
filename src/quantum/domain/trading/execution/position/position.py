@@ -6,6 +6,7 @@ from quantum.domain.shared_kernel.errors.position_errors import PositionAlreadyC
 from quantum.domain.shared_kernel.events.base_event import BaseEvent
 from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
 from quantum.domain.shared_kernel.events.event_sequence import EventSequence
+from quantum.domain.shared_kernel.identifiers.position_id import PositionId
 from quantum.domain.shared_kernel.money.money_context import MoneyContext
 from quantum.domain.shared_kernel.primitives.aggregate_state import AggregateState
 from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import (
@@ -22,7 +23,6 @@ from quantum.domain.trading.events.v1.position.position_opened_event import (
 )
 from quantum.domain.trading.execution.order.position_side import PositionSide
 from quantum.domain.trading.execution.position.pnl_service import PnLService
-from quantum.domain.trading.value_objects.identifiers.position_id import PositionId
 
 
 @dataclass(frozen=True, slots=True)

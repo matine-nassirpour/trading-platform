@@ -1,10 +1,10 @@
 from dataclasses import dataclass
 
-from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.primitives.value_object import ValueObject
-from quantum.domain.trading.decision.identity.decision_confidence_level import (
+from quantum.domain.decision.identity.decision_confidence_level import (
     DecisionConfidenceLevel,
 )
+from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 
 
 @dataclass(frozen=True, slots=True)

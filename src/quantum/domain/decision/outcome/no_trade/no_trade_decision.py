@@ -1,10 +1,8 @@
 from dataclasses import dataclass
 
+from quantum.domain.decision.outcome.no_trade.no_trade_reason import NoTradeReason
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
-from quantum.domain.trading.decision.outcome.no_trade.no_trade_reason import (
-    NoTradeReason,
-)
 
 
 @dataclass(frozen=True, slots=True)

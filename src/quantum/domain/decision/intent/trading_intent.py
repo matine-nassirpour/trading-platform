@@ -1,6 +1,18 @@
 from collections.abc import Mapping
 from dataclasses import dataclass
 
+from quantum.domain.decision.context.trading_context import TradingContext
+from quantum.domain.decision.events.v1.decision_authorized_event import (
+    DecisionAuthorizedEvent,
+)
+from quantum.domain.decision.events.v1.decision_rejected_event import (
+    DecisionRejectedEvent,
+)
+from quantum.domain.decision.events.v1.trading_intent_created_event import (
+    TradingIntentCreatedEvent,
+)
+from quantum.domain.decision.identity.decision_identity import DecisionIdentity
+from quantum.domain.risk.boundary.decision_boundary_result import DecisionBoundaryResult
 from quantum.domain.shared_kernel.errors.invariants import (
     InvalidStateTransition,
     InvariantViolation,
@@ -8,26 +20,12 @@ from quantum.domain.shared_kernel.errors.invariants import (
 from quantum.domain.shared_kernel.events.base_event import BaseEvent
 from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
 from quantum.domain.shared_kernel.events.event_sequence import EventSequence
+from quantum.domain.shared_kernel.identifiers.intent_id import IntentId
 from quantum.domain.shared_kernel.primitives.aggregate_state import AggregateState
 from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import (
     EventHandler,
     EventSourcedAggregateRoot,
 )
-from quantum.domain.trading.decision.context.trading_context import TradingContext
-from quantum.domain.trading.decision.identity.decision_identity import DecisionIdentity
-from quantum.domain.trading.events.v1.decision.decision_authorized_event import (
-    DecisionAuthorizedEvent,
-)
-from quantum.domain.trading.events.v1.decision.decision_rejected_event import (
-    DecisionRejectedEvent,
-)
-from quantum.domain.trading.events.v1.decision.trading_intent_created_event import (
-    TradingIntentCreatedEvent,
-)
-from quantum.domain.trading.risk.boundary.decision_boundary_result import (
-    DecisionBoundaryResult,
-)
-from quantum.domain.trading.value_objects.identifiers.intent_id import IntentId
 
 
 @dataclass(frozen=True, slots=True)

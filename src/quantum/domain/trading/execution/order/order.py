@@ -9,6 +9,8 @@ from quantum.domain.shared_kernel.errors.order_errors import (
 from quantum.domain.shared_kernel.events.base_event import BaseEvent
 from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
 from quantum.domain.shared_kernel.events.event_sequence import EventSequence
+from quantum.domain.shared_kernel.identifiers.intent_id import IntentId
+from quantum.domain.shared_kernel.identifiers.order_id import OrderId
 from quantum.domain.shared_kernel.primitives.aggregate_state import AggregateState
 from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import (
     EventHandler,
@@ -32,8 +34,6 @@ from quantum.domain.trading.execution.order.execution_fill import ExecutionFill
 from quantum.domain.trading.execution.order.order_status import OrderStatus
 from quantum.domain.trading.execution.order.order_type import OrderType
 from quantum.domain.trading.execution.order.position_side import PositionSide
-from quantum.domain.trading.value_objects.identifiers.intent_id import IntentId
-from quantum.domain.trading.value_objects.identifiers.order_id import OrderId
 
 
 @dataclass(frozen=True, slots=True)

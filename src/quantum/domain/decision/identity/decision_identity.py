@@ -1,16 +1,14 @@
 from dataclasses import dataclass
 
-from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.primitives.value_object import ValueObject
-from quantum.domain.trading.decision.identity.decision_confidence import (
-    DecisionConfidence,
-)
-from quantum.domain.trading.decision.identity.decision_source import DecisionSource
-from quantum.domain.trading.decision.identity.model_version import ModelVersion
-from quantum.domain.trading.decision.identity.strategy_id import StrategyId
-from quantum.domain.trading.risk.capital.capital_allocation_intent import (
+from quantum.domain.decision.identity.decision_confidence import DecisionConfidence
+from quantum.domain.decision.identity.decision_source import DecisionSource
+from quantum.domain.decision.identity.model_version import ModelVersion
+from quantum.domain.decision.identity.strategy_id import StrategyId
+from quantum.domain.risk.capital.capital_allocation_intent import (
     CapitalAllocationIntent,
 )
+from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 
 
 @dataclass(frozen=True, slots=True)

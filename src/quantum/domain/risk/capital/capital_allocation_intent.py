@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 
+from quantum.domain.risk.capital.capital_fraction import CapitalFraction
+from quantum.domain.risk.capital.risk_budget_slice import RiskBudgetSlice
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
-from quantum.domain.trading.risk.capital.capital_fraction import CapitalFraction
-from quantum.domain.trading.risk.capital.risk_budget_slice import RiskBudgetSlice
 
 
 @dataclass(frozen=True, slots=True)

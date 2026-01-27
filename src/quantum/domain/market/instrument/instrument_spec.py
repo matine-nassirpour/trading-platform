@@ -1,18 +1,16 @@
 from dataclasses import dataclass
 from decimal import Decimal
 
+from quantum.domain.market.instrument.currency_pair import CurrencyPair
+from quantum.domain.market.instrument.price_constraints import PriceConstraints
+from quantum.domain.market.value_objects.contract_size import ContractSize
+from quantum.domain.market.value_objects.tick_value import TickValue
+from quantum.domain.market.value_objects.volume_constraints import VolumeConstraints
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.money.money_context import MoneyContext
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 from quantum.domain.shared_kernel.value_objects.currency import Currency
 from quantum.domain.shared_kernel.value_objects.symbol import Symbol
-from quantum.domain.trading.market.instrument.currency_pair import CurrencyPair
-from quantum.domain.trading.market.instrument.price_constraints import PriceConstraints
-from quantum.domain.trading.market.value_objects.contract_size import ContractSize
-from quantum.domain.trading.market.value_objects.tick_value import TickValue
-from quantum.domain.trading.market.value_objects.volume_constraints import (
-    VolumeConstraints,
-)
 
 
 @dataclass(frozen=True, slots=True)
