@@ -12,7 +12,7 @@ class RiskExposure(ContextualMonetaryAmount):
     """
     Effective economic exposure.
 
-    Exposure represents the REAL economic risk carried by the system,
+    Represents the REAL economic risk carried by the system,
     after accounting for direction, leverage, and aggregation effects.
 
     Key properties:
