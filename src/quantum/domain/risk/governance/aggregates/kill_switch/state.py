@@ -63,21 +63,6 @@ class KillSwitchStateData(AggregateState):
             if self.reason is None:
                 raise InvariantViolation("Triggered KillSwitch must have a reason")
 
-    @staticmethod
-    def empty() -> KillSwitchStateData:
-        """
-        Canonical pre-genesis empty state.
-
-        This state represents the aggregate BEFORE any event
-        has been applied. It must only be used as the starting
-        point for event replay.
-        """
-        return KillSwitchStateData(
-            last_sequence=EventSequence.initial(),
-            status=None,
-            reason=None,
-        )
-
 
 class KillSwitchState(EventSourcedAggregateRoot[KillSwitchStateData]):
     """
@@ -89,10 +74,6 @@ class KillSwitchState(EventSourcedAggregateRoot[KillSwitchStateData]):
     """
 
     # --- Factory --------------------------------------------------------------
-
-    @staticmethod
-    def empty() -> KillSwitchState:
-        return KillSwitchState(KillSwitchStateData.empty())
 
     @staticmethod
     def genesis_events() -> list[BaseEvent]:
