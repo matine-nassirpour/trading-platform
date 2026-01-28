@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import ClassVar
 
-from quantum.domain.market.market_regime import MarketRegime
+from quantum.domain.market.regime.market_regime import MarketRegime
 from quantum.domain.shared_kernel.events.base_event import BaseEvent
 
 
