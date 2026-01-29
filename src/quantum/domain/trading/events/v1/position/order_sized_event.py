@@ -1,14 +1,14 @@
 from dataclasses import dataclass
 from typing import ClassVar
 
-from quantum.domain.shared_kernel.events.base_event import BaseEvent
+from quantum.domain.shared_kernel.events.base.fact_event import FactEvent
 from quantum.domain.shared_kernel.identifiers.intent_id import IntentId
 from quantum.domain.shared_kernel.value_objects.symbol import Symbol
 from quantum.domain.shared_kernel.value_objects.volume import PositiveVolume
 
 
 @dataclass(frozen=True, slots=True)
-class OrderSizedEvent(BaseEvent):
+class OrderSizedEvent(FactEvent):
     """
     Emitted when an order volume is determined by a sizing logic.
 

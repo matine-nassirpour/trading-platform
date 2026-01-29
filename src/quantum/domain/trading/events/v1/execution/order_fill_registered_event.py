@@ -1,13 +1,13 @@
 from dataclasses import dataclass
 from typing import ClassVar
 
-from quantum.domain.shared_kernel.events.base_event import BaseEvent
+from quantum.domain.shared_kernel.events.base.fact_event import FactEvent
 from quantum.domain.shared_kernel.identifiers.order_id import OrderId
 from quantum.domain.trading.execution.order.execution_fill import ExecutionFill
 
 
 @dataclass(frozen=True, slots=True)
-class OrderFillRegisteredEvent(BaseEvent):
+class OrderFillRegisteredEvent(FactEvent):
     event_name: ClassVar[str] = "trading.order.fill_registered"
     event_version: ClassVar[int] = 1
 

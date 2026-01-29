@@ -15,7 +15,7 @@ from quantum.domain.risk.events.v1.risk_breach_detected_event import (
 )
 from quantum.domain.risk.limits.risk_limits import RiskLimits
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.events.base_event import BaseEvent
+from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
 from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
 from quantum.domain.shared_kernel.events.event_sequence import EventSequence
 from quantum.domain.shared_kernel.money.daily_loss import DailyLoss

@@ -6,7 +6,7 @@ from quantum.domain.shared_kernel.errors.order_errors import (
     OrderNotFillable,
     OrderOverfill,
 )
-from quantum.domain.shared_kernel.events.base_event import BaseEvent
+from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
 from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
 from quantum.domain.shared_kernel.events.event_sequence import EventSequence
 from quantum.domain.shared_kernel.identifiers.intent_id import IntentId

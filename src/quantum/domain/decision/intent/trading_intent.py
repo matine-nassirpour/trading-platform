@@ -8,9 +8,6 @@ from quantum.domain.decision.events.v1.decision_authorized_event import (
 from quantum.domain.decision.events.v1.decision_rejected_event import (
     DecisionRejectedEvent,
 )
-from quantum.domain.decision.events.v1.trading_intent_created_event import (
-    TradingIntentCreatedEvent,
-)
 from quantum.domain.decision.governance.decision_policy_result import (
     DecisionPolicyResult,
 )
@@ -19,7 +16,7 @@ from quantum.domain.shared_kernel.errors.invariants import (
     InvalidStateTransition,
     InvariantViolation,
 )
-from quantum.domain.shared_kernel.events.base_event import BaseEvent
+from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
 from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
 from quantum.domain.shared_kernel.events.event_sequence import EventSequence
 from quantum.domain.shared_kernel.identifiers.intent_id import IntentId
@@ -27,6 +24,9 @@ from quantum.domain.shared_kernel.primitives.aggregate_state import AggregateSta
 from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import (
     EventHandler,
     EventSourcedAggregateRoot,
+)
+from quantum.domain.trading.events.v1.execution.trading_intent_created_event import (
+    TradingIntentCreatedEvent,
 )
 
 

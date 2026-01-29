@@ -5,11 +5,11 @@ from quantum.domain.decision.identity.strategy_id import StrategyId
 from quantum.domain.risk.lifecycle.strategy_lifecycle_state import (
     StrategyLifecycleState,
 )
-from quantum.domain.shared_kernel.events.base_event import BaseEvent
+from quantum.domain.shared_kernel.events.base.fact_event import FactEvent
 
 
 @dataclass(frozen=True, slots=True)
-class StrategyLifecycleChangedEvent(BaseEvent):
+class StrategyLifecycleChangedEvent(FactEvent):
     """
     Emitted whenever a strategy lifecycle state changes.
     """

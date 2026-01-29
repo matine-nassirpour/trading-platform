@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 from typing import ClassVar
 
-from quantum.domain.shared_kernel.events.base_event import BaseEvent
+from quantum.domain.shared_kernel.events.base.risk_event import RiskEvent
 
 
 @dataclass(frozen=True, slots=True)
-class KillSwitchArmedEvent(BaseEvent):
+class KillSwitchArmedEvent(RiskEvent):
     """
     Emitted when the kill switch is armed (initial or after a reset).
 

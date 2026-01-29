@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import ClassVar
 
-from quantum.domain.shared_kernel.events.base_event import BaseEvent
+from quantum.domain.shared_kernel.events.base.fact_event import FactEvent
 from quantum.domain.shared_kernel.identifiers.intent_id import IntentId
 from quantum.domain.shared_kernel.identifiers.position_id import PositionId
 from quantum.domain.shared_kernel.value_objects.price import Price
@@ -10,7 +10,7 @@ from quantum.domain.trading.execution.safety.sl_tp_change_reason import SlTpChan
 
 
 @dataclass(frozen=True, slots=True)
-class SlTpChangedEvent(BaseEvent):
+class SlTpChangedEvent(FactEvent):
     """
     Canonical event emitted whenever SL and/or TP configuration changes.
 

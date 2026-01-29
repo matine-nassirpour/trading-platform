@@ -1,13 +1,13 @@
 from dataclasses import dataclass
 from typing import ClassVar
 
-from quantum.domain.shared_kernel.events.base_event import BaseEvent
+from quantum.domain.shared_kernel.events.base.risk_event import RiskEvent
 from quantum.domain.shared_kernel.money.equity import Equity
 from quantum.domain.shared_kernel.value_objects.pnl import RealizedPnL
 
 
 @dataclass(frozen=True, slots=True)
-class EquityAdjustedEvent(BaseEvent):
+class EquityAdjustedEvent(RiskEvent):
     """
     Emitted whenever equity is adjusted by a realized PnL.
 

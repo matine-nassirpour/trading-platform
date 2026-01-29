@@ -3,12 +3,12 @@ from typing import ClassVar
 
 from quantum.domain.decision.identity.decision_identity import DecisionIdentity
 from quantum.domain.decision.outcome.no_trade.no_trade_decision import NoTradeDecision
-from quantum.domain.shared_kernel.events.base_event import BaseEvent
+from quantum.domain.shared_kernel.events.base.decision_event import DecisionEvent
 from quantum.domain.shared_kernel.value_objects.symbol import Symbol
 
 
 @dataclass(frozen=True, slots=True)
-class NoTradeDecisionEvent(BaseEvent):
+class NoTradeDecisionEvent(DecisionEvent):
     """
     Emitted when a trading decision results in an explicit NO-TRADE outcome.
 

@@ -3,11 +3,11 @@ from typing import ClassVar
 
 from quantum.domain.risk.attribution.risk_attribution import RiskAttribution
 from quantum.domain.risk.breaches.risk_breach import RiskBreach
-from quantum.domain.shared_kernel.events.base_event import BaseEvent
+from quantum.domain.shared_kernel.events.base.risk_event import RiskEvent
 
 
 @dataclass(frozen=True, slots=True)
-class RiskBreachAttributedEvent(BaseEvent):
+class RiskBreachAttributedEvent(RiskEvent):
     """
     Emitted to explicitly attribute the origin of a detected risk.
     """

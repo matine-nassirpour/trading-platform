@@ -2,11 +2,11 @@ from dataclasses import dataclass
 from typing import ClassVar
 
 from quantum.domain.risk.breaches.risk_breach import RiskBreach
-from quantum.domain.shared_kernel.events.base_event import BaseEvent
+from quantum.domain.shared_kernel.events.base.risk_event import RiskEvent
 
 
 @dataclass(frozen=True, slots=True)
-class RiskBreachDetectedEvent(BaseEvent):
+class RiskBreachDetectedEvent(RiskEvent):
     """
     Emitted when a configured risk limit is breached.
 

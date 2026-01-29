@@ -3,12 +3,12 @@ from typing import ClassVar
 
 from quantum.domain.decision.context.trading_context import TradingContext
 from quantum.domain.decision.identity.decision_identity import DecisionIdentity
-from quantum.domain.shared_kernel.events.base_event import BaseEvent
+from quantum.domain.shared_kernel.events.base.fact_event import FactEvent
 from quantum.domain.shared_kernel.identifiers.intent_id import IntentId
 
 
 @dataclass(frozen=True, slots=True)
-class TradingIntentCreatedEvent(BaseEvent):
+class TradingIntentCreatedEvent(FactEvent):
     """
     Emitted when a trading intent is created.
 

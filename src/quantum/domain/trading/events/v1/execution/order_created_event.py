@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import ClassVar
 
 from quantum.domain.market.value_objects.reference_price import ReferencePrice
-from quantum.domain.shared_kernel.events.base_event import BaseEvent
+from quantum.domain.shared_kernel.events.base.fact_event import FactEvent
 from quantum.domain.shared_kernel.identifiers.intent_id import IntentId
 from quantum.domain.shared_kernel.identifiers.order_id import OrderId
 from quantum.domain.shared_kernel.value_objects.price import Price
@@ -14,7 +14,7 @@ from quantum.domain.trading.execution.order.time_in_force import TimeInForce
 
 
 @dataclass(frozen=True, slots=True)
-class OrderCreatedEvent(BaseEvent):
+class OrderCreatedEvent(FactEvent):
     """
     Emitted when an order is created inside a TradingIntent.
 

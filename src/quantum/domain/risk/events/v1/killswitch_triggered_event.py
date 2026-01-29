@@ -4,11 +4,11 @@ from typing import ClassVar
 from quantum.domain.risk.governance.aggregates.kill_switch.reason import (
     KillSwitchReason,
 )
-from quantum.domain.shared_kernel.events.base_event import BaseEvent
+from quantum.domain.shared_kernel.events.base.risk_event import RiskEvent
 
 
 @dataclass(frozen=True, slots=True)
-class KillSwitchTriggeredEvent(BaseEvent):
+class KillSwitchTriggeredEvent(RiskEvent):
     event_name: ClassVar[str] = "risk.killswitch.triggered"
     event_version: ClassVar[int] = 1
 
