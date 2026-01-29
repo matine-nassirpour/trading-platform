@@ -7,7 +7,6 @@ from quantum.application.integration_events.base_integration_event import (
 from quantum.domain.shared_kernel.identifiers.intent_id import IntentId
 from quantum.domain.shared_kernel.identifiers.order_id import OrderId
 from quantum.domain.shared_kernel.identifiers.position_id import PositionId
-from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
 from quantum.domain.shared_kernel.value_objects.price import Price
 from quantum.domain.shared_kernel.value_objects.symbol import Symbol
 from quantum.domain.shared_kernel.value_objects.volume import PositiveVolume
@@ -16,7 +15,7 @@ from quantum.domain.trading.execution.taxonomy.deal_entry import DealEntry
 from quantum.domain.trading.execution.taxonomy.deal_reason import DealReason
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class TakeProfitTriggeredEvent(IntegrationEvent):
     """
     - triggered by the broker
@@ -37,6 +36,5 @@ class TakeProfitTriggeredEvent(IntegrationEvent):
     tp_price: Price
     volume_closed: PositiveVolume
 
-    trigger_epoch_ms: EpochMs
     deal_entry: DealEntry = DealEntry
     reason: DealReason = DealReason

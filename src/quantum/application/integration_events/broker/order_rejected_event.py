@@ -5,14 +5,13 @@ from quantum.application.integration_events.base_integration_event import (
     IntegrationEvent,
 )
 from quantum.domain.shared_kernel.identifiers.intent_id import IntentId
-from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
 from quantum.domain.shared_kernel.value_objects.symbol import Symbol
 from quantum.domain.trading.execution.safety.execution_rejection import (
     ExecutionRejection,
 )
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class OrderRejectedEvent(IntegrationEvent):
     """
     - Broker rejection
@@ -26,5 +25,4 @@ class OrderRejectedEvent(IntegrationEvent):
     intent_id: IntentId
     symbol: Symbol
 
-    reject_epoch_ms: EpochMs
     rejection: ExecutionRejection

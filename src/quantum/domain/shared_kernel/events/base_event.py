@@ -31,9 +31,6 @@ class BaseEvent(ABC):
     event_version: ClassVar[int] = 1
 
     def __post_init__(self) -> None:
-        if not hasattr(self, "event_name"):
-            raise InvariantViolation("BaseEvent requires event_name")
-
         for f in fields(self):
             if f.name in _FORBIDDEN_EVENT_FIELDS:
                 raise InvariantViolation(

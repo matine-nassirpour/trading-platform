@@ -5,14 +5,13 @@ from quantum.application.integration_events.base_integration_event import (
     IntegrationEvent,
 )
 from quantum.domain.shared_kernel.identifiers.intent_id import IntentId
-from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
 from quantum.domain.shared_kernel.value_objects.symbol import Symbol
 from quantum.domain.trading.execution.taxonomy.order_check_outcome import (
     OrderCheckOutcome,
 )
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class OrderCheckedEvent(IntegrationEvent):
     """
     - margin check
@@ -25,8 +24,5 @@ class OrderCheckedEvent(IntegrationEvent):
 
     intent_id: IntentId
     symbol: Symbol
-
-    request_epoch_ms: EpochMs
-    response_epoch_ms: EpochMs
 
     outcome: OrderCheckOutcome

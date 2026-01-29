@@ -6,11 +6,10 @@ from quantum.application.integration_events.base_integration_event import (
 )
 from quantum.domain.shared_kernel.identifiers.intent_id import IntentId
 from quantum.domain.shared_kernel.identifiers.order_id import OrderId
-from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
 from quantum.domain.shared_kernel.value_objects.symbol import Symbol
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class OrderAcknowledgedEvent(IntegrationEvent):
     """
     - The order was received by an external platform.
@@ -24,4 +23,3 @@ class OrderAcknowledgedEvent(IntegrationEvent):
     intent_id: IntentId
     order_id: OrderId
     symbol: Symbol
-    ack_epoch_ms: EpochMs
