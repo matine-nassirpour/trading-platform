@@ -21,7 +21,7 @@ class CausationId(ValueObject):
 
     def _validate(self) -> None:
         if not isinstance(self.value, EventId):
-            raise InvariantViolation("CausationId must be an EventId")
+            raise InvariantViolation("CausationId must wrap EventId")
 
     @staticmethod
     def from_event_id(event_id: EventId) -> CausationId:
@@ -35,4 +35,4 @@ class CausationId(ValueObject):
         return CausationId(EventId.nil())
 
     def __str__(self) -> str:
-        return str(self.value)
+        return str(self.value.value)
