@@ -34,5 +34,5 @@ class StopLossTriggeredEvent(IntegrationEvent):
     sl_price: Price
     volume_closed: PositiveVolume
 
-    deal_entry: DealEntry = DealEntry
-    reason: DealReason = DealReason
+    deal_entry: DealEntry
+    reason: DealReason
