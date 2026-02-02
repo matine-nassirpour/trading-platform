@@ -25,7 +25,7 @@ from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import
     EventHandler,
     EventSourcedAggregateRoot,
 )
-from quantum.domain.trading.events.v1.execution.trading_intent_created_event import (
+from quantum.domain.trading.events.v1.intent.trading_intent_created_event import (
     TradingIntentCreatedEvent,
 )
 
