@@ -1,6 +1,8 @@
 from typing import Protocol, runtime_checkable
 
-from quantum.domain.shared_kernel.events.base.integration_event import IntegrationEvent
+from quantum.application.integration_events.base.integration_event import (
+    IntegrationEvent,
+)
 
 
 @runtime_checkable

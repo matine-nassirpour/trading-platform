@@ -1,7 +1,9 @@
 from dataclasses import dataclass
 from typing import ClassVar
 
-from quantum.domain.shared_kernel.events.base.integration_event import IntegrationEvent
+from quantum.application.integration_events.base.integration_event import (
+    IntegrationEvent,
+)
 from quantum.domain.shared_kernel.identifiers.intent_id import IntentId
 from quantum.domain.shared_kernel.value_objects.symbol import Symbol
 from quantum.domain.trading.execution.safety.execution_rejection import (
@@ -17,7 +19,7 @@ class OrderRejectedEvent(IntegrationEvent):
     - Regulatory rejection
     """
 
-    event_name: ClassVar[str] = "trading.order.rejected"
+    event_name: ClassVar[str] = "broker.order.rejected"
     event_version: ClassVar[int] = 1
 
     intent_id: IntentId

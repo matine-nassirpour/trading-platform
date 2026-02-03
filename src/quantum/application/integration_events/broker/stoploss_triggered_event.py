@@ -1,7 +1,9 @@
 from dataclasses import dataclass
 from typing import ClassVar
 
-from quantum.domain.shared_kernel.events.base.integration_event import IntegrationEvent
+from quantum.application.integration_events.base.integration_event import (
+    IntegrationEvent,
+)
 from quantum.domain.shared_kernel.identifiers.intent_id import IntentId
 from quantum.domain.shared_kernel.identifiers.order_id import OrderId
 from quantum.domain.shared_kernel.identifiers.position_id import PositionId
@@ -21,7 +23,7 @@ class StopLossTriggeredEvent(IntegrationEvent):
     - not business decisions
     """
 
-    event_name: ClassVar[str] = "trading.stoploss.triggered"
+    event_name: ClassVar[str] = "broker.stoploss.triggered"
     event_version: ClassVar[int] = 1
 
     intent_id: IntentId
