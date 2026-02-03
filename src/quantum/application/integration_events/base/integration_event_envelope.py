@@ -12,6 +12,7 @@ from quantum.application.integration_events.base.integration_event import (
 from quantum.application.integration_events.base.integration_headers import (
     IntegrationHeaders,
 )
+from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
 
@@ -32,17 +33,17 @@ class IntegrationEventEnvelope(ValueObject):
 
     def _validate(self) -> None:
         if not isinstance(self.headers, IntegrationHeaders):
-            raise Exception("Invalid headers")
+            raise InvariantViolation("Invalid headers")
 
         if not isinstance(self.payload, IntegrationEvent):
-            raise Exception("Invalid payload type")
+            raise InvariantViolation("Invalid payload type")
 
         if self.published_at.value < self.occurred_at.value:
-            raise Exception("published_at must be >= occurred_at")
+            raise InvariantViolation("published_at must be >= occurred_at")
 
         computed = self.compute_payload_hash(self.payload)
         if computed != self.payload_hash:
-            raise Exception("Payload hash mismatch (corrupted envelope)")
+            raise InvariantViolation("Payload hash mismatch (corrupted envelope)")
 
     @staticmethod
     def compute_payload_hash(event: IntegrationEvent) -> str:

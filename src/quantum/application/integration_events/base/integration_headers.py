@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.events.actor_id import ActorId
 from quantum.domain.shared_kernel.events.causation_id import CausationId
 from quantum.domain.shared_kernel.events.correlation_id import CorrelationId
@@ -27,10 +28,10 @@ class IntegrationHeaders(ValueObject):
 
     def _validate(self) -> None:
         if not isinstance(self.correlation_id, CorrelationId):
-            raise Exception("Invalid CorrelationId")
+            raise InvariantViolation("Invalid CorrelationId")
 
         if not isinstance(self.causation_id, CausationId):
-            raise Exception("Invalid CausationId")
+            raise InvariantViolation("Invalid CausationId")
 
         if not isinstance(self.actor_id, ActorId):
-            raise Exception("Invalid ActorId")
+            raise InvariantViolation("Invalid ActorId")
