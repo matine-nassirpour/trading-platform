@@ -189,16 +189,21 @@ trading-platform/
 │       │   │   ├── application_error.py
 │       │   │   └── not_found_errors.py
 │       │   ├── integration_events/
+│       │   │   ├── base/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── integration_event.py
+│       │   │   │   ├── integration_event_envelope.py
+│       │   │   │   ├── integration_event_mapper.py
+│       │   │   │   ├── integration_headers.py
+│       │   │   │   └── integration_serializer.py
 │       │   │   ├── broker/
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── order_acknowledged_event.py
 │       │   │   │   ├── order_checked_event.py
-│       │   │   │   ├── order_filled_event.py
 │       │   │   │   ├── order_rejected_event.py
 │       │   │   │   ├── stoploss_triggered_event.py
 │       │   │   │   └── takeprofit_triggered_event.py
-│       │   │   ├── __init__.py
-│       │   │   └── base_integration_event.py
+│       │   │   └── __init__.py
 │       │   ├── mappers/
 │       │   │   ├── __init__.py
 │       │   │   ├── fill_event_mapper.py
@@ -267,9 +272,7 @@ trading-platform/
 │       │   │   │   │   ├── __init__.py
 │       │   │   │   │   ├── decision_authorized_event.py
 │       │   │   │   │   ├── decision_rejected_event.py
-│       │   │   │   │   ├── no_trade_decision_event.py
-│       │   │   │   │   ├── order_sized_event.py
-│       │   │   │   │   └── trading_intent_created_event.py
+│       │   │   │   │   └── no_trade_decision_event.py
 │       │   │   │   └── __init__.py
 │       │   │   ├── governance/
 │       │   │   │   ├── __init__.py
@@ -284,9 +287,6 @@ trading-platform/
 │       │   │   │   ├── decision_source.py
 │       │   │   │   ├── model_version.py
 │       │   │   │   └── strategy_id.py
-│       │   │   ├── intent/
-│       │   │   │   ├── __init__.py
-│       │   │   │   └── trading_intent.py
 │       │   │   ├── outcome/
 │       │   │   │   ├── no_trade/
 │       │   │   │   │   ├── __init__.py
@@ -300,14 +300,16 @@ trading-platform/
 │       │   │   │   ├── currency_pair.py
 │       │   │   │   ├── instrument_spec.py
 │       │   │   │   └── price_constraints.py
+│       │   │   ├── regime/
+│       │   │   │   ├── __init__.py
+│       │   │   │   └── market_regime.py
 │       │   │   ├── value_objects/
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── contract_size.py
 │       │   │   │   ├── reference_price.py
 │       │   │   │   ├── tick_value.py
 │       │   │   │   └── volume_constraints.py
-│       │   │   ├── __init__.py
-│       │   │   └── market_regime.py
+│       │   │   └── __init__.py
 │       │   ├── risk/
 │       │   │   ├── attribution/
 │       │   │   │   ├── __init__.py
@@ -372,9 +374,14 @@ trading-platform/
 │       │   │   │   ├── position_errors.py
 │       │   │   │   └── risk_errors.py
 │       │   │   ├── events/
+│       │   │   │   ├── base/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── base_event.py
+│       │   │   │   │   ├── decision_event.py
+│       │   │   │   │   ├── fact_event.py
+│       │   │   │   │   └── risk_event.py
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── actor_id.py
-│       │   │   │   ├── base_event.py
 │       │   │   │   ├── causation_id.py
 │       │   │   │   ├── correlation_id.py
 │       │   │   │   ├── event_envelope.py
@@ -432,16 +439,20 @@ trading-platform/
 │       │   ├── trading/
 │       │   │   ├── events/
 │       │   │   │   ├── v1/
-│       │   │   │   │   ├── execution/
-│       │   │   │   │   │   ├── __init__.py
-│       │   │   │   │   │   ├── order_cancelled_event.py
-│       │   │   │   │   │   ├── order_created_event.py
-│       │   │   │   │   │   ├── order_fill_registered_event.py
-│       │   │   │   │   │   └── order_submitted_event.py
 │       │   │   │   │   ├── governance/
 │       │   │   │   │   │   ├── __init__.py
 │       │   │   │   │   │   ├── market_regime_changed_event.py
 │       │   │   │   │   │   └── strategy_lifecycle_changed_event.py
+│       │   │   │   │   ├── intent/
+│       │   │   │   │   │   ├── __init__.py
+│       │   │   │   │   │   └── trading_intent_created_event.py
+│       │   │   │   │   ├── order/
+│       │   │   │   │   │   ├── __init__.py
+│       │   │   │   │   │   ├── order_cancelled_event.py
+│       │   │   │   │   │   ├── order_created_event.py
+│       │   │   │   │   │   ├── order_fill_registered_event.py
+│       │   │   │   │   │   ├── order_sized_event.py
+│       │   │   │   │   │   └── order_submitted_event.py
 │       │   │   │   │   ├── position/
 │       │   │   │   │   │   ├── __init__.py
 │       │   │   │   │   │   ├── position_closed_event.py
@@ -493,6 +504,9 @@ trading-platform/
 │       │   │   │   │   ├── liquidity_side.py
 │       │   │   │   │   └── order_check_outcome.py
 │       │   │   │   └── __init__.py
+│       │   │   ├── intent/
+│       │   │   │   ├── __init__.py
+│       │   │   │   └── trading_intent.py
 │       │   │   └── __init__.py
 │       │   └── __init__.py
 │       ├── infrastructure/
