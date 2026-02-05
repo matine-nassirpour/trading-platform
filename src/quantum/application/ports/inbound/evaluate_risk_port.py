@@ -1,6 +1,6 @@
 from typing import Protocol
 
-from quantum.application.dto.commands.evaluate_risk import EvaluateRiskCommand
+from quantum.application.commands.evaluate_risk import EvaluateRiskCommand
 
 
 class EvaluateRiskPort(Protocol):

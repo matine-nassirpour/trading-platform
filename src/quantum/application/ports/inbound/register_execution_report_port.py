@@ -1,6 +1,6 @@
 from typing import Protocol
 
-from quantum.application.dto.commands.register_execution_report import (
+from quantum.application.commands.register_execution_report import (
     RegisterExecutionReportCommand,
 )
 

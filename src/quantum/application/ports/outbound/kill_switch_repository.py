@@ -1,8 +1,6 @@
-from __future__ import annotations
-
 from typing import Protocol, runtime_checkable
 
-from quantum.domain.risk.governance.aggregates import KillSwitchState
+from quantum.domain.risk.governance.aggregates.kill_switch.state import KillSwitchState
 
 
 @runtime_checkable
@@ -14,7 +12,7 @@ class KillSwitchRepository(Protocol):
     KillSwitchState is also naturally a singleton (global state).
     """
 
-    def get_current(self) -> KillSwitchState | None:
+    def get_current(self) -> KillSwitchState:
         raise NotImplementedError
 
     def save(self, state: KillSwitchState) -> None:

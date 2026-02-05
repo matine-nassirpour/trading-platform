@@ -1,5 +1,4 @@
-from __future__ import annotations
-
+from collections.abc import Iterable
 from typing import Protocol, runtime_checkable
 
 from quantum.domain.market.instrument.instrument_spec import InstrumentSpec
@@ -20,4 +19,7 @@ class InstrumentSpecProvider(Protocol):
         Must raise a domain-meaningful exception at application boundary
         (e.g., application error) if symbol is unknown/unavailable.
         """
+        raise NotImplementedError
+
+    def list_all(self) -> Iterable[InstrumentSpec]:
         raise NotImplementedError

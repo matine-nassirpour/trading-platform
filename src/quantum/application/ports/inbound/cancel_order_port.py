@@ -1,6 +1,6 @@
 from typing import Protocol
 
-from quantum.application.dto.commands.cancel_order import CancelOrderCommand
+from quantum.application.commands.cancel_order import CancelOrderCommand
 
 
 class CancelOrderPort(Protocol):

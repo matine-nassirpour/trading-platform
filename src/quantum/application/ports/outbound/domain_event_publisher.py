@@ -1,12 +1,10 @@
-from __future__ import annotations
-
 from typing import Protocol, runtime_checkable
 
-from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
+from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
 
 
 @runtime_checkable
-class DomainEventPublisher(Protocol):
+class EventPublisher(Protocol):
     """
     Publishes domain events to the outside world (message bus, log, outbox, etc.).
 
@@ -16,5 +14,5 @@ class DomainEventPublisher(Protocol):
     - durability if required (outbox pattern recommended)
     """
 
-    def publish(self, events: tuple[BaseEvent, ...]) -> None:
+    def publish(self, envelope: EventEnvelope) -> None:
         raise NotImplementedError

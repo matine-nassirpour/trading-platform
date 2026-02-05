@@ -1,23 +1,16 @@
-from __future__ import annotations
-
 from typing import Protocol, runtime_checkable
 
 from quantum.domain.shared_kernel.identifiers.intent_id import IntentId
-from quantum.domain.trading.intent import TradingIntent
+from quantum.domain.trading.intent.trading_intent import TradingIntent
 
 
 @runtime_checkable
 class TradingIntentRepository(Protocol):
     """
     Persistence port for TradingIntent aggregate.
-
-    Contract:
-    - get() returns None if not found
-    - save() is an upsert
-    - implementations MUST ensure optimistic concurrency (versioning) or equivalent safety
     """
 
-    def get(self, intent_id: IntentId) -> TradingIntent | None:
+    def load(self, intent_id: IntentId) -> TradingIntent:
         raise NotImplementedError
 
     def save(self, intent: TradingIntent) -> None:

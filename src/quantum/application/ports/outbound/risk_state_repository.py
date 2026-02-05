@@ -1,8 +1,6 @@
-from __future__ import annotations
-
 from typing import Protocol, runtime_checkable
 
-from quantum.domain.risk.governance.aggregates import RiskState
+from quantum.domain.risk.governance.aggregates.risk_state import RiskState
 
 
 @runtime_checkable
@@ -15,7 +13,7 @@ class RiskStateRepository(Protocol):
     per "desk/account context" in infrastructure.
     """
 
-    def get_current(self) -> RiskState | None:
+    def load(self) -> RiskState:
         raise NotImplementedError
 
     def save(self, state: RiskState) -> None:

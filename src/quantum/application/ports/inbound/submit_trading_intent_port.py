@@ -1,6 +1,6 @@
 from typing import Protocol
 
-from quantum.application.dto.commands.submit_trading_intent import (
+from quantum.application.commands.submit_trading_intent import (
     SubmitTradingIntentCommand,
 )
 

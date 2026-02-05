@@ -1,8 +1,6 @@
 from typing import Protocol
 
-from quantum.application.dto.commands.trigger_kill_switch import (
-    TriggerKillSwitchCommand,
-)
+from quantum.application.commands.trigger_kill_switch import TriggerKillSwitchCommand
 
 
 class TriggerKillSwitchPort(Protocol):

@@ -1,6 +1,6 @@
 from typing import Protocol
 
-from quantum.application.dto.commands.register_fill import RegisterFillCommand
+from quantum.application.commands.register_fill import RegisterFillCommand
 
 
 class RegisterFillPort(Protocol):

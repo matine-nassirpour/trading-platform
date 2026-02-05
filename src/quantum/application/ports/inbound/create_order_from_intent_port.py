@@ -1,6 +1,6 @@
 from typing import Protocol
 
-from quantum.application.dto.commands.create_order_from_intent import (
+from quantum.application.commands.create_order_from_intent import (
     CreateOrderFromIntentCommand,
 )
 

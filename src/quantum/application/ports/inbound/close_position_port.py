@@ -1,6 +1,6 @@
 from typing import Protocol
 
-from quantum.application.dto.commands.close_position import ClosePositionCommand
+from quantum.application.commands.close_position import ClosePositionCommand
 
 
 class ClosePositionPort(Protocol):

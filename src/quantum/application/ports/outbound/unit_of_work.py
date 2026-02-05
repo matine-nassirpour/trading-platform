@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from contextlib import AbstractContextManager
 from typing import Protocol, runtime_checkable
 
