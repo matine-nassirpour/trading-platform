@@ -25,7 +25,7 @@ class ExecutionRoutingService:
 
         self._gateway.send_order(
             symbol=state.context.market_regime,  # exemple symbolique
-            order_type=None,  # mappé depuis décision
+            order_type=None,
             side=None,
             volume=None,
         )
