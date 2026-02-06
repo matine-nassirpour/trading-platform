@@ -1,11 +1,13 @@
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from collections.abc import Iterable
+from typing import Protocol, runtime_checkable
 
 from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
 from quantum.domain.shared_kernel.events.event_sequence import EventSequence
 
 
-class EventStore(ABC):
+@runtime_checkable
+class EventStore(Protocol):
     """
     Application-level contract for event persistence.
     """

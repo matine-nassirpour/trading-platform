@@ -1,4 +1,5 @@
-from abc import ABC, abstractmethod
+from abc import abstractmethod
+from typing import Protocol, runtime_checkable
 
 from quantum.domain.shared_kernel.money.daily_loss import DailyLoss
 from quantum.domain.shared_kernel.money.drawdown import Drawdown
@@ -7,7 +8,8 @@ from quantum.domain.shared_kernel.money.notional import Notional
 from quantum.domain.shared_kernel.money.risk_exposure import RiskExposure
 
 
-class FinancialStateProvider(ABC):
+@runtime_checkable
+class FinancialStateProvider(Protocol):
     """
     Application port giving access to current financial metrics.
     """

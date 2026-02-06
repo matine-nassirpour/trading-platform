@@ -1,10 +1,12 @@
-from abc import ABC, abstractmethod
+from abc import abstractmethod
+from typing import Protocol, runtime_checkable
 
 from quantum.domain.shared_kernel.identifiers.order_id import OrderId
 from quantum.domain.trading.execution.order.order import Order
 
 
-class OrderRepository(ABC):
+@runtime_checkable
+class OrderRepository(Protocol):
 
     @abstractmethod
     def load(self, order_id: OrderId) -> Order:

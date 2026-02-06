@@ -1,9 +1,11 @@
-from abc import ABC, abstractmethod
+from abc import abstractmethod
+from typing import Protocol, runtime_checkable
 
 from quantum.domain.risk.breaches.risk_breach import RiskBreach
 
 
-class RiskEventPublisher(ABC):
+@runtime_checkable
+class RiskEventPublisher(Protocol):
     """
     Port for publishing risk breach notifications.
     """
