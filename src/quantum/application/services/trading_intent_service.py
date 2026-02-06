@@ -1,5 +1,5 @@
 from quantum.application.ports.outbound.event_store import EventStore
-from quantum.application.ports.outbound.trading_intent_repository import (
+from quantum.application.ports.outbound.repositories.trading_intent_repository import (
     TradingIntentRepository,
 )
 from quantum.domain.decision.governance.decision_policy_result import (

@@ -1,4 +1,4 @@
-from quantum.application.commands.cancel_order import CancelOrderCommand
+from quantum.application.commands.cancel_order_command import CancelOrderCommand
 from quantum.application.errors.not_found_errors import OrderNotFound
 from quantum.application.ports.outbound.domain_event_publisher import EventPublisher
 from quantum.application.ports.outbound.unit_of_work import UnitOfWork

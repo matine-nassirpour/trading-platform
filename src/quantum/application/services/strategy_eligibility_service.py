@@ -1,4 +1,4 @@
-from quantum.application.ports.outbound.strategy_lifecycle_repository import (
+from quantum.application.ports.outbound.repositories.strategy_lifecycle_repository import (
     StrategyLifecycleRepository,
 )
 from quantum.domain.decision.identity.strategy_id import StrategyId

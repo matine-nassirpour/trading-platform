@@ -1,5 +1,5 @@
 from quantum.application.ports.outbound.execution_gateway import ExecutionGateway
-from quantum.application.ports.outbound.trading_intent_repository import (
+from quantum.application.ports.outbound.repositories.trading_intent_repository import (
     TradingIntentRepository,
 )
 from quantum.domain.shared_kernel.identifiers.intent_id import IntentId

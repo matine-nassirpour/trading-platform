@@ -1,5 +1,5 @@
 from quantum.application.ports.outbound.event_store import EventStore
-from quantum.application.ports.outbound.kill_switch_repository import (
+from quantum.application.ports.outbound.repositories.kill_switch_repository import (
     KillSwitchRepository,
 )
 from quantum.domain.risk.governance.aggregates.kill_switch.reason import (

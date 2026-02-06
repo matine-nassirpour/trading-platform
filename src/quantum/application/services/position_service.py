@@ -1,5 +1,7 @@
 from quantum.application.ports.outbound.event_store import EventStore
-from quantum.application.ports.outbound.position_repository import PositionRepository
+from quantum.application.ports.outbound.repositories.position_repository import (
+    PositionRepository,
+)
 from quantum.domain.shared_kernel.money.money_context import MoneyContext
 from quantum.domain.shared_kernel.value_objects.price import Price
 

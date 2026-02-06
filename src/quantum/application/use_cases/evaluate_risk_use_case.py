@@ -1,4 +1,4 @@
-from quantum.application.commands.evaluate_risk import EvaluateRiskCommand
+from quantum.application.commands.evaluate_risk_command import EvaluateRiskCommand
 from quantum.application.ports.outbound.financial_state_provider import (
     FinancialStateProvider,
 )

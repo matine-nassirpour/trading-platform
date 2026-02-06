@@ -1,5 +1,7 @@
 from quantum.application.ports.outbound.event_store import EventStore
-from quantum.application.ports.outbound.risk_state_repository import RiskStateRepository
+from quantum.application.ports.outbound.repositories.risk_state_repository import (
+    RiskStateRepository,
+)
 from quantum.domain.shared_kernel.money.daily_loss import DailyLoss
 from quantum.domain.shared_kernel.money.drawdown import Drawdown
 from quantum.domain.shared_kernel.money.notional import Notional

@@ -1,5 +1,7 @@
 from quantum.application.ports.outbound.event_store import EventStore
-from quantum.application.ports.outbound.order_repository import OrderRepository
+from quantum.application.ports.outbound.repositories.order_repository import (
+    OrderRepository,
+)
 from quantum.domain.trading.execution.order.execution_fill import ExecutionFill
 
 

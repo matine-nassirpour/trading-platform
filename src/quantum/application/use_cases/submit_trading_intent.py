@@ -1,8 +1,8 @@
-from quantum.application.commands.submit_trading_intent import (
+from quantum.application.commands.submit_trading_intent_command import (
     SubmitTradingIntentCommand,
 )
 from quantum.application.ports.outbound.domain_event_publisher import EventPublisher
-from quantum.application.ports.outbound.trading_intent_repository import (
+from quantum.application.ports.outbound.repositories.trading_intent_repository import (
     TradingIntentRepository,
 )
 from quantum.application.ports.outbound.unit_of_work import UnitOfWork
