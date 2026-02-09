@@ -1,7 +1,5 @@
 from abc import abstractmethod
-from typing import Protocol
-
-from mypy.typeshed.stdlib.typing_extensions import runtime_checkable
+from typing import Protocol, runtime_checkable
 
 from quantum.domain.market.regime.market_regime import MarketRegime
 from quantum.domain.shared_kernel.value_objects.symbol import Symbol

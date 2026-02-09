@@ -25,9 +25,11 @@ from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import
     EventHandler,
     EventSourcedAggregateRoot,
 )
+from quantum.domain.shared_kernel.value_objects.symbol import Symbol
 from quantum.domain.trading.events.v1.intent.trading_intent_created_event import (
     TradingIntentCreatedEvent,
 )
+from quantum.domain.trading.execution.order.position_side import PositionSide
 
 
 @dataclass(frozen=True, slots=True)
@@ -42,6 +44,9 @@ class TradingIntentState(AggregateState):
     last_sequence: EventSequence
 
     intent_id: IntentId
+    symbol: Symbol
+    side: PositionSide
+
     decision_identity: DecisionIdentity
     context: TradingContext
 
@@ -51,9 +56,15 @@ class TradingIntentState(AggregateState):
     def last_event_sequence(self) -> EventSequence:
         return self.last_sequence
 
-    def _validate(self) -> None:
+    def _validate_types(self) -> None:
         if not isinstance(self.intent_id, IntentId):
             raise InvariantViolation("TradingIntent requires a valid IntentId")
+
+        if not isinstance(self.symbol, Symbol):
+            raise InvariantViolation("TradingIntent requires a Symbol")
+
+        if not isinstance(self.side, PositionSide):
+            raise InvariantViolation("TradingIntent requires a PositionSide")
 
         if not isinstance(self.decision_identity, DecisionIdentity):
             raise InvariantViolation("TradingIntent requires DecisionIdentity")
@@ -66,6 +77,9 @@ class TradingIntentState(AggregateState):
 
         if not isinstance(self.rejected, bool):
             raise InvariantViolation("rejected flag must be boolean")
+
+    def _validate(self) -> None:
+        self._validate_types()
 
         if self.authorized and self.rejected:
             raise InvariantViolation(
@@ -96,6 +110,8 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentState]):
     def create(
         *,
         intent_id: IntentId,
+        symbol: Symbol,
+        side: PositionSide,
         decision_identity: DecisionIdentity,
         context: TradingContext,
     ) -> list[BaseEvent]:
@@ -110,6 +126,8 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentState]):
         return [
             TradingIntentCreatedEvent(
                 intent_id=intent_id,
+                symbol=symbol,
+                side=side,
                 decision_identity=decision_identity,
                 trading_context=context,
             )
@@ -176,6 +194,8 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentState]):
         return TradingIntentState(
             last_sequence=envelope.sequence,
             intent_id=event.intent_id,
+            symbol=event.symbol,
+            side=event.side,
             decision_identity=event.decision_identity,
             context=event.trading_context,
             authorized=False,
@@ -193,6 +213,8 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentState]):
         return TradingIntentState(
             last_sequence=envelope.sequence,
             intent_id=state.intent_id,
+            symbol=state.symbol,
+            side=state.side,
             decision_identity=state.decision_identity,
             context=state.context,
             authorized=True,
@@ -210,6 +232,8 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentState]):
         return TradingIntentState(
             last_sequence=envelope.sequence,
             intent_id=state.intent_id,
+            symbol=state.symbol,
+            side=state.side,
             decision_identity=state.decision_identity,
             context=state.context,
             authorized=False,

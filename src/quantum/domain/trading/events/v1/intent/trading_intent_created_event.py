@@ -5,6 +5,8 @@ from quantum.domain.decision.context.trading_context import TradingContext
 from quantum.domain.decision.identity.decision_identity import DecisionIdentity
 from quantum.domain.shared_kernel.events.base.fact_event import FactEvent
 from quantum.domain.shared_kernel.identifiers.intent_id import IntentId
+from quantum.domain.shared_kernel.value_objects.symbol import Symbol
+from quantum.domain.trading.execution.order.position_side import PositionSide
 
 
 @dataclass(frozen=True, slots=True)
@@ -20,5 +22,8 @@ class TradingIntentCreatedEvent(FactEvent):
     event_version: ClassVar[int] = 1
 
     intent_id: IntentId
+    symbol: Symbol
+    side: PositionSide
+
     decision_identity: DecisionIdentity
     trading_context: TradingContext
