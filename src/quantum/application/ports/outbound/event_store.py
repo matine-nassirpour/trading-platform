@@ -17,6 +17,10 @@ class EventStore(Protocol):
         raise NotImplementedError
 
     @abstractmethod
+    def load_stream(self, stream_id: str) -> Iterable[EventEnvelope]:
+        raise NotImplementedError
+
+    @abstractmethod
     def load_all(self) -> Iterable[EventEnvelope]:
         raise NotImplementedError
 

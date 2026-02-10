@@ -1,3 +1,5 @@
+from abc import abstractmethod
+from collections.abc import Iterable
 from typing import Protocol, runtime_checkable
 
 from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
@@ -6,13 +8,9 @@ from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
 @runtime_checkable
 class EventPublisher(Protocol):
     """
-    Publishes domain events to the outside world (message bus, log, outbox, etc.).
-
-    Requirements for implementations (infra concern):
-    - at-least-once or exactly-once semantics as required
-    - ordering guarantees if needed (aggregate event order)
-    - durability if required (outbox pattern recommended)
+    Publishes domain events to the outside world.
     """
 
-    def publish(self, envelope: EventEnvelope) -> None:
+    @abstractmethod
+    def publish(self, events: Iterable[EventEnvelope]) -> None:
         raise NotImplementedError
