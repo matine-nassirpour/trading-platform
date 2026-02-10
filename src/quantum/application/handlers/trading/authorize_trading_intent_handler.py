@@ -2,7 +2,7 @@ from quantum.application.commands.command_result import CommandResult
 from quantum.application.commands.trading.authorize_trading_intent_command import (
     AuthorizeTradingIntentCommand,
 )
-from quantum.application.handlers.base_handler import CommandHandler
+from quantum.application.handlers.command_handler import CommandHandler
 from quantum.domain.trading.intent.trading_intent import TradingIntent
 
 

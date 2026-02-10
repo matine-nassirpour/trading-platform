@@ -3,7 +3,7 @@ from quantum.application.commands.risk.trigger_killswitch_command import (
     TriggerKillSwitchCommand,
 )
 from quantum.application.errors.application_error import DomainExecutionError
-from quantum.application.handlers.base_handler import CommandHandler
+from quantum.application.handlers.command_handler import CommandHandler
 from quantum.application.ports.outbound.event_store import EventStore
 from quantum.domain.risk.governance.aggregates.kill_switch.state import KillSwitchState
 

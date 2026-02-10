@@ -1,5 +1,6 @@
-from collections.abc import Awaitable, Callable
-from typing import Any, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
+
+from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
 
 
 @runtime_checkable
@@ -17,14 +18,6 @@ class EventBusPort(Protocol):
         """Gracefully shut down the event bus (optional cleanup)."""
         ...
 
-    async def publish(self, topic: str, payload: dict[str, Any]) -> None:
+    async def publish(self, envelope: EventEnvelope) -> None:
         """Publish an event payload to all subscribers of the given topic."""
-        ...
-
-    async def subscribe(
-        self,
-        topic: str,
-        handler: Callable[[dict[str, Any]], Awaitable[None]],
-    ) -> None:
-        """Register an asynchronous handler for a given topic."""
         ...
