@@ -258,6 +258,7 @@ trading-platform/
 │       │   ├── services/
 │       │   │   ├── __init__.py
 │       │   │   ├── application_orchestrator.py
+│       │   │   ├── event_pipeline.py
 │       │   │   ├── execution_routing_service.py
 │       │   │   └── projection_service.py
 │       │   └── __init__.py
