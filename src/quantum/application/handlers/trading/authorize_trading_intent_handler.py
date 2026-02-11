@@ -3,25 +3,63 @@ from quantum.application.commands.trading.authorize_trading_intent_command impor
     AuthorizeTradingIntentCommand,
 )
 from quantum.application.handlers.command_handler import CommandHandler
-from quantum.domain.trading.intent.trading_intent import TradingIntent
+from quantum.application.ports.outbound.clock import Clock
+from quantum.application.ports.outbound.event_bus_port import EventBusPort
+from quantum.application.ports.outbound.event_store import EventStore
+from quantum.application.ports.outbound.id_generator import IdGenerator
+from quantum.application.ports.outbound.repositories.trading_intent_repository import (
+    TradingIntentRepository,
+)
+from quantum.domain.shared_kernel.events.actor_id import ActorId
+from quantum.domain.shared_kernel.events.causation_id import CausationId
+from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
+from quantum.domain.shared_kernel.events.event_metadata import EventMetadata
+from quantum.domain.shared_kernel.events.event_sequence import EventSequence
 
 
 class AuthorizeTradingIntentHandler(
     CommandHandler[AuthorizeTradingIntentCommand, None]
 ):
 
-    def __init__(self, repository, event_store, envelope_factory):
+    def __init__(
+        self,
+        repository: TradingIntentRepository,
+        store: EventStore,
+        bus: EventBusPort,
+        clock: Clock,
+        ids: IdGenerator,
+    ) -> None:
         self._repository = repository
-        self._event_store = event_store
-        self._envelope_factory = envelope_factory
+        self._store = store
+        self._bus = bus
+        self._clock = clock
+        self._ids = ids
 
-    def handle(self, command: AuthorizeTradingIntentCommand):
+    def handle(self, command: AuthorizeTradingIntentCommand) -> CommandResult[None]:
 
-        intent: TradingIntent = self._repository.load(command.intent_id)
+        intent = self._repository.load(command.intent_id)
 
         events = intent.authorize(result=command.result)
 
-        envelopes = [self._envelope_factory.wrap(e) for e in events]
-        self._event_store.append(envelopes)
+        envelopes = [
+            EventEnvelope(
+                id=self._ids.new_event_id(),
+                sequence=EventSequence.initial().next(),
+                occurred_at=self._clock.now_epoch_ms(),
+                recorded_at=self._clock.now_epoch_ms(),
+                event=e,
+                metadata=EventMetadata(
+                    actor_id=ActorId("system:intent"),
+                    correlation_id=self._ids.new_correlation_id(),
+                    causation_id=CausationId.root(),
+                ),
+            )
+            for e in events
+        ]
+
+        self._store.append(envelopes)
+
+        for env in envelopes:
+            self._bus.publish(env)
 
         return CommandResult()

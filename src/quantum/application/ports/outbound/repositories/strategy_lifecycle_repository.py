@@ -9,5 +9,5 @@ from quantum.domain.risk.lifecycle.strategy_lifecycle import StrategyLifecycle
 class StrategyLifecycleRepository(Protocol):
 
     @abstractmethod
-    def get_lifecycle(self, strategy_id: StrategyId) -> StrategyLifecycle:
+    def get_lifecycle(self, strategy_id: StrategyId) -> StrategyLifecycle | None:
         raise NotImplementedError

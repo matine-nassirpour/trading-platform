@@ -1,4 +1,4 @@
-from quantum.application.ports.outbound.execution_gateway import ExecutionGateway
+from quantum.application.ports.outbound.broker_gateway import BrokerGateway
 from quantum.application.ports.outbound.repositories.trading_intent_repository import (
     TradingIntentRepository,
 )
@@ -10,7 +10,7 @@ class ExecutionRoutingService:
     def __init__(
         self,
         intent_repository: TradingIntentRepository,
-        gateway: ExecutionGateway,
+        gateway: BrokerGateway,
     ) -> None:
         self._intent_repository = intent_repository
         self._gateway = gateway
@@ -23,7 +23,7 @@ class ExecutionRoutingService:
         if not state.authorized:
             return
 
-        self._gateway.send_order(
+        self._gateway.submit_order(
             symbol=state.context.market_regime,  # exemple symbolique
             order_type=None,
             side=None,

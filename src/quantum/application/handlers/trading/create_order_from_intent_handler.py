@@ -7,6 +7,9 @@ from quantum.application.ports.outbound.clock import Clock
 from quantum.application.ports.outbound.event_bus_port import EventBusPort
 from quantum.application.ports.outbound.event_store import EventStore
 from quantum.application.ports.outbound.id_generator import IdGenerator
+from quantum.application.ports.outbound.repositories.trading_intent_repository import (
+    TradingIntentRepository,
+)
 from quantum.domain.shared_kernel.events.actor_id import ActorId
 from quantum.domain.shared_kernel.events.causation_id import CausationId
 from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
@@ -20,17 +23,24 @@ class CreateOrderFromIntentHandler(CommandHandler[CreateOrderFromIntentCommand, 
     def __init__(
         self,
         *,
+        repository: TradingIntentRepository,
         store: EventStore,
         bus: EventBusPort,
         clock: Clock,
         ids: IdGenerator,
     ) -> None:
+        self._repository = repository
         self._store = store
         self._bus = bus
         self._clock = clock
         self._ids = ids
 
     def handle(self, command: CreateOrderFromIntentCommand) -> CommandResult[None]:
+
+        intent = self._repository.load(command.intent_id)
+
+        if not intent.state.authorized:
+            raise ValueError("Cannot create order from non-authorized intent")
 
         events = Order.create(
             intent_id=command.intent_id,

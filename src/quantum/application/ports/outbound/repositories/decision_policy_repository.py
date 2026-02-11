@@ -1,5 +1,4 @@
 from abc import abstractmethod
-from collections.abc import Iterable
 from typing import Protocol, runtime_checkable
 
 from quantum.domain.decision.governance.decision_policy import DecisionPolicy
@@ -13,5 +12,5 @@ class DecisionPolicyRepository(Protocol):
     """
 
     @abstractmethod
-    def policies_for(self, strategy: StrategyId) -> Iterable[DecisionPolicy]:
+    def get_policies_for(self, strategy: StrategyId) -> DecisionPolicy | None:
         raise NotImplementedError

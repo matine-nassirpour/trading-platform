@@ -7,11 +7,14 @@ from quantum.application.ports.outbound.clock import Clock
 from quantum.application.ports.outbound.event_bus_port import EventBusPort
 from quantum.application.ports.outbound.event_store import EventStore
 from quantum.application.ports.outbound.id_generator import IdGenerator
+from quantum.application.ports.outbound.repositories.position_repository import (
+    PositionRepository,
+)
 from quantum.domain.shared_kernel.events.actor_id import ActorId
 from quantum.domain.shared_kernel.events.causation_id import CausationId
 from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
 from quantum.domain.shared_kernel.events.event_metadata import EventMetadata
-from quantum.domain.trading.execution.position.position import Position
+from quantum.domain.shared_kernel.events.event_sequence import EventSequence
 
 
 class ClosePositionHandler(CommandHandler[ClosePositionCommand, None]):
@@ -19,11 +22,13 @@ class ClosePositionHandler(CommandHandler[ClosePositionCommand, None]):
     def __init__(
         self,
         *,
+        repository: PositionRepository,
         store: EventStore,
         bus: EventBusPort,
         clock: Clock,
         ids: IdGenerator,
     ) -> None:
+        self._repository = repository
         self._store = store
         self._bus = bus
         self._clock = clock
@@ -31,10 +36,7 @@ class ClosePositionHandler(CommandHandler[ClosePositionCommand, None]):
 
     def handle(self, command: ClosePositionCommand) -> CommandResult[None]:
 
-        stream = f"position-{command.position_id}"
-        history = self._store.load_stream(stream)
-
-        position = Position.rehydrate(history)
+        position = self._repository.load(command.position_id)
 
         events = position.close(
             exit_price=command.exit_price,
@@ -44,7 +46,7 @@ class ClosePositionHandler(CommandHandler[ClosePositionCommand, None]):
         envelopes = [
             EventEnvelope(
                 id=self._ids.new_event_id(),
-                sequence=history[-1].sequence.next(),
+                sequence=EventSequence.initial().next(),
                 occurred_at=self._clock.now_epoch_ms(),
                 recorded_at=self._clock.now_epoch_ms(),
                 event=e,
