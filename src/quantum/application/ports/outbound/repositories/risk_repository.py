@@ -1,9 +1,10 @@
-from abc import ABC, abstractmethod
+from abc import abstractmethod
+from typing import Protocol
 
 from quantum.domain.risk.governance.aggregates.risk_state import RiskState
 
 
-class RiskRepository(ABC):
+class RiskRepository(Protocol):
 
     @abstractmethod
     def load(self) -> RiskState:

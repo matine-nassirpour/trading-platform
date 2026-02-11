@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 from typing import Protocol, runtime_checkable
 
 from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
@@ -18,6 +19,12 @@ class EventBusPort(Protocol):
         """Gracefully shut down the event bus (optional cleanup)."""
         ...
 
-    async def publish(self, envelope: EventEnvelope) -> None:
-        """Publish an event payload to all subscribers of the given topic."""
-        ...
+    async def publish(self, envelope: EventEnvelope) -> None: ...
+
+    async def publish_many(self, envelopes: Iterable[EventEnvelope]) -> None:
+        """
+        Default implementation may loop,
+        but infrastructures can optimize atomically.
+        """
+        for env in envelopes:
+            await self.publish(env)

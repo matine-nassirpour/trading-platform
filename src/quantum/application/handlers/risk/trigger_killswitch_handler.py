@@ -2,64 +2,59 @@ from quantum.application.commands.command_result import CommandResult
 from quantum.application.commands.risk.trigger_killswitch_command import (
     TriggerKillSwitchCommand,
 )
-from quantum.application.handlers.command_handler import CommandHandler
+from quantum.application.errors.application_error import DomainExecutionError
+from quantum.application.handlers.command_handler import AsyncCommandHandler
 from quantum.application.ports.outbound.clock import Clock
 from quantum.application.ports.outbound.event_bus_port import EventBusPort
 from quantum.application.ports.outbound.event_store import EventStore
 from quantum.application.ports.outbound.id_generator import IdGenerator
+from quantum.application.ports.outbound.unit_of_work import UnitOfWork
+from quantum.application.services.event_pipeline import persist_and_publish
 from quantum.domain.risk.governance.aggregates.kill_switch.state import KillSwitchState
-from quantum.domain.shared_kernel.events.actor_id import ActorId
-from quantum.domain.shared_kernel.events.causation_id import CausationId
-from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
-from quantum.domain.shared_kernel.events.event_metadata import EventMetadata
-from quantum.domain.shared_kernel.events.event_sequence import EventSequence
+from quantum.domain.shared_kernel.errors.domain_error import DomainError
 
 
-class TriggerKillSwitchHandler(CommandHandler[TriggerKillSwitchCommand, None]):
+class TriggerKillSwitchHandler(AsyncCommandHandler[TriggerKillSwitchCommand, None]):
 
     def __init__(
         self,
+        uow: UnitOfWork,
         store: EventStore,
         bus: EventBusPort,
         clock: Clock,
         ids: IdGenerator,
     ) -> None:
-        self._store = store
-        self._bus = bus
-        self._clock = clock
-        self._ids = ids
+        super().__init__(uow=uow, store=store, bus=bus, clock=clock, ids=ids)
 
-    def handle(self, command: TriggerKillSwitchCommand) -> CommandResult[None]:
+    async def handle(self, command: TriggerKillSwitchCommand) -> CommandResult[None]:
 
-        aggregate = KillSwitchState.rehydrate(
-            events=self._store.load_stream("killswitch"),
-            empty_state=None,
-        )
+        try:
+            with self._uow:
+                current_events = self._store.load_stream("killswitch")
 
-        events = aggregate.trigger(
-            reason=command.reason,
-            detail=command.detail,
-        )
+                aggregate = KillSwitchState.rehydrate(
+                    events=current_events,
+                    empty_state=None,
+                )
 
-        envelopes = [
-            EventEnvelope(
-                id=self._ids.new_event_id(),
-                sequence=EventSequence.initial().next(),
-                occurred_at=self._clock.now_epoch_ms(),
-                recorded_at=self._clock.now_epoch_ms(),
-                event=e,
-                metadata=EventMetadata(
-                    actor_id=ActorId("system:risk_engine"),
-                    correlation_id=self._ids.new_correlation_id(),
-                    causation_id=CausationId.root(),
-                ),
-            )
-            for e in events
-        ]
+                domain_events = aggregate.trigger(
+                    reason=command.reason,
+                    detail=command.detail,
+                )
 
-        self._store.append(envelopes)
+                await persist_and_publish(
+                    stream_id="killswitch",
+                    events=domain_events,
+                    store=self._store,
+                    bus=self._bus,
+                    ids=self._ids,
+                    clock=self._clock,
+                    actor="system:risk_engine",
+                )
 
-        for env in envelopes:
-            self._bus.publish(env)
+                self._uow.commit()
 
-        return CommandResult()
+            return CommandResult()
+
+        except DomainError as error:
+            raise DomainExecutionError(error) from None

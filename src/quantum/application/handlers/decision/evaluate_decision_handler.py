@@ -2,7 +2,8 @@ from quantum.application.commands.command_result import CommandResult
 from quantum.application.commands.decision.evaluate_decision_command import (
     EvaluateDecisionCommand,
 )
-from quantum.application.handlers.command_handler import CommandHandler
+from quantum.application.errors.application_error import DomainExecutionError
+from quantum.application.handlers.command_handler import AsyncCommandHandler
 from quantum.application.ports.outbound.clock import Clock
 from quantum.application.ports.outbound.event_bus_port import EventBusPort
 from quantum.application.ports.outbound.event_store import EventStore
@@ -13,6 +14,8 @@ from quantum.application.ports.outbound.repositories.decision_policy_repository 
 from quantum.application.ports.outbound.repositories.strategy_lifecycle_repository import (
     StrategyLifecycleRepository,
 )
+from quantum.application.ports.outbound.unit_of_work import UnitOfWork
+from quantum.application.services.event_pipeline import persist_and_publish
 from quantum.domain.decision.events.v1.decision_authorized_event import (
     DecisionAuthorizedEvent,
 )
@@ -25,14 +28,10 @@ from quantum.domain.decision.governance.decision_policy_evaluator import (
 from quantum.domain.risk.lifecycle.strategy_eligibility_policy import (
     StrategyEligibilityPolicy,
 )
-from quantum.domain.shared_kernel.events.actor_id import ActorId
-from quantum.domain.shared_kernel.events.causation_id import CausationId
-from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
-from quantum.domain.shared_kernel.events.event_metadata import EventMetadata
-from quantum.domain.shared_kernel.events.event_sequence import EventSequence
+from quantum.domain.shared_kernel.errors.domain_error import DomainError
 
 
-class EvaluateDecisionHandler(CommandHandler[EvaluateDecisionCommand, None]):
+class EvaluateDecisionHandler(AsyncCommandHandler[EvaluateDecisionCommand, None]):
     """
     Core application handler for evaluating a decision.
     """
@@ -42,70 +41,76 @@ class EvaluateDecisionHandler(CommandHandler[EvaluateDecisionCommand, None]):
         *,
         policy_repository: DecisionPolicyRepository,
         lifecycle_repository: StrategyLifecycleRepository,
+        uow: UnitOfWork,
         store: EventStore,
         bus: EventBusPort,
         clock: Clock,
         ids: IdGenerator,
     ) -> None:
+        super().__init__(uow=uow, store=store, bus=bus, clock=clock, ids=ids)
         self._policy_repository = policy_repository
         self._lifecycle_repository = lifecycle_repository
-        self._store = store
-        self._bus = bus
-        self._clock = clock
-        self._ids = ids
 
-    def handle(self, command: EvaluateDecisionCommand) -> CommandResult[None]:
+    async def handle(self, command: EvaluateDecisionCommand) -> CommandResult[None]:
 
-        lifecycle = self._lifecycle_repository.get_lifecycle(
-            command.decision_identity.strategy_id
-        )
-
-        eligibility = StrategyEligibilityPolicy.evaluate(
-            lifecycle=lifecycle,
-            at=self._clock.now_epoch_ms(),
-        )
-
-        if not eligibility.eligible:
-            event = DecisionRejectedEvent(
-                intent_id=command.intent_id,
-                result=eligibility,
-            )
-        else:
-            policy = self._policy_repository.get_policies_for(
-                command.decision_identity.strategy_id
-            )
-
-            result = DecisionPolicyEvaluator.evaluate(
-                policy=policy,
-                decision=command.decision_identity,
-                context=command.trading_context,
-            )
-
-            if result.authorized:
-                event = DecisionAuthorizedEvent(
-                    intent_id=command.intent_id,
-                    result=result,
-                )
-            else:
-                event = DecisionRejectedEvent(
-                    intent_id=command.intent_id,
-                    result=result,
+        try:
+            with self._uow:
+                lifecycle = self._lifecycle_repository.get_lifecycle(
+                    command.decision_identity.strategy_id
                 )
 
-        envelope = EventEnvelope(
-            id=self._ids.new_event_id(),
-            sequence=EventSequence.initial().next(),
-            occurred_at=self._clock.now_epoch_ms(),
-            recorded_at=self._clock.now_epoch_ms(),
-            event=event,
-            metadata=EventMetadata(
-                actor_id=ActorId("system:decision_engine"),
-                correlation_id=self._ids.new_correlation_id(),
-                causation_id=CausationId.root(),
-            ),
-        )
+                eligibility = StrategyEligibilityPolicy.evaluate(
+                    lifecycle=lifecycle,
+                    at=self._clock.now_epoch_ms(),
+                )
 
-        self._store.append([envelope])
-        self._bus.publish(envelope)
+                if not eligibility.eligible:
+                    domain_events = [
+                        DecisionRejectedEvent(
+                            intent_id=command.intent_id,
+                            result=eligibility,
+                        )
+                    ]
 
-        return CommandResult()
+                else:
+                    policy = self._policy_repository.get_policies_for(
+                        command.decision_identity.strategy_id
+                    )
+
+                    result = DecisionPolicyEvaluator.evaluate(
+                        policy=policy,
+                        decision=command.decision_identity,
+                        context=command.trading_context,
+                    )
+
+                    if result.authorized:
+                        domain_events = [
+                            DecisionAuthorizedEvent(
+                                intent_id=command.intent_id,
+                                result=result,
+                            )
+                        ]
+                    else:
+                        domain_events = [
+                            DecisionRejectedEvent(
+                                intent_id=command.intent_id,
+                                result=result,
+                            )
+                        ]
+
+                await persist_and_publish(
+                    stream_id=f"decision-{command.intent_id.value}",
+                    events=domain_events,
+                    store=self._store,
+                    bus=self._bus,
+                    ids=self._ids,
+                    clock=self._clock,
+                    actor="system:decision_engine",
+                )
+
+                self._uow.commit()
+
+            return CommandResult()
+
+        except DomainError as error:
+            raise DomainExecutionError(error) from None
