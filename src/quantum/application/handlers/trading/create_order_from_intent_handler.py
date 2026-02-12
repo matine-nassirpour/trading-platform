@@ -1,28 +1,24 @@
+from collections.abc import Iterable
 from typing import Final
 
 from quantum.application.commands.trading.create_order_from_intent_command import (
     CreateOrderFromIntentCommand,
 )
-from quantum.application.errors.application_error import (
-    DomainExecutionError,
-    UseCaseError,
+from quantum.application.errors.application_error import UseCaseError
+from quantum.application.handlers.event_sourced_command_handler import (
+    EventSourcedCommandHandler,
 )
-from quantum.application.handlers.command_handler import CommandHandler
-from quantum.application.ports.outbound.clock import Clock
-from quantum.application.ports.outbound.event_store import EventStore
-from quantum.application.ports.outbound.id_generator import IdGenerator
-from quantum.application.ports.outbound.outbox_repository import OutboxRepository
 from quantum.application.ports.outbound.repositories.trading_intent_repository import (
     TradingIntentRepository,
 )
-from quantum.application.ports.outbound.unit_of_work import UnitOfWork
-from quantum.application.services.event_pipeline import persist_events_transactionally
-from quantum.domain.shared_kernel.errors.domain_error import DomainError
-from quantum.domain.shared_kernel.events.event_sequence import EventSequence
+from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
 from quantum.domain.trading.execution.order.order import Order
+from quantum.domain.trading.intent.trading_intent import TradingIntent
 
 
-class CreateOrderFromIntentHandler(CommandHandler[CreateOrderFromIntentCommand, None]):
+class CreateOrderFromIntentHandler(
+    EventSourcedCommandHandler[CreateOrderFromIntentCommand, None, TradingIntent]
+):
     """
     Creates an Order from an authorized TradingIntent.
     """
@@ -33,50 +29,34 @@ class CreateOrderFromIntentHandler(CommandHandler[CreateOrderFromIntentCommand, 
         self,
         *,
         repository: TradingIntentRepository,
-        outbox: OutboxRepository,
-        uow: UnitOfWork,
-        store: EventStore,
-        clock: Clock,
-        ids: IdGenerator,
+        **kwargs,
     ) -> None:
-        super().__init__(outbox=outbox, uow=uow, store=store, clock=clock, ids=ids)
+        super().__init__(**kwargs)
         self._repository = repository
 
-    def _execute(self, command: CreateOrderFromIntentCommand) -> None:
+    def _stream_id(self, command: CreateOrderFromIntentCommand) -> str:
+        return f"order-{command.order_id.value}"
 
-        try:
-            stream_id = f"order-{command.order_id.value}"
+    def _load_aggregate(self, command: CreateOrderFromIntentCommand) -> TradingIntent:
+        return self._repository.load(command.intent_id)
 
-            # --- Optimistic concurrency guard
-            current_version: EventSequence = self._store.current_sequence(stream_id)
+    def _execute_domain(
+        self,
+        *,
+        command: CreateOrderFromIntentCommand,
+        aggregate: TradingIntent,
+    ) -> tuple[Iterable[BaseEvent], None]:
 
-            intent = self._repository.load(command.intent_id)
+        if not aggregate.state.authorized:
+            raise UseCaseError("Cannot create order from non-authorized intent")
 
-            if not intent.state.authorized:
-                raise UseCaseError("Cannot create order from non-authorized intent")
+        domain_events = Order.create(
+            intent_id=command.intent_id,
+            order_id=command.order_id,
+            symbol=command.symbol,
+            order_type=command.order_type,
+            side=command.side,
+            volume=command.volume,
+        )
 
-            # --- Domain logic
-            domain_events = Order.create(
-                intent_id=command.intent_id,
-                order_id=command.order_id,
-                symbol=command.symbol,
-                order_type=command.order_type,
-                side=command.side,
-                volume=command.volume,
-            )
-
-            # --- Transactional persistence (EventStore + Outbox)
-            persist_events_transactionally(
-                stream_id=stream_id,
-                events=domain_events,
-                store=self._store,
-                outbox=self._outbox,
-                uow=self._uow,
-                ids=self._ids,
-                clock=self._clock,
-                actor=self._ACTOR,
-                expected_version=current_version,
-            )
-
-        except DomainError as error:
-            raise DomainExecutionError(error) from None
+        return domain_events, None
