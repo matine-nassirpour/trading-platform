@@ -2,7 +2,10 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from typing import Generic, TypeVar
 
-from quantum.application.errors.application_error import DomainExecutionError
+from quantum.application.errors.application_error import (
+    ConcurrencyError,
+    DomainExecutionError,
+)
 from quantum.application.ports.outbound.clock import Clock
 from quantum.application.ports.outbound.event_store import EventStore
 from quantum.application.ports.outbound.id_generator import IdGenerator
@@ -74,6 +77,10 @@ class EventSourcedCommandHandler(ABC, Generic[C, R, A]):
                 result = self._execute(command)
                 self._uow.commit()
                 return result
+
+            except ConcurrencyError:
+                self._uow.rollback()
+                raise
 
             except Exception:
                 self._uow.rollback()

@@ -35,7 +35,6 @@ class EventSourcedRepository(Generic[A]):
     def load(self, stream_id: str) -> tuple[A | None, EventSequence]:
         """
         Reconstruct aggregate from event stream.
-        Returns (aggregate, current_version)
         """
 
         events: list[EventEnvelope] = self._store.load_stream(stream_id)
@@ -49,5 +48,4 @@ class EventSourcedRepository(Generic[A]):
         )
 
         version = events[-1].sequence
-
         return aggregate, version
