@@ -52,6 +52,9 @@ class EventSourcedAggregateRoot(Generic[S], ABC):
     def state(self) -> S:
         return self._state
 
+    @classmethod
+    def empty_state(cls) -> S: ...
+
     # --- Required contract ----------------------------------------------------
 
     @classmethod

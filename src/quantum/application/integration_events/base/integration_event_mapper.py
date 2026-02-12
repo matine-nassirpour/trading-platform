@@ -7,8 +7,8 @@ from quantum.application.integration_events.base.integration_event_envelope impo
 from quantum.application.integration_events.base.integration_headers import (
     IntegrationHeaders,
 )
+from quantum.application.ports.outbound.clock import Clock
 from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
-from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
 
 
 class IntegrationEventMapper:
@@ -16,11 +16,14 @@ class IntegrationEventMapper:
     Converts Domain EventEnvelope -> IntegrationEventEnvelope.
     """
 
-    @staticmethod
+    def __init__(self, *, clock: Clock) -> None:
+        self._clock = clock
+
     def map(
+        self,
+        *,
         domain_envelope: EventEnvelope,
         integration_event: IntegrationEvent,
-        *,
         source: str,
         tenant: str | None = None,
         environment: str | None = None,
@@ -42,5 +45,5 @@ class IntegrationEventMapper:
             payload=integration_event,
             headers=headers,
             occurred_at=domain_envelope.occurred_at,
-            published_at=EpochMs.now(),
+            published_at=self._clock.now_epoch_ms(),
         )

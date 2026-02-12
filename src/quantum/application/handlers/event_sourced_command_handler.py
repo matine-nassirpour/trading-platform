@@ -1,13 +1,15 @@
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
-from typing import Final, Generic, TypeVar
+from typing import Generic, TypeVar
 
 from quantum.application.errors.application_error import DomainExecutionError
-from quantum.application.handlers.command_handler import CommandHandler
 from quantum.application.ports.outbound.clock import Clock
 from quantum.application.ports.outbound.event_store import EventStore
 from quantum.application.ports.outbound.id_generator import IdGenerator
 from quantum.application.ports.outbound.outbox_repository import OutboxRepository
+from quantum.application.ports.outbound.repositories.event_sourced_repository import (
+    EventSourcedRepository,
+)
 from quantum.application.ports.outbound.unit_of_work import UnitOfWork
 from quantum.domain.shared_kernel.errors.domain_error import DomainError
 from quantum.domain.shared_kernel.events.actor_id import ActorId
@@ -22,7 +24,7 @@ R = TypeVar("R")  # Result type
 A = TypeVar("A")  # Aggregate type
 
 
-class EventSourcedCommandHandler(CommandHandler[C, R], ABC, Generic[C, R, A]):
+class EventSourcedCommandHandler(ABC, Generic[C, R, A]):
     """
     Industry-grade event-sourced transactional command handler.
 
@@ -34,30 +36,62 @@ class EventSourcedCommandHandler(CommandHandler[C, R], ABC, Generic[C, R, A]):
     - Zero duplication across handlers
     """
 
-    _ACTOR: Final[str] = "system:application"
+    _ACTOR = "system:application"
 
     def __init__(
         self,
         *,
+        repository: EventSourcedRepository,
         outbox: OutboxRepository,
         uow: UnitOfWork,
         store: EventStore,
         clock: Clock,
         ids: IdGenerator,
     ) -> None:
-        super().__init__(outbox=outbox, uow=uow, store=store, clock=clock, ids=ids)
+        self._repository = repository
+        self._outbox = outbox
+        self._uow = uow
+        self._store = store
+        self._clock = clock
+        self._ids = ids
+
+    # --- Public entrypoint ------------------------------
+
+    def handle(self, command: C) -> R:
+        """
+        Execute a command inside a strict transactional boundary.
+
+        Lifecycle:
+            1. Load version
+            2. Execute domain logic
+            3. Persist events
+            4. Store outbox
+            5. Commit
+        """
+
+        with self._uow:
+            try:
+                result = self._execute(command)
+                self._uow.commit()
+                return result
+
+            except Exception:
+                self._uow.rollback()
+                raise
 
     # --- Abstract contract for concrete handlers ------------------------------
 
     @abstractmethod
     def _stream_id(self, command: C) -> str:
-        """Return stream identifier for the aggregate."""
+        """
+        Return the event stream identifier for the aggregate.
+        """
         raise NotImplementedError
 
     @abstractmethod
     def _load_aggregate(self, command: C) -> A | None:
         """
-        Load aggregate instance.
+        Load aggregate instance (if existing).
         May return None for create operations.
         """
         raise NotImplementedError
@@ -74,36 +108,6 @@ class EventSourcedCommandHandler(CommandHandler[C, R], ABC, Generic[C, R, A]):
         """
         raise NotImplementedError
 
-    # --- Core deterministic execution template --------------------------------
-
-    def _execute(self, command: C) -> R:
-
-        stream_id = self._stream_id(command)
-
-        try:
-            current_version: EventSequence = self._store.current_sequence(stream_id)
-
-            aggregate = self._load_aggregate(command)
-
-            domain_events, result = self._execute_domain(
-                command=command,
-                aggregate=aggregate,
-            )
-
-            if not domain_events:
-                return result
-
-            self._persist(
-                stream_id=stream_id,
-                events=domain_events,
-                expected_version=current_version,
-            )
-
-            return result
-
-        except DomainError as error:
-            raise DomainExecutionError(error) from None
-
     # --- Centralized persistence logic ----------------------------------------
 
     def _persist(
@@ -114,22 +118,23 @@ class EventSourcedCommandHandler(CommandHandler[C, R], ABC, Generic[C, R, A]):
         expected_version: EventSequence,
     ) -> None:
 
-        envelopes: list[EventEnvelope] = []
-
         correlation_id = self._ids.new_correlation_id()
+        now = self._clock.now_epoch_ms()
+
+        envelopes: list[EventEnvelope] = []
 
         for event in events:
             envelopes.append(
                 EventEnvelope(
                     id=self._ids.new_event_id(),
                     sequence=EventSequence.initial(),
-                    occurred_at=self._clock.now_epoch_ms(),
-                    recorded_at=self._clock.now_epoch_ms(),
+                    occurred_at=now,
+                    recorded_at=now,
                     event=event,
                     metadata=EventMetadata(
                         actor_id=ActorId(self._ACTOR),
                         correlation_id=correlation_id,
-                        causation_id=CausationId.root(),  # can be overridden later
+                        causation_id=CausationId.root(),  # upgradeable later
                     ),
                 )
             )
@@ -142,8 +147,29 @@ class EventSourcedCommandHandler(CommandHandler[C, R], ABC, Generic[C, R, A]):
 
         self._outbox.add(persisted)
 
-        def publish_after_commit() -> None:
-            # handled by infrastructure dispatcher
-            pass
+    # --- Core deterministic execution template --------------------------------
 
-        self._uow.after_commit(publish_after_commit)
+    def _execute(self, command: C) -> R:
+        stream_id = self._stream_id(command)
+
+        try:
+            aggregate, expected_version = self._repository.load(stream_id)
+
+            domain_events, result = self._execute_domain(
+                command=command,
+                aggregate=aggregate,
+            )
+
+            if not domain_events:
+                return result
+
+            self._persist(
+                stream_id=stream_id,
+                events=domain_events,
+                expected_version=expected_version,
+            )
+
+            return result
+
+        except DomainError as error:
+            raise DomainExecutionError(error) from None
