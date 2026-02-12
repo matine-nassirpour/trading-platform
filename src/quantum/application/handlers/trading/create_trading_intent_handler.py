@@ -1,57 +1,68 @@
-from quantum.application.commands.command_result import CommandResult
+from typing import Final
+
 from quantum.application.commands.trading.create_trading_intent_command import (
     CreateTradingIntentCommand,
 )
 from quantum.application.errors.application_error import DomainExecutionError
-from quantum.application.handlers.command_handler import AsyncCommandHandler
+from quantum.application.handlers.command_handler import CommandHandler
 from quantum.application.ports.outbound.clock import Clock
-from quantum.application.ports.outbound.event_bus_port import EventBusPort
 from quantum.application.ports.outbound.event_store import EventStore
 from quantum.application.ports.outbound.id_generator import IdGenerator
+from quantum.application.ports.outbound.outbox_repository import OutboxRepository
 from quantum.application.ports.outbound.unit_of_work import UnitOfWork
-from quantum.application.services.event_pipeline import persist_and_publish
+from quantum.application.services.event_pipeline import persist_events_transactionally
 from quantum.domain.shared_kernel.errors.domain_error import DomainError
+from quantum.domain.shared_kernel.events.event_sequence import EventSequence
 from quantum.domain.trading.intent.trading_intent import TradingIntent
 
 
-class CreateTradingIntentHandler(AsyncCommandHandler[CreateTradingIntentCommand, None]):
+class CreateTradingIntentHandler(CommandHandler[CreateTradingIntentCommand, None]):
+    """
+    Creates a new TradingIntent aggregate.
+    """
+
+    _ACTOR: Final[str] = "system:intent"
 
     def __init__(
         self,
         *,
+        outbox: OutboxRepository,
         uow: UnitOfWork,
         store: EventStore,
-        bus: EventBusPort,
         clock: Clock,
         ids: IdGenerator,
     ) -> None:
-        super().__init__(uow=uow, store=store, bus=bus, clock=clock, ids=ids)
+        super().__init__(outbox=outbox, uow=uow, store=store, clock=clock, ids=ids)
 
-    async def handle(self, command: CreateTradingIntentCommand) -> CommandResult[None]:
+    def _execute(self, command: CreateTradingIntentCommand) -> None:
 
         try:
-            with self._uow:
-                domain_events = TradingIntent.create(
-                    intent_id=command.intent_id,
-                    symbol=command.symbol,
-                    side=command.side,
-                    decision_identity=command.decision_identity,
-                    context=command.context,
-                )
+            stream_id = f"intent-{command.intent_id.value}"
 
-                await persist_and_publish(
-                    stream_id=f"intent-{command.intent_id.value}",
-                    events=domain_events,
-                    store=self._store,
-                    bus=self._bus,
-                    ids=self._ids,
-                    clock=self._clock,
-                    actor="system:intent",
-                )
+            # --- Optimistic concurrency guard
+            current_version: EventSequence = self._store.current_sequence(stream_id)
 
-                self._uow.commit()
+            # --- Domain logic
+            domain_events = TradingIntent.create(
+                intent_id=command.intent_id,
+                symbol=command.symbol,
+                side=command.side,
+                decision_identity=command.decision_identity,
+                context=command.context,
+            )
 
-            return CommandResult()
+            # --- Transactional persistence (EventStore + Outbox)
+            persist_events_transactionally(
+                stream_id=stream_id,
+                events=domain_events,
+                store=self._store,
+                outbox=self._outbox,
+                uow=self._uow,
+                ids=self._ids,
+                clock=self._clock,
+                actor=self._ACTOR,
+                expected_version=current_version,
+            )
 
         except DomainError as error:
             raise DomainExecutionError(error) from None

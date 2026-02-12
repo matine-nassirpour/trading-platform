@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from contextlib import AbstractContextManager
 from typing import Protocol, runtime_checkable
 
@@ -19,4 +20,10 @@ class UnitOfWork(Protocol, AbstractContextManager["UnitOfWork"]):
         raise NotImplementedError
 
     def rollback(self) -> None:
+        raise NotImplementedError
+
+    def after_commit(self, callback: Callable[[], None]) -> None:
+        """
+        Register a callback executed only if commit succeeds.
+        """
         raise NotImplementedError
