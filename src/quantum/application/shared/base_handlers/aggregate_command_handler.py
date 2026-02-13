@@ -12,7 +12,9 @@ from quantum.application.ports.outbound.transaction.unit_of_work import UnitOfWo
 from quantum.application.shared.errors.application_error import (
     ConcurrencyError,
     DomainExecutionError,
-    NotFoundError,
+)
+from quantum.application.shared.eventing.event_enveloper import (
+    ApplicationEventEnveloper,
 )
 from quantum.domain.shared_kernel.errors.domain_error import DomainError
 from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
@@ -39,10 +41,12 @@ class AggregateCommandHandler(ABC, Generic[C, R, A]):
         repository: EventSourcedRepository[A],
         outbox: OutboxRepository,
         uow: UnitOfWork,
+        enveloper: ApplicationEventEnveloper,
     ) -> None:
         self._repository = repository
         self._outbox = outbox
         self._uow = uow
+        self._enveloper = enveloper
 
     # --- Abstract contract for concrete handlers ------------------------------
 
@@ -71,11 +75,7 @@ class AggregateCommandHandler(ABC, Generic[C, R, A]):
         with self._uow:
             try:
                 stream_id = self._stream_id(command)
-
                 aggregate, expected_version = self._repository.load(stream_id)
-
-                if aggregate is None:
-                    raise NotFoundError(f"Aggregate not found: {stream_id}")
 
                 domain_events, result = self._execute_domain(
                     command=command,
@@ -83,10 +83,12 @@ class AggregateCommandHandler(ABC, Generic[C, R, A]):
                 )
 
                 if domain_events:
+                    envelopes = self._enveloper.envelope(events=domain_events)
+
                     persisted = self._repository.save(
                         stream_id=stream_id,
                         expected_version=expected_version,
-                        domain_events=domain_events,
+                        envelopes=envelopes,
                     )
 
                     self._outbox.add(persisted)

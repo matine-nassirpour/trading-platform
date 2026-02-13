@@ -4,12 +4,6 @@ from collections.abc import Iterable
 from typing import Generic, TypeVar
 
 from quantum.application.ports.outbound.transaction.event_store import EventStore
-from quantum.application.shared.eventing.event_enveloper import (
-    ApplicationEventEnveloper,
-)
-from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
-from quantum.domain.shared_kernel.events.causation_id import CausationId
-from quantum.domain.shared_kernel.events.correlation_id import CorrelationId
 from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
 from quantum.domain.shared_kernel.events.event_sequence import EventSequence
 from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import (
@@ -35,14 +29,11 @@ class EventSourcedRepository(Generic[A]):
         *,
         store: EventStore,
         aggregate_type: type[A],
-        enveloper: ApplicationEventEnveloper,
     ) -> None:
         self._store = store
         self._aggregate_type = aggregate_type
-        self._enveloper = enveloper
 
     def load(self, stream_id: str) -> tuple[A | None, EventSequence]:
-
         events: list[EventEnvelope] = self._store.load_stream(stream_id)
 
         if not events:
@@ -61,19 +52,11 @@ class EventSourcedRepository(Generic[A]):
         *,
         stream_id: str,
         expected_version: EventSequence,
-        domain_events: Iterable[BaseEvent],
-        correlation_id: CorrelationId | None = None,
-        causation_id: CausationId | None = None,
+        envelopes: Iterable[EventEnvelope],
     ) -> list[EventEnvelope]:
         """
-        Persist domain events atomically with strict concurrency control.
+        Persist pre-wrapped event envelopes atomically.
         """
-
-        envelopes = self._enveloper.envelope(
-            events=domain_events,
-            correlation_id=correlation_id,
-            causation_id=causation_id,
-        )
 
         persisted = self._store.append(
             stream_id=stream_id,
