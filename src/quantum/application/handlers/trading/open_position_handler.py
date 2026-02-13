@@ -1,5 +1,4 @@
 from collections.abc import Iterable
-from typing import Final
 
 from quantum.application.commands.trading.open_position_command import (
     OpenPositionCommand,
@@ -15,8 +14,6 @@ class OpenPositionHandler(EventSourcedCommandHandler[OpenPositionCommand, None, 
     """
     Opens a new Position aggregate.
     """
-
-    _ACTOR: Final[str] = "system:position"
 
     def _stream_id(self, command: OpenPositionCommand) -> str:
         return f"position-{command.position_id.value}"

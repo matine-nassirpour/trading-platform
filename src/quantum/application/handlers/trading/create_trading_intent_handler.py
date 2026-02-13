@@ -1,5 +1,4 @@
 from collections.abc import Iterable
-from typing import Final
 
 from quantum.application.commands.trading.create_trading_intent_command import (
     CreateTradingIntentCommand,
@@ -17,8 +16,6 @@ class CreateTradingIntentHandler(
     """
     Creates a new TradingIntent aggregate.
     """
-
-    _ACTOR: Final[str] = "system:intent"
 
     def _stream_id(self, command: CreateTradingIntentCommand) -> str:
         return f"intent-{command.intent_id.value}"

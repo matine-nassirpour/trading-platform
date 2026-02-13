@@ -19,7 +19,7 @@ class EventBusPort(Protocol):
         """Gracefully shut down the event bus (optional cleanup)."""
         ...
 
-    async def publish(self, envelope: EventEnvelope) -> None: ...
+    async def publish(self, events: list[EventEnvelope]) -> None: ...
 
     async def publish_many(self, envelopes: Iterable[EventEnvelope]) -> None:
         """
@@ -27,4 +27,4 @@ class EventBusPort(Protocol):
         but infrastructures can optimize atomically.
         """
         for env in envelopes:
-            await self.publish(env)
+            await self.publish([env])

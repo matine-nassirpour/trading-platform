@@ -1,10 +1,8 @@
 from collections.abc import Iterable
-from typing import Final
 
 from quantum.application.commands.trading.create_order_from_intent_command import (
     CreateOrderFromIntentCommand,
 )
-from quantum.application.errors.application_error import UseCaseError
 from quantum.application.handlers.event_sourced_command_handler import (
     EventSourcedCommandHandler,
 )
@@ -20,8 +18,6 @@ class CreateOrderFromIntentHandler(
     Creates an Order from an authorized TradingIntent.
     """
 
-    _ACTOR: Final[str] = "system:order"
-
     def _stream_id(self, command: CreateOrderFromIntentCommand) -> str:
         return f"order-{command.order_id.value}"
 
@@ -31,9 +27,6 @@ class CreateOrderFromIntentHandler(
         command: CreateOrderFromIntentCommand,
         aggregate: TradingIntent,
     ) -> tuple[Iterable[BaseEvent], None]:
-
-        if not aggregate.state.authorized:
-            raise UseCaseError("Cannot create order from non-authorized intent")
 
         domain_events = Order.create(
             intent_id=command.intent_id,

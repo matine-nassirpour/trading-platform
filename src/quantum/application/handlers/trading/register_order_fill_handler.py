@@ -1,5 +1,4 @@
 from collections.abc import Iterable
-from typing import Final
 
 from quantum.application.commands.trading.register_order_fill_command import (
     RegisterOrderFillCommand,
@@ -17,8 +16,6 @@ class RegisterOrderFillHandler(
     """
     Registers an execution fill on an existing Order aggregate.
     """
-
-    _ACTOR: Final[str] = "system:execution"
 
     def _stream_id(self, command: RegisterOrderFillCommand) -> str:
         return f"order-{command.order_id.value}"

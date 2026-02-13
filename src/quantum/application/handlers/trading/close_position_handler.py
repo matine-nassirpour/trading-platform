@@ -1,5 +1,4 @@
 from collections.abc import Iterable
-from typing import Final
 
 from quantum.application.commands.trading.close_position_command import (
     ClosePositionCommand,
@@ -17,8 +16,6 @@ class ClosePositionHandler(
     """
     Closes an existing Position aggregate.
     """
-
-    _ACTOR: Final[str] = "system:position"
 
     def _stream_id(self, command: ClosePositionCommand) -> str:
         return f"position-{command.position_id.value}"

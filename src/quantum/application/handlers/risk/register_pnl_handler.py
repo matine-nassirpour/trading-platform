@@ -1,5 +1,4 @@
 from collections.abc import Iterable
-from typing import Final
 
 from quantum.application.commands.risk.register_pnl_command import RegisterPnLCommand
 from quantum.application.handlers.event_sourced_command_handler import (
@@ -15,8 +14,6 @@ class RegisterPnLHandler(
     """
     Registers realized PnL and updates global risk state.
     """
-
-    _ACTOR: Final[str] = "system:risk_engine"
 
     def _stream_id(self, command: RegisterPnLCommand) -> str:
         return "risk-state"

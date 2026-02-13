@@ -1,5 +1,4 @@
 from collections.abc import Iterable
-from typing import Final
 
 from quantum.application.commands.decision.register_no_trade_command import (
     RegisterNoTradeCommand,
@@ -20,8 +19,6 @@ class RegisterNoTradeHandler(
     Registers a No-Trade decision in a strictly transactional,
     event-sourced and concurrency-safe manner.
     """
-
-    _ACTOR: Final[str] = "system:decision_engine"
 
     def _stream_id(self, command: RegisterNoTradeCommand) -> str:
         return f"decision-{command.decision_identity.strategy_id.value}"

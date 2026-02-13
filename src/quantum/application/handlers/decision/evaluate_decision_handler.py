@@ -1,5 +1,4 @@
 from collections.abc import Iterable
-from typing import Final
 
 from quantum.application.commands.decision.evaluate_decision_command import (
     EvaluateDecisionCommand,
@@ -7,6 +6,7 @@ from quantum.application.commands.decision.evaluate_decision_command import (
 from quantum.application.handlers.event_sourced_command_handler import (
     EventSourcedCommandHandler,
 )
+from quantum.application.ports.outbound.clock import Clock
 from quantum.application.ports.outbound.repositories.decision_policy_repository import (
     DecisionPolicyRepository,
 )
@@ -32,24 +32,25 @@ class EvaluateDecisionHandler(
     EventSourcedCommandHandler[EvaluateDecisionCommand, None, None]
 ):
     """
-    Evaluates a trading decision under:
+    Application command handler responsible for evaluating a trading decision.
 
-    1. Strategy lifecycle eligibility
-    2. Governance decision policy
+    Evaluation pipeline:
+        1. Strategy lifecycle eligibility
+        2. Governance decision policy
     """
-
-    _ACTOR: Final[str] = "system:decision_engine"
 
     def __init__(
         self,
         *,
         policy_repository: DecisionPolicyRepository,
         lifecycle_repository: StrategyLifecycleRepository,
+        clock: Clock,
         **kwargs,
     ) -> None:
-        super().__init__(**kwargs)
+        super().__init__(require_existing=False, **kwargs)
         self._policy_repository = policy_repository
         self._lifecycle_repository = lifecycle_repository
+        self._clock = clock
 
     def _stream_id(self, command: EvaluateDecisionCommand) -> str:
         return f"decision-{command.intent_id.value}"

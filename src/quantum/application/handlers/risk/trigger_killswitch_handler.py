@@ -1,5 +1,4 @@
 from collections.abc import Iterable
-from typing import Final
 
 from quantum.application.commands.risk.trigger_killswitch_command import (
     TriggerKillSwitchCommand,
@@ -17,8 +16,6 @@ class TriggerKillSwitchHandler(
     """
     Triggers the global Kill Switch.
     """
-
-    _ACTOR: Final[str] = "system:risk_engine"
 
     def _stream_id(self, command: TriggerKillSwitchCommand) -> str:
         return "killswitch"
