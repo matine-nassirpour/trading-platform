@@ -8,12 +8,12 @@ from collections.abc import Awaitable, Callable
 from contextlib import suppress
 from typing import Any, Final
 
-from quantum.application.ports.outbound.event_bus_port import EventBusPort
+from quantum.application.ports.outbound.messaging.event_bus import EventBus
 
 LOGGER: Final = logging.getLogger(__name__)
 
 
-class AsyncioEventBusAdapter(EventBusPort):
+class AsyncioEventBusAdapter(EventBus):
     """
     Asyncio-based in-memory EventBus implementation.
 

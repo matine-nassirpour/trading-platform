@@ -12,8 +12,8 @@ from runtime.lifecycle.engine import RuntimeLifecycleEngine
 from quantum.application.ports.inbound.application_runtime_port import (
     ApplicationRuntimePort,
 )
-from quantum.application.ports.outbound.event_bus_port import EventBusPort
-from quantum.application.services.application_orchestrator import (
+from quantum.application.ports.outbound.messaging.event_bus import EventBus
+from quantum.application.shared.orchestration.application_orchestrator import (
     ApplicationOrchestrator,
 )
 from quantum.infrastructure.events.bus.asyncio_event_bus_adapter import (
@@ -56,7 +56,7 @@ def assemble_runtime(runtime: RuntimeContext) -> AssembledRuntime:
     core_cfg = runtime.config.core
 
     # Event Bus
-    event_bus: EventBusPort = AsyncioEventBusAdapter()
+    event_bus: EventBus = AsyncioEventBusAdapter()
 
     # Application Orchestrator
     orchestrator: ApplicationRuntimePort = ApplicationOrchestrator(event_bus=event_bus)

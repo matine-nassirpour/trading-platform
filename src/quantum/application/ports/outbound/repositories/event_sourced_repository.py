@@ -3,8 +3,10 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import Generic, TypeVar
 
-from quantum.application.ports.outbound.event_store import EventStore
-from quantum.application.services.event_enveloper import ApplicationEventEnveloper
+from quantum.application.ports.outbound.transaction.event_store import EventStore
+from quantum.application.shared.eventing.event_enveloper import (
+    ApplicationEventEnveloper,
+)
 from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
 from quantum.domain.shared_kernel.events.causation_id import CausationId
 from quantum.domain.shared_kernel.events.correlation_id import CorrelationId

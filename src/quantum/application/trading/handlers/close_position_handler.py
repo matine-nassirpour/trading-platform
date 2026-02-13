@@ -1,0 +1,35 @@
+from collections.abc import Iterable
+
+from quantum.application.shared.base_handlers.aggregate_command_handler import (
+    AggregateCommandHandler,
+)
+from quantum.application.trading.commands.close_position_command import (
+    ClosePositionCommand,
+)
+from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
+from quantum.domain.trading.execution.position.position import Position
+
+
+class ClosePositionHandler(
+    AggregateCommandHandler[ClosePositionCommand, None, Position]
+):
+    """
+    Closes an existing Position aggregate.
+    """
+
+    def _stream_id(self, command: ClosePositionCommand) -> str:
+        return f"position-{command.position_id.value}"
+
+    def _execute_domain(
+        self,
+        *,
+        command: ClosePositionCommand,
+        aggregate: Position,
+    ) -> tuple[Iterable[BaseEvent], None]:
+
+        domain_events = aggregate.close(
+            exit_price=command.exit_price,
+            context=command.context,
+        )
+
+        return domain_events, None

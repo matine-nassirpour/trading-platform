@@ -1,6 +1,6 @@
 from datetime import UTC, date, datetime
 
-from quantum.application.ports.outbound.clock import Clock
+from quantum.application.ports.outbound.time.clock import Clock
 
 
 class SystemTimeProviderAdapter(Clock):
