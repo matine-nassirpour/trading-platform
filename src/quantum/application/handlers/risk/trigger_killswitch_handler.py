@@ -7,9 +7,6 @@ from quantum.application.commands.risk.trigger_killswitch_command import (
 from quantum.application.handlers.event_sourced_command_handler import (
     EventSourcedCommandHandler,
 )
-from quantum.application.ports.outbound.repositories.kill_switch_repository import (
-    KillSwitchRepository,
-)
 from quantum.domain.risk.governance.aggregates.kill_switch.state import KillSwitchState
 from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
 
@@ -23,20 +20,8 @@ class TriggerKillSwitchHandler(
 
     _ACTOR: Final[str] = "system:risk_engine"
 
-    def __init__(
-        self,
-        *,
-        repository: KillSwitchRepository,
-        **kwargs,
-    ) -> None:
-        super().__init__(**kwargs)
-        self._repository = repository
-
     def _stream_id(self, command: TriggerKillSwitchCommand) -> str:
         return "killswitch"
-
-    def _load_aggregate(self, command: TriggerKillSwitchCommand) -> KillSwitchState:
-        return self._repository.get_current()
 
     def _execute_domain(
         self,

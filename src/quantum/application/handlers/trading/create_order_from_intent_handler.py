@@ -8,9 +8,6 @@ from quantum.application.errors.application_error import UseCaseError
 from quantum.application.handlers.event_sourced_command_handler import (
     EventSourcedCommandHandler,
 )
-from quantum.application.ports.outbound.repositories.trading_intent_repository import (
-    TradingIntentRepository,
-)
 from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
 from quantum.domain.trading.execution.order.order import Order
 from quantum.domain.trading.intent.trading_intent import TradingIntent
@@ -25,20 +22,8 @@ class CreateOrderFromIntentHandler(
 
     _ACTOR: Final[str] = "system:order"
 
-    def __init__(
-        self,
-        *,
-        repository: TradingIntentRepository,
-        **kwargs,
-    ) -> None:
-        super().__init__(**kwargs)
-        self._repository = repository
-
     def _stream_id(self, command: CreateOrderFromIntentCommand) -> str:
         return f"order-{command.order_id.value}"
-
-    def _load_aggregate(self, command: CreateOrderFromIntentCommand) -> TradingIntent:
-        return self._repository.load(command.intent_id)
 
     def _execute_domain(
         self,

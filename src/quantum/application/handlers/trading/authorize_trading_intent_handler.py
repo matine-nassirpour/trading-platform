@@ -7,9 +7,6 @@ from quantum.application.commands.trading.authorize_trading_intent_command impor
 from quantum.application.handlers.event_sourced_command_handler import (
     EventSourcedCommandHandler,
 )
-from quantum.application.ports.outbound.repositories.trading_intent_repository import (
-    TradingIntentRepository,
-)
 from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
 from quantum.domain.trading.intent.trading_intent import TradingIntent
 
@@ -23,20 +20,8 @@ class AuthorizeTradingIntentHandler(
 
     _ACTOR: Final[str] = "system:intent"
 
-    def __init__(
-        self,
-        *,
-        repository: TradingIntentRepository,
-        **kwargs,
-    ) -> None:
-        super().__init__(**kwargs)
-        self._repository = repository
-
     def _stream_id(self, command: AuthorizeTradingIntentCommand) -> str:
         return f"intent-{command.intent_id.value}"
-
-    def _load_aggregate(self, command: AuthorizeTradingIntentCommand) -> TradingIntent:
-        return self._repository.load(command.intent_id)
 
     def _execute_domain(
         self,

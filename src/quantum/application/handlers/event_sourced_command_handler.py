@@ -9,9 +9,11 @@ from quantum.application.errors.application_error import (
 from quantum.application.ports.outbound.clock import Clock
 from quantum.application.ports.outbound.event_store import EventStore
 from quantum.application.ports.outbound.id_generator import IdGenerator
-from quantum.application.ports.outbound.outbox_repository import OutboxRepository
 from quantum.application.ports.outbound.repositories.event_sourced_repository import (
     EventSourcedRepository,
+)
+from quantum.application.ports.outbound.repositories.outbox_repository import (
+    OutboxRepository,
 )
 from quantum.application.ports.outbound.unit_of_work import UnitOfWork
 from quantum.domain.shared_kernel.errors.domain_error import DomainError
@@ -29,7 +31,7 @@ A = TypeVar("A")  # Aggregate type
 
 class EventSourcedCommandHandler(ABC, Generic[C, R, A]):
     """
-    Industry-grade event-sourced transactional command handler.
+    Pure event-sourced transactional command handler.
 
     Guarantees:
     - Centralized optimistic concurrency control
@@ -44,7 +46,7 @@ class EventSourcedCommandHandler(ABC, Generic[C, R, A]):
     def __init__(
         self,
         *,
-        repository: EventSourcedRepository,
+        repository: EventSourcedRepository[A],
         outbox: OutboxRepository,
         uow: UnitOfWork,
         store: EventStore,
@@ -92,14 +94,6 @@ class EventSourcedCommandHandler(ABC, Generic[C, R, A]):
     def _stream_id(self, command: C) -> str:
         """
         Return the event stream identifier for the aggregate.
-        """
-        raise NotImplementedError
-
-    @abstractmethod
-    def _load_aggregate(self, command: C) -> A | None:
-        """
-        Load aggregate instance (if existing).
-        May return None for create operations.
         """
         raise NotImplementedError
 

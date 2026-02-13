@@ -26,10 +26,6 @@ class RegisterNoTradeHandler(
     def _stream_id(self, command: RegisterNoTradeCommand) -> str:
         return f"decision-{command.decision_identity.strategy_id.value}"
 
-    def _load_aggregate(self, command: RegisterNoTradeCommand):
-        # This use case emits an event directly (no aggregate instance required).
-        return None
-
     def _execute_domain(
         self,
         *,

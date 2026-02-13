@@ -1,5 +1,7 @@
 from quantum.application.ports.outbound.event_bus_port import EventBusPort
-from quantum.application.ports.outbound.outbox_repository import OutboxRepository
+from quantum.application.ports.outbound.repositories.outbox_repository import (
+    OutboxRepository,
+)
 
 
 class OutboxDispatcher:

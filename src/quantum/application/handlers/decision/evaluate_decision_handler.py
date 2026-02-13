@@ -54,10 +54,6 @@ class EvaluateDecisionHandler(
     def _stream_id(self, command: EvaluateDecisionCommand) -> str:
         return f"decision-{command.intent_id.value}"
 
-    def _load_aggregate(self, command: EvaluateDecisionCommand):
-        # This use case does not operate on an aggregate instance.
-        return None
-
     def _execute_domain(
         self,
         *,

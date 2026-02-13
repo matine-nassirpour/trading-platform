@@ -23,10 +23,6 @@ class CreateTradingIntentHandler(
     def _stream_id(self, command: CreateTradingIntentCommand) -> str:
         return f"intent-{command.intent_id.value}"
 
-    def _load_aggregate(self, command: CreateTradingIntentCommand):
-        # Create operation — no existing aggregate.
-        return None
-
     def _execute_domain(
         self,
         *,

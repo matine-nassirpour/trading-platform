@@ -5,9 +5,6 @@ from quantum.application.commands.risk.register_pnl_command import RegisterPnLCo
 from quantum.application.handlers.event_sourced_command_handler import (
     EventSourcedCommandHandler,
 )
-from quantum.application.ports.outbound.repositories.risk_repository import (
-    RiskRepository,
-)
 from quantum.domain.risk.governance.aggregates.risk_state import RiskState
 from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
 
@@ -21,20 +18,8 @@ class RegisterPnLHandler(
 
     _ACTOR: Final[str] = "system:risk_engine"
 
-    def __init__(
-        self,
-        *,
-        repository: RiskRepository,
-        **kwargs,
-    ) -> None:
-        super().__init__(**kwargs)
-        self._repository = repository
-
     def _stream_id(self, command: RegisterPnLCommand) -> str:
         return "risk-state"
-
-    def _load_aggregate(self, command: RegisterPnLCommand) -> RiskState:
-        return self._repository.load()
 
     def _execute_domain(
         self,

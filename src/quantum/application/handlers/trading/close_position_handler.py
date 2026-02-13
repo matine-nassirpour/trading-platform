@@ -7,9 +7,6 @@ from quantum.application.commands.trading.close_position_command import (
 from quantum.application.handlers.event_sourced_command_handler import (
     EventSourcedCommandHandler,
 )
-from quantum.application.ports.outbound.repositories.position_repository import (
-    PositionRepository,
-)
 from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
 from quantum.domain.trading.execution.position.position import Position
 
@@ -23,20 +20,8 @@ class ClosePositionHandler(
 
     _ACTOR: Final[str] = "system:position"
 
-    def __init__(
-        self,
-        *,
-        position_repository: PositionRepository,
-        **kwargs,
-    ) -> None:
-        super().__init__(**kwargs)
-        self._position_repository = position_repository
-
     def _stream_id(self, command: ClosePositionCommand) -> str:
         return f"position-{command.position_id.value}"
-
-    def _load_aggregate(self, command: ClosePositionCommand) -> Position:
-        return self._position_repository.load(command.position_id)
 
     def _execute_domain(
         self,

@@ -21,10 +21,6 @@ class OpenPositionHandler(EventSourcedCommandHandler[OpenPositionCommand, None, 
     def _stream_id(self, command: OpenPositionCommand) -> str:
         return f"position-{command.position_id.value}"
 
-    def _load_aggregate(self, command: OpenPositionCommand):
-        # Create operation — no existing aggregate.
-        return None
-
     def _execute_domain(
         self,
         *,
