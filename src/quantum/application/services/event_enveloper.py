@@ -35,8 +35,8 @@ class ApplicationEventEnveloper:
 
     def envelope(
         self,
-        events: Iterable[BaseEvent],
         *,
+        events: Iterable[BaseEvent],
         correlation_id: CorrelationId | None = None,
         causation_id: CausationId | None = None,
     ) -> list[EventEnvelope]:

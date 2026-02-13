@@ -3,15 +3,12 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import Generic, TypeVar
 
-from quantum.application.ports.outbound.clock import Clock
 from quantum.application.ports.outbound.event_store import EventStore
-from quantum.application.ports.outbound.id_generator import IdGenerator
-from quantum.domain.shared_kernel.events.actor_id import ActorId
+from quantum.application.services.event_enveloper import ApplicationEventEnveloper
 from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
 from quantum.domain.shared_kernel.events.causation_id import CausationId
 from quantum.domain.shared_kernel.events.correlation_id import CorrelationId
 from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
-from quantum.domain.shared_kernel.events.event_metadata import EventMetadata
 from quantum.domain.shared_kernel.events.event_sequence import EventSequence
 from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import (
     EventSourcedAggregateRoot,
@@ -36,15 +33,11 @@ class EventSourcedRepository(Generic[A]):
         *,
         store: EventStore,
         aggregate_type: type[A],
-        clock: Clock,
-        ids: IdGenerator,
-        actor: str,
+        enveloper: ApplicationEventEnveloper,
     ) -> None:
         self._store = store
         self._aggregate_type = aggregate_type
-        self._clock = clock
-        self._ids = ids
-        self._actor = ActorId(actor)
+        self._enveloper = enveloper
 
     def load(self, stream_id: str) -> tuple[A | None, EventSequence]:
 
@@ -74,27 +67,11 @@ class EventSourcedRepository(Generic[A]):
         Persist domain events atomically with strict concurrency control.
         """
 
-        now = self._clock.now_epoch_ms()
-        correlation_id = correlation_id or self._ids.new_correlation_id()
-        causation_id = causation_id or CausationId.root()
-
-        envelopes: list[EventEnvelope] = []
-
-        for event in domain_events:
-            envelopes.append(
-                EventEnvelope(
-                    id=self._ids.new_event_id(),
-                    sequence=EventSequence.initial(),
-                    occurred_at=now,
-                    recorded_at=now,
-                    event=event,
-                    metadata=EventMetadata(
-                        actor_id=self._actor,
-                        correlation_id=correlation_id,
-                        causation_id=causation_id,
-                    ),
-                )
-            )
+        envelopes = self._enveloper.envelope(
+            events=domain_events,
+            correlation_id=correlation_id,
+            causation_id=causation_id,
+        )
 
         persisted = self._store.append(
             stream_id=stream_id,

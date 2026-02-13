@@ -19,7 +19,7 @@ class CreateOrderFromIntentHandler(
     """
 
     def _stream_id(self, command: CreateOrderFromIntentCommand) -> str:
-        return f"order-{command.order_id.value}"
+        return f"order-{command.intent_id.value}"
 
     def _execute_domain(
         self,
