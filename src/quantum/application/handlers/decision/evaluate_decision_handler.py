@@ -3,8 +3,8 @@ from collections.abc import Iterable
 from quantum.application.commands.decision.evaluate_decision_command import (
     EvaluateDecisionCommand,
 )
-from quantum.application.handlers.event_sourced_command_handler import (
-    EventSourcedCommandHandler,
+from quantum.application.handlers.base.process_command_handler import (
+    ProcessCommandHandler,
 )
 from quantum.application.ports.outbound.clock import Clock
 from quantum.application.ports.outbound.repositories.decision_policy_repository import (
@@ -28,9 +28,7 @@ from quantum.domain.risk.lifecycle.strategy_eligibility_policy import (
 from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
 
 
-class EvaluateDecisionHandler(
-    EventSourcedCommandHandler[EvaluateDecisionCommand, None, None]
-):
+class EvaluateDecisionHandler(ProcessCommandHandler[EvaluateDecisionCommand, None]):
     """
     Application command handler responsible for evaluating a trading decision.
 
@@ -47,19 +45,15 @@ class EvaluateDecisionHandler(
         clock: Clock,
         **kwargs,
     ) -> None:
-        super().__init__(require_existing=False, **kwargs)
+        super().__init__(**kwargs)
         self._policy_repository = policy_repository
         self._lifecycle_repository = lifecycle_repository
         self._clock = clock
-
-    def _stream_id(self, command: EvaluateDecisionCommand) -> str:
-        return f"decision-{command.intent_id.value}"
 
     def _execute_domain(
         self,
         *,
         command: EvaluateDecisionCommand,
-        aggregate,
     ) -> tuple[Iterable[BaseEvent], None]:
 
         # --- Strategy lifecycle eligibility

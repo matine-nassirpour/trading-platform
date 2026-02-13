@@ -12,7 +12,7 @@ class OutboxRepository(Protocol):
     """
 
     @abstractmethod
-    def add(self, events: Iterable[EventEnvelope]) -> None:
+    def add(self, envelopes: Iterable[EventEnvelope]) -> None:
         """
         Store events to be published after commit.
         Must be transaction-bound.
@@ -27,5 +27,5 @@ class OutboxRepository(Protocol):
         raise NotImplementedError
 
     @abstractmethod
-    def mark_as_published(self, events: Iterable[EventEnvelope]) -> None:
+    def mark_as_published(self, envelopes: Iterable[EventEnvelope]) -> None:
         raise NotImplementedError

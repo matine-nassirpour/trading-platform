@@ -3,15 +3,15 @@ from collections.abc import Iterable
 from quantum.application.commands.trading.authorize_trading_intent_command import (
     AuthorizeTradingIntentCommand,
 )
-from quantum.application.handlers.event_sourced_command_handler import (
-    EventSourcedCommandHandler,
+from quantum.application.handlers.base.aggregate_command_handler import (
+    AggregateCommandHandler,
 )
 from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
 from quantum.domain.trading.intent.trading_intent import TradingIntent
 
 
 class AuthorizeTradingIntentHandler(
-    EventSourcedCommandHandler[AuthorizeTradingIntentCommand, None, TradingIntent]
+    AggregateCommandHandler[AuthorizeTradingIntentCommand, None, TradingIntent]
 ):
     """
     Authorizes a TradingIntent aggregate.

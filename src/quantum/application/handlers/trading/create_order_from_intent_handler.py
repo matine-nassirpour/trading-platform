@@ -3,8 +3,8 @@ from collections.abc import Iterable
 from quantum.application.commands.trading.create_order_from_intent_command import (
     CreateOrderFromIntentCommand,
 )
-from quantum.application.handlers.event_sourced_command_handler import (
-    EventSourcedCommandHandler,
+from quantum.application.handlers.base.aggregate_command_handler import (
+    AggregateCommandHandler,
 )
 from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
 from quantum.domain.trading.execution.order.order import Order
@@ -12,7 +12,7 @@ from quantum.domain.trading.intent.trading_intent import TradingIntent
 
 
 class CreateOrderFromIntentHandler(
-    EventSourcedCommandHandler[CreateOrderFromIntentCommand, None, TradingIntent]
+    AggregateCommandHandler[CreateOrderFromIntentCommand, None, TradingIntent]
 ):
     """
     Creates an Order from an authorized TradingIntent.

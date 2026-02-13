@@ -3,14 +3,14 @@ from collections.abc import Iterable
 from quantum.application.commands.trading.open_position_command import (
     OpenPositionCommand,
 )
-from quantum.application.handlers.event_sourced_command_handler import (
-    EventSourcedCommandHandler,
+from quantum.application.handlers.base.aggregate_command_handler import (
+    AggregateCommandHandler,
 )
 from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
 from quantum.domain.trading.execution.position.position import Position
 
 
-class OpenPositionHandler(EventSourcedCommandHandler[OpenPositionCommand, None, None]):
+class OpenPositionHandler(AggregateCommandHandler[OpenPositionCommand, None, Position]):
     """
     Opens a new Position aggregate.
     """
@@ -22,7 +22,7 @@ class OpenPositionHandler(EventSourcedCommandHandler[OpenPositionCommand, None, 
         self,
         *,
         command: OpenPositionCommand,
-        aggregate,
+        aggregate: Position,
     ) -> tuple[Iterable[BaseEvent], None]:
 
         domain_events = Position.open(

@@ -3,15 +3,15 @@ from collections.abc import Iterable
 from quantum.application.commands.trading.create_trading_intent_command import (
     CreateTradingIntentCommand,
 )
-from quantum.application.handlers.event_sourced_command_handler import (
-    EventSourcedCommandHandler,
+from quantum.application.handlers.base.aggregate_command_handler import (
+    AggregateCommandHandler,
 )
 from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
 from quantum.domain.trading.intent.trading_intent import TradingIntent
 
 
 class CreateTradingIntentHandler(
-    EventSourcedCommandHandler[CreateTradingIntentCommand, None, None]
+    AggregateCommandHandler[CreateTradingIntentCommand, None, TradingIntent]
 ):
     """
     Creates a new TradingIntent aggregate.
@@ -24,7 +24,7 @@ class CreateTradingIntentHandler(
         self,
         *,
         command: CreateTradingIntentCommand,
-        aggregate,
+        aggregate: TradingIntent,
     ) -> tuple[Iterable[BaseEvent], None]:
 
         domain_events = TradingIntent.create(

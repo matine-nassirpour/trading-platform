@@ -1,16 +1,14 @@
 from collections.abc import Iterable
 
 from quantum.application.commands.risk.register_pnl_command import RegisterPnLCommand
-from quantum.application.handlers.event_sourced_command_handler import (
-    EventSourcedCommandHandler,
+from quantum.application.handlers.base.aggregate_command_handler import (
+    AggregateCommandHandler,
 )
 from quantum.domain.risk.governance.aggregates.risk_state import RiskState
 from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
 
 
-class RegisterPnLHandler(
-    EventSourcedCommandHandler[RegisterPnLCommand, None, RiskState]
-):
+class RegisterPnLHandler(AggregateCommandHandler[RegisterPnLCommand, None, RiskState]):
     """
     Registers realized PnL and updates global risk state.
     """

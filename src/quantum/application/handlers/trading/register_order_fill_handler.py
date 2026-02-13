@@ -3,15 +3,15 @@ from collections.abc import Iterable
 from quantum.application.commands.trading.register_order_fill_command import (
     RegisterOrderFillCommand,
 )
-from quantum.application.handlers.event_sourced_command_handler import (
-    EventSourcedCommandHandler,
+from quantum.application.handlers.base.aggregate_command_handler import (
+    AggregateCommandHandler,
 )
 from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
 from quantum.domain.trading.execution.order.order import Order
 
 
 class RegisterOrderFillHandler(
-    EventSourcedCommandHandler[RegisterOrderFillCommand, None, Order]
+    AggregateCommandHandler[RegisterOrderFillCommand, None, Order]
 ):
     """
     Registers an execution fill on an existing Order aggregate.

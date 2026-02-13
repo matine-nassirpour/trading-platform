@@ -3,15 +3,15 @@ from collections.abc import Iterable
 from quantum.application.commands.risk.trigger_killswitch_command import (
     TriggerKillSwitchCommand,
 )
-from quantum.application.handlers.event_sourced_command_handler import (
-    EventSourcedCommandHandler,
+from quantum.application.handlers.base.aggregate_command_handler import (
+    AggregateCommandHandler,
 )
 from quantum.domain.risk.governance.aggregates.kill_switch.state import KillSwitchState
 from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
 
 
 class TriggerKillSwitchHandler(
-    EventSourcedCommandHandler[TriggerKillSwitchCommand, None, KillSwitchState]
+    AggregateCommandHandler[TriggerKillSwitchCommand, None, KillSwitchState]
 ):
     """
     Triggers the global Kill Switch.
