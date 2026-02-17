@@ -3,6 +3,9 @@ from collections.abc import Iterable
 from quantum.application.shared.base_handlers.aggregate_command_handler import (
     AggregateCommandHandler,
 )
+from quantum.application.shared.base_handlers.aggregate_existence_policy import (
+    AggregateExistencePolicy,
+)
 from quantum.application.trading.commands.create_trading_intent_command import (
     CreateTradingIntentCommand,
 )
@@ -17,6 +20,11 @@ class CreateTradingIntentHandler(
     Creates a new TradingIntent aggregate.
     """
 
+    def __init__(self, **kwargs) -> None:
+        super().__init__(
+            existence_policy=AggregateExistencePolicy.MUST_NOT_EXIST, **kwargs
+        )
+
     def _stream_id(self, command: CreateTradingIntentCommand) -> str:
         return f"intent-{command.intent_id.value}"
 
@@ -24,8 +32,14 @@ class CreateTradingIntentHandler(
         self,
         *,
         command: CreateTradingIntentCommand,
-        aggregate: TradingIntent,
+        aggregate: TradingIntent | None,
     ) -> tuple[Iterable[BaseEvent], None]:
+
+        if aggregate is not None:
+            raise RuntimeError(
+                "TradingIntent aggregate already exists "
+                "despite MUST_NOT_EXIST policy."
+            )
 
         domain_events = TradingIntent.create(
             intent_id=command.intent_id,

@@ -6,6 +6,9 @@ from quantum.application.risk.commands.trigger_killswitch_command import (
 from quantum.application.shared.base_handlers.aggregate_command_handler import (
     AggregateCommandHandler,
 )
+from quantum.application.shared.base_handlers.aggregate_existence_policy import (
+    AggregateExistencePolicy,
+)
 from quantum.domain.risk.governance.aggregates.kill_switch.state import KillSwitchState
 from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
 
@@ -17,6 +20,12 @@ class TriggerKillSwitchHandler(
     Triggers the global Kill Switch.
     """
 
+    def __init__(self, **kwargs) -> None:
+        super().__init__(
+            existence_policy=AggregateExistencePolicy.MUST_EXIST,
+            **kwargs,
+        )
+
     def _stream_id(self, command: TriggerKillSwitchCommand) -> str:
         return "killswitch"
 
@@ -24,8 +33,13 @@ class TriggerKillSwitchHandler(
         self,
         *,
         command: TriggerKillSwitchCommand,
-        aggregate: KillSwitchState,
+        aggregate: KillSwitchState | None,
     ) -> tuple[Iterable[BaseEvent], None]:
+
+        if aggregate is None:
+            raise RuntimeError(
+                "KillSwitchState aggregate missing despite MUST_EXIST policy enforcement."
+            )
 
         domain_events = aggregate.trigger(
             reason=command.reason,

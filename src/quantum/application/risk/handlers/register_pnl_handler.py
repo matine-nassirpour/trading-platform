@@ -4,6 +4,9 @@ from quantum.application.risk.commands.register_pnl_command import RegisterPnLCo
 from quantum.application.shared.base_handlers.aggregate_command_handler import (
     AggregateCommandHandler,
 )
+from quantum.application.shared.base_handlers.aggregate_existence_policy import (
+    AggregateExistencePolicy,
+)
 from quantum.domain.risk.governance.aggregates.risk_state import RiskState
 from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
 
@@ -12,6 +15,12 @@ class RegisterPnLHandler(AggregateCommandHandler[RegisterPnLCommand, None, RiskS
     """
     Registers realized PnL and updates global risk state.
     """
+
+    def __init__(self, **kwargs) -> None:
+        super().__init__(
+            existence_policy=AggregateExistencePolicy.MUST_EXIST,
+            **kwargs,
+        )
 
     def _stream_id(self, command: RegisterPnLCommand) -> str:
         return "risk-state"

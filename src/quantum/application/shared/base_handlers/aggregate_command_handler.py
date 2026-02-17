@@ -9,9 +9,16 @@ from quantum.application.ports.outbound.transaction.outbox_repository import (
     OutboxRepository,
 )
 from quantum.application.ports.outbound.transaction.unit_of_work import UnitOfWork
+from quantum.application.shared.base_handlers.aggregate_existence_policy import (
+    AggregateExistencePolicy,
+)
 from quantum.application.shared.errors.application_error import (
+    AggregateNotFoundError,
     ConcurrencyError,
     DomainExecutionError,
+)
+from quantum.application.shared.eventing.application_event_context import (
+    ApplicationEventContext,
 )
 from quantum.application.shared.eventing.event_enveloper import (
     ApplicationEventEnveloper,
@@ -42,11 +49,13 @@ class AggregateCommandHandler(ABC, Generic[C, R, A]):
         outbox: OutboxRepository,
         uow: UnitOfWork,
         enveloper: ApplicationEventEnveloper,
+        existence_policy: AggregateExistencePolicy,
     ) -> None:
         self._repository = repository
         self._outbox = outbox
         self._uow = uow
         self._enveloper = enveloper
+        self._existence_policy = existence_policy
 
     # --- Abstract contract for concrete handlers ------------------------------
 
@@ -71,11 +80,31 @@ class AggregateCommandHandler(ABC, Generic[C, R, A]):
 
     # --- Public entrypoint ------------------------------
 
+    def _enforce_existence_policy(
+        self,
+        stream_id: str,
+        aggregate: A | None,
+    ) -> None:
+
+        if (
+            aggregate is None
+            and self._existence_policy == AggregateExistencePolicy.MUST_EXIST
+        ):
+            raise AggregateNotFoundError(stream_id)
+
+        if (
+            aggregate is not None
+            and self._existence_policy == AggregateExistencePolicy.MUST_NOT_EXIST
+        ):
+            raise ConcurrencyError(f"Aggregate already exists for stream '{stream_id}'")
+
     def handle(self, command: C) -> R:
         with self._uow:
             try:
                 stream_id = self._stream_id(command)
                 aggregate, expected_version = self._repository.load(stream_id)
+
+                self._enforce_existence_policy(stream_id, aggregate)
 
                 domain_events, result = self._execute_domain(
                     command=command,
@@ -83,7 +112,11 @@ class AggregateCommandHandler(ABC, Generic[C, R, A]):
                 )
 
                 if domain_events:
-                    envelopes = self._enveloper.envelope(events=domain_events)
+                    context: ApplicationEventContext = command.context
+                    envelopes = self._enveloper.envelope(
+                        events=domain_events,
+                        context=context,
+                    )
 
                     persisted = self._repository.save(
                         stream_id=stream_id,

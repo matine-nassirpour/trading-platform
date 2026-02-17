@@ -39,3 +39,13 @@ class DomainExecutionError(ApplicationError):
     def __init__(self, error: DomainError):
         super().__init__(str(error))
         self.original_error = error
+
+
+class AggregateNotFoundError(ApplicationError):
+    """
+    Raised when an expected aggregate does not exist in the event store.
+    """
+
+    def __init__(self, stream_id: str):
+        super().__init__(f"Aggregate not found for stream '{stream_id}'")
+        self.stream_id = stream_id

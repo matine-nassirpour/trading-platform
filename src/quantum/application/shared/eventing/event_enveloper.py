@@ -2,10 +2,10 @@ from collections.abc import Iterable
 
 from quantum.application.ports.outbound.identity.id_generator import IdGenerator
 from quantum.application.ports.outbound.time.clock import Clock
-from quantum.domain.shared_kernel.events.actor_id import ActorId
+from quantum.application.shared.eventing.application_event_context import (
+    ApplicationEventContext,
+)
 from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
-from quantum.domain.shared_kernel.events.causation_id import CausationId
-from quantum.domain.shared_kernel.events.correlation_id import CorrelationId
 from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
 from quantum.domain.shared_kernel.events.event_metadata import EventMetadata
 from quantum.domain.shared_kernel.events.event_sequence import EventSequence
@@ -17,9 +17,9 @@ class ApplicationEventEnveloper:
     for stateless process handlers.
 
     Guarantees:
-    - Metadata completeness
-    - Deterministic timestamping
-    - No sequence ownership (sequence assigned by store if needed)
+    - CorrelationId NEVER generated implicitly
+    - CausationId ALWAYS derived from causal chain
+    - Deterministic lineage
     """
 
     def __init__(
@@ -27,23 +27,18 @@ class ApplicationEventEnveloper:
         *,
         clock: Clock,
         ids: IdGenerator,
-        actor: str,
     ) -> None:
         self._clock = clock
         self._ids = ids
-        self._actor = ActorId(actor)
 
     def envelope(
         self,
         *,
         events: Iterable[BaseEvent],
-        correlation_id: CorrelationId | None = None,
-        causation_id: CausationId | None = None,
+        context: ApplicationEventContext,
     ) -> list[EventEnvelope]:
 
         now = self._clock.now_epoch_ms()
-        correlation_id = correlation_id or self._ids.new_correlation_id()
-        causation_id = causation_id or CausationId.root()
 
         envelopes: list[EventEnvelope] = []
 
@@ -56,9 +51,9 @@ class ApplicationEventEnveloper:
                     recorded_at=now,
                     event=event,
                     metadata=EventMetadata(
-                        actor_id=self._actor,
-                        correlation_id=correlation_id,
-                        causation_id=causation_id,
+                        actor_id=context.actor_id,
+                        correlation_id=context.correlation_id,
+                        causation_id=context.causation_id,
                     ),
                 )
             )
