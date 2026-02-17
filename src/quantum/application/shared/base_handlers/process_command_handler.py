@@ -49,7 +49,9 @@ class ProcessCommandHandler(ABC, Generic[C, R]):
                 domain_events, result = self._execute_domain(command=command)
 
                 if domain_events:
-                    envelopes = self._enveloper.envelope(events=domain_events)
+                    envelopes = self._enveloper.envelope(
+                        events=domain_events, context=command.context
+                    )
                     self._outbox.add(envelopes)
 
                 self._uow.commit()

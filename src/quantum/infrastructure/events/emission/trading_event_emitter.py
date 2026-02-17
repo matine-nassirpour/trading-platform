@@ -21,7 +21,7 @@ import time
 from dataclasses import dataclass
 from typing import Final
 
-from quantum.application.ports.outbound.messaging.event_bus import EventBus
+from quantum.application.ports.outbound.messaging.domain_event_bus import DomainEventBus
 from quantum.infrastructure.events.emission.event_adapter import adapt_event_for_bus
 from quantum.infrastructure.events.emission.event_retry_policy import (
     EventRetryConfig,
@@ -51,7 +51,7 @@ class TradingEventEmitter:
 
     def __init__(
         self,
-        event_bus: EventBus,
+        event_bus: DomainEventBus,
         cfg: EmitterConfig | None = None,
         retry_policy: EventRetryPolicy | None = None,
     ) -> None:

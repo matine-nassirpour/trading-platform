@@ -9,7 +9,7 @@ EventEnvelopeHandler = Callable[[EventEnvelope], None]
 
 
 @runtime_checkable
-class EventBus(Protocol):
+class DomainEventBus(Protocol):
     """
     Abstraction of an asynchronous event bus.
     Provides a clean interface decoupled from any transport (asyncio, ZeroMQ, Kafka...).

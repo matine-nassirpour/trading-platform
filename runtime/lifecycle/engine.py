@@ -14,7 +14,7 @@ from runtime.lifecycle.state_machine import (
 from quantum.application.ports.inbound.application_runtime_port import (
     ApplicationRuntimePort,
 )
-from quantum.application.ports.outbound.messaging.event_bus import EventBus
+from quantum.application.ports.outbound.messaging.domain_event_bus import DomainEventBus
 
 LOGGER: Final = logging.getLogger("quantum.runtime.engine")
 
@@ -50,7 +50,7 @@ class RuntimeLifecycleEngine:
         self,
         *,
         app_service: ApplicationRuntimePort,
-        event_bus: EventBus,
+        event_bus: DomainEventBus,
         admin_http_server: AdminControlPlanePort,
         graceful_shutdown_timeout: float = 5.0,
     ) -> None:

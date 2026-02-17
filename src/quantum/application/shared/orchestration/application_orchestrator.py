@@ -3,7 +3,7 @@ import logging
 
 from typing import Final
 
-from quantum.application.ports.outbound.messaging.event_bus import EventBus
+from quantum.application.ports.outbound.messaging.domain_event_bus import DomainEventBus
 
 LOGGER: Final = logging.getLogger("quantum.application.app_service")
 
@@ -20,7 +20,7 @@ class ApplicationOrchestrator:
     • Contain zero business logic (delegates to domain services/use cases)
     """
 
-    def __init__(self, *, event_bus: EventBus) -> None:
+    def __init__(self, *, event_bus: DomainEventBus) -> None:
         self._event_bus = event_bus
 
         self._running = False

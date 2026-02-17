@@ -2,9 +2,6 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from typing import Generic, TypeVar
 
-from quantum.application.ports.outbound.repositories.event_sourced_repository import (
-    EventSourcedRepository,
-)
 from quantum.application.ports.outbound.transaction.outbox_repository import (
     OutboxRepository,
 )
@@ -22,6 +19,9 @@ from quantum.application.shared.eventing.application_event_context import (
 )
 from quantum.application.shared.eventing.event_enveloper import (
     ApplicationEventEnveloper,
+)
+from quantum.application.shared.eventing.event_sourced_repository import (
+    EventSourcedRepository,
 )
 from quantum.domain.shared_kernel.errors.domain_error import DomainError
 from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
