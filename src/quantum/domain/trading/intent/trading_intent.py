@@ -8,10 +8,15 @@ from quantum.domain.decision.events.v1.decision_authorized_event import (
 from quantum.domain.decision.events.v1.decision_rejected_event import (
     DecisionRejectedEvent,
 )
-from quantum.domain.decision.governance.decision_policy_result import (
-    DecisionPolicyResult,
+from quantum.domain.decision.governance.decision_policy import DecisionPolicy
+from quantum.domain.decision.governance.decision_policy_evaluator import (
+    DecisionPolicyEvaluator,
 )
 from quantum.domain.decision.identity.decision_identity import DecisionIdentity
+from quantum.domain.risk.lifecycle.strategy_eligibility_policy import (
+    StrategyEligibilityPolicy,
+)
+from quantum.domain.risk.lifecycle.strategy_lifecycle import StrategyLifecycle
 from quantum.domain.shared_kernel.errors.invariants import (
     InvalidStateTransition,
     InvariantViolation,
@@ -25,6 +30,7 @@ from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import
     EventHandler,
     EventSourcedAggregateRoot,
 )
+from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
 from quantum.domain.shared_kernel.value_objects.symbol import Symbol
 from quantum.domain.trading.events.v1.intent.trading_intent_created_event import (
     TradingIntentCreatedEvent,
@@ -135,45 +141,52 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentState]):
 
     # --- Commands -------------------------------------------------------------
 
-    def authorize(self, *, result: DecisionPolicyResult) -> list[BaseEvent]:
-        """
-        Confirms that the trading intent is authorized.
-
-        This does NOT trigger execution.
-        It only certifies that the decision is valid.
-        """
-
-        state = self.state
-
-        if state.authorized:
-            raise InvalidStateTransition("TradingIntent already authorized")
-
-        if state.rejected:
-            raise InvalidStateTransition("Rejected TradingIntent cannot be authorized")
-
-        return [
-            DecisionAuthorizedEvent(
-                intent_id=self.state.intent_id,
-                result=result,
-            )
-        ]
-
-    def reject(self, *, result: DecisionPolicyResult) -> list[BaseEvent]:
-        """
-        Explicit rejection of the trading decision.
-        """
+    def evaluate(
+        self,
+        *,
+        policy: DecisionPolicy,
+        lifecycle: StrategyLifecycle,
+        evaluated_at: EpochMs,
+    ) -> list[BaseEvent]:
 
         state = self.state
 
-        if state.authorized:
-            raise InvalidStateTransition("Authorized TradingIntent cannot be rejected")
+        if state is None:
+            raise InvalidStateTransition("TradingIntent not created")
 
-        if state.rejected:
-            raise InvalidStateTransition("TradingIntent already rejected")
+        if state.authorized or state.rejected:
+            raise InvalidStateTransition("TradingIntent already evaluated")
+
+        eligibility = StrategyEligibilityPolicy.evaluate(
+            lifecycle=lifecycle,
+            at=evaluated_at,
+        )
+
+        if not eligibility.eligible:
+            return [
+                DecisionRejectedEvent(
+                    intent_id=state.intent_id,
+                    result=eligibility,
+                )
+            ]
+
+        result = DecisionPolicyEvaluator.evaluate(
+            policy=policy,
+            decision=state.decision_identity,
+            context=state.context,
+        )
+
+        if result.authorized:
+            return [
+                DecisionAuthorizedEvent(
+                    intent_id=state.intent_id,
+                    result=result,
+                )
+            ]
 
         return [
             DecisionRejectedEvent(
-                intent_id=self.state.intent_id,
+                intent_id=state.intent_id,
                 result=result,
             )
         ]

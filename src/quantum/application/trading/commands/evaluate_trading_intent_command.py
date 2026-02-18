@@ -8,7 +8,7 @@ from quantum.domain.shared_kernel.value_objects.symbol import Symbol
 
 
 @dataclass(frozen=True, slots=True)
-class EvaluateDecisionCommand(BaseCommand):
+class EvaluateTradingIntentCommand(BaseCommand):
     intent_id: IntentId
     symbol: Symbol
     decision_identity: DecisionIdentity
