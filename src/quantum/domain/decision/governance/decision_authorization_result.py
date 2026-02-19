@@ -25,16 +25,16 @@ class DecisionAuthorizationResult(ValueObject):
         if not isinstance(self.status, DecisionAuthorizationStatus):
             raise InvariantViolation("Invalid DecisionAuthorizationStatus")
 
-        if not isinstance(self.reason_code, DecisionAuthorizationReasonCode):
+        if self.reason_code is not None and not isinstance(
+            self.reason_code, DecisionAuthorizationReasonCode
+        ):
             raise InvariantViolation("Invalid DecisionAuthorizationReasonCode")
 
-        if self.status.is_authorized():
-            if self.reason_code is not None:
-                raise InvariantViolation("Authorized decision cannot have reason_code")
+        if self.status.is_authorized() and self.reason_code is not None:
+            raise InvariantViolation("Authorized decision cannot have reason_code")
 
-        if self.status.is_rejected():
-            if self.reason_code is None:
-                raise InvariantViolation("Rejected decision requires reason_code")
+        if self.status.is_rejected() and self.reason_code is None:
+            raise InvariantViolation("Rejected decision requires reason_code")
 
     def is_authorized(self) -> bool:
         return self.status.is_authorized()

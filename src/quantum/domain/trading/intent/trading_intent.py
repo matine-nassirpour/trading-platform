@@ -208,14 +208,17 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentState]):
         if authorization.is_authorized():
             return [
                 DecisionAuthorizedEvent(
-                    intent_id=state.intent_id, evaluated_at=evaluated_at
+                    intent_id=state.intent_id,
+                    decision_identity=state.decision_identity,
+                    authorized_at=evaluated_at,
                 )
             ]
 
         return [
             DecisionRejectedEvent(
                 intent_id=state.intent_id,
-                evaluated_at=evaluated_at,
+                decision_identity=state.decision_identity,
+                rejected_at=evaluated_at,
                 reason_code=authorization.reason_code,
             )
         ]
