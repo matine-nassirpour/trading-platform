@@ -167,8 +167,8 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentState]):
             at=evaluated_at,
         )
 
-        if lifecycle_result is not None:
-            return DecisionAuthorizationResult.rejected(reason_code=lifecycle_result)
+        if lifecycle_result.is_rejected():
+            return lifecycle_result
 
         policy_result = DecisionPolicyEvaluator.evaluate(
             policy=policy,
@@ -176,8 +176,8 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentState]):
             context=context,
         )
 
-        if policy_result is not None:
-            return DecisionAuthorizationResult.rejected(reason_code=policy_result)
+        if policy_result.is_rejected():
+            return policy_result
 
         return DecisionAuthorizationResult.authorized()
 

@@ -23,18 +23,22 @@ class DecisionAuthorizationResult(ValueObject):
 
     def _validate(self) -> None:
         if not isinstance(self.status, DecisionAuthorizationStatus):
-            raise InvariantViolation("Invalid DecisionAuthorizationStatus")
+            raise InvariantViolation("status must be DecisionAuthorizationStatus")
 
         if self.reason_code is not None and not isinstance(
             self.reason_code, DecisionAuthorizationReasonCode
         ):
-            raise InvariantViolation("Invalid DecisionAuthorizationReasonCode")
+            raise InvariantViolation(
+                "reason_code must be DecisionAuthorizationReasonCode"
+            )
 
         if self.status.is_authorized() and self.reason_code is not None:
-            raise InvariantViolation("Authorized decision cannot have reason_code")
+            raise InvariantViolation("Authorized result must not define reason_code")
 
         if self.status.is_rejected() and self.reason_code is None:
-            raise InvariantViolation("Rejected decision requires reason_code")
+            raise InvariantViolation("Rejected result must define reason_code")
+
+    # --- Semantic helpers -----------------------------------------------------
 
     def is_authorized(self) -> bool:
         return self.status.is_authorized()
@@ -42,18 +46,22 @@ class DecisionAuthorizationResult(ValueObject):
     def is_rejected(self) -> bool:
         return self.status.is_rejected()
 
-    @staticmethod
-    def authorized() -> DecisionAuthorizationResult:
-        return DecisionAuthorizationResult(
-            status=DecisionAuthorizationStatus.authorized(), reason_code=None
+    # --- Canonical factories --------------------------------------------------
+
+    @classmethod
+    def authorized(cls) -> DecisionAuthorizationResult:
+        return cls(
+            status=DecisionAuthorizationStatus.authorized(),
+            reason_code=None,
         )
 
-    @staticmethod
+    @classmethod
     def rejected(
+        cls,
         *,
         reason_code: DecisionAuthorizationReasonCode,
     ) -> DecisionAuthorizationResult:
-        return DecisionAuthorizationResult(
+        return cls(
             status=DecisionAuthorizationStatus.rejected(),
             reason_code=reason_code,
         )
