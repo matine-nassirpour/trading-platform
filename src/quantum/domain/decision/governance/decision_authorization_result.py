@@ -23,18 +23,26 @@ class DecisionAuthorizationResult(ValueObject):
     reason: str
 
     def _validate(self) -> None:
-
         if not isinstance(self.status, DecisionAuthorizationStatus):
             raise InvariantViolation("Invalid DecisionAuthorizationStatus")
 
-        if not isinstance(
-            self.reason_code,
-            DecisionAuthorizationReasonCode,
-        ):
+        if not isinstance(self.reason_code, DecisionAuthorizationReasonCode):
             raise InvariantViolation("Invalid DecisionAuthorizationReasonCode")
 
         if not isinstance(self.reason, str) or not self.reason.strip():
             raise InvariantViolation("DecisionAuthorizationResult requires reason")
+
+        if self.status.is_authorized():
+            if self.reason_code != DecisionAuthorizationReasonCode.authorized():
+                raise InvariantViolation(
+                    "Authorized status requires authorized reason_code"
+                )
+
+        if self.status.is_rejected():
+            if self.reason_code == DecisionAuthorizationReasonCode.authorized():
+                raise InvariantViolation(
+                    "Rejected status cannot use authorized reason_code"
+                )
 
     def is_authorized(self) -> bool:
         return self.status.is_authorized()
@@ -44,7 +52,6 @@ class DecisionAuthorizationResult(ValueObject):
 
     @staticmethod
     def authorized(reason: str) -> DecisionAuthorizationResult:
-
         return DecisionAuthorizationResult(
             status=DecisionAuthorizationStatus.authorized(),
             reason_code=DecisionAuthorizationReasonCode.authorized(),
@@ -57,7 +64,6 @@ class DecisionAuthorizationResult(ValueObject):
         reason_code: DecisionAuthorizationReasonCode,
         reason: str,
     ) -> DecisionAuthorizationResult:
-
         return DecisionAuthorizationResult(
             status=DecisionAuthorizationStatus.rejected(),
             reason_code=reason_code,

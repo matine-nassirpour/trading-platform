@@ -63,7 +63,7 @@ class TradingIntentState(AggregateState):
     def last_event_sequence(self) -> EventSequence:
         return self.last_sequence
 
-    def _validate(self) -> None:
+    def _validate_types(self) -> None:
         if not isinstance(self.intent_id, IntentId):
             raise InvariantViolation("TradingIntent requires a valid IntentId")
 
@@ -78,6 +78,12 @@ class TradingIntentState(AggregateState):
 
         if not isinstance(self.context, TradingContext):
             raise InvariantViolation("TradingIntent requires TradingContext")
+
+    def _validate(self) -> None:
+        self._validate_types()
+
+        if self.last_sequence is None:
+            raise InvariantViolation("last_sequence required")
 
         if self.authorization_result is not None:
             if not isinstance(self.authorization_result, DecisionAuthorizationResult):
@@ -246,6 +252,8 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentState]):
         event: BaseEvent,
         envelope: EventEnvelope,
     ) -> TradingIntentState:
+        if state.authorization_result is not None:
+            raise InvariantViolation("Authorization already decided")
 
         if not isinstance(event, DecisionAuthorizedEvent):
             raise InvariantViolation("Invalid event type")
@@ -266,6 +274,8 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentState]):
         event: BaseEvent,
         envelope: EventEnvelope,
     ) -> TradingIntentState:
+        if state.authorization_result is not None:
+            raise InvariantViolation("Authorization already decided")
 
         if not isinstance(event, DecisionRejectedEvent):
             raise InvariantViolation("Invalid event type")
