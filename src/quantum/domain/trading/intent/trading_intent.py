@@ -8,6 +8,9 @@ from quantum.domain.decision.events.v1.decision_authorized_event import (
 from quantum.domain.decision.events.v1.decision_rejected_event import (
     DecisionRejectedEvent,
 )
+from quantum.domain.decision.governance.decision_authorization_result import (
+    DecisionAuthorizationResult,
+)
 from quantum.domain.decision.governance.decision_policy import DecisionPolicy
 from quantum.domain.decision.governance.decision_policy_evaluator import (
     DecisionPolicyEvaluator,
@@ -55,14 +58,12 @@ class TradingIntentState(AggregateState):
 
     decision_identity: DecisionIdentity
     context: TradingContext
-
-    authorized: bool
-    rejected: bool
+    authorization_result: DecisionAuthorizationResult | None
 
     def last_event_sequence(self) -> EventSequence:
         return self.last_sequence
 
-    def _validate_types(self) -> None:
+    def _validate(self) -> None:
         if not isinstance(self.intent_id, IntentId):
             raise InvariantViolation("TradingIntent requires a valid IntentId")
 
@@ -78,19 +79,24 @@ class TradingIntentState(AggregateState):
         if not isinstance(self.context, TradingContext):
             raise InvariantViolation("TradingIntent requires TradingContext")
 
-        if not isinstance(self.authorized, bool):
-            raise InvariantViolation("authorized flag must be boolean")
+        if self.authorization_result is not None:
+            if not isinstance(self.authorization_result, DecisionAuthorizationResult):
+                raise InvariantViolation("authorization_result invalid")
 
-        if not isinstance(self.rejected, bool):
-            raise InvariantViolation("rejected flag must be boolean")
+    def is_evaluated(self) -> bool:
+        return self.authorization_result is not None
 
-    def _validate(self) -> None:
-        self._validate_types()
+    def is_authorized(self) -> bool:
+        return (
+            self.authorization_result is not None
+            and self.authorization_result.is_authorized()
+        )
 
-        if self.authorized and self.rejected:
-            raise InvariantViolation(
-                "TradingIntent cannot be both authorized and rejected"
-            )
+    def is_rejected(self) -> bool:
+        return (
+            self.authorization_result is not None
+            and self.authorization_result.is_rejected()
+        )
 
 
 class TradingIntent(EventSourcedAggregateRoot[TradingIntentState]):
@@ -141,6 +147,36 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentState]):
 
     # --- Commands -------------------------------------------------------------
 
+    @staticmethod
+    def _evaluate_decision_authorization(
+        *,
+        decision: DecisionIdentity,
+        context: TradingContext,
+        lifecycle: StrategyLifecycle,
+        policy: DecisionPolicy,
+        evaluated_at: EpochMs,
+    ) -> DecisionAuthorizationResult:
+        lifecycle_result = StrategyEligibilityPolicy.evaluate(
+            lifecycle=lifecycle,
+            at=evaluated_at,
+        )
+
+        if lifecycle_result.is_rejected():
+            return lifecycle_result
+
+        policy_result = DecisionPolicyEvaluator.evaluate(
+            policy=policy,
+            decision=decision,
+            context=context,
+        )
+
+        if policy_result.is_rejected():
+            return policy_result
+
+        return DecisionAuthorizationResult.authorized(
+            reason="Decision authorized",
+        )
+
     def evaluate(
         self,
         *,
@@ -154,40 +190,29 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentState]):
         if state is None:
             raise InvalidStateTransition("TradingIntent not created")
 
-        if state.authorized or state.rejected:
+        if state.is_evaluated():
             raise InvalidStateTransition("TradingIntent already evaluated")
 
-        eligibility = StrategyEligibilityPolicy.evaluate(
-            lifecycle=lifecycle,
-            at=evaluated_at,
-        )
-
-        if not eligibility.eligible:
-            return [
-                DecisionRejectedEvent(
-                    intent_id=state.intent_id,
-                    result=eligibility,
-                )
-            ]
-
-        result = DecisionPolicyEvaluator.evaluate(
-            policy=policy,
+        authorization = self._evaluate_decision_authorization(
             decision=state.decision_identity,
             context=state.context,
+            lifecycle=lifecycle,
+            policy=policy,
+            evaluated_at=evaluated_at,
         )
 
-        if result.authorized:
+        if authorization.is_authorized():
             return [
                 DecisionAuthorizedEvent(
                     intent_id=state.intent_id,
-                    result=result,
+                    result=authorization,
                 )
             ]
 
         return [
             DecisionRejectedEvent(
                 intent_id=state.intent_id,
-                result=result,
+                result=authorization,
             )
         ]
 
@@ -202,7 +227,8 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentState]):
         if state is not None:
             raise InvariantViolation("TradingIntent already exists")
 
-        assert isinstance(event, TradingIntentCreatedEvent)
+        if not isinstance(event, TradingIntentCreatedEvent):
+            raise InvariantViolation("Invalid event type")
 
         return TradingIntentState(
             last_sequence=envelope.sequence,
@@ -211,8 +237,7 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentState]):
             side=event.side,
             decision_identity=event.decision_identity,
             context=event.trading_context,
-            authorized=False,
-            rejected=False,
+            authorization_result=None,
         )
 
     @staticmethod
@@ -221,7 +246,9 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentState]):
         event: BaseEvent,
         envelope: EventEnvelope,
     ) -> TradingIntentState:
-        assert isinstance(event, DecisionAuthorizedEvent)
+
+        if not isinstance(event, DecisionAuthorizedEvent):
+            raise InvariantViolation("Invalid event type")
 
         return TradingIntentState(
             last_sequence=envelope.sequence,
@@ -230,8 +257,7 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentState]):
             side=state.side,
             decision_identity=state.decision_identity,
             context=state.context,
-            authorized=True,
-            rejected=False,
+            authorization_result=event.result,
         )
 
     @staticmethod
@@ -240,7 +266,9 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentState]):
         event: BaseEvent,
         envelope: EventEnvelope,
     ) -> TradingIntentState:
-        assert isinstance(event, DecisionRejectedEvent)
+
+        if not isinstance(event, DecisionRejectedEvent):
+            raise InvariantViolation("Invalid event type")
 
         return TradingIntentState(
             last_sequence=envelope.sequence,
@@ -249,8 +277,7 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentState]):
             side=state.side,
             decision_identity=state.decision_identity,
             context=state.context,
-            authorized=False,
-            rejected=True,
+            authorization_result=event.result,
         )
 
     @classmethod

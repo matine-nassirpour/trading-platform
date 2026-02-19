@@ -1,5 +1,8 @@
-from quantum.domain.risk.lifecycle.strategy_eligibility_result import (
-    StrategyEligibilityResult,
+from quantum.domain.decision.governance.decision_authorization_reason_code import (
+    DecisionAuthorizationReasonCode,
+)
+from quantum.domain.decision.governance.decision_authorization_result import (
+    DecisionAuthorizationResult,
 )
 from quantum.domain.risk.lifecycle.strategy_lifecycle import StrategyLifecycle
 from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
@@ -16,20 +19,19 @@ class StrategyEligibilityPolicy:
         *,
         lifecycle: StrategyLifecycle,
         at: EpochMs,
-    ) -> StrategyEligibilityResult:
+    ) -> DecisionAuthorizationResult:
         if not lifecycle.validity.is_valid_at(at):
-            return StrategyEligibilityResult(
-                eligible=False,
-                reason="Strategy lifecycle not valid at decision time",
+            return DecisionAuthorizationResult.rejected(
+                reason_code=DecisionAuthorizationReasonCode.strategy_lifecycle_invalid(),
+                reason="Strategy lifecycle not valid",
             )
 
         if not lifecycle.state.is_authorized():
-            return StrategyEligibilityResult(
-                eligible=False,
-                reason=f"Strategy state '{lifecycle.state.value}' is not authorized",
+            return DecisionAuthorizationResult.rejected(
+                reason_code=DecisionAuthorizationReasonCode.strategy_not_authorized(),
+                reason=f"Strategy state '{lifecycle.state.value}' not authorized",
             )
 
-        return StrategyEligibilityResult(
-            eligible=True,
-            reason="Strategy eligible for decision",
+        return DecisionAuthorizationResult.authorized(
+            reason="Strategy lifecycle valid",
         )
