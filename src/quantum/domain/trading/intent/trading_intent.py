@@ -167,8 +167,8 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentState]):
             at=evaluated_at,
         )
 
-        if lifecycle_result.is_rejected():
-            return lifecycle_result
+        if lifecycle_result is not None:
+            return DecisionAuthorizationResult.rejected(reason_code=lifecycle_result)
 
         policy_result = DecisionPolicyEvaluator.evaluate(
             policy=policy,
@@ -176,12 +176,10 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentState]):
             context=context,
         )
 
-        if policy_result.is_rejected():
-            return policy_result
+        if policy_result is not None:
+            return DecisionAuthorizationResult.rejected(reason_code=policy_result)
 
-        return DecisionAuthorizationResult.authorized(
-            reason="Decision authorized",
-        )
+        return DecisionAuthorizationResult.authorized()
 
     def evaluate(
         self,
@@ -210,15 +208,15 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentState]):
         if authorization.is_authorized():
             return [
                 DecisionAuthorizedEvent(
-                    intent_id=state.intent_id,
-                    result=authorization,
+                    intent_id=state.intent_id, evaluated_at=evaluated_at
                 )
             ]
 
         return [
             DecisionRejectedEvent(
                 intent_id=state.intent_id,
-                result=authorization,
+                evaluated_at=evaluated_at,
+                reason_code=authorization.reason_code,
             )
         ]
 
@@ -265,7 +263,7 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentState]):
             side=state.side,
             decision_identity=state.decision_identity,
             context=state.context,
-            authorization_result=event.result,
+            authorization_result=DecisionAuthorizationResult.authorized(),
         )
 
     @staticmethod
@@ -280,6 +278,8 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentState]):
         if not isinstance(event, DecisionRejectedEvent):
             raise InvariantViolation("Invalid event type")
 
+        result = DecisionAuthorizationResult.rejected(reason_code=event.reason_code)
+
         return TradingIntentState(
             last_sequence=envelope.sequence,
             intent_id=state.intent_id,
@@ -287,7 +287,7 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentState]):
             side=state.side,
             decision_identity=state.decision_identity,
             context=state.context,
-            authorization_result=event.result,
+            authorization_result=result,
         )
 
     @classmethod

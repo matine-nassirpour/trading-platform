@@ -27,7 +27,6 @@ class DecisionAuthorizationReasonCode(ClosedSetValueObject):
                 "strategy_lifecycle_invalid",
                 "market_regime_not_allowed",
                 "policy_not_valid",
-                "authorized",
             }
         )
 
@@ -46,7 +45,3 @@ class DecisionAuthorizationReasonCode(ClosedSetValueObject):
     @classmethod
     def policy_not_valid(cls) -> DecisionAuthorizationReasonCode:
         return cls("policy_not_valid")
-
-    @classmethod
-    def authorized(cls) -> DecisionAuthorizationReasonCode:
-        return cls("authorized")
