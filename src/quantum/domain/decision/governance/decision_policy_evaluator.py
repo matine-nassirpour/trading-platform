@@ -7,18 +7,24 @@ from quantum.domain.decision.governance.decision_authorization_result import (
 )
 from quantum.domain.decision.governance.decision_policy import DecisionPolicy
 from quantum.domain.decision.identity.decision_identity import DecisionIdentity
+from quantum.domain.shared_kernel.primitives.domain_service import DomainService
 
 
-class DecisionPolicyEvaluator:
+class DecisionPolicyEvaluator(DomainService):
     """
-    Canonical policy for evaluating Decision policies.
+    Domain Service responsible for evaluating DecisionPolicy.
 
     HARD RULES:
     - Pure
     - Deterministic
     - No side effects
     - No runtime assumptions
+
+    Domain responsibility:
+        "Is this decision authorized under this policy?"
     """
+
+    __slots__ = ()
 
     @staticmethod
     def evaluate(
@@ -27,14 +33,18 @@ class DecisionPolicyEvaluator:
         decision: DecisionIdentity,
         context: TradingContext,
     ) -> DecisionAuthorizationResult:
+
+        # Strategy mismatch
         if decision.strategy_id != policy.strategy_id:
             return DecisionAuthorizationResult.rejected(
                 reason_code=DecisionAuthorizationReasonCode.strategy_not_authorized()
             )
 
+        # Market regime not allowed
         if context.market_regime not in policy.allowed_regimes:
             return DecisionAuthorizationResult.rejected(
                 reason_code=DecisionAuthorizationReasonCode.market_regime_not_allowed()
             )
 
+        # Authorized
         return DecisionAuthorizationResult.authorized()

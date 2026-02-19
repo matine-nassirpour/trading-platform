@@ -209,7 +209,6 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentState]):
             return [
                 DecisionAuthorizedEvent(
                     intent_id=state.intent_id,
-                    decision_identity=state.decision_identity,
                     authorized_at=evaluated_at,
                 )
             ]
@@ -217,7 +216,6 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentState]):
         return [
             DecisionRejectedEvent(
                 intent_id=state.intent_id,
-                decision_identity=state.decision_identity,
                 rejected_at=evaluated_at,
                 reason_code=authorization.reason_code,
             )
@@ -227,7 +225,7 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentState]):
 
     @staticmethod
     def _apply_created(
-        state: TradingIntentState | None,
+        state: TradingIntentState,
         event: BaseEvent,
         envelope: EventEnvelope,
     ) -> TradingIntentState:
