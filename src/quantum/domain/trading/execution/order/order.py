@@ -1,7 +1,10 @@
 from collections.abc import Mapping
-from dataclasses import dataclass
+from types import MappingProxyType
 
-from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.errors.invariants import (
+    InvalidStateTransition,
+    InvariantViolation,
+)
 from quantum.domain.shared_kernel.errors.order_errors import (
     OrderNotFillable,
     OrderOverfill,
@@ -11,7 +14,6 @@ from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
 from quantum.domain.shared_kernel.events.event_sequence import EventSequence
 from quantum.domain.shared_kernel.identifiers.intent_id import IntentId
 from quantum.domain.shared_kernel.identifiers.order_id import OrderId
-from quantum.domain.shared_kernel.primitives.aggregate_state import AggregateState
 from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import (
     EventHandler,
     EventSourcedAggregateRoot,
@@ -29,85 +31,36 @@ from quantum.domain.trading.events.v1.order.order_fill_registered_event import (
     OrderFillRegisteredEvent,
 )
 from quantum.domain.trading.execution.order.execution_fill import ExecutionFill
+from quantum.domain.trading.execution.order.order_initialized_state import (
+    OrderInitializedState,
+)
+from quantum.domain.trading.execution.order.order_state_base import OrderStateBase
 from quantum.domain.trading.execution.order.order_status import OrderStatus
 from quantum.domain.trading.execution.order.order_type import OrderType
+from quantum.domain.trading.execution.order.order_uninitialized_state import (
+    OrderUninitializedState,
+)
 from quantum.domain.trading.execution.order.position_side import PositionSide
 
 
-@dataclass(frozen=True, slots=True)
-class OrderState(AggregateState):
-    last_sequence: EventSequence
-
-    order_id: OrderId
-    symbol: Symbol
-
-    order_type: OrderType
-    side: PositionSide
-
-    requested_volume: PositiveVolume
-    filled_volume: NonNegativeVolume
-
-    status: OrderStatus
-
-    def last_event_sequence(self) -> EventSequence:
-        return self.last_sequence
-
-    # --- Aggregate invariants -------------------------------------------------
-
-    def _validate_identity(self) -> None:
-        if not isinstance(self.order_id, OrderId):
-            raise InvariantViolation("OrderId is required")
-
-        if not isinstance(self.symbol, Symbol):
-            raise InvariantViolation("Order must be bound to a Symbol")
-
-        if not isinstance(self.order_type, OrderType):
-            raise InvariantViolation("OrderType is required")
-
-        if not isinstance(self.side, PositionSide):
-            raise InvariantViolation("PositionSide is required")
-
-    def _validate_volume(self) -> None:
-        if not isinstance(self.requested_volume, PositiveVolume):
-            raise InvariantViolation("Requested volume is required")
-
-        if not isinstance(self.filled_volume, NonNegativeVolume):
-            raise InvariantViolation("Filled volume is required")
-
-        if self.filled_volume.value > self.requested_volume.value:
-            raise InvariantViolation("Order cannot be overfilled")
-
-    def _assert_status_consistency(self) -> None:
-        if not isinstance(self.status, OrderStatus):
-            raise InvariantViolation("OrderStatus is required")
-
-        if (
-            self.status.is_filled()
-            and self.filled_volume.value != self.requested_volume.value
-        ):
-            raise InvariantViolation("Filled order must be fully filled")
-
-        if (
-            self.status.is_cancelled()
-            and self.filled_volume.value == self.requested_volume.value
-        ):
-            raise InvariantViolation("Cancelled order cannot be fully filled")
-
-    def _validate(self) -> None:
-        self._validate_identity()
-        self._validate_volume()
-        self._assert_status_consistency()
-
-
-class Order(EventSourcedAggregateRoot[OrderState]):
+class Order(EventSourcedAggregateRoot[OrderStateBase]):
     """
     Event-sourced Order aggregate.
 
-    Responsibilities:
-    - enforce order lifecycle
-    - track fills
-    - guarantee volume & status consistency
+    Institutional guarantees:
+
+    - No implicit state
+    - Explicit initialization lifecycle
+    - Deterministic replay
+    - Strict invariant enforcement
+    - Immutable aggregate
     """
+
+    @classmethod
+    def empty_state(cls):
+        return OrderUninitializedState(
+            last_sequence=EventSequence.initial(),
+        )
 
     # --- Factory --------------------------------------------------------------
 
@@ -151,10 +104,15 @@ class Order(EventSourcedAggregateRoot[OrderState]):
 
         state = self.state
 
+        if not isinstance(state, OrderInitializedState):
+            raise InvalidStateTransition("Cannot fill uninitialized order")
+
         if not state.status.is_fillable():
             raise OrderNotFillable("Order is not in a fillable state")
 
-        if state.filled_volume.value + fill.volume.value > state.requested_volume.value:
+        new_total = state.filled_volume.value + fill.volume.value
+
+        if new_total > state.requested_volume.value:
             raise OrderOverfill("Fill exceeds remaining order volume")
 
         return [
@@ -175,6 +133,10 @@ class Order(EventSourcedAggregateRoot[OrderState]):
         """
 
         state = self.state
+
+        if not isinstance(state, OrderInitializedState):
+            raise InvalidStateTransition("Cannot cancel uninitialized order")
+
         if state.status.is_terminal():
             raise OrderNotFillable("Order already terminal")
 
@@ -188,10 +150,10 @@ class Order(EventSourcedAggregateRoot[OrderState]):
 
     @staticmethod
     def _apply_created(
-        state: OrderState | None,
+        state: OrderStateBase,
         event: BaseEvent,
         envelope: EventEnvelope,
-    ) -> OrderState:
+    ) -> OrderStateBase:
         """
         Answers the question:
             "Given that an order creation event occurred,
@@ -200,12 +162,13 @@ class Order(EventSourcedAggregateRoot[OrderState]):
         This method represents a PURE EVENT → STATE TRANSITION.
         """
 
-        if state is not None:
-            raise InvariantViolation("Order already exists")
+        if not isinstance(state, OrderUninitializedState):
+            raise InvariantViolation("Order already created")
 
-        assert isinstance(event, OrderCreatedEvent)
+        if not isinstance(event, OrderCreatedEvent):
+            raise InvariantViolation("Invalid event type")
 
-        return OrderState(
+        return OrderInitializedState(
             last_sequence=envelope.sequence,
             order_id=event.order_id,
             symbol=event.symbol,
@@ -218,10 +181,10 @@ class Order(EventSourcedAggregateRoot[OrderState]):
 
     @staticmethod
     def _apply_fill_registered(
-        state: OrderState,
+        state: OrderStateBase,
         event: BaseEvent,
         envelope: EventEnvelope,
-    ) -> OrderState:
+    ) -> OrderStateBase:
         """
         Answers the question:
             "Given that a fill occurred, how does it affect the order state?"
@@ -229,7 +192,11 @@ class Order(EventSourcedAggregateRoot[OrderState]):
         This method represents a PURE EVENT → STATE TRANSITION.
         """
 
-        assert isinstance(event, OrderFillRegisteredEvent)
+        if not isinstance(state, OrderInitializedState):
+            raise InvariantViolation("Order not initialized")
+
+        if not isinstance(event, OrderFillRegisteredEvent):
+            raise InvariantViolation("Invalid event type")
 
         new_filled = state.filled_volume.value + event.fill.volume.value
 
@@ -239,7 +206,7 @@ class Order(EventSourcedAggregateRoot[OrderState]):
             else OrderStatus.partially_filled()
         )
 
-        return OrderState(
+        return OrderInitializedState(
             last_sequence=envelope.sequence,
             order_id=state.order_id,
             symbol=state.symbol,
@@ -252,10 +219,10 @@ class Order(EventSourcedAggregateRoot[OrderState]):
 
     @staticmethod
     def _apply_cancelled(
-        state: OrderState,
+        state: OrderStateBase,
         event: BaseEvent,
         envelope: EventEnvelope,
-    ) -> OrderState:
+    ) -> OrderStateBase:
         """
         Answers the question:
             "Given that the order was cancelled,
@@ -264,9 +231,13 @@ class Order(EventSourcedAggregateRoot[OrderState]):
         This method represents a PURE EVENT → STATE TRANSITION.
         """
 
-        assert isinstance(event, OrderCancelledEvent)
+        if not isinstance(state, OrderInitializedState):
+            raise InvariantViolation("Order not initialized")
 
-        return OrderState(
+        if not isinstance(event, OrderCancelledEvent):
+            raise InvariantViolation("Invalid event type")
+
+        return OrderInitializedState(
             last_sequence=envelope.sequence,
             order_id=state.order_id,
             symbol=state.symbol,
@@ -280,9 +251,12 @@ class Order(EventSourcedAggregateRoot[OrderState]):
     @classmethod
     def _handlers(
         cls,
-    ) -> Mapping[type[BaseEvent], EventHandler[OrderState, BaseEvent]]:
-        return {
-            OrderCreatedEvent: cls._apply_created,
-            OrderFillRegisteredEvent: cls._apply_fill_registered,
-            OrderCancelledEvent: cls._apply_cancelled,
-        }
+    ) -> Mapping[type[BaseEvent], EventHandler]:
+
+        return MappingProxyType(
+            {
+                OrderCreatedEvent: cls._apply_created,
+                OrderFillRegisteredEvent: cls._apply_fill_registered,
+                OrderCancelledEvent: cls._apply_cancelled,
+            }
+        )
