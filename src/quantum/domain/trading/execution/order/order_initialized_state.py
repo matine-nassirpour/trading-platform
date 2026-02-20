@@ -7,11 +7,10 @@ from quantum.domain.shared_kernel.value_objects.volume import (
     NonNegativeVolume,
     PositiveVolume,
 )
+from quantum.domain.trading.execution.order.order_state_base import OrderStateBase
 from quantum.domain.trading.execution.order.order_status import OrderStatus
 from quantum.domain.trading.execution.order.order_type import OrderType
 from quantum.domain.trading.execution.order.position_side import PositionSide
-
-from .order_state_base import OrderStateBase
 
 
 @dataclass(frozen=True, slots=True)

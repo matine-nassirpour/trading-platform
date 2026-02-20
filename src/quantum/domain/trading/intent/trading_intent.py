@@ -66,6 +66,8 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentStateBase]):
     - handle risk or sizing
     """
 
+    __slots__ = ()
+
     @classmethod
     def empty_state(cls) -> TradingIntentStateBase:
         return TradingIntentUninitializedState(last_sequence=EventSequence.initial())

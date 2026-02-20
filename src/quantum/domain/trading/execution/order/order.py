@@ -56,6 +56,8 @@ class Order(EventSourcedAggregateRoot[OrderStateBase]):
     - Immutable aggregate
     """
 
+    __slots__ = ()
+
     @classmethod
     def empty_state(cls):
         return OrderUninitializedState(

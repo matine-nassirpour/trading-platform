@@ -1,14 +1,16 @@
 from collections.abc import Mapping
-from dataclasses import dataclass
+from types import MappingProxyType
 
-from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.errors.invariants import (
+    InvalidStateTransition,
+    InvariantViolation,
+)
 from quantum.domain.shared_kernel.errors.position_errors import PositionAlreadyClosed
 from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
 from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
 from quantum.domain.shared_kernel.events.event_sequence import EventSequence
 from quantum.domain.shared_kernel.identifiers.position_id import PositionId
 from quantum.domain.shared_kernel.money.money_context import MoneyContext
-from quantum.domain.shared_kernel.primitives.aggregate_state import AggregateState
 from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import (
     EventHandler,
     EventSourcedAggregateRoot,
@@ -23,50 +25,29 @@ from quantum.domain.trading.events.v1.position.position_opened_event import (
 )
 from quantum.domain.trading.execution.order.position_side import PositionSide
 from quantum.domain.trading.execution.position.pnl_service import PnLService
+from quantum.domain.trading.execution.position.position_opened_state import (
+    PositionOpenedState,
+)
+from quantum.domain.trading.execution.position.position_state_base import (
+    PositionStateBase,
+)
+from quantum.domain.trading.execution.position.position_uninitialized_state import (
+    PositionUninitializedState,
+)
 
 
-@dataclass(frozen=True, slots=True)
-class PositionState(AggregateState):
-    """
-    Immutable, fully event-sourced Position state.
-    """
-
-    last_sequence: EventSequence
-
-    position_id: PositionId
-    side: PositionSide
-    volume: PositiveVolume
-    entry_price: Price
-
-    closed: bool
-
-    def last_event_sequence(self) -> EventSequence:
-        return self.last_sequence
-
-    def _validate(self) -> None:
-        if not isinstance(self.last_sequence, EventSequence):
-            raise InvariantViolation("last_sequence must be EventSequence")
-
-        if not isinstance(self.position_id, PositionId):
-            raise InvariantViolation("PositionId missing")
-
-        if not isinstance(self.side, PositionSide):
-            raise InvariantViolation("PositionSide missing")
-
-        if not isinstance(self.volume, PositiveVolume):
-            raise InvariantViolation("Volume missing")
-
-        if not isinstance(self.entry_price, Price):
-            raise InvariantViolation("Entry price missing")
-
-        if not isinstance(self.closed, bool):
-            raise InvariantViolation("Closed flag must be boolean")
-
-
-class Position(EventSourcedAggregateRoot[PositionState]):
+class Position(EventSourcedAggregateRoot[PositionStateBase]):
     """
     Event-sourced Position aggregate.
     """
+
+    __slots__ = ()
+
+    @classmethod
+    def empty_state(cls) -> PositionStateBase:
+        return PositionUninitializedState(
+            last_sequence=EventSequence.initial(),
+        )
 
     # --- Factory --------------------------------------------------------------
 
@@ -113,6 +94,9 @@ class Position(EventSourcedAggregateRoot[PositionState]):
 
         state = self.state
 
+        if not isinstance(state, PositionOpenedState):
+            raise InvalidStateTransition("Position not opened")
+
         if state.closed:
             raise PositionAlreadyClosed("Position already closed")
 
@@ -138,10 +122,10 @@ class Position(EventSourcedAggregateRoot[PositionState]):
 
     @staticmethod
     def _apply_opened(
-        state: PositionState | None,
+        state: PositionStateBase,
         event: BaseEvent,
         envelope: EventEnvelope,
-    ) -> PositionState:
+    ) -> PositionStateBase:
         """
         Answers the question:
             "Given that this event has occurred, what is the new aggregate state?"
@@ -149,12 +133,13 @@ class Position(EventSourcedAggregateRoot[PositionState]):
         This method represents a PURE EVENT → STATE TRANSITION.
         """
 
-        if state is not None:
-            raise InvariantViolation("Position already initialized")
+        if not isinstance(state, PositionUninitializedState):
+            raise InvariantViolation("Position already opened")
 
-        assert isinstance(event, PositionOpenedEvent)
+        if not isinstance(event, PositionOpenedEvent):
+            raise InvariantViolation("Invalid event type")
 
-        return PositionState(
+        return PositionOpenedState(
             last_sequence=envelope.sequence,
             position_id=event.position_id,
             side=event.side,
@@ -165,10 +150,10 @@ class Position(EventSourcedAggregateRoot[PositionState]):
 
     @staticmethod
     def _apply_closed(
-        state: PositionState,
+        state: PositionStateBase,
         event: BaseEvent,
         envelope: EventEnvelope,
-    ) -> PositionState:
+    ) -> PositionStateBase:
         """
         Answers the question:
             "Given that this event has occurred, what is the new aggregate state?"
@@ -176,9 +161,16 @@ class Position(EventSourcedAggregateRoot[PositionState]):
         This method represents a PURE EVENT → STATE TRANSITION.
         """
 
-        assert isinstance(event, PositionClosedEvent)
+        if not isinstance(state, PositionOpenedState):
+            raise InvariantViolation("Position not opened")
 
-        return PositionState(
+        if not isinstance(event, PositionClosedEvent):
+            raise InvariantViolation("Invalid event type")
+
+        if state.closed:
+            raise InvariantViolation("Position already closed")
+
+        return PositionOpenedState(
             last_sequence=envelope.sequence,
             position_id=state.position_id,
             side=state.side,
@@ -190,11 +182,11 @@ class Position(EventSourcedAggregateRoot[PositionState]):
     @classmethod
     def _handlers(
         cls,
-    ) -> Mapping[
-        type[BaseEvent],
-        EventHandler[PositionState, BaseEvent],
-    ]:
-        return {
-            PositionOpenedEvent: cls._apply_opened,
-            PositionClosedEvent: cls._apply_closed,
-        }
+    ) -> Mapping[type[BaseEvent], EventHandler]:
+
+        return MappingProxyType(
+            {
+                PositionOpenedEvent: cls._apply_opened,
+                PositionClosedEvent: cls._apply_closed,
+            }
+        )
