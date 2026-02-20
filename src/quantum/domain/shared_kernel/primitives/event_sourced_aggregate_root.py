@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Mapping
-from typing import Generic, Protocol, TypeVar
+from dataclasses import dataclass
+from types import MappingProxyType
+from typing import Generic, Protocol, Self, TypeVar
 
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
@@ -15,18 +17,14 @@ E = TypeVar("E", bound=BaseEvent, contravariant=True)
 
 class EventHandler(Protocol[S, E]):
     """
-    Strongly-typed event handler contract.
-
-    A handler:
-    - receives a state
-    - receives a concrete domain event
-    - receives its envelope
-    - returns a NEW state
+    Pure transition function:
+        (state, event, envelope) -> new_state
     """
 
     def __call__(self, state: S, event: E, envelope: EventEnvelope) -> S: ...
 
 
+@dataclass(frozen=True, slots=True)
 class EventSourcedAggregateRoot(Generic[S], ABC):
     """
     Canonical base class for Event-Sourced Aggregates.
@@ -40,20 +38,24 @@ class EventSourcedAggregateRoot(Generic[S], ABC):
 
     _state: S
 
-    def __init__(self, state: S) -> None:
-        if not isinstance(state, AggregateState):
-            raise InvariantViolation("state must be an AggregateState")
-
-        self._state = state
-
-    # --- State access ---------------------------------------------------------
+    def __post_init__(self) -> None:
+        if not isinstance(self._state, AggregateState):
+            raise InvariantViolation("Aggregate state must be an AggregateState")
 
     @property
     def state(self) -> S:
         return self._state
 
+    # --- Canonical empty state (must be defined by each aggregate) ------------
+
     @classmethod
-    def empty_state(cls) -> S: ...
+    @abstractmethod
+    def empty_state(cls) -> S:
+        """
+        Returns the only allowed canonical initial state for this aggregate.
+        Must be deterministic and side-effect free.
+        """
+        raise NotImplementedError
 
     # --- Required contract ----------------------------------------------------
 
@@ -61,16 +63,25 @@ class EventSourcedAggregateRoot(Generic[S], ABC):
     @abstractmethod
     def _handlers(cls) -> Mapping[type[BaseEvent], EventHandler[S, BaseEvent]]:
         """
-        Returns the event → state transition map.
+        Event type -> pure state transition handler.
 
-        Each handler must be pure:
-            (state, event, envelope) → new_state
+        Must be total with respect to the aggregate's event vocabulary.
         """
         raise NotImplementedError
 
+    @classmethod
+    def handlers(cls) -> Mapping[type[BaseEvent], EventHandler[S, BaseEvent]]:
+        """
+        Returns an immutable view of handlers (prevents accidental mutation).
+        """
+        h = cls._handlers()
+        if not isinstance(h, Mapping):
+            raise InvariantViolation("_handlers() must return a Mapping")
+        return MappingProxyType(dict(h))
+
     # --- Single-event application (the ONLY semantic gate) --------------------
 
-    def apply(self, envelope: EventEnvelope) -> EventSourcedAggregateRoot[S]:
+    def apply(self, envelope: EventEnvelope) -> Self:
         """
         Applies a single EventEnvelope to this aggregate.
 
@@ -82,9 +93,7 @@ class EventSourcedAggregateRoot(Generic[S], ABC):
             raise InvariantViolation("apply() requires an EventEnvelope")
 
         event = envelope.event
-        handlers = self._handlers()
-
-        handler = handlers.get(type(event))
+        handler = self.handlers().get(type(event))
         if handler is None:
             raise InvariantViolation(
                 f"{self.__class__.__name__} cannot handle event {type(event).__name__}"
@@ -96,7 +105,6 @@ class EventSourcedAggregateRoot(Generic[S], ABC):
 
         # --- Apply event
         new_state = handler(self._state, event, envelope)
-
         if not isinstance(new_state, AggregateState):
             raise InvariantViolation("Event handler must return an AggregateState")
 
@@ -105,24 +113,12 @@ class EventSourcedAggregateRoot(Generic[S], ABC):
     # --- Replay (strictly defined in terms of apply) --------------------------
 
     @classmethod
-    def rehydrate(
-        cls,
-        *,
-        events: Iterable[EventEnvelope],
-        empty_state: S,
-    ) -> EventSourcedAggregateRoot[S]:
+    def rehydrate(cls, *, events: Iterable[EventEnvelope]) -> Self:
         """
-        Rebuilds an aggregate from its full event stream.
-
-        HARD GUARANTEES:
-        - Every event is validated via apply()
-        - No bypass of domain invariants
-        - Replay semantics == live semantics
+        Canonical rebuild from stream.
         """
 
-        aggregate = cls(empty_state)
-
+        aggregate: Self = cls(cls.empty_state())
         for event in events:
             aggregate = aggregate.apply(event)
-
         return aggregate

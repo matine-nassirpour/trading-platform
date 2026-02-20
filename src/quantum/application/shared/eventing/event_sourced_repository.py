@@ -39,10 +39,7 @@ class EventSourcedRepository(Generic[A]):
         if not events:
             return None, EventSequence.initial()
 
-        aggregate = self._aggregate_type.rehydrate(
-            events=events,
-            empty_state=self._aggregate_type.empty_state(),
-        )
+        aggregate = self._aggregate_type.rehydrate(events=events)
 
         version = events[-1].sequence
         return aggregate, version
