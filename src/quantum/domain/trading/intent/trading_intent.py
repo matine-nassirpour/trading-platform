@@ -130,7 +130,6 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentStateBase]):
             return [
                 DecisionRejectedEvent(
                     intent_id=state.intent_id,
-                    rejected_at=evaluated_at,
                     reason_code=lifecycle_result.reason_code,
                 )
             ]
@@ -145,7 +144,6 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentStateBase]):
             return [
                 DecisionRejectedEvent(
                     intent_id=state.intent_id,
-                    rejected_at=evaluated_at,
                     reason_code=policy_result.reason_code,
                 )
             ]
@@ -153,7 +151,6 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentStateBase]):
         return [
             DecisionAuthorizedEvent(
                 intent_id=state.intent_id,
-                authorized_at=evaluated_at,
             )
         ]
 
