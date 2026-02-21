@@ -33,10 +33,6 @@ class DecisionPolicy(ValueObject):
 
     validity: TemporalValidity
 
-    # Optional governance flags
-    requires_human_approval: bool = False
-    experimental: bool = False
-
     def _validate(self) -> None:
         if not isinstance(self.policy_id, str) or not self.policy_id.strip():
             raise InvariantViolation("DecisionPolicy requires a non-empty policy_id")

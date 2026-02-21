@@ -4,9 +4,6 @@ from quantum.domain.decision.identity.decision_confidence import DecisionConfide
 from quantum.domain.decision.identity.decision_source import DecisionSource
 from quantum.domain.decision.identity.model_version import ModelVersion
 from quantum.domain.decision.identity.strategy_id import StrategyId
-from quantum.domain.risk.capital.capital_allocation_intent import (
-    CapitalAllocationIntent,
-)
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 
@@ -28,7 +25,6 @@ class DecisionIdentity(ValueObject):
     model_version: ModelVersion
     source: DecisionSource
     confidence: DecisionConfidence
-    capital_allocation: CapitalAllocationIntent
 
     def _validate(self) -> None:
         if not isinstance(self.strategy_id, StrategyId):
@@ -42,8 +38,3 @@ class DecisionIdentity(ValueObject):
 
         if not isinstance(self.confidence, DecisionConfidence):
             raise InvariantViolation("DecisionIdentity requires DecisionConfidence")
-
-        if not isinstance(self.capital_allocation, CapitalAllocationIntent):
-            raise InvariantViolation(
-                "DecisionIdentity requires CapitalAllocationIntent"
-            )

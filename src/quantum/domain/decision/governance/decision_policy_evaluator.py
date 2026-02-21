@@ -8,6 +8,7 @@ from quantum.domain.decision.governance.decision_authorization_result import (
 from quantum.domain.decision.governance.decision_policy import DecisionPolicy
 from quantum.domain.decision.identity.decision_identity import DecisionIdentity
 from quantum.domain.shared_kernel.primitives.domain_service import DomainService
+from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
 
 
 class DecisionPolicyEvaluator(DomainService):
@@ -32,12 +33,18 @@ class DecisionPolicyEvaluator(DomainService):
         policy: DecisionPolicy,
         decision: DecisionIdentity,
         context: TradingContext,
+        at: EpochMs,
     ) -> DecisionAuthorizationResult:
 
         # Strategy mismatch
         if decision.strategy_id != policy.strategy_id:
             return DecisionAuthorizationResult.rejected(
                 reason_code=DecisionAuthorizationReasonCode.strategy_not_authorized()
+            )
+
+        if not policy.validity.is_valid_at(at):
+            return DecisionAuthorizationResult.rejected(
+                reason_code=DecisionAuthorizationReasonCode.policy_not_valid()
             )
 
         # Market regime not allowed
