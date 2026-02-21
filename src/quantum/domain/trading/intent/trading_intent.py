@@ -138,6 +138,7 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentStateBase]):
             policy=policy,
             decision=state.decision_identity,
             context=state.context,
+            at=evaluated_at,
         )
 
         if policy_result.is_rejected():
