@@ -40,22 +40,20 @@ class ApplicationEventEnveloper:
 
         now = self._clock.now_epoch_ms()
 
-        envelopes: list[EventEnvelope] = []
-
-        for event in events:
-            envelopes.append(
-                EventEnvelope(
-                    id=self._ids.new_event_id(),
-                    sequence=EventSequence.initial(),
-                    occurred_at=now,
-                    recorded_at=now,
-                    event=event,
-                    metadata=EventMetadata(
-                        actor_id=context.actor_id,
-                        correlation_id=context.correlation_id,
-                        causation_id=context.causation_id,
-                    ),
-                )
+        envelopes = [
+            EventEnvelope(
+                id=self._ids.new_event_id(),
+                sequence=EventSequence.initial(),
+                occurred_at=now,
+                recorded_at=now,
+                event=event,
+                metadata=EventMetadata(
+                    actor_id=context.actor_id,
+                    correlation_id=context.correlation_id,
+                    causation_id=context.causation_id,
+                ),
             )
+            for event in events
+        ]
 
         return envelopes
