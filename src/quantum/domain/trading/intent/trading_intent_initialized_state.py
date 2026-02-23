@@ -5,6 +5,9 @@ from quantum.domain.decision.governance.decision_authorization_result import (
     DecisionAuthorizationResult,
 )
 from quantum.domain.decision.identity.decision_identity import DecisionIdentity
+from quantum.domain.risk.capital.capital_allocation_intent import (
+    CapitalAllocationIntent,
+)
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.identifiers.intent_id import IntentId
 from quantum.domain.shared_kernel.value_objects.symbol import Symbol
@@ -25,12 +28,60 @@ class TradingIntentInitializedState(TradingIntentStateBase):
     context: TradingContext
 
     authorization_result: DecisionAuthorizationResult | None
+    capital_allocation: CapitalAllocationIntent | None = None
+
+    def _validate_types(self) -> None:
+        if not isinstance(self.intent_id, IntentId):
+            raise InvariantViolation("TradingIntentInitializedState.intent_id invalid")
+
+        if not isinstance(self.symbol, Symbol):
+            raise InvariantViolation("TradingIntentInitializedState.symbol invalid")
+
+        if not isinstance(self.side, PositionSide):
+            raise InvariantViolation("TradingIntentInitializedState.side invalid")
+
+        if not isinstance(self.decision_identity, DecisionIdentity):
+            raise InvariantViolation(
+                "TradingIntentInitializedState.decision_identity invalid"
+            )
+
+        if not isinstance(self.context, TradingContext):
+            raise InvariantViolation("TradingIntentInitializedState.context invalid")
+
+        if self.authorization_result is not None and not isinstance(
+            self.authorization_result, DecisionAuthorizationResult
+        ):
+            raise InvariantViolation(
+                "TradingIntentInitializedState.authorization_result invalid"
+            )
+
+        if self.capital_allocation is not None and not isinstance(
+            self.capital_allocation, CapitalAllocationIntent
+        ):
+            raise InvariantViolation(
+                "TradingIntentInitializedState.capital_allocation invalid"
+            )
+
+    def _validate_semantics(self) -> None:
+        # Capital allocation can only be committed AFTER authorization
+        if self.capital_allocation is not None:
+            if self.authorization_result is None:
+                raise InvariantViolation(
+                    "Capital allocation cannot exist before evaluation"
+                )
+            if not self.authorization_result.is_authorized():
+                raise InvariantViolation(
+                    "Capital allocation cannot exist for a rejected intent"
+                )
 
     def _validate(self) -> None:
         if self.last_sequence.is_initial():
             raise InvariantViolation(
                 "Initialized TradingIntent cannot have initial sequence"
             )
+
+        self._validate_types()
+        self._validate_semantics()
 
     # --- Semantic helpers -----------------------------------------------------
 
@@ -48,3 +99,6 @@ class TradingIntentInitializedState(TradingIntentStateBase):
             self.authorization_result is not None
             and self.authorization_result.is_rejected()
         )
+
+    def is_capital_allocated(self) -> bool:
+        return self.capital_allocation is not None
