@@ -103,8 +103,14 @@ class EventSourcedAggregateRoot(Generic[S], ABC):
 
         # --- Apply event
         new_state = handler(self._state, event, envelope)
+
         if not isinstance(new_state, AggregateState):
             raise InvariantViolation("Event handler must return an AggregateState")
+
+        if new_state.last_event_sequence() != envelope.sequence:
+            raise InvariantViolation(
+                "Handler must advance state sequence to envelope.sequence"
+            )
 
         return self.__class__(new_state)
 
