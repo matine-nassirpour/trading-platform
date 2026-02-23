@@ -5,7 +5,10 @@ from dataclasses import dataclass
 from quantum.domain.risk.breaches.risk_breach import RiskBreach
 from quantum.domain.risk.limits.leverage_limit import LeverageLimit
 from quantum.domain.risk.limits.risk_threshold_policy import RiskThresholdPolicy
-from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.errors.invariants import (
+    CurrencyMismatch,
+    InvariantViolation,
+)
 from quantum.domain.shared_kernel.money.equity import Equity
 from quantum.domain.shared_kernel.money.risk_exposure import RiskExposure
 
@@ -29,7 +32,7 @@ class LeverageBreach(RiskBreach):
         super()._validate()
 
         if not isinstance(self.exposure, RiskExposure):
-            raise InvariantViolation("LeverageBreach.exposure must be Exposure")
+            raise InvariantViolation("LeverageBreach.exposure must be RiskExposure")
 
         if not isinstance(self.limit, LeverageLimit):
             raise InvariantViolation("LeverageBreach.limit must be LeverageLimit")
@@ -42,6 +45,9 @@ class LeverageBreach(RiskBreach):
 
         if self.exposure.context != self.equity.context:
             raise InvariantViolation("Exposure context mismatch")
+
+        if self.exposure.currency != self.equity.currency:
+            raise CurrencyMismatch("Exposure currency mismatch")
 
     # --- Factory --------------------------------------------------------------
 

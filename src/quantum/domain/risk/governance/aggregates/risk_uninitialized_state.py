@@ -6,7 +6,12 @@ from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 
 @dataclass(frozen=True, slots=True)
 class RiskUninitializedState(RiskStateBase):
+    """
+    Aggregate state before RiskInitializedEvent has been applied.
+    """
 
-    def _validate(self):
+    def _validate(self) -> None:
         if not self.last_sequence.is_initial():
-            raise InvariantViolation("Uninitialized position must be initial")
+            raise InvariantViolation(
+                "Uninitialized RiskState must have initial sequence"
+            )
