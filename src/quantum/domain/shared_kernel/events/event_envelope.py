@@ -31,7 +31,7 @@ class EventEnvelope(ValueObject):
         if not isinstance(self.id, EventId):
             raise InvariantViolation("EventEnvelope requires EventId")
 
-        if not isinstance(self.sequence, EventSequence):
+        if self.sequence is not None and not isinstance(self.sequence, EventSequence):
             raise InvariantViolation("EventEnvelope requires EventSequence")
 
         if not isinstance(self.occurred_at, EpochMs):
