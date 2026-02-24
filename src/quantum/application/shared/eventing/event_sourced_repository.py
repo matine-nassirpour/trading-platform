@@ -24,6 +24,8 @@ class EventSourcedRepository(Generic[A]):
     - Deterministic rebuild
     """
 
+    __slots__ = ("_store", "_aggregate_type")
+
     def __init__(
         self,
         *,
@@ -33,15 +35,25 @@ class EventSourcedRepository(Generic[A]):
         self._store = store
         self._aggregate_type = aggregate_type
 
-    def load(self, stream_id: str) -> tuple[A | None, EventSequence]:
+    def load(self, stream_id: str) -> tuple[A, EventSequence]:
+        """
+        Load aggregate from EventStore.
+        """
+
         events: list[EventEnvelope] = self._store.load_stream(stream_id)
 
+        # --- Empty Stream
         if not events:
-            return None, EventSequence.initial()
+            aggregate = self._aggregate_type(self._aggregate_type.empty_state())
 
+            version = EventSequence.initial()
+
+            return aggregate, version
+
+        # --- Replay
         aggregate = self._aggregate_type.rehydrate(events=events)
-
         version = events[-1].sequence
+
         return aggregate, version
 
     def save(
@@ -52,7 +64,7 @@ class EventSourcedRepository(Generic[A]):
         envelopes: Iterable[EventEnvelope],
     ) -> list[EventEnvelope]:
         """
-        Persist pre-wrapped event envelopes atomically.
+        Persist envelopes atomically.
         """
 
         persisted = self._store.append(
