@@ -4,6 +4,7 @@ from collections.abc import Iterable
 from typing import Generic, TypeVar
 
 from quantum.application.ports.outbound.transaction.event_store import EventStore
+from quantum.application.shared.errors.application_error import ApplicationError
 from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
 from quantum.domain.shared_kernel.events.event_sequence import EventSequence
 from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import (
@@ -72,5 +73,11 @@ class EventSourcedRepository(Generic[A]):
             events=envelopes,
             expected_version=expected_version,
         )
+
+        for envelope in persisted:
+            if envelope.sequence is None:
+                raise ApplicationError(
+                    "EventStore returned envelope without sequence assignment"
+                )
 
         return persisted
