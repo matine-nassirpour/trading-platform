@@ -16,7 +16,6 @@ from quantum.domain.decision.governance.decision_policy_evaluator import (
     DecisionPolicyEvaluator,
 )
 from quantum.domain.decision.identity.decision_identity import DecisionIdentity
-from quantum.domain.decision.identity.strategy_id import StrategyId
 from quantum.domain.risk.capital.capital_allocation_intent import (
     CapitalAllocationIntent,
 )
@@ -104,6 +103,17 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentStateBase]):
 
     # --- Commands -------------------------------------------------------------
 
+    def _require_initialized(self) -> TradingIntentInitializedState:
+        state = self.state
+
+        if isinstance(state, TradingIntentUninitializedState):
+            raise InvalidStateTransition("TradingIntent not initialized")
+
+        if not isinstance(state, TradingIntentInitializedState):
+            raise InvariantViolation("Corrupted aggregate state")
+
+        return state
+
     def evaluate(
         self,
         *,
@@ -112,12 +122,7 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentStateBase]):
         evaluated_at: EpochMs,
     ) -> list[BaseEvent]:
 
-        state = self.state
-
-        if isinstance(state, TradingIntentUninitializedState):
-            raise InvalidStateTransition("Cannot evaluate uninitialized TradingIntent")
-
-        assert isinstance(state, TradingIntentInitializedState)
+        state = self._require_initialized()
 
         if state.is_evaluated():
             raise InvalidStateTransition("TradingIntent already evaluated")
@@ -170,14 +175,7 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentStateBase]):
         - Fully auditable and replayable
         """
 
-        state = self.state
-
-        if isinstance(state, TradingIntentUninitializedState):
-            raise InvalidStateTransition(
-                "Cannot allocate capital on uninitialized intent"
-            )
-
-        assert isinstance(state, TradingIntentInitializedState)
+        state = self._require_initialized()
 
         if not state.is_evaluated():
             raise InvalidStateTransition("Cannot allocate capital before evaluation")
@@ -190,16 +188,10 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentStateBase]):
         if state.is_capital_allocated():
             raise InvalidStateTransition("Capital already allocated")
 
-        # Extract strategy_id from decision identity (strict)
-        strategy_id = getattr(state.decision_identity, "strategy_id", None)
-        if not isinstance(strategy_id, StrategyId):
-            raise InvariantViolation(
-                "DecisionIdentity must expose a valid strategy_id to emit CapitalAllocatedEvent"
-            )
-
         return [
             CapitalAllocatedEvent(
-                strategy_id=strategy_id,
+                intent_id=state.intent_id,
+                strategy_id=state.decision_identity.strategy_id,
                 allocation=allocation,
             )
         ]
