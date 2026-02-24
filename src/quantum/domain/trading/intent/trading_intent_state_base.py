@@ -13,7 +13,6 @@ class TradingIntentStateBase(AggregateState, ABC):
     Guarantees:
 
     - Total state space explicitly modeled
-    - No implicit or None states
     - Fully event-sourced compatible
     """
 
