@@ -43,19 +43,25 @@ class EventSourcedRepository(Generic[A]):
 
         events: list[EventEnvelope] = self._store.load_stream(stream_id)
 
+        previous = EventSequence.initial()
+
+        for event in events:
+            if event.sequence is None:
+                raise ApplicationError("Event without sequence")
+
+            event.sequence.assert_is_next_of(previous)
+            previous = event.sequence
+
         # --- Empty Stream
         if not events:
             aggregate = self._aggregate_type(self._aggregate_type.empty_state())
 
-            version = EventSequence.initial()
-
-            return aggregate, version
+            return aggregate, previous
 
         # --- Replay
         aggregate = self._aggregate_type.rehydrate(events=events)
-        version = events[-1].sequence
 
-        return aggregate, version
+        return aggregate, events[-1].sequence
 
     def save(
         self,
@@ -74,10 +80,15 @@ class EventSourcedRepository(Generic[A]):
             expected_version=expected_version,
         )
 
+        previous = expected_version
         for envelope in persisted:
             if envelope.sequence is None:
                 raise ApplicationError(
-                    "EventStore returned envelope without sequence assignment"
+                    f"EventStore returned envelope without sequence assignment "
+                    f"(stream_id={stream_id})"
                 )
+
+            envelope.sequence.assert_is_next_of(previous)
+            previous = envelope.sequence
 
         return persisted

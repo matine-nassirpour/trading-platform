@@ -98,6 +98,9 @@ class EventSourcedAggregateRoot(Generic[S], ABC):
             )
 
         # --- Enforce sequence continuity
+        if envelope.sequence is None:
+            raise InvariantViolation("EventEnvelope.sequence must be assigned")
+
         previous = self._state.last_event_sequence()
         envelope.sequence.assert_is_next_of(previous)
 
