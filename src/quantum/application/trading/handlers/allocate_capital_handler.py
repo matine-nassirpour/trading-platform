@@ -6,15 +6,15 @@ from quantum.application.shared.base_handlers.aggregate_command_handler import (
 from quantum.application.shared.base_handlers.aggregate_existence_policy import (
     AggregateExistencePolicy,
 )
-from quantum.application.trading.commands.evaluate_trading_intent_command import (
-    EvaluateTradingIntentCommand,
+from quantum.application.trading.commands.allocate_capital_command import (
+    AllocateCapitalCommand,
 )
 from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
 from quantum.domain.trading.intent.trading_intent import TradingIntent
 
 
-class EvaluateTradingIntentHandler(
-    AggregateCommandHandler[EvaluateTradingIntentCommand, None, TradingIntent]
+class AllocateCapitalHandler(
+    AggregateCommandHandler[AllocateCapitalCommand, None, TradingIntent]
 ):
 
     def __init__(self, **kwargs):
@@ -23,20 +23,18 @@ class EvaluateTradingIntentHandler(
             **kwargs,
         )
 
-    def _stream_id(self, command: EvaluateTradingIntentCommand) -> str:
+    def _stream_id(self, command: AllocateCapitalCommand) -> str:
         return f"intent-{command.intent_id.value}"
 
     def _execute_domain(
         self,
         *,
-        command: EvaluateTradingIntentCommand,
+        command: AllocateCapitalCommand,
         aggregate: TradingIntent,
     ) -> tuple[Iterable[BaseEvent], None]:
 
-        domain_events = aggregate.evaluate(
-            policy=command.policy,
-            lifecycle=command.lifecycle,
-            evaluated_at=command.evaluated_at,
+        events = aggregate.allocate_capital(
+            allocation=command.allocation,
         )
 
-        return domain_events, None
+        return events, None

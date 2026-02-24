@@ -32,14 +32,8 @@ class CreateTradingIntentHandler(
         self,
         *,
         command: CreateTradingIntentCommand,
-        aggregate: TradingIntent | None,
+        aggregate: TradingIntent,
     ) -> tuple[Iterable[BaseEvent], None]:
-
-        if aggregate is not None:
-            raise RuntimeError(
-                "TradingIntent aggregate already exists "
-                "despite MUST_NOT_EXIST policy."
-            )
 
         domain_events = TradingIntent.create(
             intent_id=command.intent_id,

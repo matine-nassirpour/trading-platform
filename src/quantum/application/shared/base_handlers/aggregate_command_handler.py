@@ -151,7 +151,7 @@ class AggregateCommandHandler(ABC, Generic[C, R, A]):
                     context=context,
                 )
 
-                self._apply_envelopes(aggregate, envelopes)
+                aggregate = self._apply_envelopes(aggregate, envelopes)
 
                 persisted = self._repository.save(
                     stream_id=stream_id,

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
@@ -18,7 +20,7 @@ class EventEnvelope(ValueObject):
     """
 
     id: EventId
-    sequence: EventSequence
+    sequence: EventSequence | None
     occurred_at: EpochMs  # When the business fact occurred
     recorded_at: EpochMs  # When the system persisted the event
 
@@ -44,15 +46,21 @@ class EventEnvelope(ValueObject):
         if not isinstance(self.metadata, EventMetadata):
             raise InvariantViolation("EventEnvelope requires EventMetadata")
 
-    def _validate_sequence(self) -> None:
+    def _validate(self) -> None:
+        self._validate_types()
+
         if self.sequence.is_initial():
             raise InvariantViolation("EventEnvelope.sequence must be >= 1")
 
-    def _validate_temporal_consistency(self) -> None:
         if self.recorded_at.value < self.occurred_at.value:
             raise InvariantViolation("EventEnvelope.recorded_at must be >= occurred_at")
 
-    def _validate(self) -> None:
-        self._validate_types()
-        self._validate_sequence()
-        self._validate_temporal_consistency()
+    def with_sequence(self, sequence: EventSequence) -> EventEnvelope:
+        return EventEnvelope(
+            id=self.id,
+            sequence=sequence,
+            occurred_at=self.occurred_at,
+            recorded_at=self.recorded_at,
+            event=self.event,
+            metadata=self.metadata,
+        )

@@ -8,13 +8,14 @@ from quantum.application.shared.eventing.application_event_context import (
 from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
 from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
 from quantum.domain.shared_kernel.events.event_metadata import EventMetadata
-from quantum.domain.shared_kernel.events.event_sequence import EventSequence
 
 
 class ApplicationEventEnveloper:
     """
     Responsible for wrapping domain BaseEvent into EventEnvelope
     for stateless process handlers.
+
+    Creates EventEnvelope WITHOUT sequence. Sequence is assigned ONLY by EventStore.
 
     Guarantees:
     - CorrelationId NEVER generated implicitly
@@ -43,7 +44,7 @@ class ApplicationEventEnveloper:
         envelopes = [
             EventEnvelope(
                 id=self._ids.new_event_id(),
-                sequence=EventSequence.initial(),
+                sequence=None,  # CRITICAL: NOT ASSIGNED HERE
                 occurred_at=now,
                 recorded_at=now,
                 event=event,

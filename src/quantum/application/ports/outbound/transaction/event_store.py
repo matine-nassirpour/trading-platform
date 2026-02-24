@@ -17,7 +17,7 @@ class EventStore(Protocol):
         self,
         stream_id: str,
         events: Iterable[EventEnvelope],
-        expected_version: EventSequence | None = None,
+        expected_version: EventSequence,
     ) -> list[EventEnvelope]:
         """
         Persist events and assign sequential sequence numbers.
