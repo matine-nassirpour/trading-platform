@@ -252,7 +252,7 @@ class Order(EventSourcedAggregateRoot[OrderStateBase]):
     @classmethod
     def _handlers(
         cls,
-    ) -> Mapping[type[BaseEvent], EventHandler]:
+    ) -> Mapping[type[BaseEvent], EventHandler[OrderStateBase, BaseEvent]]:
         return {
             OrderCreatedEvent: cls._apply_created,
             OrderFillRegisteredEvent: cls._apply_fill_registered,
