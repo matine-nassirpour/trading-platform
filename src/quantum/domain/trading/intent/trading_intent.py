@@ -78,8 +78,8 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentStateBase]):
 
     # --- Factory --------------------------------------------------------------
 
-    @staticmethod
     def create(
+        self,
         *,
         intent_id: IntentId,
         symbol: Symbol,
@@ -90,6 +90,9 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentStateBase]):
         """
         Creates a new trading intent.
         """
+
+        if not isinstance(self.state, TradingIntentUninitializedState):
+            raise InvalidStateTransition
 
         return [
             TradingIntentCreatedEvent(
