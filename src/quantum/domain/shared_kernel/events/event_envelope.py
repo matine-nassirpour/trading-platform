@@ -49,6 +49,9 @@ class EventEnvelope(ValueObject):
     def _validate(self) -> None:
         self._validate_types()
 
+        if self.sequence is None:
+            return
+
         if self.sequence.is_initial():
             raise InvariantViolation("EventEnvelope.sequence must be >= 1")
 

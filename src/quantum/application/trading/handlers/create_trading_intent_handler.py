@@ -35,7 +35,7 @@ class CreateTradingIntentHandler(
         aggregate: TradingIntent,
     ) -> tuple[Iterable[BaseEvent], None]:
 
-        domain_events = TradingIntent.create(
+        domain_events = aggregate.create(
             intent_id=command.intent_id,
             symbol=command.symbol,
             side=command.side,
