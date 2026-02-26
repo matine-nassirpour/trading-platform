@@ -1,5 +1,4 @@
 from collections.abc import Mapping
-from types import MappingProxyType
 
 from quantum.domain.shared_kernel.errors.invariants import (
     InvalidStateTransition,
@@ -254,11 +253,8 @@ class Order(EventSourcedAggregateRoot[OrderStateBase]):
     def _handlers(
         cls,
     ) -> Mapping[type[BaseEvent], EventHandler]:
-
-        return MappingProxyType(
-            {
-                OrderCreatedEvent: cls._apply_created,
-                OrderFillRegisteredEvent: cls._apply_fill_registered,
-                OrderCancelledEvent: cls._apply_cancelled,
-            }
-        )
+        return {
+            OrderCreatedEvent: cls._apply_created,
+            OrderFillRegisteredEvent: cls._apply_fill_registered,
+            OrderCancelledEvent: cls._apply_cancelled,
+        }

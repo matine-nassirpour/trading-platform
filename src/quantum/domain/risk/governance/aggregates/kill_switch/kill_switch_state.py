@@ -1,7 +1,4 @@
-from __future__ import annotations
-
 from collections.abc import Mapping
-from types import MappingProxyType
 
 from quantum.domain.risk.events.v1.killswitch_armed_event import KillSwitchArmedEvent
 from quantum.domain.risk.events.v1.killswitch_triggered_event import (
@@ -120,10 +117,7 @@ class KillSwitchState(EventSourcedAggregateRoot[KillSwitchStateBase]):
     def _handlers(
         cls,
     ) -> Mapping[type[BaseEvent], EventHandler]:
-
-        return MappingProxyType(
-            {
-                KillSwitchArmedEvent: cls._apply_armed,
-                KillSwitchTriggeredEvent: cls._apply_triggered,
-            }
-        )
+        return {
+            KillSwitchArmedEvent: cls._apply_armed,
+            KillSwitchTriggeredEvent: cls._apply_triggered,
+        }

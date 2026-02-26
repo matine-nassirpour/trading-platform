@@ -49,14 +49,14 @@ class EventEnvelope(ValueObject):
     def _validate(self) -> None:
         self._validate_types()
 
+        if self.recorded_at.value < self.occurred_at.value:
+            raise InvariantViolation("EventEnvelope.recorded_at must be >= occurred_at")
+
         if self.sequence is None:
             return
 
         if self.sequence.is_initial():
             raise InvariantViolation("EventEnvelope.sequence must be >= 1")
-
-        if self.recorded_at.value < self.occurred_at.value:
-            raise InvariantViolation("EventEnvelope.recorded_at must be >= occurred_at")
 
     def with_sequence(self, sequence: EventSequence) -> EventEnvelope:
         return EventEnvelope(

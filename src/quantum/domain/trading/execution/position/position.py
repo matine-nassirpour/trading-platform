@@ -1,5 +1,4 @@
 from collections.abc import Mapping
-from types import MappingProxyType
 
 from quantum.domain.shared_kernel.errors.invariants import (
     InvalidStateTransition,
@@ -183,10 +182,7 @@ class Position(EventSourcedAggregateRoot[PositionStateBase]):
     def _handlers(
         cls,
     ) -> Mapping[type[BaseEvent], EventHandler]:
-
-        return MappingProxyType(
-            {
-                PositionOpenedEvent: cls._apply_opened,
-                PositionClosedEvent: cls._apply_closed,
-            }
-        )
+        return {
+            PositionOpenedEvent: cls._apply_opened,
+            PositionClosedEvent: cls._apply_closed,
+        }

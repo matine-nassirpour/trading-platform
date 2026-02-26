@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
+from functools import cache
 from types import MappingProxyType
 from typing import Generic, Protocol, Self, TypeVar
 
@@ -68,6 +69,7 @@ class EventSourcedAggregateRoot(Generic[S], ABC):
         raise NotImplementedError
 
     @classmethod
+    @cache
     def handlers(cls) -> Mapping[type[BaseEvent], EventHandler[S, BaseEvent]]:
         """
         Returns an immutable view of handlers (prevents accidental mutation).

@@ -1,6 +1,5 @@
 from collections.abc import Mapping
 from decimal import Decimal
-from types import MappingProxyType
 
 from quantum.domain.risk.breaches.daily_loss_breach import DailyLossBreach
 from quantum.domain.risk.breaches.drawdown_breach import DrawdownBreach
@@ -314,11 +313,8 @@ class RiskState(EventSourcedAggregateRoot[RiskStateBase]):
     def _handlers(
         cls,
     ) -> Mapping[type[BaseEvent], EventHandler]:
-
-        return MappingProxyType(
-            {
-                RiskInitializedEvent: cls._apply_initialized,
-                EquityAdjustedEvent: cls._apply_equity_adjusted,
-                RiskBreachDetectedEvent: cls._apply_breach,
-            }
-        )
+        return {
+            RiskInitializedEvent: cls._apply_initialized,
+            EquityAdjustedEvent: cls._apply_equity_adjusted,
+            RiskBreachDetectedEvent: cls._apply_breach,
+        }

@@ -1,5 +1,4 @@
 from collections.abc import Mapping
-from types import MappingProxyType
 
 from quantum.domain.decision.context.trading_context import TradingContext
 from quantum.domain.decision.events.v1.decision_authorized_event import (
@@ -316,11 +315,9 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentStateBase]):
     def _handlers(
         cls,
     ) -> Mapping[type[BaseEvent], EventHandler]:
-        return MappingProxyType(
-            {
-                TradingIntentCreatedEvent: cls._apply_created,
-                DecisionAuthorizedEvent: cls._apply_authorized,
-                DecisionRejectedEvent: cls._apply_rejected,
-                CapitalAllocatedEvent: cls._apply_capital_allocated,
-            }
-        )
+        return {
+            TradingIntentCreatedEvent: cls._apply_created,
+            DecisionAuthorizedEvent: cls._apply_authorized,
+            DecisionRejectedEvent: cls._apply_rejected,
+            CapitalAllocatedEvent: cls._apply_capital_allocated,
+        }
