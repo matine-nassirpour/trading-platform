@@ -27,9 +27,48 @@ class OrderInitializedState(OrderStateBase):
 
     status: OrderStatus
 
+    def _validate_types(self) -> None:
+        if not isinstance(self.order_id, OrderId):
+            raise InvariantViolation("OrderInitializedState.order_id invalid")
+
+        if not isinstance(self.symbol, Symbol):
+            raise InvariantViolation("OrderInitializedState.symbol invalid")
+
+        if not isinstance(self.order_type, OrderType):
+            raise InvariantViolation("OrderInitializedState.order_type invalid")
+
+        if not isinstance(self.side, PositionSide):
+            raise InvariantViolation("OrderInitializedState.side invalid")
+
+        if not isinstance(self.requested_volume, PositiveVolume):
+            raise InvariantViolation("OrderInitializedState.requested_volume invalid")
+
+        if not isinstance(self.filled_volume, NonNegativeVolume):
+            raise InvariantViolation("OrderInitializedState.filled_volume invalid")
+
+        if not isinstance(self.status, OrderStatus):
+            raise InvariantViolation("OrderInitializedState.status invalid")
+
+    def _assert_status_consistency(self) -> None:
+        if (
+            self.status.is_filled()
+            and self.filled_volume.value != self.requested_volume.value
+        ):
+            raise InvariantViolation("Filled order must be fully filled")
+
+        if (
+            self.status.is_cancelled()
+            and self.filled_volume.value == self.requested_volume.value
+        ):
+            raise InvariantViolation("Cancelled order cannot be fully filled")
+
     def _validate(self):
         if self.last_sequence.is_initial():
             raise InvariantViolation("Initialized order cannot be initial")
 
+        self._validate_types()
+
         if self.filled_volume.value > self.requested_volume.value:
             raise InvariantViolation("Overfill")
+
+        self._assert_status_consistency()
