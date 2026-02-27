@@ -5,6 +5,7 @@ from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
 from quantum.domain.shared_kernel.events.event_id import EventId
 from quantum.domain.shared_kernel.events.event_metadata import EventMetadata
 from quantum.domain.shared_kernel.events.event_sequence import EventSequence
+from quantum.domain.shared_kernel.identifiers.aggregate_id import AggregateId
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
 
@@ -17,6 +18,7 @@ class PersistedEventEnvelope(ValueObject):
     This represents an event that is OFFICIALLY RECORDED in the event stream.
     """
 
+    aggregate_id: AggregateId
     id: EventId
 
     sequence: EventSequence
@@ -28,6 +30,9 @@ class PersistedEventEnvelope(ValueObject):
     metadata: EventMetadata
 
     def _validate_types(self) -> None:
+        if not isinstance(self.aggregate_id, AggregateId):
+            raise InvariantViolation("AggregateId is required")
+
         if not isinstance(self.id, EventId):
             raise InvariantViolation("EventId is required")
 

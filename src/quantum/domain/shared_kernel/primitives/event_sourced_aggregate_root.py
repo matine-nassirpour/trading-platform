@@ -11,6 +11,7 @@ from quantum.domain.shared_kernel.events.event_sequence import EventSequence
 from quantum.domain.shared_kernel.events.persisted_event_envelope import (
     PersistedEventEnvelope,
 )
+from quantum.domain.shared_kernel.identifiers.aggregate_id import AggregateId
 from quantum.domain.shared_kernel.primitives.aggregate_state import AggregateState
 
 S = TypeVar("S", bound=AggregateState)
@@ -48,6 +49,16 @@ class EventSourcedAggregateRoot(Generic[S], ABC):
             raise InvariantViolation(
                 f"{self.__class__.__name__} requires AggregateState"
             )
+
+    # --- Properties -----------------------------------------------------------
+
+    @property
+    @abstractmethod
+    def aggregate_id(self) -> AggregateId:
+        """
+        Must return aggregate identity.
+        """
+        raise NotImplementedError
 
     @property
     def state(self) -> S:
@@ -114,6 +125,9 @@ class EventSourcedAggregateRoot(Generic[S], ABC):
 
         if not isinstance(envelope, PersistedEventEnvelope):
             raise InvariantViolation("apply() requires PersistedEventEnvelope")
+
+        if envelope.aggregate_id != self.aggregate_id:
+            raise InvariantViolation("Event aggregate_id mismatch")
 
         event = envelope.event
         handler = self.handlers().get(type(event))
