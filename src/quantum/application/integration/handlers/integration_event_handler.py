@@ -6,7 +6,9 @@ from quantum.application.ports.outbound.messaging.integration_event_bus import (
 from quantum.application.trading.integration_events.base.integration_event_mapper import (
     IntegrationEventMapper,
 )
-from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
+from quantum.domain.shared_kernel.events.persisted_event_envelope import (
+    PersistedEventEnvelope,
+)
 
 
 class IntegrationEventHandler(ABC):
@@ -25,10 +27,10 @@ class IntegrationEventHandler(ABC):
         self._bus = bus
 
     @abstractmethod
-    def _map(self, domain_envelope: EventEnvelope):
+    def _map(self, domain_envelope: PersistedEventEnvelope):
         raise NotImplementedError
 
-    def handle(self, domain_envelope: EventEnvelope) -> None:
+    def handle(self, domain_envelope: PersistedEventEnvelope) -> None:
 
         integration_event = self._map(domain_envelope)
 

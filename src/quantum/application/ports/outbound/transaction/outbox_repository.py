@@ -2,7 +2,9 @@ from abc import abstractmethod
 from collections.abc import Iterable
 from typing import Protocol, runtime_checkable
 
-from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
+from quantum.domain.shared_kernel.events.persisted_event_envelope import (
+    PersistedEventEnvelope,
+)
 
 
 @runtime_checkable
@@ -12,7 +14,7 @@ class OutboxRepository(Protocol):
     """
 
     @abstractmethod
-    def add(self, envelopes: Iterable[EventEnvelope]) -> None:
+    def add(self, envelopes: Iterable[PersistedEventEnvelope]) -> None:
         """
         Store events to be published after commit.
         Must be transaction-bound.
@@ -20,12 +22,12 @@ class OutboxRepository(Protocol):
         raise NotImplementedError
 
     @abstractmethod
-    def collect_unpublished(self) -> list[EventEnvelope]:
+    def collect_unpublished(self) -> list[PersistedEventEnvelope]:
         """
         Retrieve unpublished events (post-commit).
         """
         raise NotImplementedError
 
     @abstractmethod
-    def mark_as_published(self, envelopes: Iterable[EventEnvelope]) -> None:
+    def mark_as_published(self, envelopes: Iterable[PersistedEventEnvelope]) -> None:
         raise NotImplementedError

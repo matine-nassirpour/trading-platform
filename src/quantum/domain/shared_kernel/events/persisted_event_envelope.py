@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from dataclasses import dataclass
 
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
@@ -12,15 +10,17 @@ from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
 
 
 @dataclass(frozen=True, slots=True)
-class EventEnvelope(ValueObject):
+class PersistedEventEnvelope(ValueObject):
     """
-    Audit-grade domain event envelope.
+    Domain-grade immutable event record.
 
-    Represents the act of recording a Domain Event into an immutable event stream.
+    This represents an event that is OFFICIALLY RECORDED in the event stream.
     """
 
     id: EventId
-    sequence: EventSequence | None
+
+    sequence: EventSequence
+
     occurred_at: EpochMs  # When the business fact occurred
     recorded_at: EpochMs  # When the system persisted the event
 
@@ -31,7 +31,7 @@ class EventEnvelope(ValueObject):
         if not isinstance(self.id, EventId):
             raise InvariantViolation("EventEnvelope requires EventId")
 
-        if self.sequence is not None and not isinstance(self.sequence, EventSequence):
+        if not isinstance(self.sequence, EventSequence):
             raise InvariantViolation("EventEnvelope requires EventSequence")
 
         if not isinstance(self.occurred_at, EpochMs):
@@ -49,21 +49,8 @@ class EventEnvelope(ValueObject):
     def _validate(self) -> None:
         self._validate_types()
 
-        if self.recorded_at.value < self.occurred_at.value:
-            raise InvariantViolation("EventEnvelope.recorded_at must be >= occurred_at")
-
-        if self.sequence is None:
-            return
-
         if self.sequence.is_initial():
             raise InvariantViolation("EventEnvelope.sequence must be >= 1")
 
-    def with_sequence(self, sequence: EventSequence) -> EventEnvelope:
-        return EventEnvelope(
-            id=self.id,
-            sequence=sequence,
-            occurred_at=self.occurred_at,
-            recorded_at=self.recorded_at,
-            event=self.event,
-            metadata=self.metadata,
-        )
+        if self.recorded_at.value < self.occurred_at.value:
+            raise InvariantViolation("EventEnvelope.recorded_at must be >= occurred_at")

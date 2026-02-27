@@ -9,8 +9,10 @@ from quantum.domain.shared_kernel.errors.order_errors import (
     OrderOverfill,
 )
 from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
-from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
 from quantum.domain.shared_kernel.events.event_sequence import EventSequence
+from quantum.domain.shared_kernel.events.persisted_event_envelope import (
+    PersistedEventEnvelope,
+)
 from quantum.domain.shared_kernel.identifiers.intent_id import IntentId
 from quantum.domain.shared_kernel.identifiers.order_id import OrderId
 from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import (
@@ -153,7 +155,7 @@ class Order(EventSourcedAggregateRoot[OrderStateBase]):
     def _apply_created(
         state: OrderStateBase,
         event: BaseEvent,
-        envelope: EventEnvelope,
+        envelope: PersistedEventEnvelope,
     ) -> OrderStateBase:
         """
         Answers the question:
@@ -184,7 +186,7 @@ class Order(EventSourcedAggregateRoot[OrderStateBase]):
     def _apply_fill_registered(
         state: OrderStateBase,
         event: BaseEvent,
-        envelope: EventEnvelope,
+        envelope: PersistedEventEnvelope,
     ) -> OrderStateBase:
         """
         Answers the question:
@@ -222,7 +224,7 @@ class Order(EventSourcedAggregateRoot[OrderStateBase]):
     def _apply_cancelled(
         state: OrderStateBase,
         event: BaseEvent,
-        envelope: EventEnvelope,
+        envelope: PersistedEventEnvelope,
     ) -> OrderStateBase:
         """
         Answers the question:

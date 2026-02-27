@@ -5,8 +5,10 @@ from typing import Generic, TypeVar
 
 from quantum.application.ports.outbound.transaction.event_store import EventStore
 from quantum.application.shared.errors.application_error import ApplicationError
-from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
 from quantum.domain.shared_kernel.events.event_sequence import EventSequence
+from quantum.domain.shared_kernel.events.persisted_event_envelope import (
+    PersistedEventEnvelope,
+)
 from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import (
     EventSourcedAggregateRoot,
 )
@@ -41,7 +43,7 @@ class EventSourcedRepository(Generic[A]):
         Load aggregate from EventStore.
         """
 
-        events: list[EventEnvelope] = self._store.load_stream(stream_id)
+        events: list[PersistedEventEnvelope] = self._store.load_stream(stream_id)
 
         previous = EventSequence.initial()
 
@@ -68,8 +70,8 @@ class EventSourcedRepository(Generic[A]):
         *,
         stream_id: str,
         expected_version: EventSequence,
-        envelopes: Iterable[EventEnvelope],
-    ) -> list[EventEnvelope]:
+        envelopes: Iterable[PersistedEventEnvelope],
+    ) -> list[PersistedEventEnvelope]:
         """
         Persist envelopes atomically.
         """

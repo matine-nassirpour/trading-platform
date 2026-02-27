@@ -3,8 +3,10 @@ from collections.abc import Iterable
 from typing import Generic, TypeVar
 
 from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
-from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
 from quantum.domain.shared_kernel.events.event_sequence import EventSequence
+from quantum.domain.shared_kernel.events.persisted_event_envelope import (
+    PersistedEventEnvelope,
+)
 from quantum.domain.shared_kernel.projection.projection_cursor import ProjectionCursor
 from quantum.domain.shared_kernel.projection.projection_error import ProjectionError
 
@@ -26,7 +28,9 @@ class DomainProjection(ABC, Generic[S]):
     # --- Internal Guarantees --------------------------------------------------
 
     @staticmethod
-    def _assert_sequential(envelope: EventEnvelope, expected: EventSequence) -> None:
+    def _assert_sequential(
+        envelope: PersistedEventEnvelope, expected: EventSequence
+    ) -> None:
         if not isinstance(expected, EventSequence):
             raise ProjectionError("Expected sequence must be an EventSequence")
 
@@ -41,7 +45,7 @@ class DomainProjection(ABC, Generic[S]):
             )
 
     @staticmethod
-    def _advance_cursor(envelope: EventEnvelope) -> ProjectionCursor:
+    def _advance_cursor(envelope: PersistedEventEnvelope) -> ProjectionCursor:
         return ProjectionCursor(
             last_event_id=envelope.id,
             last_sequence=envelope.sequence,
@@ -65,7 +69,9 @@ class DomainProjection(ABC, Generic[S]):
 
     # --- Full Replay ----------------------------------------------------------
 
-    def replay(self, events: Iterable[EventEnvelope]) -> tuple[S, ProjectionCursor]:
+    def replay(
+        self, events: Iterable[PersistedEventEnvelope]
+    ) -> tuple[S, ProjectionCursor]:
         """
         Rebuilds the projection state from genesis by replaying
         the entire event stream.
@@ -93,7 +99,7 @@ class DomainProjection(ABC, Generic[S]):
         *,
         state: S,
         cursor: ProjectionCursor,
-        events: Iterable[EventEnvelope],
+        events: Iterable[PersistedEventEnvelope],
     ) -> tuple[S, ProjectionCursor]:
         """
         Continues a projection from a known (state, cursor) pair.

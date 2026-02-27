@@ -24,8 +24,10 @@ from quantum.domain.shared_kernel.errors.invariants import (
     InvariantViolation,
 )
 from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
-from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
 from quantum.domain.shared_kernel.events.event_sequence import EventSequence
+from quantum.domain.shared_kernel.events.persisted_event_envelope import (
+    PersistedEventEnvelope,
+)
 from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import (
     EventHandler,
     EventSourcedAggregateRoot,
@@ -86,7 +88,7 @@ class KillSwitchState(EventSourcedAggregateRoot[KillSwitchStateBase]):
     def _apply_armed(
         state: KillSwitchStateBase,
         event: BaseEvent,
-        envelope: EventEnvelope,
+        envelope: PersistedEventEnvelope,
     ) -> KillSwitchStateBase:
 
         if not isinstance(state, KillSwitchUninitializedState):
@@ -100,7 +102,7 @@ class KillSwitchState(EventSourcedAggregateRoot[KillSwitchStateBase]):
     def _apply_triggered(
         state: KillSwitchStateBase,
         event: BaseEvent,
-        envelope: EventEnvelope,
+        envelope: PersistedEventEnvelope,
     ) -> KillSwitchStateBase:
 
         if not isinstance(state, KillSwitchArmedState):

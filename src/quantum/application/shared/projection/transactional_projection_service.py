@@ -5,7 +5,9 @@ from quantum.application.ports.outbound.repositories.transactional_projection_re
     TransactionalProjectionRepository,
 )
 from quantum.application.ports.outbound.transaction.unit_of_work import UnitOfWork
-from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
+from quantum.domain.shared_kernel.events.persisted_event_envelope import (
+    PersistedEventEnvelope,
+)
 from quantum.domain.shared_kernel.projection.domain_projection import DomainProjection
 
 S = TypeVar("S")
@@ -31,7 +33,7 @@ class TransactionalProjectionService(Generic[S]):
         self._repository = repository
         self._uow = uow
 
-    def project(self, events: Iterable[EventEnvelope]) -> None:
+    def project(self, events: Iterable[PersistedEventEnvelope]) -> None:
         """
         Apply projection inside current UnitOfWork.
 

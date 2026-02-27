@@ -28,8 +28,10 @@ from quantum.domain.shared_kernel.errors.invariants import (
     InvariantViolation,
 )
 from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
-from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
 from quantum.domain.shared_kernel.events.event_sequence import EventSequence
+from quantum.domain.shared_kernel.events.persisted_event_envelope import (
+    PersistedEventEnvelope,
+)
 from quantum.domain.shared_kernel.identifiers.intent_id import IntentId
 from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import (
     EventHandler,
@@ -204,7 +206,7 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentStateBase]):
     def _apply_created(
         state: TradingIntentStateBase,
         event: BaseEvent,
-        envelope: EventEnvelope,
+        envelope: PersistedEventEnvelope,
     ) -> TradingIntentStateBase:
 
         if not isinstance(state, TradingIntentUninitializedState):
@@ -228,7 +230,7 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentStateBase]):
     def _apply_authorized(
         state: TradingIntentStateBase,
         event: BaseEvent,
-        envelope: EventEnvelope,
+        envelope: PersistedEventEnvelope,
     ) -> TradingIntentStateBase:
 
         if not isinstance(state, TradingIntentInitializedState):
@@ -255,7 +257,7 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentStateBase]):
     def _apply_rejected(
         state: TradingIntentStateBase,
         event: BaseEvent,
-        envelope: EventEnvelope,
+        envelope: PersistedEventEnvelope,
     ) -> TradingIntentStateBase:
 
         if not isinstance(state, TradingIntentInitializedState):
@@ -284,7 +286,7 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentStateBase]):
     def _apply_capital_allocated(
         state: TradingIntentStateBase,
         event: BaseEvent,
-        envelope: EventEnvelope,
+        envelope: PersistedEventEnvelope,
     ) -> TradingIntentStateBase:
         if not isinstance(state, TradingIntentInitializedState):
             raise InvariantViolation("TradingIntent not initialized")

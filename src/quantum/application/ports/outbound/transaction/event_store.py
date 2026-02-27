@@ -2,8 +2,13 @@ from abc import abstractmethod
 from collections.abc import Iterable
 from typing import Protocol, runtime_checkable
 
-from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
+from quantum.application.shared.eventing.pending_event_envelope import (
+    PendingEventEnvelope,
+)
 from quantum.domain.shared_kernel.events.event_sequence import EventSequence
+from quantum.domain.shared_kernel.events.persisted_event_envelope import (
+    PersistedEventEnvelope,
+)
 
 
 @runtime_checkable
@@ -16,9 +21,9 @@ class EventStore(Protocol):
     def append(
         self,
         stream_id: str,
-        events: Iterable[EventEnvelope],
+        events: Iterable[PendingEventEnvelope],
         expected_version: EventSequence,
-    ) -> list[EventEnvelope]:
+    ) -> list[PersistedEventEnvelope]:
         """
         Persist events and assign sequential sequence numbers.
 
@@ -28,7 +33,7 @@ class EventStore(Protocol):
         raise NotImplementedError
 
     @abstractmethod
-    def load_stream(self, stream_id: str) -> list[EventEnvelope]:
+    def load_stream(self, stream_id: str) -> list[PersistedEventEnvelope]:
         raise NotImplementedError
 
     @abstractmethod

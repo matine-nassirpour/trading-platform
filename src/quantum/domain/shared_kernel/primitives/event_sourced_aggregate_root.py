@@ -7,7 +7,9 @@ from typing import Generic, Protocol, Self, TypeVar
 
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
-from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
+from quantum.domain.shared_kernel.events.persisted_event_envelope import (
+    PersistedEventEnvelope,
+)
 from quantum.domain.shared_kernel.primitives.aggregate_state import AggregateState
 
 S = TypeVar("S", bound=AggregateState)
@@ -20,7 +22,7 @@ class EventHandler(Protocol[S, E]):
         (state, event, envelope) -> new_state
     """
 
-    def __call__(self, state: S, event: E, envelope: EventEnvelope) -> S: ...
+    def __call__(self, state: S, event: E, envelope: PersistedEventEnvelope) -> S: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -81,16 +83,13 @@ class EventSourcedAggregateRoot(Generic[S], ABC):
 
     # --- Single-event application (the ONLY semantic gate) --------------------
 
-    def apply(self, envelope: EventEnvelope) -> Self:
+    def apply(self, envelope: PersistedEventEnvelope) -> Self:
         """
         Applies a single EventEnvelope to this aggregate.
 
         This method is the ONLY gateway through which an event may
         affect aggregate state.
         """
-
-        if not isinstance(envelope, EventEnvelope):
-            raise InvariantViolation("apply() requires an EventEnvelope")
 
         event = envelope.event
         handler = self.handlers().get(type(event))
@@ -100,9 +99,6 @@ class EventSourcedAggregateRoot(Generic[S], ABC):
             )
 
         # --- Enforce sequence continuity
-        if envelope.sequence is None:
-            raise InvariantViolation("EventEnvelope.sequence must be assigned")
-
         previous = self._state.last_event_sequence()
         envelope.sequence.assert_is_next_of(previous)
 
@@ -122,7 +118,7 @@ class EventSourcedAggregateRoot(Generic[S], ABC):
     # --- Replay (strictly defined in terms of apply) --------------------------
 
     @classmethod
-    def rehydrate(cls, *, events: Iterable[EventEnvelope]) -> Self:
+    def rehydrate(cls, *, events: Iterable[PersistedEventEnvelope]) -> Self:
         """
         Canonical rebuild from stream.
         """

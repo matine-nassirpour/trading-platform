@@ -25,8 +25,10 @@ from quantum.domain.shared_kernel.errors.invariants import (
     InvariantViolation,
 )
 from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
-from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
 from quantum.domain.shared_kernel.events.event_sequence import EventSequence
+from quantum.domain.shared_kernel.events.persisted_event_envelope import (
+    PersistedEventEnvelope,
+)
 from quantum.domain.shared_kernel.money.daily_loss import DailyLoss
 from quantum.domain.shared_kernel.money.drawdown import Drawdown
 from quantum.domain.shared_kernel.money.equity import Equity
@@ -251,7 +253,7 @@ class RiskState(EventSourcedAggregateRoot[RiskStateBase]):
     def _apply_initialized(
         state: RiskStateBase,
         event: BaseEvent,
-        envelope: EventEnvelope,
+        envelope: PersistedEventEnvelope,
     ) -> RiskStateBase:
 
         if not isinstance(event, RiskInitializedEvent):
@@ -271,7 +273,7 @@ class RiskState(EventSourcedAggregateRoot[RiskStateBase]):
     def _apply_equity_adjusted(
         state: RiskStateBase,
         event: BaseEvent,
-        envelope: EventEnvelope,
+        envelope: PersistedEventEnvelope,
     ) -> RiskStateBase:
 
         if not isinstance(event, EquityAdjustedEvent):
@@ -293,7 +295,7 @@ class RiskState(EventSourcedAggregateRoot[RiskStateBase]):
     def _apply_breach(
         state: RiskStateBase,
         event: BaseEvent,
-        envelope: EventEnvelope,
+        envelope: PersistedEventEnvelope,
     ) -> RiskStateBase:
 
         if not isinstance(event, RiskBreachDetectedEvent):

@@ -5,8 +5,10 @@ from quantum.application.ports.outbound.time.clock import Clock
 from quantum.application.shared.eventing.application_event_context import (
     ApplicationEventContext,
 )
+from quantum.application.shared.eventing.pending_event_envelope import (
+    PendingEventEnvelope,
+)
 from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
-from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
 from quantum.domain.shared_kernel.events.event_metadata import EventMetadata
 
 
@@ -37,14 +39,13 @@ class ApplicationEventEnveloper:
         *,
         events: Iterable[BaseEvent],
         context: ApplicationEventContext,
-    ) -> list[EventEnvelope]:
+    ) -> list[PendingEventEnvelope]:
 
         now = self._clock.now_epoch_ms()
 
         envelopes = [
-            EventEnvelope(
+            PendingEventEnvelope(
                 id=self._ids.new_event_id(),
-                sequence=None,  # CRITICAL: NOT ASSIGNED HERE
                 occurred_at=now,
                 recorded_at=now,
                 event=event,

@@ -8,7 +8,9 @@ from quantum.application.trading.integration_events.base.integration_event_envel
 from quantum.application.trading.integration_events.base.integration_headers import (
     IntegrationHeaders,
 )
-from quantum.domain.shared_kernel.events.event_envelope import EventEnvelope
+from quantum.domain.shared_kernel.events.persisted_event_envelope import (
+    PersistedEventEnvelope,
+)
 
 
 class IntegrationEventMapper:
@@ -22,7 +24,7 @@ class IntegrationEventMapper:
     def map(
         self,
         *,
-        domain_envelope: EventEnvelope,
+        domain_envelope: PersistedEventEnvelope,
         integration_event: IntegrationEvent,
         source: str,
         tenant: str | None = None,
