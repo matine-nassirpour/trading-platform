@@ -13,5 +13,5 @@ class BrokerGateway(Protocol):
         raise NotImplementedError
 
     @abstractmethod
-    def cancel_order(self, order_id: BrokerOrderId) -> None:
+    def cancel_order(self, broker_order_id: BrokerOrderId) -> None:
         raise NotImplementedError

@@ -27,7 +27,7 @@ class RegisterOrderFillHandler(
         )
 
     def _stream_id(self, command: RegisterOrderFillCommand) -> str:
-        return f"order-{command.order_id.value}"
+        return f"order-{command.broker_order_id.value}"
 
     def _execute_domain(
         self,

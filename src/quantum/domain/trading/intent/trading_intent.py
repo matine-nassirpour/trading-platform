@@ -54,7 +54,7 @@ from quantum.domain.trading.intent.trading_intent_uninitialized_state import (
 )
 
 
-class TradingIntent(EventSourcedAggregateRoot[TradingIntentStateBase]):
+class TradingIntent(EventSourcedAggregateRoot[IntentId, TradingIntentStateBase]):
     """
     TradingIntent — Decision Aggregate (PURE DOMAIN)
 
@@ -316,7 +316,7 @@ class TradingIntent(EventSourcedAggregateRoot[TradingIntentStateBase]):
     @classmethod
     def _handlers(
         cls,
-    ) -> Mapping[type[BaseEvent], EventHandler]:
+    ) -> Mapping[type[BaseEvent], EventHandler[TradingIntentStateBase, BaseEvent]]:
         return {
             TradingIntentCreatedEvent: cls._apply_created,
             DecisionAuthorizedEvent: cls._apply_authorized,

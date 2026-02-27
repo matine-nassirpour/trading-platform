@@ -6,4 +6,4 @@ from quantum.domain.shared_kernel.identifiers.broker_order_id import BrokerOrder
 
 @dataclass(frozen=True, slots=True)
 class CancelOrderCommand(BaseCommand):
-    order_id: BrokerOrderId
+    broker_order_id: BrokerOrderId

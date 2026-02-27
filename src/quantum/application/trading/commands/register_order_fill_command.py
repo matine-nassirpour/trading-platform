@@ -7,5 +7,5 @@ from quantum.domain.trading.execution.order.execution_fill import ExecutionFill
 
 @dataclass(frozen=True, slots=True)
 class RegisterOrderFillCommand(BaseCommand):
-    order_id: BrokerOrderId
+    broker_order_id: BrokerOrderId
     fill: ExecutionFill

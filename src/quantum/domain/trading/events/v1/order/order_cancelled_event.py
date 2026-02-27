@@ -10,4 +10,4 @@ class OrderCancelledEvent(FactEvent):
     event_name: ClassVar[str] = "trading.order.cancelled"
     event_version: ClassVar[int] = 1
 
-    order_id: BrokerOrderId
+    broker_order_id: BrokerOrderId

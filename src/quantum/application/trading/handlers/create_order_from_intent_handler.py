@@ -44,7 +44,7 @@ class CreateOrderFromIntentHandler(
 
         domain_events = Order.create(
             intent_id=command.intent_id,
-            order_id=command.order_id,
+            broker_order_id=command.broker_order_id,
             symbol=command.symbol,
             order_type=command.order_type,
             side=command.side,

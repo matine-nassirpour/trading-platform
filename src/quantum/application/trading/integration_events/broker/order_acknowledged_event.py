@@ -21,5 +21,5 @@ class OrderAcknowledgedEvent(IntegrationEvent):
     event_version: ClassVar[int] = 1
 
     intent_id: IntentId
-    order_id: BrokerOrderId
+    broker_order_id: BrokerOrderId
     symbol: Symbol

@@ -1,15 +1,10 @@
-import uuid
-
 from dataclasses import dataclass
 
-from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.primitives.value_object import ValueObject
+from quantum.domain.shared_kernel.identifiers.aggregate_id import AggregateId
 
 
 @dataclass(frozen=True, slots=True)
-class IntentId(ValueObject):
-    value: uuid.UUID
+class IntentId(AggregateId):
+    """Identity of the TradingIntent aggregate (event stream id)."""
 
-    def _validate(self) -> None:
-        if not isinstance(self.value, uuid.UUID):
-            raise InvariantViolation("IntentId must be a UUID")
+    pass

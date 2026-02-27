@@ -80,7 +80,7 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
     def create(
         *,
         intent_id: IntentId,
-        order_id: BrokerOrderId,
+        broker_order_id: BrokerOrderId,
         symbol: Symbol,
         order_type: OrderType,
         side: PositionSide,
@@ -96,7 +96,7 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
         return [
             OrderCreatedEvent(
                 intent_id=intent_id,
-                order_id=order_id,
+                broker_order_id=broker_order_id,
                 symbol=symbol,
                 order_type=order_type,
                 side=side,
@@ -129,7 +129,7 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
 
         return [
             OrderFillRegisteredEvent(
-                order_id=state.order_id,
+                broker_order_id=state.broker_order_id,
                 fill=fill,
             )
         ]
@@ -154,7 +154,7 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
 
         return [
             OrderCancelledEvent(
-                order_id=state.order_id,
+                broker_order_id=state.broker_order_id,
             )
         ]
 
@@ -180,14 +180,9 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
         if not isinstance(event, OrderCreatedEvent):
             raise InvariantViolation("Invalid event type")
 
-        if envelope.aggregate_id != event.order_id:
-            raise InvariantViolation(
-                "OrderCreatedEvent.order_id mismatch with envelope.aggregate_id"
-            )
-
         return OrderInitializedState(
             last_sequence=envelope.sequence,
-            order_id=event.order_id,
+            broker_order_id=event.broker_order_id,
             symbol=event.symbol,
             order_type=event.order_type,
             side=event.side,
@@ -235,7 +230,7 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
 
         return OrderInitializedState(
             last_sequence=envelope.sequence,
-            order_id=state.order_id,
+            broker_order_id=state.broker_order_id,
             symbol=state.symbol,
             order_type=state.order_type,
             side=state.side,
@@ -269,7 +264,7 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
 
         return OrderInitializedState(
             last_sequence=envelope.sequence,
-            order_id=state.order_id,
+            broker_order_id=state.broker_order_id,
             symbol=state.symbol,
             order_type=state.order_type,
             side=state.side,

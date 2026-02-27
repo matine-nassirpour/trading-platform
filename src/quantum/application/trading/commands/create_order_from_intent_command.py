@@ -12,7 +12,7 @@ from quantum.domain.trading.execution.order.position_side import PositionSide
 @dataclass(frozen=True, slots=True)
 class CreateOrderFromIntentCommand(BaseCommand):
     intent_id: IntentId
-    order_id: BrokerOrderId
+    broker_order_id: BrokerOrderId
     symbol: Symbol
     order_type: OrderType
     side: PositionSide

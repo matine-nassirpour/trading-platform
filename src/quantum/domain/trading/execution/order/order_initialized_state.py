@@ -16,7 +16,7 @@ from quantum.domain.trading.execution.order.position_side import PositionSide
 @dataclass(frozen=True, slots=True)
 class OrderInitializedState(OrderStateBase):
 
-    order_id: BrokerOrderId
+    broker_order_id: BrokerOrderId
     symbol: Symbol
 
     order_type: OrderType
@@ -28,8 +28,8 @@ class OrderInitializedState(OrderStateBase):
     status: OrderStatus
 
     def _validate_types(self) -> None:
-        if not isinstance(self.order_id, BrokerOrderId):
-            raise InvariantViolation("OrderInitializedState.order_id invalid")
+        if not isinstance(self.broker_order_id, BrokerOrderId):
+            raise InvariantViolation("OrderInitializedState.broker_order_id invalid")
 
         if not isinstance(self.symbol, Symbol):
             raise InvariantViolation("OrderInitializedState.symbol invalid")

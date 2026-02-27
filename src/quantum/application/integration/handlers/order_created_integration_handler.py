@@ -21,6 +21,6 @@ class OrderCreatedIntegrationHandler(IntegrationEventHandler):
 
         return OrderAcknowledgedEvent(
             intent_id=event.intent_id,
-            order_id=event.order_id,
+            broker_order_id=event.broker_order_id,
             symbol=event.symbol,
         )

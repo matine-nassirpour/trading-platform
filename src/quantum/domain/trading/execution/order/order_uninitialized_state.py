@@ -7,6 +7,6 @@ from quantum.domain.trading.execution.order.order_state_base import OrderStateBa
 @dataclass(frozen=True, slots=True)
 class OrderUninitializedState(OrderStateBase):
 
-    def _validate(self):
+    def _validate(self) -> None:
         if not self.last_sequence.is_initial():
             raise InvariantViolation("Uninitialized Order must have initial sequence")
