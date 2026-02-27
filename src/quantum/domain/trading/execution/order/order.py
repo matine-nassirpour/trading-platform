@@ -65,6 +65,15 @@ class Order(EventSourcedAggregateRoot[OrderStateBase]):
             last_sequence=EventSequence.initial(),
         )
 
+    @property
+    def aggregate_id(self):
+        state = self.state
+
+        if isinstance(state, OrderInitializedState):
+            return state.order_id
+
+        raise InvariantViolation("Aggregate not initialized")
+
     # --- Factory --------------------------------------------------------------
 
     @staticmethod
@@ -200,6 +209,9 @@ class Order(EventSourcedAggregateRoot[OrderStateBase]):
 
         if not isinstance(event, OrderFillRegisteredEvent):
             raise InvariantViolation("Invalid event type")
+
+        if event.fill.volume.value <= 0:
+            raise InvariantViolation("Invalid fill volume")
 
         new_filled = state.filled_volume.value + event.fill.volume.value
 

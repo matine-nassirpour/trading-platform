@@ -56,6 +56,15 @@ class OrderInitializedState(OrderStateBase):
         ):
             raise InvariantViolation("Filled order must be fully filled")
 
+        if self.status.is_partially_filled():
+            if self.filled_volume.value == 0:
+                raise InvariantViolation("Partially filled order cannot be 0")
+
+            if self.filled_volume.value == self.requested_volume.value:
+                raise InvariantViolation(
+                    "Partially filled order cannot be fully filled"
+                )
+
         if (
             self.status.is_cancelled()
             and self.filled_volume.value == self.requested_volume.value

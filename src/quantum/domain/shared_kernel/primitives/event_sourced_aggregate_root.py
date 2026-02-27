@@ -50,6 +50,9 @@ class EventSourcedAggregateRoot(Generic[S], ABC):
                 f"{self.__class__.__name__} requires AggregateState"
             )
 
+        if self.aggregate_id is None:
+            raise InvariantViolation("AggregateId cannot be None")
+
     # --- Properties -----------------------------------------------------------
 
     @property
@@ -169,6 +172,7 @@ class EventSourcedAggregateRoot(Generic[S], ABC):
         - Gap detection
         - Identity integrity
         """
+        expected_id = None
 
         if events is None:
             raise InvariantViolation("events cannot be None")
@@ -181,6 +185,12 @@ class EventSourcedAggregateRoot(Generic[S], ABC):
         seen_event_ids: set[EventId] = set()
 
         for envelope in ordered:
+            if expected_id is None:
+                expected_id = envelope.aggregate_id
+
+            elif envelope.aggregate_id != expected_id:
+                raise InvariantViolation("Mixed aggregate stream")
+
             if envelope.id in seen_event_ids:
                 raise InvariantViolation(f"Duplicate EventId detected: {envelope.id}")
 
