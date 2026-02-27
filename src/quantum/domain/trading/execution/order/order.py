@@ -44,7 +44,7 @@ from quantum.domain.trading.execution.order.order_uninitialized_state import (
 from quantum.domain.trading.execution.order.position_side import PositionSide
 
 
-class Order(EventSourcedAggregateRoot[OrderStateBase]):
+class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
     """
     Event-sourced Order aggregate.
 
@@ -64,15 +64,6 @@ class Order(EventSourcedAggregateRoot[OrderStateBase]):
         return OrderUninitializedState(
             last_sequence=EventSequence.initial(),
         )
-
-    @property
-    def aggregate_id(self):
-        state = self.state
-
-        if isinstance(state, OrderInitializedState):
-            return state.order_id
-
-        raise InvariantViolation("Aggregate not initialized")
 
     # --- Factory --------------------------------------------------------------
 
@@ -180,6 +171,11 @@ class Order(EventSourcedAggregateRoot[OrderStateBase]):
         if not isinstance(event, OrderCreatedEvent):
             raise InvariantViolation("Invalid event type")
 
+        if envelope.aggregate_id != event.order_id:
+            raise InvariantViolation(
+                "OrderCreatedEvent.order_id mismatch with envelope.aggregate_id"
+            )
+
         return OrderInitializedState(
             last_sequence=envelope.sequence,
             order_id=event.order_id,
@@ -210,10 +206,17 @@ class Order(EventSourcedAggregateRoot[OrderStateBase]):
         if not isinstance(event, OrderFillRegisteredEvent):
             raise InvariantViolation("Invalid event type")
 
+        # Industry-grade ES rule: handlers must also enforce replay integrity.
+        if not state.status.is_fillable():
+            raise InvariantViolation("Illegal fill event: order is not fillable")
+
         if event.fill.volume.value <= 0:
             raise InvariantViolation("Invalid fill volume")
 
         new_filled = state.filled_volume.value + event.fill.volume.value
+
+        if new_filled > state.requested_volume.value:
+            raise InvariantViolation("Illegal fill event: overfill")
 
         new_status = (
             OrderStatus.filled()
@@ -251,6 +254,9 @@ class Order(EventSourcedAggregateRoot[OrderStateBase]):
 
         if not isinstance(event, OrderCancelledEvent):
             raise InvariantViolation("Invalid event type")
+
+        if state.status.is_terminal():
+            raise InvariantViolation("Illegal cancel event: order already terminal")
 
         return OrderInitializedState(
             last_sequence=envelope.sequence,

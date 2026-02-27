@@ -15,6 +15,7 @@ from quantum.domain.shared_kernel.identifiers.aggregate_id import AggregateId
 from quantum.domain.shared_kernel.primitives.aggregate_state import AggregateState
 
 S = TypeVar("S", bound=AggregateState)
+ID = TypeVar("ID", bound=AggregateId)
 E = TypeVar("E", bound=BaseEvent, contravariant=True)
 
 
@@ -28,7 +29,7 @@ class EventHandler(Protocol[S, E]):
 
 
 @dataclass(frozen=True, slots=True)
-class EventSourcedAggregateRoot(Generic[S], ABC):
+class EventSourcedAggregateRoot(Generic[ID, S], ABC):
     """
     Canonical base class for Event-Sourced Aggregates.
 
@@ -42,26 +43,28 @@ class EventSourcedAggregateRoot(Generic[S], ABC):
     - No hidden mutation
     """
 
+    _aggregate_id: Final[ID]
     _state: Final[S]
 
     def __post_init__(self) -> None:
+        if not isinstance(self._aggregate_id, AggregateId):
+            raise InvariantViolation(
+                f"{self.__class__.__name__} requires AggregateId-compatible identity"
+            )
+
         if not isinstance(self._state, AggregateState):
             raise InvariantViolation(
                 f"{self.__class__.__name__} requires AggregateState"
             )
 
-        if self.aggregate_id is None:
-            raise InvariantViolation("AggregateId cannot be None")
-
     # --- Properties -----------------------------------------------------------
 
     @property
-    @abstractmethod
-    def aggregate_id(self) -> AggregateId:
+    def aggregate_id(self) -> ID:
         """
-        Must return aggregate identity.
+        Root-owned identity. Must be available even for uninitialized state.
         """
-        raise NotImplementedError
+        return self._aggregate_id
 
     @property
     def state(self) -> S:
@@ -129,6 +132,7 @@ class EventSourcedAggregateRoot(Generic[S], ABC):
         if not isinstance(envelope, PersistedEventEnvelope):
             raise InvariantViolation("apply() requires PersistedEventEnvelope")
 
+        # Identity must always be enforceable (root-owned).
         if envelope.aggregate_id != self.aggregate_id:
             raise InvariantViolation("Event aggregate_id mismatch")
 
@@ -156,48 +160,78 @@ class EventSourcedAggregateRoot(Generic[S], ABC):
                 "Handler must advance sequence to envelope.sequence"
             )
 
-        return self.__class__(new_state)
+        return self.__class__(self._aggregate_id, new_state)
 
     # --- Replay (strictly defined in terms of apply) --------------------------
 
     @classmethod
-    def rehydrate(cls, *, events: Iterable[PersistedEventEnvelope]) -> Self:
+    def _validate_rehydrate_input(
+        cls,
+        *,
+        events: list[PersistedEventEnvelope],
+        aggregate_id: ID | None,
+    ) -> ID:
+        for i in range(1, len(events)):
+            if events[i].sequence.value <= events[i - 1].sequence.value:
+                raise InvariantViolation(
+                    "Event stream is not strictly ordered by sequence"
+                )
+
+        expected_id = events[0].aggregate_id
+
+        if aggregate_id is not None and aggregate_id != expected_id:
+            raise InvariantViolation("aggregate_id parameter mismatch with stream id")
+
+        return expected_id
+
+    @classmethod
+    def rehydrate(
+        cls,
+        *,
+        events: Iterable[PersistedEventEnvelope],
+        aggregate_id: ID | None = None,
+    ) -> Self:
         """
         Deterministic rebuild from persisted event stream.
 
         Guarantees:
-
         - Sorted replay
         - Duplicate detection
         - Gap detection
         - Identity integrity
         """
-        expected_id = None
 
         if events is None:
             raise InvariantViolation("events cannot be None")
 
-        ordered = sorted(events, key=lambda e: e.sequence.value)
+        # Materialize once (allows multi-pass checks, strict behavior).
+        materialized = list(events)
 
-        aggregate = cls(cls.empty_state())
+        if len(materialized) == 0:
+            if aggregate_id is None:
+                raise InvariantViolation(
+                    "Cannot rehydrate from empty event stream without aggregate_id"
+                )
+            return cls(aggregate_id, cls.empty_state())
 
-        last_sequence = aggregate.state.last_event_sequence()
+        expected_id = cls._validate_rehydrate_input(
+            events=materialized,
+            aggregate_id=aggregate_id,
+        )
+
+        aggregate = cls(expected_id, cls.empty_state())
+
         seen_event_ids: set[EventId] = set()
 
-        for envelope in ordered:
-            if expected_id is None:
-                expected_id = envelope.aggregate_id
-
-            elif envelope.aggregate_id != expected_id:
+        for envelope in materialized:
+            if envelope.aggregate_id != expected_id:
                 raise InvariantViolation("Mixed aggregate stream")
 
             if envelope.id in seen_event_ids:
                 raise InvariantViolation(f"Duplicate EventId detected: {envelope.id}")
 
             seen_event_ids.add(envelope.id)
-            envelope.sequence.assert_is_next_of(last_sequence)
             aggregate = aggregate.apply(envelope)
-            last_sequence = envelope.sequence
 
         return aggregate
 
