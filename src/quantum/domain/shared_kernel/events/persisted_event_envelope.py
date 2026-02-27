@@ -29,22 +29,22 @@ class PersistedEventEnvelope(ValueObject):
 
     def _validate_types(self) -> None:
         if not isinstance(self.id, EventId):
-            raise InvariantViolation("EventEnvelope requires EventId")
+            raise InvariantViolation("EventId is required")
 
         if not isinstance(self.sequence, EventSequence):
-            raise InvariantViolation("EventEnvelope requires EventSequence")
+            raise InvariantViolation("EventSequence is required")
 
         if not isinstance(self.occurred_at, EpochMs):
-            raise InvariantViolation("EventEnvelope requires occurred_at: EpochMs")
+            raise InvariantViolation("EpochMs is required")
 
         if not isinstance(self.recorded_at, EpochMs):
-            raise InvariantViolation("EventEnvelope requires recorded_at: EpochMs")
+            raise InvariantViolation("EpochMs is required")
 
         if not isinstance(self.event, BaseEvent):
-            raise InvariantViolation("EventEnvelope requires BaseEvent")
+            raise InvariantViolation("BaseEvent is required")
 
         if not isinstance(self.metadata, EventMetadata):
-            raise InvariantViolation("EventEnvelope requires EventMetadata")
+            raise InvariantViolation("EventMetadata is required")
 
     def _validate(self) -> None:
         self._validate_types()
