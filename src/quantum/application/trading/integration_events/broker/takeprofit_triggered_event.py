@@ -4,8 +4,8 @@ from typing import ClassVar
 from quantum.application.trading.integration_events.base.integration_event import (
     IntegrationEvent,
 )
+from quantum.domain.shared_kernel.identifiers.broker_order_id import BrokerOrderId
 from quantum.domain.shared_kernel.identifiers.intent_id import IntentId
-from quantum.domain.shared_kernel.identifiers.order_id import OrderId
 from quantum.domain.shared_kernel.identifiers.position_id import PositionId
 from quantum.domain.shared_kernel.value_objects.price import Price
 from quantum.domain.shared_kernel.value_objects.symbol import Symbol
@@ -27,7 +27,7 @@ class TakeProfitTriggeredEvent(IntegrationEvent):
     event_version: ClassVar[int] = 1
 
     intent_id: IntentId
-    order_id: OrderId
+    order_id: BrokerOrderId
     deal_id: DealId
     position_id: PositionId
     symbol: Symbol

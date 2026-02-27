@@ -3,8 +3,8 @@ from typing import ClassVar
 
 from quantum.domain.market.value_objects.reference_price import ReferencePrice
 from quantum.domain.shared_kernel.events.base.fact_event import FactEvent
+from quantum.domain.shared_kernel.identifiers.broker_order_id import BrokerOrderId
 from quantum.domain.shared_kernel.identifiers.intent_id import IntentId
-from quantum.domain.shared_kernel.identifiers.order_id import OrderId
 from quantum.domain.shared_kernel.value_objects.price import Price
 from quantum.domain.shared_kernel.value_objects.symbol import Symbol
 from quantum.domain.shared_kernel.value_objects.volume import PositiveVolume
@@ -27,7 +27,7 @@ class OrderCreatedEvent(FactEvent):
     event_version: ClassVar[int] = 1
 
     intent_id: IntentId
-    order_id: OrderId
+    order_id: BrokerOrderId
     symbol: Symbol
 
     order_type: OrderType

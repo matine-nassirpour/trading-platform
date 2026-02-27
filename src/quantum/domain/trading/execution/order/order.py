@@ -1,4 +1,5 @@
 from collections.abc import Mapping
+from dataclasses import dataclass
 
 from quantum.domain.shared_kernel.errors.invariants import (
     InvalidStateTransition,
@@ -13,8 +14,9 @@ from quantum.domain.shared_kernel.events.event_sequence import EventSequence
 from quantum.domain.shared_kernel.events.persisted_event_envelope import (
     PersistedEventEnvelope,
 )
+from quantum.domain.shared_kernel.identifiers.aggregate_id import AggregateId
+from quantum.domain.shared_kernel.identifiers.broker_order_id import BrokerOrderId
 from quantum.domain.shared_kernel.identifiers.intent_id import IntentId
-from quantum.domain.shared_kernel.identifiers.order_id import OrderId
 from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import (
     EventHandler,
     EventSourcedAggregateRoot,
@@ -44,6 +46,13 @@ from quantum.domain.trading.execution.order.order_uninitialized_state import (
 from quantum.domain.trading.execution.order.position_side import PositionSide
 
 
+@dataclass(frozen=True, slots=True)
+class OrderId(AggregateId):
+    """Identity of the Order aggregate (event stream id)."""
+
+    pass
+
+
 class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
     """
     Event-sourced Order aggregate.
@@ -71,7 +80,7 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
     def create(
         *,
         intent_id: IntentId,
-        order_id: OrderId,
+        order_id: BrokerOrderId,
         symbol: Symbol,
         order_type: OrderType,
         side: PositionSide,

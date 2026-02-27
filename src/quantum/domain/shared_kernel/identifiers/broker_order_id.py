@@ -5,7 +5,7 @@ from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 
 
 @dataclass(frozen=True, slots=True)
-class OrderId(ValueObject):
+class BrokerOrderId(ValueObject):
     value: int
 
     def _validate(self) -> None:

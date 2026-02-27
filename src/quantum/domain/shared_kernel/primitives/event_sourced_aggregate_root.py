@@ -195,7 +195,7 @@ class EventSourcedAggregateRoot(Generic[ID, S], ABC):
         Deterministic rebuild from persisted event stream.
 
         Guarantees:
-        - Sorted replay
+        - Order must be strictly increasing by sequence
         - Duplicate detection
         - Gap detection
         - Identity integrity

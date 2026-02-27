@@ -2,8 +2,8 @@ from typing import Protocol, runtime_checkable
 
 from quantum.domain.shared_kernel.events.correlation_id import CorrelationId
 from quantum.domain.shared_kernel.events.event_id import EventId
+from quantum.domain.shared_kernel.identifiers.broker_order_id import BrokerOrderId
 from quantum.domain.shared_kernel.identifiers.intent_id import IntentId
-from quantum.domain.shared_kernel.identifiers.order_id import OrderId
 from quantum.domain.shared_kernel.identifiers.position_id import PositionId
 from quantum.domain.trading.execution.order.execution_id import ExecutionId
 
@@ -19,7 +19,7 @@ class IdGenerator(Protocol):
     def new_intent_id(self) -> IntentId:
         raise NotImplementedError
 
-    def new_order_id(self) -> OrderId:
+    def new_order_id(self) -> BrokerOrderId:
         raise NotImplementedError
 
     def new_position_id(self) -> PositionId:

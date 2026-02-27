@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.identifiers.order_id import OrderId
+from quantum.domain.shared_kernel.identifiers.broker_order_id import BrokerOrderId
 from quantum.domain.shared_kernel.value_objects.symbol import Symbol
 from quantum.domain.shared_kernel.value_objects.volume import (
     NonNegativeVolume,
@@ -16,7 +16,7 @@ from quantum.domain.trading.execution.order.position_side import PositionSide
 @dataclass(frozen=True, slots=True)
 class OrderInitializedState(OrderStateBase):
 
-    order_id: OrderId
+    order_id: BrokerOrderId
     symbol: Symbol
 
     order_type: OrderType
@@ -28,7 +28,7 @@ class OrderInitializedState(OrderStateBase):
     status: OrderStatus
 
     def _validate_types(self) -> None:
-        if not isinstance(self.order_id, OrderId):
+        if not isinstance(self.order_id, BrokerOrderId):
             raise InvariantViolation("OrderInitializedState.order_id invalid")
 
         if not isinstance(self.symbol, Symbol):
