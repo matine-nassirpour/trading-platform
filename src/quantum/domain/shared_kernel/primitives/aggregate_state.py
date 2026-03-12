@@ -23,8 +23,5 @@ class AggregateState(_ValidatedFrozenDataclass, ABC):
     def last_event_sequence(self) -> EventSequence:
         """
         Returns the last applied EventSequence for this state.
-
-        Semantically, this is a state attribute exposed through an abstract
-        property contract, not a behavior.
         """
         raise NotImplementedError

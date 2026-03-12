@@ -4,8 +4,8 @@ from typing import Generic, TypeVar
 
 from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
 from quantum.domain.shared_kernel.events.event_sequence import EventSequence
-from quantum.domain.shared_kernel.events.persisted_event_envelope import (
-    PersistedEventEnvelope,
+from quantum.domain.shared_kernel.events.recorded_event_envelope import (
+    RecordedEventEnvelope,
 )
 from quantum.domain.shared_kernel.projection.projection_cursor import ProjectionCursor
 from quantum.domain.shared_kernel.projection.projection_error import ProjectionError
@@ -29,7 +29,7 @@ class DomainProjection(ABC, Generic[S]):
 
     @staticmethod
     def _assert_sequential(
-        envelope: PersistedEventEnvelope, expected: EventSequence
+        envelope: RecordedEventEnvelope, expected: EventSequence
     ) -> None:
         if not isinstance(expected, EventSequence):
             raise ProjectionError("Expected sequence must be an EventSequence")
@@ -45,7 +45,7 @@ class DomainProjection(ABC, Generic[S]):
             )
 
     @staticmethod
-    def _advance_cursor(envelope: PersistedEventEnvelope) -> ProjectionCursor:
+    def _advance_cursor(envelope: RecordedEventEnvelope) -> ProjectionCursor:
         return ProjectionCursor(
             last_event_id=envelope.id,
             last_sequence=envelope.sequence,
@@ -70,7 +70,7 @@ class DomainProjection(ABC, Generic[S]):
     # --- Full Replay ----------------------------------------------------------
 
     def replay(
-        self, events: Iterable[PersistedEventEnvelope]
+        self, events: Iterable[RecordedEventEnvelope]
     ) -> tuple[S, ProjectionCursor]:
         """
         Rebuilds the projection state from genesis by replaying
@@ -99,7 +99,7 @@ class DomainProjection(ABC, Generic[S]):
         *,
         state: S,
         cursor: ProjectionCursor,
-        events: Iterable[PersistedEventEnvelope],
+        events: Iterable[RecordedEventEnvelope],
     ) -> tuple[S, ProjectionCursor]:
         """
         Continues a projection from a known (state, cursor) pair.

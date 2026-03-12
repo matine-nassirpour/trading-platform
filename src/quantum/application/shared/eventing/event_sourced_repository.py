@@ -5,8 +5,8 @@ from quantum.application.ports.outbound.transaction.event_store import EventStor
 from quantum.application.shared.errors.application_error import ApplicationError
 from quantum.application.shared.eventing.stream_name_resolver import StreamNameResolver
 from quantum.domain.shared_kernel.events.event_sequence import EventSequence
-from quantum.domain.shared_kernel.events.persisted_event_envelope import (
-    PersistedEventEnvelope,
+from quantum.domain.shared_kernel.events.recorded_event_envelope import (
+    RecordedEventEnvelope,
 )
 from quantum.domain.shared_kernel.identifiers.aggregate_id import AggregateId
 from quantum.domain.shared_kernel.primitives.aggregate_state import AggregateState
@@ -53,7 +53,7 @@ class EventSourcedRepository(Generic[ID, S, A]):
             raise ApplicationError("load() requires a typed AggregateId")
 
         stream_id = self._stream_resolver.resolve(aggregate_id)
-        events: list[PersistedEventEnvelope] = self._store.load_stream(stream_id)
+        events: list[RecordedEventEnvelope] = self._store.load_stream(stream_id)
 
         previous = EventSequence.initial()
 
@@ -87,8 +87,8 @@ class EventSourcedRepository(Generic[ID, S, A]):
         *,
         aggregate_id: ID,
         expected_version: EventSequence,
-        envelopes: Sequence[PersistedEventEnvelope],
-    ) -> list[PersistedEventEnvelope]:
+        envelopes: Sequence[RecordedEventEnvelope],
+    ) -> list[RecordedEventEnvelope]:
         """
         Persist already-materialized envelopes atomically.
         """

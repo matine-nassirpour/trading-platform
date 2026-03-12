@@ -3,11 +3,11 @@ from collections.abc import Callable
 from typing import Protocol, runtime_checkable
 
 from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
-from quantum.domain.shared_kernel.events.persisted_event_envelope import (
-    PersistedEventEnvelope,
+from quantum.domain.shared_kernel.events.recorded_event_envelope import (
+    RecordedEventEnvelope,
 )
 
-EventEnvelopeHandler = Callable[[PersistedEventEnvelope], None]
+EventEnvelopeHandler = Callable[[RecordedEventEnvelope], None]
 
 
 @runtime_checkable
@@ -34,7 +34,7 @@ class DomainEventBus(Protocol):
     @abstractmethod
     def publish(
         self,
-        events: list[PersistedEventEnvelope],
+        events: list[RecordedEventEnvelope],
     ) -> None:
         """
         Publish events to the bus.

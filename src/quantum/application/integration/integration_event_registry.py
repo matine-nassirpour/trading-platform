@@ -4,8 +4,8 @@ from quantum.application.integration.handlers.integration_event_handler import (
     IntegrationEventHandler,
 )
 from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
-from quantum.domain.shared_kernel.events.persisted_event_envelope import (
-    PersistedEventEnvelope,
+from quantum.domain.shared_kernel.events.recorded_event_envelope import (
+    RecordedEventEnvelope,
 )
 
 
@@ -27,7 +27,7 @@ class IntegrationEventRegistry:
 
         self._handlers[event_type].append(handler)
 
-    def dispatch(self, envelope: PersistedEventEnvelope) -> None:
+    def dispatch(self, envelope: RecordedEventEnvelope) -> None:
 
         handlers = self._handlers.get(type(envelope.event), [])
 

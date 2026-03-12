@@ -7,8 +7,8 @@ from quantum.domain.shared_kernel.errors.invariants import (
 from quantum.domain.shared_kernel.errors.position_errors import PositionAlreadyClosed
 from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
 from quantum.domain.shared_kernel.events.event_sequence import EventSequence
-from quantum.domain.shared_kernel.events.persisted_event_envelope import (
-    PersistedEventEnvelope,
+from quantum.domain.shared_kernel.events.recorded_event_envelope import (
+    RecordedEventEnvelope,
 )
 from quantum.domain.shared_kernel.identifiers.position_id import PositionId
 from quantum.domain.shared_kernel.money.money_context import MoneyContext
@@ -125,7 +125,7 @@ class Position(EventSourcedAggregateRoot[PositionStateBase]):
     def _apply_opened(
         state: PositionStateBase,
         event: BaseEvent,
-        envelope: PersistedEventEnvelope,
+        envelope: RecordedEventEnvelope,
     ) -> PositionStateBase:
         """
         Answers the question:
@@ -153,7 +153,7 @@ class Position(EventSourcedAggregateRoot[PositionStateBase]):
     def _apply_closed(
         state: PositionStateBase,
         event: BaseEvent,
-        envelope: PersistedEventEnvelope,
+        envelope: RecordedEventEnvelope,
     ) -> PositionStateBase:
         """
         Answers the question:

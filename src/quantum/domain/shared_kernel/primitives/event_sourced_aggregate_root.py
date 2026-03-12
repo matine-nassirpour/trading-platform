@@ -8,8 +8,8 @@ from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
 from quantum.domain.shared_kernel.events.event_id import EventId
 from quantum.domain.shared_kernel.events.event_sequence import EventSequence
-from quantum.domain.shared_kernel.events.persisted_event_envelope import (
-    PersistedEventEnvelope,
+from quantum.domain.shared_kernel.events.recorded_event_envelope import (
+    RecordedEventEnvelope,
 )
 from quantum.domain.shared_kernel.identifiers.aggregate_id import AggregateId
 from quantum.domain.shared_kernel.primitives.aggregate_state import AggregateState
@@ -25,7 +25,7 @@ class EventHandler(Protocol[S, E]):
         (state, event, envelope) -> new_state
     """
 
-    def __call__(self, state: S, event: E, envelope: PersistedEventEnvelope) -> S: ...
+    def __call__(self, state: S, event: E, envelope: RecordedEventEnvelope) -> S: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -122,15 +122,15 @@ class EventSourcedAggregateRoot(Generic[ID, S], ABC):
 
     # --- Single-event application (the ONLY semantic gate) --------------------
 
-    def apply(self, envelope: PersistedEventEnvelope) -> Self:
+    def apply(self, envelope: RecordedEventEnvelope) -> Self:
         """
         Applies ONE persisted event.
 
         This is the ONLY legal mutation gateway.
         """
 
-        if not isinstance(envelope, PersistedEventEnvelope):
-            raise InvariantViolation("apply() requires PersistedEventEnvelope")
+        if not isinstance(envelope, RecordedEventEnvelope):
+            raise InvariantViolation("apply() requires RecordedEventEnvelope")
 
         if envelope.aggregate_id != self.aggregate_id:
             raise InvariantViolation("Event aggregate_id mismatch")
@@ -167,7 +167,7 @@ class EventSourcedAggregateRoot(Generic[ID, S], ABC):
     def _validate_rehydrate_input(
         cls,
         *,
-        events: list[PersistedEventEnvelope],
+        events: list[RecordedEventEnvelope],
         aggregate_id: ID | None,
     ) -> ID:
         for i in range(1, len(events)):
@@ -187,7 +187,7 @@ class EventSourcedAggregateRoot(Generic[ID, S], ABC):
     def rehydrate(
         cls,
         *,
-        events: Iterable[PersistedEventEnvelope],
+        events: Iterable[RecordedEventEnvelope],
         aggregate_id: ID | None = None,
     ) -> Self:
         """

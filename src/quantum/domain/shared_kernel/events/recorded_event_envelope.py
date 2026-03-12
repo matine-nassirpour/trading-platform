@@ -11,7 +11,7 @@ from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
 
 
 @dataclass(frozen=True, slots=True)
-class PersistedEventEnvelope(ValueObject):
+class RecordedEventEnvelope(ValueObject):
     """
     Domain-grade immutable event record.
 
@@ -55,7 +55,9 @@ class PersistedEventEnvelope(ValueObject):
         self._validate_types()
 
         if self.sequence.is_initial():
-            raise InvariantViolation("EventEnvelope.sequence must be >= 1")
+            raise InvariantViolation("RecordedEventEnvelope.sequence must be >= 1")
 
         if self.recorded_at.value < self.occurred_at.value:
-            raise InvariantViolation("EventEnvelope.recorded_at must be >= occurred_at")
+            raise InvariantViolation(
+                "RecordedEventEnvelope.recorded_at must be >= occurred_at"
+            )

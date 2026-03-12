@@ -6,8 +6,8 @@ from quantum.application.shared.eventing.pending_event_envelope import (
     PendingEventEnvelope,
 )
 from quantum.domain.shared_kernel.events.event_sequence import EventSequence
-from quantum.domain.shared_kernel.events.persisted_event_envelope import (
-    PersistedEventEnvelope,
+from quantum.domain.shared_kernel.events.recorded_event_envelope import (
+    RecordedEventEnvelope,
 )
 
 
@@ -29,7 +29,7 @@ class EventStore(Protocol):
         stream_id: str,
         events: Sequence[PendingEventEnvelope],
         expected_version: EventSequence,
-    ) -> list[PersistedEventEnvelope]:
+    ) -> list[RecordedEventEnvelope]:
         """
         Persist events and assign sequential sequence numbers.
 
@@ -39,7 +39,7 @@ class EventStore(Protocol):
         raise NotImplementedError
 
     @abstractmethod
-    def load_stream(self, stream_id: str) -> list[PersistedEventEnvelope]:
+    def load_stream(self, stream_id: str) -> list[RecordedEventEnvelope]:
         raise NotImplementedError
 
     @abstractmethod

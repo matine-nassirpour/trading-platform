@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Generic, TypeVar
 
-from quantum.domain.shared_kernel.events.persisted_event_envelope import (
-    PersistedEventEnvelope,
+from quantum.domain.shared_kernel.events.recorded_event_envelope import (
+    RecordedEventEnvelope,
 )
 from quantum.domain.shared_kernel.projection.projection_cursor import ProjectionCursor
 
@@ -29,7 +29,7 @@ class TransactionalProjectionRepository(ABC, Generic[S]):
         *,
         state: S,
         cursor: ProjectionCursor,
-        applied_events: list[PersistedEventEnvelope],
+        applied_events: list[RecordedEventEnvelope],
     ) -> None:
         """
         Save new projection state.
