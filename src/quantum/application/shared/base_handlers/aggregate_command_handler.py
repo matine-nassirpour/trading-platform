@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from collections.abc import Iterable
+from collections.abc import Sequence
 from typing import Generic, TypeVar
 
 from quantum.application.ports.outbound.transaction.outbox_repository import (
@@ -9,6 +9,7 @@ from quantum.application.ports.outbound.transaction.unit_of_work import UnitOfWo
 from quantum.application.shared.base_handlers.aggregate_existence_policy import (
     AggregateExistencePolicy,
 )
+from quantum.application.shared.commands.base_command import BaseCommand
 from quantum.application.shared.errors.application_error import (
     AggregateNotFoundError,
     ConcurrencyError,
@@ -26,33 +27,42 @@ from quantum.application.shared.eventing.event_sourced_repository import (
 from quantum.domain.shared_kernel.errors.domain_error import DomainError
 from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
 from quantum.domain.shared_kernel.events.event_sequence import EventSequence
-from quantum.domain.shared_kernel.events.persisted_event_envelope import (
-    PersistedEventEnvelope,
-)
+from quantum.domain.shared_kernel.identifiers.aggregate_id import AggregateId
+from quantum.domain.shared_kernel.primitives.aggregate_state import AggregateState
 from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import (
     EventSourcedAggregateRoot,
 )
 
-C = TypeVar("C")  # Command
+C = TypeVar("C", bound=BaseCommand)
 R = TypeVar("R")  # Result
+ID = TypeVar("ID", bound=AggregateId)
+S = TypeVar("S", bound=AggregateState)
 A = TypeVar("A", bound=EventSourcedAggregateRoot)
 
 
-class AggregateCommandHandler(ABC, Generic[C, R, A]):
+class AggregateCommandHandler(ABC, Generic[C, R, ID, S, A]):
     """
     Strict event-sourced aggregate mutation handler.
 
     Guarantees:
+    - Typed aggregate identity throughout application core
     - Deterministic transaction boundary
     - Optimistic concurrency enforcement
-    - No async inside application core
     - Outbox pattern only
     """
+
+    __slots__ = (
+        "_repository",
+        "_outbox",
+        "_uow",
+        "_enveloper",
+        "_existence_policy",
+    )
 
     def __init__(
         self,
         *,
-        repository: EventSourcedRepository[A],
+        repository: EventSourcedRepository[ID, S, A],
         outbox: OutboxRepository,
         uow: UnitOfWork,
         enveloper: ApplicationEventEnveloper,
@@ -67,9 +77,16 @@ class AggregateCommandHandler(ABC, Generic[C, R, A]):
     # --- Abstract contract for concrete handlers ------------------------------
 
     @abstractmethod
-    def _stream_id(self, command: C) -> str:
+    def _aggregate_id(self, command: C) -> ID:
         """
-        Return the event stream identifier for the aggregate.
+        Return the typed aggregate identity targeted by this command.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def _context(self, command: C) -> ApplicationEventContext:
+        """
+        Extract application event context from command.
         """
         raise NotImplementedError
 
@@ -79,9 +96,9 @@ class AggregateCommandHandler(ABC, Generic[C, R, A]):
         *,
         command: C,
         aggregate: A,
-    ) -> tuple[Iterable[BaseEvent], R]:
+    ) -> tuple[Sequence[BaseEvent], R]:
         """
-        Execute domain logic and return (events, result).
+        Execute domain logic and return (domain_events, result).
         """
         raise NotImplementedError
 
@@ -89,54 +106,31 @@ class AggregateCommandHandler(ABC, Generic[C, R, A]):
 
     def _enforce_existence_policy(
         self,
-        stream_id: str,
+        *,
+        aggregate_id: ID,
         version: EventSequence,
     ) -> None:
-        """
-        Enforce aggregate existence policy.
-
-        Ontological rule:
-            Aggregate existence ≡ stream has at least one event
-            version == initial()  → aggregate does NOT exist
-            version > initial()   → aggregate EXISTS
-        """
 
         exists = not version.is_initial()
 
         if not exists and self._existence_policy == AggregateExistencePolicy.MUST_EXIST:
-            raise AggregateNotFoundError(stream_id)
+            raise AggregateNotFoundError(str(aggregate_id))
 
         if exists and self._existence_policy == AggregateExistencePolicy.MUST_NOT_EXIST:
-            raise ConcurrencyError(f"Aggregate already exists for stream '{stream_id}'")
-
-    @staticmethod
-    def _apply_envelopes(
-        aggregate: A,
-        envelopes: Iterable[PersistedEventEnvelope],
-    ) -> A:
-        """
-        Apply envelopes to aggregate in strict order.
-
-        Guarantees:
-
-        - In-memory state == persisted state
-        - Deterministic evolution
-        """
-
-        new_aggregate = aggregate
-
-        for envelope in envelopes:
-            new_aggregate = new_aggregate.apply(envelope)
-
-        return new_aggregate
+            raise ConcurrencyError(f"Aggregate already exists for id '{aggregate_id}'")
 
     def handle(self, command: C) -> R:
         with self._uow:
             try:
-                stream_id = self._stream_id(command)
-                aggregate, expected_version = self._repository.load(stream_id)
+                aggregate_id = self._aggregate_id(command)
+                aggregate, expected_version = self._repository.load(
+                    aggregate_id=aggregate_id
+                )
 
-                self._enforce_existence_policy(stream_id, expected_version)
+                self._enforce_existence_policy(
+                    aggregate_id=aggregate_id,
+                    version=expected_version,
+                )
 
                 domain_events, result = self._execute_domain(
                     command=command,
@@ -147,19 +141,19 @@ class AggregateCommandHandler(ABC, Generic[C, R, A]):
                     self._uow.commit()
                     return result
 
-                context: ApplicationEventContext = command.context
-                envelopes = self._enveloper.envelope(
+                context = self._context(command)
+
+                pending = self._enveloper.envelope(
+                    aggregate_id=aggregate_id,
                     events=domain_events,
                     context=context,
                 )
 
                 persisted = self._repository.save(
-                    stream_id=stream_id,
+                    aggregate_id=aggregate_id,
                     expected_version=expected_version,
-                    envelopes=envelopes,
+                    envelopes=pending,
                 )
-
-                aggregate = self._apply_envelopes(aggregate, persisted)
 
                 self._outbox.add(persisted)
 

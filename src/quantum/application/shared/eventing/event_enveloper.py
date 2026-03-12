@@ -1,4 +1,4 @@
-from collections.abc import Iterable
+from collections.abc import Sequence
 
 from quantum.application.ports.outbound.identity.id_generator import IdGenerator
 from quantum.application.ports.outbound.time.clock import Clock
@@ -10,20 +10,21 @@ from quantum.application.shared.eventing.pending_event_envelope import (
 )
 from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
 from quantum.domain.shared_kernel.events.event_metadata import EventMetadata
+from quantum.domain.shared_kernel.identifiers.aggregate_id import AggregateId
 
 
 class ApplicationEventEnveloper:
     """
-    Responsible for wrapping domain BaseEvent into EventEnvelope
-    for stateless process handlers.
-
-    Creates EventEnvelope WITHOUT sequence. Sequence is assigned ONLY by EventStore.
+    Wrap domain events into pending envelopes.
 
     Guarantees:
-    - CorrelationId NEVER generated implicitly
-    - CausationId ALWAYS derived from causal chain
-    - Deterministic lineage
+    - Aggregate identity is explicit
+    - EventId is assigned before persistence
+    - occurred_at is assigned by application time source
+    - recorded_at and sequence remain EventStore responsibilities
     """
+
+    __slots__ = ("_clock", "_ids")
 
     def __init__(
         self,
@@ -37,17 +38,17 @@ class ApplicationEventEnveloper:
     def envelope(
         self,
         *,
-        events: Iterable[BaseEvent],
+        aggregate_id: AggregateId,
+        events: Sequence[BaseEvent],
         context: ApplicationEventContext,
     ) -> list[PendingEventEnvelope]:
-
         now = self._clock.now_epoch_ms()
 
-        envelopes = [
+        return [
             PendingEventEnvelope(
+                aggregate_id=aggregate_id,
                 id=self._ids.new_event_id(),
                 occurred_at=now,
-                recorded_at=now,
                 event=event,
                 metadata=EventMetadata(
                     actor_id=context.actor_id,
@@ -57,5 +58,3 @@ class ApplicationEventEnveloper:
             )
             for event in events
         ]
-
-        return envelopes

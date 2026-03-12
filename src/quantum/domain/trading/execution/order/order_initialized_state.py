@@ -74,7 +74,7 @@ class OrderInitializedState(OrderStateBase):
         ):
             raise InvariantViolation("Cancelled order cannot be fully filled")
 
-    def _validate(self):
+    def _validate(self) -> None:
         super()._validate()
         self._validate_types()
 

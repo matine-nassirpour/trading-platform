@@ -1,80 +1,108 @@
-from __future__ import annotations
-
-from collections.abc import Iterable
+from collections.abc import Sequence
 from typing import Generic, TypeVar
 
 from quantum.application.ports.outbound.transaction.event_store import EventStore
 from quantum.application.shared.errors.application_error import ApplicationError
+from quantum.application.shared.eventing.stream_name_resolver import StreamNameResolver
 from quantum.domain.shared_kernel.events.event_sequence import EventSequence
 from quantum.domain.shared_kernel.events.persisted_event_envelope import (
     PersistedEventEnvelope,
 )
+from quantum.domain.shared_kernel.identifiers.aggregate_id import AggregateId
+from quantum.domain.shared_kernel.primitives.aggregate_state import AggregateState
 from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import (
     EventSourcedAggregateRoot,
 )
 
+ID = TypeVar("ID", bound=AggregateId)
+S = TypeVar("S", bound=AggregateState)
 A = TypeVar("A", bound=EventSourcedAggregateRoot)
 
 
-class EventSourcedRepository(Generic[A]):
+class EventSourcedRepository(Generic[ID, S, A]):
     """
-    Pure Event-Sourced repository.
+    Strict event-sourced repository.
 
     Guarantees:
-    - Aggregate reconstructed only from EventStore
-    - Version derived exclusively from stream
+    - Aggregate identity remains typed in application core
+    - Storage stream name is derived, never invented ad hoc
+    - Empty aggregate reconstruction preserves canonical identity
+    - Version is derived exclusively from persisted stream
     - No state-based persistence
-    - Deterministic rebuild
     """
 
-    __slots__ = ("_store", "_aggregate_type")
+    __slots__ = ("_store", "_aggregate_type", "_stream_resolver")
 
     def __init__(
         self,
         *,
         store: EventStore,
         aggregate_type: type[A],
+        stream_resolver: StreamNameResolver[ID],
     ) -> None:
         self._store = store
         self._aggregate_type = aggregate_type
+        self._stream_resolver = stream_resolver
 
-    def load(self, stream_id: str) -> tuple[A, EventSequence]:
+    def load(self, *, aggregate_id: ID) -> tuple[A, EventSequence]:
         """
-        Load aggregate from EventStore.
+        Load aggregate from EventStore using its typed aggregate identity.
         """
 
+        if not isinstance(aggregate_id, AggregateId):
+            raise ApplicationError("load() requires a typed AggregateId")
+
+        stream_id = self._stream_resolver.resolve(aggregate_id)
         events: list[PersistedEventEnvelope] = self._store.load_stream(stream_id)
 
         previous = EventSequence.initial()
 
         for event in events:
-            if event.sequence is None:
-                raise ApplicationError("Event without sequence")
-
             event.sequence.assert_is_next_of(previous)
             previous = event.sequence
 
+            if event.aggregate_id != aggregate_id:
+                raise ApplicationError(
+                    f"EventStore returned mixed aggregate identity for stream "
+                    f"'{stream_id}': expected '{aggregate_id}', got '{event.aggregate_id}'"
+                )
+
         # --- Empty Stream
         if not events:
-            aggregate = self._aggregate_type(self._aggregate_type.empty_state())
-
+            aggregate = self._aggregate_type(
+                aggregate_id,
+                self._aggregate_type.empty_state(),
+            )
             return aggregate, previous
 
         # --- Replay
-        aggregate = self._aggregate_type.rehydrate(events=events)
-
+        aggregate = self._aggregate_type.rehydrate(
+            events=events,
+            aggregate_id=aggregate_id,
+        )
         return aggregate, events[-1].sequence
 
     def save(
         self,
         *,
-        stream_id: str,
+        aggregate_id: ID,
         expected_version: EventSequence,
-        envelopes: Iterable[PersistedEventEnvelope],
+        envelopes: Sequence[PersistedEventEnvelope],
     ) -> list[PersistedEventEnvelope]:
         """
-        Persist envelopes atomically.
+        Persist already-materialized envelopes atomically.
         """
+
+        if not isinstance(aggregate_id, AggregateId):
+            raise ApplicationError("save() requires a typed AggregateId")
+
+        stream_id = self._stream_resolver.resolve(aggregate_id)
+
+        for envelope in envelopes:
+            if envelope.aggregate_id != aggregate_id:
+                raise ApplicationError(
+                    f"Envelope aggregate_id mismatch for stream '{stream_id}'"
+                )
 
         persisted = self._store.append(
             stream_id=stream_id,
@@ -83,11 +111,12 @@ class EventSourcedRepository(Generic[A]):
         )
 
         previous = expected_version
+
         for envelope in persisted:
-            if envelope.sequence is None:
+            if envelope.aggregate_id != aggregate_id:
                 raise ApplicationError(
-                    f"EventStore returned envelope without sequence assignment "
-                    f"(stream_id={stream_id})"
+                    f"EventStore returned persisted envelope with mismatched "
+                    f"aggregate_id for stream '{stream_id}'"
                 )
 
             envelope.sequence.assert_is_next_of(previous)

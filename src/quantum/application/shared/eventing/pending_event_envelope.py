@@ -4,6 +4,7 @@ from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
 from quantum.domain.shared_kernel.events.event_id import EventId
 from quantum.domain.shared_kernel.events.event_metadata import EventMetadata
+from quantum.domain.shared_kernel.identifiers.aggregate_id import AggregateId
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
 
@@ -13,31 +14,29 @@ class PendingEventEnvelope(ValueObject):
     """
     Application-layer event candidate.
 
-    Not yet persisted.
-    Has NO sequence.
+    Not yet persisted:
+    - no sequence
+    - no official recorded_at assigned by EventStore
     """
 
+    aggregate_id: AggregateId
     id: EventId
-
     occurred_at: EpochMs
-    recorded_at: EpochMs
-
     event: BaseEvent
-
     metadata: EventMetadata
 
     def _validate(self) -> None:
+        if not isinstance(self.aggregate_id, AggregateId):
+            raise InvariantViolation("PendingEventEnvelope.aggregate_id is required")
+
         if not isinstance(self.id, EventId):
-            raise InvariantViolation("EventEnvelope requires EventId")
+            raise InvariantViolation("PendingEventEnvelope.id is required")
 
         if not isinstance(self.occurred_at, EpochMs):
-            raise InvariantViolation("EventEnvelope requires occurred_at: EpochMs")
-
-        if not isinstance(self.recorded_at, EpochMs):
-            raise InvariantViolation("EventEnvelope requires recorded_at: EpochMs")
+            raise InvariantViolation("PendingEventEnvelope.occurred_at is required")
 
         if not isinstance(self.event, BaseEvent):
-            raise InvariantViolation("EventEnvelope requires BaseEvent")
+            raise InvariantViolation("PendingEventEnvelope.event is required")
 
         if not isinstance(self.metadata, EventMetadata):
-            raise InvariantViolation("EventEnvelope requires EventMetadata")
+            raise InvariantViolation("PendingEventEnvelope.metadata is required")

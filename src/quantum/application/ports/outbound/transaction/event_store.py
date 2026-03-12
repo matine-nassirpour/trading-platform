@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from collections.abc import Iterable
+from collections.abc import Sequence
 from typing import Protocol, runtime_checkable
 
 from quantum.application.shared.eventing.pending_event_envelope import (
@@ -14,14 +14,20 @@ from quantum.domain.shared_kernel.events.persisted_event_envelope import (
 @runtime_checkable
 class EventStore(Protocol):
     """
-    Event store with strict sequencing and optimistic concurrency.
+    EventStore port.
+
+    Responsibilities:
+    - load persisted stream by storage stream id
+    - append pending envelopes atomically
+    - assign official sequence and recorded_at
     """
 
     @abstractmethod
     def append(
         self,
+        *,
         stream_id: str,
-        events: Iterable[PendingEventEnvelope],
+        events: Sequence[PendingEventEnvelope],
         expected_version: EventSequence,
     ) -> list[PersistedEventEnvelope]:
         """

@@ -69,15 +69,15 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
     __slots__ = ()
 
     @classmethod
-    def empty_state(cls):
+    def empty_state(cls) -> OrderStateBase:
         return OrderUninitializedState(
             last_sequence=EventSequence.initial(),
         )
 
     # --- Factory --------------------------------------------------------------
 
-    @staticmethod
     def create(
+        self,
         *,
         intent_id: IntentId,
         broker_order_id: BrokerOrderId,
@@ -92,6 +92,9 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
         This method represents the domain-level decision to expose capital
         by creating an order with a specific intent, side and volume.
         """
+
+        if not isinstance(self.state, OrderUninitializedState):
+            raise InvalidStateTransition
 
         return [
             OrderCreatedEvent(
@@ -213,9 +216,6 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
         # Industry-grade ES rule: handlers must also enforce replay integrity.
         if not state.status.is_fillable():
             raise InvariantViolation("Illegal fill event: order is not fillable")
-
-        if event.fill.volume.value <= 0:
-            raise InvariantViolation("Invalid fill volume")
 
         new_filled = state.filled_volume.value + event.fill.volume.value
 

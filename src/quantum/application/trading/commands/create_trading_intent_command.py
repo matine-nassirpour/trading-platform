@@ -14,4 +14,4 @@ class CreateTradingIntentCommand(BaseCommand):
     symbol: Symbol
     side: PositionSide
     decision_identity: DecisionIdentity
-    context: TradingContext
+    trading_context: TradingContext
