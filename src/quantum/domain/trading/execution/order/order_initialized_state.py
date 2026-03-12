@@ -65,6 +65,9 @@ class OrderInitializedState(OrderStateBase):
                     "Partially filled order cannot be fully filled"
                 )
 
+        if self.status.is_pending() and self.filled_volume.value != 0:
+            raise InvariantViolation("Pending order cannot have filled volume")
+
         if (
             self.status.is_cancelled()
             and self.filled_volume.value == self.requested_volume.value
@@ -72,10 +75,11 @@ class OrderInitializedState(OrderStateBase):
             raise InvariantViolation("Cancelled order cannot be fully filled")
 
     def _validate(self):
+        super()._validate()
+        self._validate_types()
+
         if self.last_sequence.is_initial():
             raise InvariantViolation("Initialized order cannot be initial")
-
-        self._validate_types()
 
         if self.filled_volume.value > self.requested_volume.value:
             raise InvariantViolation("Overfill")

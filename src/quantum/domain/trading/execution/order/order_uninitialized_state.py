@@ -8,5 +8,7 @@ from quantum.domain.trading.execution.order.order_state_base import OrderStateBa
 class OrderUninitializedState(OrderStateBase):
 
     def _validate(self) -> None:
+        super()._validate()
+
         if not self.last_sequence.is_initial():
             raise InvariantViolation("Uninitialized Order must have initial sequence")
