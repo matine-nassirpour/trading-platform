@@ -75,12 +75,14 @@ class TradingIntentInitializedState(TradingIntentStateBase):
                 )
 
     def _validate(self) -> None:
+        super()._validate()
+        self._validate_types()
+
         if self.last_sequence.is_initial():
             raise InvariantViolation(
                 "Initialized TradingIntent cannot have initial sequence"
             )
 
-        self._validate_types()
         self._validate_semantics()
 
     # --- Semantic helpers -----------------------------------------------------

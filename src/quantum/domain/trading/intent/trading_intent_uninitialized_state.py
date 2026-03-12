@@ -15,6 +15,8 @@ class TradingIntentUninitializedState(TradingIntentStateBase):
     """
 
     def _validate(self) -> None:
+        super()._validate()
+
         if not self.last_sequence.is_initial():
             raise InvariantViolation(
                 "Uninitialized TradingIntent must have initial sequence"
