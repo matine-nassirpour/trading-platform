@@ -132,7 +132,6 @@ class EventSourcedAggregateRoot(Generic[ID, S], ABC):
         if not isinstance(envelope, PersistedEventEnvelope):
             raise InvariantViolation("apply() requires PersistedEventEnvelope")
 
-        # Identity must always be enforceable (root-owned).
         if envelope.aggregate_id != self.aggregate_id:
             raise InvariantViolation("Event aggregate_id mismatch")
 
@@ -200,11 +199,9 @@ class EventSourcedAggregateRoot(Generic[ID, S], ABC):
         - Gap detection
         - Identity integrity
         """
-
         if events is None:
             raise InvariantViolation("events cannot be None")
 
-        # Materialize once (allows multi-pass checks, strict behavior).
         materialized = list(events)
 
         if len(materialized) == 0:

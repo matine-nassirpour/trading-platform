@@ -94,7 +94,7 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
         """
 
         if not isinstance(self.state, OrderUninitializedState):
-            raise InvalidStateTransition
+            raise InvalidStateTransition("Order creation requires uninitialized state")
 
         return [
             OrderCreatedEvent(
@@ -213,6 +213,9 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
         if not isinstance(event, OrderFillRegisteredEvent):
             raise InvariantViolation("Invalid event type")
 
+        if event.broker_order_id != state.broker_order_id:
+            raise InvariantViolation("Illegal fill event: broker_order_id mismatch")
+
         # Industry-grade ES rule: handlers must also enforce replay integrity.
         if not state.status.is_fillable():
             raise InvariantViolation("Illegal fill event: order is not fillable")
@@ -258,6 +261,9 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
 
         if not isinstance(event, OrderCancelledEvent):
             raise InvariantViolation("Invalid event type")
+
+        if event.broker_order_id != state.broker_order_id:
+            raise InvariantViolation("Illegal cancel event: broker_order_id mismatch")
 
         if state.status.is_terminal():
             raise InvariantViolation("Illegal cancel event: order already terminal")

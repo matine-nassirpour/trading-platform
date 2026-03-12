@@ -15,6 +15,9 @@ from quantum.domain.trading.execution.order.position_side import PositionSide
 
 @dataclass(frozen=True, slots=True)
 class OrderInitializedState(OrderStateBase):
+    """
+    Fully initialized immutable Order aggregate state.
+    """
 
     broker_order_id: BrokerOrderId
     symbol: Symbol

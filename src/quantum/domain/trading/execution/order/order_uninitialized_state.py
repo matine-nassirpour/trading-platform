@@ -6,6 +6,9 @@ from quantum.domain.trading.execution.order.order_state_base import OrderStateBa
 
 @dataclass(frozen=True, slots=True)
 class OrderUninitializedState(OrderStateBase):
+    """
+    Order state before the first domain event has been applied.
+    """
 
     def _validate(self) -> None:
         super()._validate()
