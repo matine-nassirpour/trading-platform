@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
-from typing import Final, Generic, Protocol, Self, TypeVar
+from typing import Final, Generic, Protocol, Self, TypeVar, cast
 
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
@@ -40,21 +40,55 @@ class EventSourcedAggregateRoot(Generic[ID, S], ABC):
     - Event identity integrity
     - Aggregate identity protection
     - No hidden mutation
+
+    Doctrine:
+    - Aggregate identity is owned EXCLUSIVELY by the root.
+    - Aggregate state is identity-free.
     """
 
     _aggregate_id: Final[ID]
     _state: Final[S]
 
     def __post_init__(self) -> None:
-        if not isinstance(self._aggregate_id, AggregateId):
+        expected_id_type = self.aggregate_id_type()
+
+        if not isinstance(self._aggregate_id, expected_id_type):
             raise InvariantViolation(
-                f"{self.__class__.__name__} requires AggregateId-compatible identity"
+                f"{self.__class__.__name__} requires aggregate_id of type "
+                f"{expected_id_type.__name__}, got {type(self._aggregate_id).__name__}"
             )
 
         if not isinstance(self._state, AggregateState):
             raise InvariantViolation(
                 f"{self.__class__.__name__} requires AggregateState"
             )
+
+    # --- Identity contract ----------------------------------------------------
+
+    @classmethod
+    @abstractmethod
+    def aggregate_id_type(cls) -> type[ID]:
+        """
+        Returns the canonical AggregateId subtype for this aggregate.
+
+        This is used to guarantee that:
+        - new() receives the correct ID type
+        - rehydrate() rebuilds with the correct ID type
+        - the root remains the sole owner of aggregate identity
+        """
+        raise NotImplementedError
+
+    @classmethod
+    def _validate_aggregate_id(cls, aggregate_id: AggregateId) -> ID:
+        expected_id_type = cls.aggregate_id_type()
+
+        if not isinstance(aggregate_id, expected_id_type):
+            raise InvariantViolation(
+                f"{cls.__name__} requires aggregate_id of type "
+                f"{expected_id_type.__name__}, got {type(aggregate_id).__name__}"
+            )
+
+        return cast(ID, aggregate_id)
 
     # --- Properties -----------------------------------------------------------
 
@@ -81,7 +115,7 @@ class EventSourcedAggregateRoot(Generic[ID, S], ABC):
         """
         return self.state.last_event_sequence()
 
-    # ---  ------------
+    # --- Canonical initial state ----------------------------------------------
 
     @classmethod
     @abstractmethod
@@ -93,9 +127,6 @@ class EventSourcedAggregateRoot(Generic[ID, S], ABC):
         - Be pure
         - Be deterministic
         - Have EventSequence.initial()
-
-        This state represents the pre-first-event aggregate lifecycle phase
-        required for deterministic replay of creation-originated aggregates.
         """
         raise NotImplementedError
 
@@ -107,6 +138,7 @@ class EventSourcedAggregateRoot(Generic[ID, S], ABC):
         This is the ONLY supported way to obtain an uninitialized aggregate
         instance suitable for creation workflows.
         """
+        validated_id = cls._validate_aggregate_id(aggregate_id)
         state = cls.uninitialized_state()
 
         if not isinstance(state, AggregateState):
@@ -119,7 +151,7 @@ class EventSourcedAggregateRoot(Generic[ID, S], ABC):
                 f"{cls.__name__}.uninitialized_state() must have initial sequence"
             )
 
-        return cls(_aggregate_id=aggregate_id, _state=state)
+        return cls(_aggregate_id=validated_id, _state=state)
 
     # --- Required contract ----------------------------------------------------
 
@@ -142,10 +174,7 @@ class EventSourcedAggregateRoot(Generic[ID, S], ABC):
     def handlers(cls) -> Mapping[type[BaseEvent], EventHandler[S, BaseEvent]]:
         """
         Returns immutable handler mapping.
-
-        No caching used to avoid polymorphic corruption risk.
         """
-
         handlers = cls._handlers()
 
         if not isinstance(handlers, Mapping):
@@ -169,21 +198,17 @@ class EventSourcedAggregateRoot(Generic[ID, S], ABC):
             raise InvariantViolation("Event aggregate_id mismatch")
 
         event = envelope.event
-
-        # The mapping of handlers is based on the exact concrete type, never on inheritance.
         handler = self.handlers().get(type(event))
 
         if handler is None:
             raise InvariantViolation(
-                f"{self.__class__.__name__} "
-                f"cannot handle event type {type(event).__name__}"
+                f"{self.__class__.__name__} cannot handle event type "
+                f"{type(event).__name__}"
             )
 
-        # --- Enforce sequence continuity
         previous_sequence = self.state.last_event_sequence()
         envelope.sequence.assert_is_next_of(previous_sequence)
 
-        # --- Apply transition
         new_state = handler(self.state, event, envelope)
 
         if not isinstance(new_state, AggregateState):
@@ -194,7 +219,9 @@ class EventSourcedAggregateRoot(Generic[ID, S], ABC):
                 "Handler must advance sequence to envelope.sequence"
             )
 
-        return self.__class__(_aggregate_id=self._aggregate_id, _state=new_state)
+        return self.__class__(
+            _aggregate_id=self._aggregate_id, _state=cast(S, new_state)
+        )
 
     # --- Replay (strictly defined in terms of apply) --------------------------
 
@@ -211,12 +238,17 @@ class EventSourcedAggregateRoot(Generic[ID, S], ABC):
                     "Event stream is not strictly ordered by sequence"
                 )
 
-        expected_id = events[0].aggregate_id
+        stream_id = cls._validate_aggregate_id(events[0].aggregate_id)
 
-        if aggregate_id is not None and aggregate_id != expected_id:
-            raise InvariantViolation("aggregate_id parameter mismatch with stream id")
+        if aggregate_id is not None:
+            validated_requested_id = cls._validate_aggregate_id(aggregate_id)
 
-        return expected_id
+            if validated_requested_id != stream_id:
+                raise InvariantViolation(
+                    "aggregate_id parameter mismatch with stream aggregate_id"
+                )
+
+        return stream_id
 
     @classmethod
     def rehydrate(
@@ -238,7 +270,9 @@ class EventSourcedAggregateRoot(Generic[ID, S], ABC):
                 raise InvariantViolation(
                     "Cannot rehydrate from empty event stream without aggregate_id"
                 )
-            return cls.new(aggregate_id=aggregate_id)
+
+            validated_id = cls._validate_aggregate_id(aggregate_id)
+            return cls.new(aggregate_id=validated_id)
 
         expected_id = cls._validate_rehydrate_input(
             events=materialized,

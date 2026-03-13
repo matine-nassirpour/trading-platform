@@ -75,6 +75,10 @@ class TradingIntent(EventSourcedAggregateRoot[IntentId, TradingIntentStateBase])
     __slots__ = ()
 
     @classmethod
+    def aggregate_id_type(cls) -> type[IntentId]:
+        return IntentId
+
+    @classmethod
     def uninitialized_state(cls) -> TradingIntentStateBase:
         return TradingIntentUninitializedState(
             last_sequence=EventSequence.initial(),
@@ -83,7 +87,7 @@ class TradingIntent(EventSourcedAggregateRoot[IntentId, TradingIntentStateBase])
     # --- Internal helpers -----------------------------------------------------
 
     @staticmethod
-    def _assert_intent_id_matches_stream(
+    def _assert_event_matches_stream_identity(
         *,
         event_intent_id: IntentId,
         envelope: RecordedEventEnvelope,
@@ -91,17 +95,6 @@ class TradingIntent(EventSourcedAggregateRoot[IntentId, TradingIntentStateBase])
         if event_intent_id != envelope.aggregate_id:
             raise InvariantViolation(
                 "Event intent_id does not match envelope aggregate_id"
-            )
-
-    @staticmethod
-    def _assert_intent_id_matches_state(
-        *,
-        event_intent_id: IntentId,
-        state: TradingIntentInitializedState,
-    ) -> None:
-        if event_intent_id != state.intent_id:
-            raise InvariantViolation(
-                "Event intent_id does not match aggregate state intent_id"
             )
 
     def _require_initialized(self) -> TradingIntentInitializedState:
@@ -130,8 +123,7 @@ class TradingIntent(EventSourcedAggregateRoot[IntentId, TradingIntentStateBase])
         """
         Pure domain decision for creating a new TradingIntent.
 
-        This method does NOT require an aggregate instance.
-        It returns NEW domain events, not recorded envelopes.
+        Returns NEW domain events, not recorded envelopes.
         """
 
         return [
@@ -165,13 +157,10 @@ class TradingIntent(EventSourcedAggregateRoot[IntentId, TradingIntentStateBase])
         creation envelope is persisted and applied.
         """
 
-        if not isinstance(aggregate_id, IntentId):
-            raise InvariantViolation("aggregate_id must be IntentId")
-
         aggregate = cls.new(aggregate_id=aggregate_id)
 
         domain_events = cls.decide_create(
-            intent_id=aggregate_id,
+            intent_id=aggregate.aggregate_id,
             symbol=symbol,
             side=side,
             decision_identity=decision_identity,
@@ -210,7 +199,7 @@ class TradingIntent(EventSourcedAggregateRoot[IntentId, TradingIntentStateBase])
         if lifecycle_result.is_rejected():
             return [
                 DecisionRejectedEvent(
-                    intent_id=state.intent_id,
+                    intent_id=self.aggregate_id,
                     reason_code=lifecycle_result.reason_code,
                 )
             ]
@@ -225,14 +214,14 @@ class TradingIntent(EventSourcedAggregateRoot[IntentId, TradingIntentStateBase])
         if policy_result.is_rejected():
             return [
                 DecisionRejectedEvent(
-                    intent_id=state.intent_id,
+                    intent_id=self.aggregate_id,
                     reason_code=policy_result.reason_code,
                 )
             ]
 
         return [
             DecisionAuthorizedEvent(
-                intent_id=state.intent_id,
+                intent_id=self.aggregate_id,
             )
         ]
 
@@ -268,7 +257,7 @@ class TradingIntent(EventSourcedAggregateRoot[IntentId, TradingIntentStateBase])
 
         return [
             CapitalAllocatedEvent(
-                intent_id=state.intent_id,
+                intent_id=self.aggregate_id,
                 strategy_id=state.decision_identity.strategy_id,
                 allocation=allocation,
             )
@@ -282,7 +271,6 @@ class TradingIntent(EventSourcedAggregateRoot[IntentId, TradingIntentStateBase])
         event: BaseEvent,
         envelope: RecordedEventEnvelope,
     ) -> TradingIntentStateBase:
-
         if not isinstance(state, TradingIntentUninitializedState):
             raise InvariantViolation("TradingIntent already exists")
 
@@ -291,14 +279,13 @@ class TradingIntent(EventSourcedAggregateRoot[IntentId, TradingIntentStateBase])
                 "TradingIntent._apply_created requires TradingIntentCreatedEvent"
             )
 
-        TradingIntent._assert_intent_id_matches_stream(
+        TradingIntent._assert_event_matches_stream_identity(
             event_intent_id=event.intent_id,
             envelope=envelope,
         )
 
         return TradingIntentInitializedState(
             last_sequence=envelope.sequence,
-            intent_id=event.intent_id,
             symbol=event.symbol,
             side=event.side,
             decision_identity=event.decision_identity,
@@ -322,13 +309,9 @@ class TradingIntent(EventSourcedAggregateRoot[IntentId, TradingIntentStateBase])
                 "TradingIntent._apply_authorized requires DecisionAuthorizedEvent"
             )
 
-        TradingIntent._assert_intent_id_matches_stream(
+        TradingIntent._assert_event_matches_stream_identity(
             event_intent_id=event.intent_id,
             envelope=envelope,
-        )
-        TradingIntent._assert_intent_id_matches_state(
-            event_intent_id=event.intent_id,
-            state=state,
         )
 
         if state.is_evaluated():
@@ -341,7 +324,6 @@ class TradingIntent(EventSourcedAggregateRoot[IntentId, TradingIntentStateBase])
 
         return TradingIntentInitializedState(
             last_sequence=envelope.sequence,
-            intent_id=state.intent_id,
             symbol=state.symbol,
             side=state.side,
             decision_identity=state.decision_identity,
@@ -365,13 +347,9 @@ class TradingIntent(EventSourcedAggregateRoot[IntentId, TradingIntentStateBase])
                 "TradingIntent._apply_rejected requires DecisionRejectedEvent"
             )
 
-        TradingIntent._assert_intent_id_matches_stream(
+        TradingIntent._assert_event_matches_stream_identity(
             event_intent_id=event.intent_id,
             envelope=envelope,
-        )
-        TradingIntent._assert_intent_id_matches_state(
-            event_intent_id=event.intent_id,
-            state=state,
         )
 
         if state.is_evaluated():
@@ -384,7 +362,6 @@ class TradingIntent(EventSourcedAggregateRoot[IntentId, TradingIntentStateBase])
 
         return TradingIntentInitializedState(
             last_sequence=envelope.sequence,
-            intent_id=state.intent_id,
             symbol=state.symbol,
             side=state.side,
             decision_identity=state.decision_identity,
@@ -410,13 +387,9 @@ class TradingIntent(EventSourcedAggregateRoot[IntentId, TradingIntentStateBase])
                 "TradingIntent._apply_capital_allocated requires CapitalAllocatedEvent"
             )
 
-        TradingIntent._assert_intent_id_matches_stream(
+        TradingIntent._assert_event_matches_stream_identity(
             event_intent_id=event.intent_id,
             envelope=envelope,
-        )
-        TradingIntent._assert_intent_id_matches_state(
-            event_intent_id=event.intent_id,
-            state=state,
         )
 
         if not state.is_evaluated():
@@ -437,7 +410,6 @@ class TradingIntent(EventSourcedAggregateRoot[IntentId, TradingIntentStateBase])
 
         return TradingIntentInitializedState(
             last_sequence=envelope.sequence,
-            intent_id=state.intent_id,
             symbol=state.symbol,
             side=state.side,
             decision_identity=state.decision_identity,

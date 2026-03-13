@@ -9,7 +9,6 @@ from quantum.domain.risk.capital.capital_allocation_intent import (
     CapitalAllocationIntent,
 )
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.identifiers.intent_id import IntentId
 from quantum.domain.shared_kernel.value_objects.symbol import Symbol
 from quantum.domain.trading.execution.order.position_side import PositionSide
 from quantum.domain.trading.intent.trading_intent_state_base import (
@@ -19,8 +18,14 @@ from quantum.domain.trading.intent.trading_intent_state_base import (
 
 @dataclass(frozen=True, slots=True)
 class TradingIntentInitializedState(TradingIntentStateBase):
+    """
+    Identity-free initialized state for TradingIntent.
 
-    intent_id: IntentId
+    Doctrine:
+    - The aggregate root is the sole canonical owner of aggregate identity.
+    - This state contains business state ONLY.
+    """
+
     symbol: Symbol
     side: PositionSide
 
@@ -31,8 +36,6 @@ class TradingIntentInitializedState(TradingIntentStateBase):
     capital_allocation: CapitalAllocationIntent | None = None
 
     def _validate_types(self) -> None:
-        if not isinstance(self.intent_id, IntentId):
-            raise InvariantViolation("TradingIntentInitializedState.intent_id invalid")
 
         if not isinstance(self.symbol, Symbol):
             raise InvariantViolation("TradingIntentInitializedState.symbol invalid")
@@ -63,12 +66,12 @@ class TradingIntentInitializedState(TradingIntentStateBase):
             )
 
     def _validate_semantics(self) -> None:
-        # Capital allocation can only be committed AFTER authorization
         if self.capital_allocation is not None:
             if self.authorization_result is None:
                 raise InvariantViolation(
                     "Capital allocation cannot exist before evaluation"
                 )
+
             if not self.authorization_result.is_authorized():
                 raise InvariantViolation(
                     "Capital allocation cannot exist for a rejected intent"

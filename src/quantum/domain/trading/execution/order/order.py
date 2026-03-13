@@ -69,6 +69,10 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
     __slots__ = ()
 
     @classmethod
+    def aggregate_id_type(cls) -> type[OrderId]:
+        return OrderId
+
+    @classmethod
     def uninitialized_state(cls) -> OrderStateBase:
         return OrderUninitializedState(
             last_sequence=EventSequence.initial(),
@@ -133,7 +137,9 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
             - This preserves strict event-sourcing discipline:
               state changes only through apply(envelope).
         """
+
         aggregate = cls.new(aggregate_id=aggregate_id)
+
         events = cls.decide_create(
             intent_id=intent_id,
             broker_order_id=broker_order_id,
@@ -142,6 +148,7 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
             side=side,
             volume=volume,
         )
+
         return aggregate, events
 
     # --- Instance commands (valid only after creation) ------------------------
