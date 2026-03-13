@@ -107,8 +107,19 @@ class EventSourcedAggregateRoot(Generic[ID, S], ABC):
         This is the ONLY supported way to obtain an uninitialized aggregate
         instance suitable for creation workflows.
         """
-        if not isinstance(aggregate_id, AggregateId):
-            raise InvariantViolation(f"{cls.__name__}.new() requires AggregateId")
+        state = cls.uninitialized_state()
+
+        if not isinstance(state, AggregateState):
+            raise InvariantViolation(
+                f"{cls.__name__}.uninitialized_state() must return AggregateState"
+            )
+
+        if not state.last_event_sequence().is_initial():
+            raise InvariantViolation(
+                f"{cls.__name__}.uninitialized_state() must have initial sequence"
+            )
+
+        return cls(_aggregate_id=aggregate_id, _state=state)
 
     # --- Required contract ----------------------------------------------------
 
@@ -158,6 +169,8 @@ class EventSourcedAggregateRoot(Generic[ID, S], ABC):
             raise InvariantViolation("Event aggregate_id mismatch")
 
         event = envelope.event
+
+        # The mapping of handlers is based on the exact concrete type, never on inheritance.
         handler = self.handlers().get(type(event))
 
         if handler is None:

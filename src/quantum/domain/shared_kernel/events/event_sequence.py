@@ -18,8 +18,8 @@ class EventSequence(ValueObject):
     value: int
 
     def _validate(self) -> None:
-        if not isinstance(self.value, int):
-            raise InvariantViolation("EventSequence must be an integer")
+        if type(self.value) is not int:
+            raise InvariantViolation("EventSequence must be a strict integer")
 
         if self.value < 0:
             raise InvariantViolation("EventSequence must be >= 0")
