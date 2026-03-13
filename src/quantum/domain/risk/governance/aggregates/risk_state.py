@@ -62,7 +62,7 @@ class RiskState(EventSourcedAggregateRoot[RiskStateBase]):
     __slots__ = ()
 
     @classmethod
-    def empty_state(cls) -> RiskStateBase:
+    def uninitialized_state(cls) -> RiskStateBase:
         return RiskUninitializedState(last_sequence=EventSequence.initial())
 
     # --- Factory --------------------------------------------------------------

@@ -71,7 +71,7 @@ class EventSourcedRepository(Generic[ID, S, A]):
         if not events:
             aggregate = self._aggregate_type(
                 aggregate_id,
-                self._aggregate_type.empty_state(),
+                self._aggregate_type.uninitialized_state(),
             )
             return aggregate, previous
 

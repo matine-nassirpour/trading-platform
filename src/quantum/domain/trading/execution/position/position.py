@@ -45,7 +45,7 @@ class Position(EventSourcedAggregateRoot[PositionStateBase]):
     __slots__ = ()
 
     @classmethod
-    def empty_state(cls) -> PositionStateBase:
+    def uninitialized_state(cls) -> PositionStateBase:
         return PositionUninitializedState(
             last_sequence=EventSequence.initial(),
         )
@@ -179,6 +179,8 @@ class Position(EventSourcedAggregateRoot[PositionStateBase]):
             entry_price=state.entry_price,
             closed=True,
         )
+
+    # --- Handler registry -----------------------------------------------------
 
     @classmethod
     def _handlers(

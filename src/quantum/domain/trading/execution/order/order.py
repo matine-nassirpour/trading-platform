@@ -1,5 +1,6 @@
 from collections.abc import Mapping
 from dataclasses import dataclass
+from typing import Self
 
 from quantum.domain.shared_kernel.errors.invariants import (
     InvalidStateTransition,
@@ -58,7 +59,6 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
     Event-sourced Order aggregate.
 
     Institutional guarantees:
-
     - No implicit state
     - Explicit initialization lifecycle
     - Deterministic replay
@@ -69,15 +69,16 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
     __slots__ = ()
 
     @classmethod
-    def empty_state(cls) -> OrderStateBase:
+    def uninitialized_state(cls) -> OrderStateBase:
         return OrderUninitializedState(
             last_sequence=EventSequence.initial(),
         )
 
-    # --- Factory --------------------------------------------------------------
+    # --- Creation API ---------------------------------------------------------
 
-    def create(
-        self,
+    @classmethod
+    def decide_create(
+        cls,
         *,
         intent_id: IntentId,
         broker_order_id: BrokerOrderId,
@@ -87,14 +88,14 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
         volume: PositiveVolume,
     ) -> list[BaseEvent]:
         """
-        Create a new Order aggregate.
+        Pure domain decision for aggregate creation.
 
-        This method represents the domain-level decision to expose capital
-        by creating an order with a specific intent, side and volume.
+        This method does NOT require an aggregate instance.
+        It only answers the business question:
+            "Which event(s) must exist for a new Order to be created?"
+
+        It returns NEW domain events, not recorded envelopes.
         """
-
-        if not isinstance(self.state, OrderUninitializedState):
-            raise InvalidStateTransition("Order creation requires uninitialized state")
 
         return [
             OrderCreatedEvent(
@@ -107,16 +108,48 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
             )
         ]
 
-    # --- Commands -------------------------------------------------------------
+    @classmethod
+    def create_new(
+        cls,
+        *,
+        aggregate_id: OrderId,
+        intent_id: IntentId,
+        broker_order_id: BrokerOrderId,
+        symbol: Symbol,
+        order_type: OrderType,
+        side: PositionSide,
+        volume: PositiveVolume,
+    ) -> tuple[Self, list[BaseEvent]]:
+        """
+        Canonical factory for a brand-new Order aggregate.
+
+        Returns:
+            - the canonical empty aggregate instance
+            - the domain event(s) that must be persisted to create it
+
+        Notes:
+            - The returned aggregate is intentionally still EMPTY until
+              a RecordedEventEnvelope is persisted and applied.
+            - This preserves strict event-sourcing discipline:
+              state changes only through apply(envelope).
+        """
+        aggregate = cls.new(aggregate_id=aggregate_id)
+        events = cls.decide_create(
+            intent_id=intent_id,
+            broker_order_id=broker_order_id,
+            symbol=symbol,
+            order_type=order_type,
+            side=side,
+            volume=volume,
+        )
+        return aggregate, events
+
+    # --- Instance commands (valid only after creation) ------------------------
 
     def register_fill(self, *, fill: ExecutionFill) -> list[BaseEvent]:
         """
         Registers an execution fill against this order.
-
-        This method represents the domain acknowledgment that
-        a portion (or the entirety) of the order has been executed.
         """
-
         state = self.state
 
         if not isinstance(state, OrderInitializedState):
@@ -140,13 +173,7 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
     def cancel(self) -> list[BaseEvent]:
         """
         Cancels the order if it has not yet reached a terminal state.
-
-        Semantics:
-        - Cancellation is a domain decision
-        - A cancelled order cannot be filled afterwards
-        - Partial fills remain valid and preserved
         """
-
         state = self.state
 
         if not isinstance(state, OrderInitializedState):
@@ -169,14 +196,6 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
         event: BaseEvent,
         envelope: RecordedEventEnvelope,
     ) -> OrderStateBase:
-        """
-        Answers the question:
-            "Given that an order creation event occurred,
-             what is the resulting aggregate state?"
-
-        This method represents a PURE EVENT → STATE TRANSITION.
-        """
-
         if not isinstance(state, OrderUninitializedState):
             raise InvariantViolation("Order already created")
 
@@ -200,13 +219,6 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
         event: BaseEvent,
         envelope: RecordedEventEnvelope,
     ) -> OrderStateBase:
-        """
-        Answers the question:
-            "Given that a fill occurred, how does it affect the order state?"
-
-        This method represents a PURE EVENT → STATE TRANSITION.
-        """
-
         if not isinstance(state, OrderInitializedState):
             raise InvariantViolation("Order not initialized")
 
@@ -216,7 +228,6 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
         if event.broker_order_id != state.broker_order_id:
             raise InvariantViolation("Illegal fill event: broker_order_id mismatch")
 
-        # Industry-grade ES rule: handlers must also enforce replay integrity.
         if not state.status.is_fillable():
             raise InvariantViolation("Illegal fill event: order is not fillable")
 
@@ -248,14 +259,6 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
         event: BaseEvent,
         envelope: RecordedEventEnvelope,
     ) -> OrderStateBase:
-        """
-        Answers the question:
-            "Given that the order was cancelled,
-             what is the resulting aggregate state?"
-
-        This method represents a PURE EVENT → STATE TRANSITION.
-        """
-
         if not isinstance(state, OrderInitializedState):
             raise InvariantViolation("Order not initialized")
 
@@ -278,6 +281,8 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
             filled_volume=state.filled_volume,
             status=OrderStatus.cancelled(),
         )
+
+    # --- Handler registry -----------------------------------------------------
 
     @classmethod
     def _handlers(

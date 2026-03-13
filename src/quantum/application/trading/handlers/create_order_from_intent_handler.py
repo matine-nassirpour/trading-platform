@@ -72,7 +72,8 @@ class CreateOrderFromIntentHandler(
         aggregate: Order,
     ) -> tuple[Sequence[BaseEvent], None]:
 
-        domain_events = aggregate.create(
+        _, domain_events = Order.create_new(
+            aggregate_id=command.order_id,
             intent_id=command.intent_id,
             broker_order_id=command.broker_order_id,
             symbol=command.symbol,
@@ -80,4 +81,5 @@ class CreateOrderFromIntentHandler(
             side=command.side,
             volume=command.volume,
         )
+
         return domain_events, None

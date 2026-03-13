@@ -46,7 +46,7 @@ class KillSwitchState(EventSourcedAggregateRoot[KillSwitchStateBase]):
     __slots__ = ()
 
     @classmethod
-    def empty_state(cls) -> KillSwitchStateBase:
+    def uninitialized_state(cls) -> KillSwitchStateBase:
         return KillSwitchUninitializedState(last_sequence=EventSequence.initial())
 
     # --- Factory --------------------------------------------------------------

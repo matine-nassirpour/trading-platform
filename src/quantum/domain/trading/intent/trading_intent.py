@@ -1,4 +1,5 @@
 from collections.abc import Mapping
+from typing import Self
 
 from quantum.domain.decision.context.trading_context import TradingContext
 from quantum.domain.decision.events.v1.decision_authorized_event import (
@@ -74,38 +75,34 @@ class TradingIntent(EventSourcedAggregateRoot[IntentId, TradingIntentStateBase])
     __slots__ = ()
 
     @classmethod
-    def empty_state(cls) -> TradingIntentStateBase:
-        return TradingIntentUninitializedState(last_sequence=EventSequence.initial())
+    def uninitialized_state(cls) -> TradingIntentStateBase:
+        return TradingIntentUninitializedState(
+            last_sequence=EventSequence.initial(),
+        )
 
-    # --- Factory --------------------------------------------------------------
+    # --- Internal helpers -----------------------------------------------------
 
-    def create(
-        self,
+    @staticmethod
+    def _assert_intent_id_matches_stream(
         *,
-        intent_id: IntentId,
-        symbol: Symbol,
-        side: PositionSide,
-        decision_identity: DecisionIdentity,
-        context: TradingContext,
-    ) -> list[BaseEvent]:
-        """
-        Creates a new trading intent.
-        """
-
-        if not isinstance(self.state, TradingIntentUninitializedState):
-            raise InvalidStateTransition
-
-        return [
-            TradingIntentCreatedEvent(
-                intent_id=intent_id,
-                symbol=symbol,
-                side=side,
-                decision_identity=decision_identity,
-                trading_context=context,
+        event_intent_id: IntentId,
+        envelope: RecordedEventEnvelope,
+    ) -> None:
+        if event_intent_id != envelope.aggregate_id:
+            raise InvariantViolation(
+                "Event intent_id does not match envelope aggregate_id"
             )
-        ]
 
-    # --- Commands -------------------------------------------------------------
+    @staticmethod
+    def _assert_intent_id_matches_state(
+        *,
+        event_intent_id: IntentId,
+        state: TradingIntentInitializedState,
+    ) -> None:
+        if event_intent_id != state.intent_id:
+            raise InvariantViolation(
+                "Event intent_id does not match aggregate state intent_id"
+            )
 
     def _require_initialized(self) -> TradingIntentInitializedState:
         state = self.state
@@ -118,6 +115,73 @@ class TradingIntent(EventSourcedAggregateRoot[IntentId, TradingIntentStateBase])
 
         return state
 
+    # --- Creation API ---------------------------------------------------------
+
+    @classmethod
+    def decide_create(
+        cls,
+        *,
+        intent_id: IntentId,
+        symbol: Symbol,
+        side: PositionSide,
+        decision_identity: DecisionIdentity,
+        context: TradingContext,
+    ) -> list[BaseEvent]:
+        """
+        Pure domain decision for creating a new TradingIntent.
+
+        This method does NOT require an aggregate instance.
+        It returns NEW domain events, not recorded envelopes.
+        """
+
+        return [
+            TradingIntentCreatedEvent(
+                intent_id=intent_id,
+                symbol=symbol,
+                side=side,
+                decision_identity=decision_identity,
+                trading_context=context,
+            )
+        ]
+
+    @classmethod
+    def create_new(
+        cls,
+        *,
+        aggregate_id: IntentId,
+        symbol: Symbol,
+        side: PositionSide,
+        decision_identity: DecisionIdentity,
+        context: TradingContext,
+    ) -> tuple[Self, list[BaseEvent]]:
+        """
+        Canonical factory for a brand-new TradingIntent aggregate.
+
+        Returns:
+            - the canonical empty aggregate instance
+            - the domain event(s) that must be persisted to create it
+
+        The returned aggregate intentionally remains EMPTY until the recorded
+        creation envelope is persisted and applied.
+        """
+
+        if not isinstance(aggregate_id, IntentId):
+            raise InvariantViolation("aggregate_id must be IntentId")
+
+        aggregate = cls.new(aggregate_id=aggregate_id)
+
+        domain_events = cls.decide_create(
+            intent_id=aggregate_id,
+            symbol=symbol,
+            side=side,
+            decision_identity=decision_identity,
+            context=context,
+        )
+
+        return aggregate, domain_events
+
+    # --- Commands -------------------------------------------------------------
+
     def evaluate(
         self,
         *,
@@ -125,11 +189,18 @@ class TradingIntent(EventSourcedAggregateRoot[IntentId, TradingIntentStateBase])
         lifecycle: StrategyLifecycle,
         evaluated_at: EpochMs,
     ) -> list[BaseEvent]:
+        """
+        Evaluates the TradingIntent against lifecycle and governance policy.
+
+        Outcome is terminal for authorization:
+        - authorized
+        - rejected
+        """
 
         state = self._require_initialized()
 
         if state.is_evaluated():
-            raise InvalidStateTransition("TradingIntent already evaluated")
+            raise InvalidStateTransition("TradingIntent has already been evaluated")
 
         lifecycle_result = StrategyEligibilityPolicy.evaluate(
             lifecycle=lifecycle,
@@ -171,12 +242,13 @@ class TradingIntent(EventSourcedAggregateRoot[IntentId, TradingIntentStateBase])
         allocation: CapitalAllocationIntent,
     ) -> list[BaseEvent]:
         """
-        Commits the capital allocation intent for this TradingIntent.
+        Commits capital allocation for this TradingIntent.
 
-        HARD GUARANTEES:
-        - Only allowed AFTER authorization
-        - Idempotent: cannot allocate twice
-        - Fully auditable and replayable
+        Guarantees:
+        - allowed only after authorization
+        - cannot happen twice
+        - replay-safe
+        - fully auditable
         """
 
         state = self._require_initialized()
@@ -186,11 +258,13 @@ class TradingIntent(EventSourcedAggregateRoot[IntentId, TradingIntentStateBase])
 
         if not state.is_authorized():
             raise InvalidStateTransition(
-                "Cannot allocate capital for a rejected intent"
+                "Cannot allocate capital for a rejected TradingIntent"
             )
 
         if state.is_capital_allocated():
-            raise InvalidStateTransition("Capital already allocated")
+            raise InvalidStateTransition(
+                "Capital has already been allocated for this TradingIntent"
+            )
 
         return [
             CapitalAllocatedEvent(
@@ -213,7 +287,14 @@ class TradingIntent(EventSourcedAggregateRoot[IntentId, TradingIntentStateBase])
             raise InvariantViolation("TradingIntent already exists")
 
         if not isinstance(event, TradingIntentCreatedEvent):
-            raise InvariantViolation("Invalid event type")
+            raise InvariantViolation(
+                "TradingIntent._apply_created requires TradingIntentCreatedEvent"
+            )
+
+        TradingIntent._assert_intent_id_matches_stream(
+            event_intent_id=event.intent_id,
+            envelope=envelope,
+        )
 
         return TradingIntentInitializedState(
             last_sequence=envelope.sequence,
@@ -234,13 +315,29 @@ class TradingIntent(EventSourcedAggregateRoot[IntentId, TradingIntentStateBase])
     ) -> TradingIntentStateBase:
 
         if not isinstance(state, TradingIntentInitializedState):
-            raise InvariantViolation("TradingIntent not initialized")
+            raise InvariantViolation("TradingIntent is not initialized")
 
         if not isinstance(event, DecisionAuthorizedEvent):
-            raise InvariantViolation("Invalid event type")
+            raise InvariantViolation(
+                "TradingIntent._apply_authorized requires DecisionAuthorizedEvent"
+            )
+
+        TradingIntent._assert_intent_id_matches_stream(
+            event_intent_id=event.intent_id,
+            envelope=envelope,
+        )
+        TradingIntent._assert_intent_id_matches_state(
+            event_intent_id=event.intent_id,
+            state=state,
+        )
 
         if state.is_evaluated():
-            raise InvariantViolation("Already evaluated")
+            raise InvariantViolation("TradingIntent has already been evaluated")
+
+        if state.capital_allocation is not None:
+            raise InvariantViolation(
+                "Authorized transition requires no prior capital allocation"
+            )
 
         return TradingIntentInitializedState(
             last_sequence=envelope.sequence,
@@ -250,7 +347,7 @@ class TradingIntent(EventSourcedAggregateRoot[IntentId, TradingIntentStateBase])
             decision_identity=state.decision_identity,
             context=state.context,
             authorization_result=DecisionAuthorizationResult.authorized(),
-            capital_allocation=state.capital_allocation,  # should be None here
+            capital_allocation=None,
         )
 
     @staticmethod
@@ -261,13 +358,29 @@ class TradingIntent(EventSourcedAggregateRoot[IntentId, TradingIntentStateBase])
     ) -> TradingIntentStateBase:
 
         if not isinstance(state, TradingIntentInitializedState):
-            raise InvariantViolation("TradingIntent not initialized")
+            raise InvariantViolation("TradingIntent is not initialized")
 
         if not isinstance(event, DecisionRejectedEvent):
-            raise InvariantViolation("Invalid event type")
+            raise InvariantViolation(
+                "TradingIntent._apply_rejected requires DecisionRejectedEvent"
+            )
+
+        TradingIntent._assert_intent_id_matches_stream(
+            event_intent_id=event.intent_id,
+            envelope=envelope,
+        )
+        TradingIntent._assert_intent_id_matches_state(
+            event_intent_id=event.intent_id,
+            state=state,
+        )
 
         if state.is_evaluated():
-            raise InvariantViolation("Already evaluated")
+            raise InvariantViolation("TradingIntent has already been evaluated")
+
+        if state.capital_allocation is not None:
+            raise InvariantViolation(
+                "Rejected transition requires no prior capital allocation"
+            )
 
         return TradingIntentInitializedState(
             last_sequence=envelope.sequence,
@@ -279,7 +392,7 @@ class TradingIntent(EventSourcedAggregateRoot[IntentId, TradingIntentStateBase])
             authorization_result=DecisionAuthorizationResult.rejected(
                 reason_code=event.reason_code
             ),
-            capital_allocation=None,  # explicit: cannot have allocation if rejected
+            capital_allocation=None,
         )
 
     @staticmethod
@@ -288,19 +401,39 @@ class TradingIntent(EventSourcedAggregateRoot[IntentId, TradingIntentStateBase])
         event: BaseEvent,
         envelope: RecordedEventEnvelope,
     ) -> TradingIntentStateBase:
+
         if not isinstance(state, TradingIntentInitializedState):
-            raise InvariantViolation("TradingIntent not initialized")
+            raise InvariantViolation("TradingIntent is not initialized")
 
         if not isinstance(event, CapitalAllocatedEvent):
-            raise InvariantViolation("Invalid event type")
+            raise InvariantViolation(
+                "TradingIntent._apply_capital_allocated requires CapitalAllocatedEvent"
+            )
+
+        TradingIntent._assert_intent_id_matches_stream(
+            event_intent_id=event.intent_id,
+            envelope=envelope,
+        )
+        TradingIntent._assert_intent_id_matches_state(
+            event_intent_id=event.intent_id,
+            state=state,
+        )
+
+        if not state.is_evaluated():
+            raise InvariantViolation("Cannot allocate capital before evaluation")
 
         if not state.is_authorized():
             raise InvariantViolation(
-                "Cannot allocate capital unless intent is authorized"
+                "Cannot allocate capital unless TradingIntent is authorized"
             )
 
         if state.is_capital_allocated():
-            raise InvariantViolation("Capital already allocated")
+            raise InvariantViolation("Capital has already been allocated")
+
+        if event.strategy_id != state.decision_identity.strategy_id:
+            raise InvariantViolation(
+                "CapitalAllocatedEvent.strategy_id does not match decision strategy_id"
+            )
 
         return TradingIntentInitializedState(
             last_sequence=envelope.sequence,
@@ -312,6 +445,8 @@ class TradingIntent(EventSourcedAggregateRoot[IntentId, TradingIntentStateBase])
             authorization_result=state.authorization_result,
             capital_allocation=event.allocation,
         )
+
+    # --- Handler registry -----------------------------------------------------
 
     @classmethod
     def _handlers(

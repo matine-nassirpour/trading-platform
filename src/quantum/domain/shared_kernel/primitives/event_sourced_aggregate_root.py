@@ -39,7 +39,6 @@ class EventSourcedAggregateRoot(Generic[ID, S], ABC):
     - Strict sequence continuity
     - Event identity integrity
     - Aggregate identity protection
-    - Handler completeness enforcement
     - No hidden mutation
     """
 
@@ -73,11 +72,20 @@ class EventSourcedAggregateRoot(Generic[ID, S], ABC):
         """
         return self._state
 
-    # --- Canonical empty state (must be defined by each aggregate) ------------
+    @property
+    def version(self) -> EventSequence:
+        """
+        Returns aggregate version.
+
+        Version == last applied sequence.
+        """
+        return self.state.last_event_sequence()
+
+    # ---  ------------
 
     @classmethod
     @abstractmethod
-    def empty_state(cls) -> S:
+    def uninitialized_state(cls) -> S:
         """
         Canonical deterministic initial state.
 
@@ -85,8 +93,22 @@ class EventSourcedAggregateRoot(Generic[ID, S], ABC):
         - Be pure
         - Be deterministic
         - Have EventSequence.initial()
+
+        This state represents the pre-first-event aggregate lifecycle phase
+        required for deterministic replay of creation-originated aggregates.
         """
         raise NotImplementedError
+
+    @classmethod
+    def new(cls, *, aggregate_id: ID) -> Self:
+        """
+        Canonical constructor for a brand-new, empty aggregate.
+
+        This is the ONLY supported way to obtain an uninitialized aggregate
+        instance suitable for creation workflows.
+        """
+        if not isinstance(aggregate_id, AggregateId):
+            raise InvariantViolation(f"{cls.__name__}.new() requires AggregateId")
 
     # --- Required contract ----------------------------------------------------
 
@@ -126,7 +148,7 @@ class EventSourcedAggregateRoot(Generic[ID, S], ABC):
         """
         Applies ONE persisted event.
 
-        This is the ONLY legal mutation gateway.
+        This is the ONLY legal state transition gateway.
         """
 
         if not isinstance(envelope, RecordedEventEnvelope):
@@ -192,12 +214,6 @@ class EventSourcedAggregateRoot(Generic[ID, S], ABC):
     ) -> Self:
         """
         Deterministic rebuild from persisted event stream.
-
-        Guarantees:
-        - Order must be strictly increasing by sequence
-        - Duplicate detection
-        - Gap detection
-        - Identity integrity
         """
         if events is None:
             raise InvariantViolation("events cannot be None")
@@ -209,14 +225,14 @@ class EventSourcedAggregateRoot(Generic[ID, S], ABC):
                 raise InvariantViolation(
                     "Cannot rehydrate from empty event stream without aggregate_id"
                 )
-            return cls(aggregate_id, cls.empty_state())
+            return cls.new(aggregate_id=aggregate_id)
 
         expected_id = cls._validate_rehydrate_input(
             events=materialized,
             aggregate_id=aggregate_id,
         )
 
-        aggregate = cls(expected_id, cls.empty_state())
+        aggregate = cls.new(aggregate_id=expected_id)
 
         seen_event_ids: set[EventId] = set()
 
@@ -231,14 +247,3 @@ class EventSourcedAggregateRoot(Generic[ID, S], ABC):
             aggregate = aggregate.apply(envelope)
 
         return aggregate
-
-    # --- Version --------------------------------------------------------------
-
-    @property
-    def version(self) -> EventSequence:
-        """
-        Returns aggregate version.
-
-        Version == last applied sequence.
-        """
-        return self.state.last_event_sequence()
