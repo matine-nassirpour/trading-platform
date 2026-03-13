@@ -194,7 +194,7 @@ class EventSourcedAggregateRoot(Generic[ID, S], ABC):
                 "Handler must advance sequence to envelope.sequence"
             )
 
-        return self.__class__(self._aggregate_id, new_state)
+        return self.__class__(_aggregate_id=self._aggregate_id, _state=new_state)
 
     # --- Replay (strictly defined in terms of apply) --------------------------
 
