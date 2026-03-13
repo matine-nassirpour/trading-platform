@@ -79,6 +79,10 @@ class TradingIntent(EventSourcedAggregateRoot[IntentId, TradingIntentStateBase])
         return IntentId
 
     @classmethod
+    def state_type(cls) -> type[TradingIntentStateBase]:
+        return TradingIntentStateBase
+
+    @classmethod
     def uninitialized_state(cls) -> TradingIntentStateBase:
         return TradingIntentUninitializedState(
             last_sequence=EventSequence.initial(),

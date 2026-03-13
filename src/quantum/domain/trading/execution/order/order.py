@@ -73,6 +73,10 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
         return OrderId
 
     @classmethod
+    def state_type(cls) -> type[OrderStateBase]:
+        return OrderStateBase
+
+    @classmethod
     def uninitialized_state(cls) -> OrderStateBase:
         return OrderUninitializedState(
             last_sequence=EventSequence.initial(),
