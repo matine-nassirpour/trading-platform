@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 from typing import ClassVar
 
-from quantum.domain.decision.identity.strategy_id import StrategyId
 from quantum.domain.risk.lifecycle.strategy_lifecycle_state import (
     StrategyLifecycleState,
 )
 from quantum.domain.shared_kernel.events.base.fact_event import FactEvent
+from quantum.domain.shared_kernel.identifiers.strategy_id import StrategyId
 
 
 @dataclass(frozen=True, slots=True)

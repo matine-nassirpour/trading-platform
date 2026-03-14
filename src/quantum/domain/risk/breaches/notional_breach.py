@@ -5,8 +5,8 @@ from dataclasses import dataclass
 from quantum.domain.risk.breaches.risk_breach import RiskBreach
 from quantum.domain.risk.limits.notional_limit import NotionalLimit
 from quantum.domain.risk.limits.risk_threshold_policy import RiskThresholdPolicy
+from quantum.domain.risk.value_objects.notional import Notional
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.money.notional import Notional
 
 
 @dataclass(frozen=True, slots=True)

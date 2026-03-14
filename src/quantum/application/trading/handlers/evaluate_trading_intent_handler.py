@@ -9,8 +9,8 @@ from quantum.application.shared.base_handlers.aggregate_existence_policy import 
 from quantum.application.trading.commands.evaluate_trading_intent_command import (
     EvaluateTradingIntentCommand,
 )
+from quantum.domain.decision.intent.trading_intent import TradingIntent
 from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
-from quantum.domain.trading.intent.trading_intent import TradingIntent
 
 
 class EvaluateTradingIntentHandler(

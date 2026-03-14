@@ -4,7 +4,6 @@ from quantum.domain.shared_kernel.errors.invariants import (
     InvalidStateTransition,
     InvariantViolation,
 )
-from quantum.domain.shared_kernel.errors.position_errors import PositionAlreadyClosed
 from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
 from quantum.domain.shared_kernel.events.event_sequence import EventSequence
 from quantum.domain.shared_kernel.events.recorded_event_envelope import (
@@ -18,6 +17,7 @@ from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import
 )
 from quantum.domain.shared_kernel.value_objects.price import Price
 from quantum.domain.shared_kernel.value_objects.volume import PositiveVolume
+from quantum.domain.trading.errors.position_errors import PositionAlreadyClosed
 from quantum.domain.trading.events.v1.position.position_closed_event import (
     PositionClosedEvent,
 )

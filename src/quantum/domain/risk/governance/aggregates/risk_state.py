@@ -19,6 +19,11 @@ from quantum.domain.risk.governance.aggregates.risk_uninitialized_state import (
     RiskUninitializedState,
 )
 from quantum.domain.risk.limits.risk_limits import RiskLimits
+from quantum.domain.risk.value_objects.daily_loss import DailyLoss
+from quantum.domain.risk.value_objects.drawdown import Drawdown
+from quantum.domain.risk.value_objects.equity import Equity
+from quantum.domain.risk.value_objects.notional import Notional
+from quantum.domain.risk.value_objects.risk_exposure import RiskExposure
 from quantum.domain.shared_kernel.errors.invariants import (
     CurrencyMismatch,
     InvalidStateTransition,
@@ -29,11 +34,6 @@ from quantum.domain.shared_kernel.events.event_sequence import EventSequence
 from quantum.domain.shared_kernel.events.recorded_event_envelope import (
     RecordedEventEnvelope,
 )
-from quantum.domain.shared_kernel.money.daily_loss import DailyLoss
-from quantum.domain.shared_kernel.money.drawdown import Drawdown
-from quantum.domain.shared_kernel.money.equity import Equity
-from quantum.domain.shared_kernel.money.notional import Notional
-from quantum.domain.shared_kernel.money.risk_exposure import RiskExposure
 from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import (
     EventHandler,
     EventSourcedAggregateRoot,

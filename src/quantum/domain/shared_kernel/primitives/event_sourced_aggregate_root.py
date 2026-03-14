@@ -286,7 +286,6 @@ class EventSourcedAggregateRoot(Generic[ID, S], ABC):
         STRICT SEMANTICS:
         - rehydrate() is ONLY valid for an existing aggregate
         - the event stream MUST contain at least one recorded event
-        - empty stream is invalid and MUST be handled by the repository
         """
         if events is None:
             raise InvariantViolation("events cannot be None")

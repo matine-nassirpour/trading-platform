@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 
+from quantum.domain.market.temporal.utc_minute import UtcMinuteOfDay
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
-from quantum.domain.shared_kernel.temporal.utc_minute import UtcMinuteOfDay
 
 
 @dataclass(frozen=True, slots=True)

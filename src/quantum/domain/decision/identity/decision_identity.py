@@ -3,8 +3,8 @@ from dataclasses import dataclass
 from quantum.domain.decision.identity.decision_confidence import DecisionConfidence
 from quantum.domain.decision.identity.decision_source import DecisionSource
 from quantum.domain.decision.identity.model_version import ModelVersion
-from quantum.domain.decision.identity.strategy_id import StrategyId
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.identifiers.strategy_id import StrategyId
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 
 

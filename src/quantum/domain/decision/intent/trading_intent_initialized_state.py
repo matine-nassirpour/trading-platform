@@ -5,15 +5,15 @@ from quantum.domain.decision.governance.decision_authorization_result import (
     DecisionAuthorizationResult,
 )
 from quantum.domain.decision.identity.decision_identity import DecisionIdentity
+from quantum.domain.decision.intent.trading_intent_state_base import (
+    TradingIntentStateBase,
+)
 from quantum.domain.risk.capital.capital_allocation_intent import (
     CapitalAllocationIntent,
 )
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.value_objects.symbol import Symbol
 from quantum.domain.trading.execution.order.position_side import PositionSide
-from quantum.domain.trading.intent.trading_intent_state_base import (
-    TradingIntentStateBase,
-)
 
 
 @dataclass(frozen=True, slots=True)

@@ -8,6 +8,9 @@ from quantum.domain.decision.events.v1.decision_authorized_event import (
 from quantum.domain.decision.events.v1.decision_rejected_event import (
     DecisionRejectedEvent,
 )
+from quantum.domain.decision.events.v1.trading_intent_created_event import (
+    TradingIntentCreatedEvent,
+)
 from quantum.domain.decision.governance.decision_authorization_result import (
     DecisionAuthorizationResult,
 )
@@ -16,6 +19,15 @@ from quantum.domain.decision.governance.decision_policy_evaluator import (
     DecisionPolicyEvaluator,
 )
 from quantum.domain.decision.identity.decision_identity import DecisionIdentity
+from quantum.domain.decision.intent.trading_intent_initialized_state import (
+    TradingIntentInitializedState,
+)
+from quantum.domain.decision.intent.trading_intent_state_base import (
+    TradingIntentStateBase,
+)
+from quantum.domain.decision.intent.trading_intent_uninitialized_state import (
+    TradingIntentUninitializedState,
+)
 from quantum.domain.risk.capital.capital_allocation_intent import (
     CapitalAllocationIntent,
 )
@@ -40,19 +52,7 @@ from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import
 )
 from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
 from quantum.domain.shared_kernel.value_objects.symbol import Symbol
-from quantum.domain.trading.events.v1.intent.trading_intent_created_event import (
-    TradingIntentCreatedEvent,
-)
 from quantum.domain.trading.execution.order.position_side import PositionSide
-from quantum.domain.trading.intent.trading_intent_initialized_state import (
-    TradingIntentInitializedState,
-)
-from quantum.domain.trading.intent.trading_intent_state_base import (
-    TradingIntentStateBase,
-)
-from quantum.domain.trading.intent.trading_intent_uninitialized_state import (
-    TradingIntentUninitializedState,
-)
 
 
 class TradingIntent(EventSourcedAggregateRoot[IntentId, TradingIntentStateBase]):

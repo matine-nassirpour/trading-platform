@@ -1,12 +1,12 @@
 from dataclasses import dataclass
 from typing import ClassVar
 
-from quantum.domain.decision.identity.strategy_id import StrategyId
 from quantum.domain.risk.capital.capital_allocation_intent import (
     CapitalAllocationIntent,
 )
 from quantum.domain.shared_kernel.events.base.risk_event import RiskEvent
 from quantum.domain.shared_kernel.identifiers.intent_id import IntentId
+from quantum.domain.shared_kernel.identifiers.strategy_id import StrategyId
 
 
 @dataclass(frozen=True, slots=True)

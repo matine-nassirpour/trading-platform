@@ -3,7 +3,6 @@ from typing import ClassVar
 
 from quantum.domain.market.value_objects.reference_price import ReferencePrice
 from quantum.domain.shared_kernel.events.base.fact_event import FactEvent
-from quantum.domain.shared_kernel.identifiers.broker_order_id import BrokerOrderId
 from quantum.domain.shared_kernel.identifiers.intent_id import IntentId
 from quantum.domain.shared_kernel.value_objects.price import Price
 from quantum.domain.shared_kernel.value_objects.symbol import Symbol
@@ -11,6 +10,7 @@ from quantum.domain.shared_kernel.value_objects.volume import PositiveVolume
 from quantum.domain.trading.execution.order.order_type import OrderType
 from quantum.domain.trading.execution.order.position_side import PositionSide
 from quantum.domain.trading.execution.order.time_in_force import TimeInForce
+from quantum.domain.trading.identifiers.broker_order_id import BrokerOrderId
 
 
 @dataclass(frozen=True, slots=True)

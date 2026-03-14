@@ -2,11 +2,11 @@ from dataclasses import dataclass
 
 from quantum.domain.risk.governance.aggregates.risk_state_base import RiskStateBase
 from quantum.domain.risk.limits.risk_limits import RiskLimits
+from quantum.domain.risk.value_objects.equity import Equity
 from quantum.domain.shared_kernel.errors.invariants import (
     CurrencyMismatch,
     InvariantViolation,
 )
-from quantum.domain.shared_kernel.money.equity import Equity
 
 
 @dataclass(frozen=True, slots=True)

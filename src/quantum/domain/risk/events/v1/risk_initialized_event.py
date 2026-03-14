@@ -2,8 +2,8 @@ from dataclasses import dataclass
 from typing import ClassVar
 
 from quantum.domain.risk.limits.risk_limits import RiskLimits
+from quantum.domain.risk.value_objects.equity import Equity
 from quantum.domain.shared_kernel.events.base.risk_event import RiskEvent
-from quantum.domain.shared_kernel.money.equity import Equity
 
 
 @dataclass(frozen=True, slots=True)

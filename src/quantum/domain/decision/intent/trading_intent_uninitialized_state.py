@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 
-from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
-from quantum.domain.trading.intent.trading_intent_state_base import (
+from quantum.domain.decision.intent.trading_intent_state_base import (
     TradingIntentStateBase,
 )
+from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 
 
 @dataclass(frozen=True, slots=True)

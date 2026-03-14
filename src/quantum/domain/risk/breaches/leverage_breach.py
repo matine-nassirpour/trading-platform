@@ -5,12 +5,12 @@ from dataclasses import dataclass
 from quantum.domain.risk.breaches.risk_breach import RiskBreach
 from quantum.domain.risk.limits.leverage_limit import LeverageLimit
 from quantum.domain.risk.limits.risk_threshold_policy import RiskThresholdPolicy
+from quantum.domain.risk.value_objects.equity import Equity
+from quantum.domain.risk.value_objects.risk_exposure import RiskExposure
 from quantum.domain.shared_kernel.errors.invariants import (
     CurrencyMismatch,
     InvariantViolation,
 )
-from quantum.domain.shared_kernel.money.equity import Equity
-from quantum.domain.shared_kernel.money.risk_exposure import RiskExposure
 
 
 @dataclass(frozen=True, slots=True)

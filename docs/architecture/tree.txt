@@ -173,13 +173,18 @@ trading-platform/
 │       │   ├── decision/
 │       │   │   ├── commands/
 │       │   │   │   ├── __init__.py
-│       │   │   │   ├── evaluate_decision_command.py
 │       │   │   │   └── register_no_trade_command.py
 │       │   │   ├── handlers/
 │       │   │   │   ├── __init__.py
-│       │   │   │   ├── evaluate_decision_handler.py
 │       │   │   │   └── register_no_trade_handler.py
 │       │   │   └── __init__.py
+│       │   ├── integration/
+│       │   │   ├── handlers/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── integration_event_handler.py
+│       │   │   │   └── order_created_integration_handler.py
+│       │   │   ├── __init__.py
+│       │   │   └── integration_event_registry.py
 │       │   ├── ports/
 │       │   │   ├── inbound/
 │       │   │   │   ├── __init__.py
@@ -196,12 +201,12 @@ trading-platform/
 │       │   │   │   │   └── instrument_spec_provider.py
 │       │   │   │   ├── messaging/
 │       │   │   │   │   ├── __init__.py
-│       │   │   │   │   ├── event_bus.py
-│       │   │   │   │   └── execution_report_listener.py
+│       │   │   │   │   ├── domain_event_bus.py
+│       │   │   │   │   ├── execution_report_listener.py
+│       │   │   │   │   └── integration_event_bus.py
 │       │   │   │   ├── repositories/
 │       │   │   │   │   ├── __init__.py
 │       │   │   │   │   ├── decision_policy_repository.py
-│       │   │   │   │   ├── event_sourced_repository.py
 │       │   │   │   │   ├── strategy_lifecycle_repository.py
 │       │   │   │   │   └── transactional_projection_repository.py
 │       │   │   │   ├── risk/
@@ -231,13 +236,22 @@ trading-platform/
 │       │   │   ├── base_handlers/
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── aggregate_command_handler.py
+│       │   │   │   ├── aggregate_existence_policy.py
 │       │   │   │   └── process_command_handler.py
+│       │   │   ├── commands/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── base_command.py
+│       │   │   │   └── command_bus.py
 │       │   │   ├── errors/
 │       │   │   │   ├── __init__.py
 │       │   │   │   └── application_error.py
 │       │   │   ├── eventing/
 │       │   │   │   ├── __init__.py
-│       │   │   │   └── event_enveloper.py
+│       │   │   │   ├── application_event_context.py
+│       │   │   │   ├── event_enveloper.py
+│       │   │   │   ├── event_sourced_repository.py
+│       │   │   │   ├── pending_event_envelope.py
+│       │   │   │   └── stream_name_resolver.py
 │       │   │   ├── orchestration/
 │       │   │   │   ├── __init__.py
 │       │   │   │   └── application_orchestrator.py
@@ -248,20 +262,21 @@ trading-platform/
 │       │   ├── trading/
 │       │   │   ├── commands/
 │       │   │   │   ├── __init__.py
-│       │   │   │   ├── authorize_trading_intent_command.py
+│       │   │   │   ├── allocate_capital_command.py
 │       │   │   │   ├── cancel_order_command.py
 │       │   │   │   ├── close_position_command.py
 │       │   │   │   ├── create_order_from_intent_command.py
 │       │   │   │   ├── create_trading_intent_command.py
+│       │   │   │   ├── evaluate_trading_intent_command.py
 │       │   │   │   ├── open_position_command.py
-│       │   │   │   ├── register_order_fill_command.py
-│       │   │   │   └── reject_trading_intent_command.py
+│       │   │   │   └── register_order_fill_command.py
 │       │   │   ├── handlers/
 │       │   │   │   ├── __init__.py
-│       │   │   │   ├── authorize_trading_intent_handler.py
+│       │   │   │   ├── allocate_capital_handler.py
 │       │   │   │   ├── close_position_handler.py
 │       │   │   │   ├── create_order_from_intent_handler.py
 │       │   │   │   ├── create_trading_intent_handler.py
+│       │   │   │   ├── evaluate_trading_intent_handler.py
 │       │   │   │   ├── open_position_handler.py
 │       │   │   │   └── register_order_fill_handler.py
 │       │   │   ├── integration_events/
@@ -292,21 +307,29 @@ trading-platform/
 │       │   │   │   │   ├── __init__.py
 │       │   │   │   │   ├── decision_authorized_event.py
 │       │   │   │   │   ├── decision_rejected_event.py
-│       │   │   │   │   └── no_trade_decision_event.py
+│       │   │   │   │   ├── no_trade_decision_event.py
+│       │   │   │   │   └── trading_intent_created_event.py
 │       │   │   │   └── __init__.py
 │       │   │   ├── governance/
 │       │   │   │   ├── __init__.py
+│       │   │   │   ├── decision_authorization_reason_code.py
+│       │   │   │   ├── decision_authorization_result.py
+│       │   │   │   ├── decision_authorization_status.py
 │       │   │   │   ├── decision_policy.py
-│       │   │   │   ├── decision_policy_evaluator.py
-│       │   │   │   └── decision_policy_result.py
+│       │   │   │   └── decision_policy_evaluator.py
 │       │   │   ├── identity/
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── decision_confidence.py
 │       │   │   │   ├── decision_confidence_level.py
 │       │   │   │   ├── decision_identity.py
 │       │   │   │   ├── decision_source.py
-│       │   │   │   ├── model_version.py
-│       │   │   │   └── strategy_id.py
+│       │   │   │   └── model_version.py
+│       │   │   ├── intent/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── trading_intent.py
+│       │   │   │   ├── trading_intent_initialized_state.py
+│       │   │   │   ├── trading_intent_state_base.py
+│       │   │   │   └── trading_intent_uninitialized_state.py
 │       │   │   ├── outcome/
 │       │   │   │   ├── no_trade/
 │       │   │   │   │   ├── __init__.py
@@ -323,6 +346,11 @@ trading-platform/
 │       │   │   ├── regime/
 │       │   │   │   ├── __init__.py
 │       │   │   │   └── market_regime.py
+│       │   │   ├── temporal/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── market_session.py
+│       │   │   │   ├── trading_calendar.py
+│       │   │   │   └── utc_minute.py
 │       │   │   ├── value_objects/
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── contract_size.py
@@ -350,29 +378,41 @@ trading-platform/
 │       │   │   │   ├── capital_allocation_intent.py
 │       │   │   │   ├── capital_fraction.py
 │       │   │   │   └── risk_budget_slice.py
+│       │   │   ├── errors/
+│       │   │   │   ├── __init__.py
+│       │   │   │   └── risk_errors.py
 │       │   │   ├── events/
 │       │   │   │   ├── v1/
 │       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── capital_allocated_event.py
 │       │   │   │   │   ├── equity_adjusted_event.py
 │       │   │   │   │   ├── killswitch_armed_event.py
 │       │   │   │   │   ├── killswitch_triggered_event.py
 │       │   │   │   │   ├── risk_breach_attributed_event.py
-│       │   │   │   │   └── risk_breach_detected_event.py
+│       │   │   │   │   ├── risk_breach_detected_event.py
+│       │   │   │   │   ├── risk_initialized_event.py
+│       │   │   │   │   └── strategy_lifecycle_changed_event.py
 │       │   │   │   └── __init__.py
 │       │   │   ├── governance/
 │       │   │   │   ├── aggregates/
 │       │   │   │   │   ├── kill_switch/
 │       │   │   │   │   │   ├── __init__.py
+│       │   │   │   │   │   ├── kill_switch_armed_state.py
+│       │   │   │   │   │   ├── kill_switch_state.py
+│       │   │   │   │   │   ├── kill_switch_state_base.py
+│       │   │   │   │   │   ├── kill_switch_triggered_state.py
+│       │   │   │   │   │   ├── kill_switch_uninitialized_state.py
 │       │   │   │   │   │   ├── reason.py
-│       │   │   │   │   │   ├── state.py
 │       │   │   │   │   │   └── status.py
 │       │   │   │   │   ├── __init__.py
-│       │   │   │   │   └── risk_state.py
+│       │   │   │   │   ├── risk_initialized_state.py
+│       │   │   │   │   ├── risk_state.py
+│       │   │   │   │   ├── risk_state_base.py
+│       │   │   │   │   └── risk_uninitialized_state.py
 │       │   │   │   └── __init__.py
 │       │   │   ├── lifecycle/
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── strategy_eligibility_policy.py
-│       │   │   │   ├── strategy_eligibility_result.py
 │       │   │   │   ├── strategy_lifecycle.py
 │       │   │   │   └── strategy_lifecycle_state.py
 │       │   │   ├── limits/
@@ -384,15 +424,19 @@ trading-platform/
 │       │   │   │   ├── notional_limit.py
 │       │   │   │   ├── risk_limits.py
 │       │   │   │   └── risk_threshold_policy.py
+│       │   │   ├── value_objects/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── daily_loss.py
+│       │   │   │   ├── drawdown.py
+│       │   │   │   ├── equity.py
+│       │   │   │   ├── notional.py
+│       │   │   │   └── risk_exposure.py
 │       │   │   └── __init__.py
 │       │   ├── shared_kernel/
 │       │   │   ├── errors/
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── domain_error.py
-│       │   │   │   ├── invariants.py
-│       │   │   │   ├── order_errors.py
-│       │   │   │   ├── position_errors.py
-│       │   │   │   └── risk_errors.py
+│       │   │   │   └── invariants.py
 │       │   │   ├── events/
 │       │   │   │   ├── base/
 │       │   │   │   │   ├── __init__.py
@@ -404,25 +448,21 @@ trading-platform/
 │       │   │   │   ├── actor_id.py
 │       │   │   │   ├── causation_id.py
 │       │   │   │   ├── correlation_id.py
-│       │   │   │   ├── event_envelope.py
 │       │   │   │   ├── event_id.py
 │       │   │   │   ├── event_metadata.py
-│       │   │   │   └── event_sequence.py
+│       │   │   │   ├── event_sequence.py
+│       │   │   │   └── recorded_event_envelope.py
 │       │   │   ├── identifiers/
 │       │   │   │   ├── __init__.py
+│       │   │   │   ├── aggregate_id.py
 │       │   │   │   ├── intent_id.py
-│       │   │   │   ├── order_id.py
-│       │   │   │   └── position_id.py
+│       │   │   │   ├── position_id.py
+│       │   │   │   └── strategy_id.py
 │       │   │   ├── money/
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── contextual_monetary_amount.py
-│       │   │   │   ├── daily_loss.py
-│       │   │   │   ├── drawdown.py
-│       │   │   │   ├── equity.py
 │       │   │   │   ├── monetary_amount.py
 │       │   │   │   ├── money_context.py
-│       │   │   │   ├── notional.py
-│       │   │   │   ├── risk_exposure.py
 │       │   │   │   └── signed_contextual_amount.py
 │       │   │   ├── primitives/
 │       │   │   │   ├── __init__.py
@@ -430,6 +470,7 @@ trading-platform/
 │       │   │   │   ├── aggregate_state.py
 │       │   │   │   ├── closed_set_value_object.py
 │       │   │   │   ├── cursor.py
+│       │   │   │   ├── domain_service.py
 │       │   │   │   ├── event_sourced_aggregate_root.py
 │       │   │   │   ├── numeric_value_object.py
 │       │   │   │   ├── structural_contract.py
@@ -441,31 +482,27 @@ trading-platform/
 │       │   │   │   └── projection_error.py
 │       │   │   ├── temporal/
 │       │   │   │   ├── __init__.py
-│       │   │   │   ├── market_session.py
 │       │   │   │   ├── temporal_validity.py
-│       │   │   │   ├── time_interval.py
-│       │   │   │   ├── trading_calendar.py
-│       │   │   │   └── utc_minute.py
+│       │   │   │   └── time_interval.py
 │       │   │   ├── value_objects/
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── currency.py
 │       │   │   │   ├── epoch_ms.py
 │       │   │   │   ├── pnl.py
 │       │   │   │   ├── price.py
-│       │   │   │   ├── swap.py
 │       │   │   │   ├── symbol.py
 │       │   │   │   └── volume.py
 │       │   │   └── __init__.py
 │       │   ├── trading/
+│       │   │   ├── errors/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── order_errors.py
+│       │   │   │   └── position_errors.py
 │       │   │   ├── events/
 │       │   │   │   ├── v1/
 │       │   │   │   │   ├── governance/
 │       │   │   │   │   │   ├── __init__.py
-│       │   │   │   │   │   ├── market_regime_changed_event.py
-│       │   │   │   │   │   └── strategy_lifecycle_changed_event.py
-│       │   │   │   │   ├── intent/
-│       │   │   │   │   │   ├── __init__.py
-│       │   │   │   │   │   └── trading_intent_created_event.py
+│       │   │   │   │   │   └── market_regime_changed_event.py
 │       │   │   │   │   ├── order/
 │       │   │   │   │   │   ├── __init__.py
 │       │   │   │   │   │   ├── order_cancelled_event.py
@@ -491,14 +528,20 @@ trading-platform/
 │       │   │   │   │   ├── execution_fill.py
 │       │   │   │   │   ├── execution_id.py
 │       │   │   │   │   ├── order.py
+│       │   │   │   │   ├── order_initialized_state.py
+│       │   │   │   │   ├── order_state_base.py
 │       │   │   │   │   ├── order_status.py
 │       │   │   │   │   ├── order_type.py
+│       │   │   │   │   ├── order_uninitialized_state.py
 │       │   │   │   │   ├── position_side.py
 │       │   │   │   │   └── time_in_force.py
 │       │   │   │   ├── position/
 │       │   │   │   │   ├── __init__.py
 │       │   │   │   │   ├── pnl_service.py
-│       │   │   │   │   └── position.py
+│       │   │   │   │   ├── position.py
+│       │   │   │   │   ├── position_opened_state.py
+│       │   │   │   │   ├── position_state_base.py
+│       │   │   │   │   └── position_uninitialized_state.py
 │       │   │   │   ├── pricing/
 │       │   │   │   │   ├── __init__.py
 │       │   │   │   │   ├── price_rounding_mode.py
@@ -514,7 +557,8 @@ trading-platform/
 │       │   │   │   ├── settlement/
 │       │   │   │   │   ├── __init__.py
 │       │   │   │   │   ├── execution_cost.py
-│       │   │   │   │   └── fee.py
+│       │   │   │   │   ├── fee.py
+│       │   │   │   │   └── swap.py
 │       │   │   │   ├── taxonomy/
 │       │   │   │   │   ├── __init__.py
 │       │   │   │   │   ├── deal_entry.py
@@ -524,9 +568,9 @@ trading-platform/
 │       │   │   │   │   ├── liquidity_side.py
 │       │   │   │   │   └── order_check_outcome.py
 │       │   │   │   └── __init__.py
-│       │   │   ├── intent/
+│       │   │   ├── identifiers/
 │       │   │   │   ├── __init__.py
-│       │   │   │   └── trading_intent.py
+│       │   │   │   └── broker_order_id.py
 │       │   │   └── __init__.py
 │       │   └── __init__.py
 │       ├── infrastructure/
