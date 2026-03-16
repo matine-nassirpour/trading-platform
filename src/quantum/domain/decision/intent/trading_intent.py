@@ -51,8 +51,8 @@ from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import
     EventSourcedAggregateRoot,
 )
 from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
+from quantum.domain.shared_kernel.value_objects.position_side import PositionSide
 from quantum.domain.shared_kernel.value_objects.symbol import Symbol
-from quantum.domain.trading.execution.order.position_side import PositionSide
 
 
 class TradingIntent(EventSourcedAggregateRoot[IntentId, TradingIntentStateBase]):

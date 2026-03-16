@@ -17,6 +17,7 @@ from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import
     EventHandler,
     EventSourcedAggregateRoot,
 )
+from quantum.domain.shared_kernel.value_objects.position_side import PositionSide
 from quantum.domain.shared_kernel.value_objects.symbol import Symbol
 from quantum.domain.shared_kernel.value_objects.volume import (
     NonNegativeVolume,
@@ -40,7 +41,6 @@ from quantum.domain.trading.execution.order.order_type import OrderType
 from quantum.domain.trading.execution.order.order_uninitialized_state import (
     OrderUninitializedState,
 )
-from quantum.domain.trading.execution.order.position_side import PositionSide
 from quantum.domain.trading.identifiers.broker_order_id import BrokerOrderId
 
 

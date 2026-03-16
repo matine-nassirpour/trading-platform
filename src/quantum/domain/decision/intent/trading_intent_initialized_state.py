@@ -12,8 +12,8 @@ from quantum.domain.risk.capital.capital_allocation_intent import (
     CapitalAllocationIntent,
 )
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.value_objects.position_side import PositionSide
 from quantum.domain.shared_kernel.value_objects.symbol import Symbol
-from quantum.domain.trading.execution.order.position_side import PositionSide
 
 
 @dataclass(frozen=True, slots=True)
