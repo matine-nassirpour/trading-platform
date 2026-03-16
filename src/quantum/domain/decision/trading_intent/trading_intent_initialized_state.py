@@ -8,9 +8,6 @@ from quantum.domain.decision.identity.decision_identity import DecisionIdentity
 from quantum.domain.decision.trading_intent.trading_intent_state_base import (
     TradingIntentStateBase,
 )
-from quantum.domain.risk.capital.capital_allocation_intent import (
-    CapitalAllocationIntent,
-)
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.value_objects.position_side import PositionSide
 from quantum.domain.shared_kernel.value_objects.symbol import Symbol
@@ -33,7 +30,6 @@ class TradingIntentInitializedState(TradingIntentStateBase):
     context: TradingContext
 
     authorization_result: DecisionAuthorizationResult | None
-    capital_allocation: CapitalAllocationIntent | None = None
 
     def _validate_types(self) -> None:
 
@@ -52,30 +48,12 @@ class TradingIntentInitializedState(TradingIntentStateBase):
             raise InvariantViolation("TradingIntentInitializedState.context invalid")
 
         if self.authorization_result is not None and not isinstance(
-            self.authorization_result, DecisionAuthorizationResult
+            self.authorization_result,
+            DecisionAuthorizationResult,
         ):
             raise InvariantViolation(
                 "TradingIntentInitializedState.authorization_result invalid"
             )
-
-        if self.capital_allocation is not None and not isinstance(
-            self.capital_allocation, CapitalAllocationIntent
-        ):
-            raise InvariantViolation(
-                "TradingIntentInitializedState.capital_allocation invalid"
-            )
-
-    def _validate_semantics(self) -> None:
-        if self.capital_allocation is not None:
-            if self.authorization_result is None:
-                raise InvariantViolation(
-                    "Capital allocation cannot exist before evaluation"
-                )
-
-            if not self.authorization_result.is_authorized():
-                raise InvariantViolation(
-                    "Capital allocation cannot exist for a rejected intent"
-                )
 
     def _validate(self) -> None:
         super()._validate()
@@ -85,8 +63,6 @@ class TradingIntentInitializedState(TradingIntentStateBase):
             raise InvariantViolation(
                 "Initialized TradingIntent cannot have initial sequence"
             )
-
-        self._validate_semantics()
 
     # --- Semantic helpers -----------------------------------------------------
 
@@ -104,6 +80,3 @@ class TradingIntentInitializedState(TradingIntentStateBase):
             self.authorization_result is not None
             and self.authorization_result.is_rejected()
         )
-
-    def is_capital_allocated(self) -> bool:
-        return self.capital_allocation is not None

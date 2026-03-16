@@ -4,17 +4,24 @@ from typing import ClassVar
 from quantum.domain.risk.capital.capital_allocation_intent import (
     CapitalAllocationIntent,
 )
+from quantum.domain.risk.identifiers.capital_reservation_id import CapitalReservationId
 from quantum.domain.shared_kernel.events.base.risk_event import RiskEvent
 from quantum.domain.shared_kernel.identifiers.intent_id import IntentId
 from quantum.domain.shared_kernel.identifiers.strategy_id import StrategyId
 
 
 @dataclass(frozen=True, slots=True)
-class CapitalAllocatedEvent(RiskEvent):
+class CapitalReservedEvent(RiskEvent):
+    """
+    Reservation request has been accepted, and capital is now reserved.
 
-    event_name: ClassVar[str] = "risk.capital.allocated"
+    The reserved allocation MAY differ from the requested allocation.
+    """
+
+    event_name: ClassVar[str] = "risk.capital_reservation.reserved"
     event_version: ClassVar[int] = 1
 
+    reservation_id: CapitalReservationId
     intent_id: IntentId
     strategy_id: StrategyId
-    allocation: CapitalAllocationIntent
+    reserved_allocation: CapitalAllocationIntent

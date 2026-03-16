@@ -262,7 +262,6 @@ trading-platform/
 │       │   ├── trading/
 │       │   │   ├── commands/
 │       │   │   │   ├── __init__.py
-│       │   │   │   ├── allocate_capital_command.py
 │       │   │   │   ├── cancel_order_command.py
 │       │   │   │   ├── close_position_command.py
 │       │   │   │   ├── create_order_from_intent_command.py
@@ -272,7 +271,6 @@ trading-platform/
 │       │   │   │   └── register_order_fill_command.py
 │       │   │   ├── handlers/
 │       │   │   │   ├── __init__.py
-│       │   │   │   ├── allocate_capital_handler.py
 │       │   │   │   ├── close_position_handler.py
 │       │   │   │   ├── create_order_from_intent_handler.py
 │       │   │   │   ├── create_trading_intent_handler.py
@@ -308,6 +306,7 @@ trading-platform/
 │       │   │   │   │   ├── decision_authorized_event.py
 │       │   │   │   │   ├── decision_rejected_event.py
 │       │   │   │   │   ├── no_trade_decision_event.py
+│       │   │   │   │   ├── strategy_lifecycle_changed_event.py
 │       │   │   │   │   └── trading_intent_created_event.py
 │       │   │   │   └── __init__.py
 │       │   │   ├── governance/
@@ -324,18 +323,23 @@ trading-platform/
 │       │   │   │   ├── decision_identity.py
 │       │   │   │   ├── decision_source.py
 │       │   │   │   └── model_version.py
-│       │   │   ├── intent/
+│       │   │   ├── lifecycle/
 │       │   │   │   ├── __init__.py
-│       │   │   │   ├── trading_intent.py
-│       │   │   │   ├── trading_intent_initialized_state.py
-│       │   │   │   ├── trading_intent_state_base.py
-│       │   │   │   └── trading_intent_uninitialized_state.py
+│       │   │   │   ├── strategy_eligibility_policy.py
+│       │   │   │   ├── strategy_lifecycle.py
+│       │   │   │   └── strategy_lifecycle_state.py
 │       │   │   ├── outcome/
 │       │   │   │   ├── no_trade/
 │       │   │   │   │   ├── __init__.py
 │       │   │   │   │   ├── no_trade_decision.py
 │       │   │   │   │   └── no_trade_reason.py
 │       │   │   │   └── __init__.py
+│       │   │   ├── trading_intent/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── trading_intent.py
+│       │   │   │   ├── trading_intent_initialized_state.py
+│       │   │   │   ├── trading_intent_state_base.py
+│       │   │   │   └── trading_intent_uninitialized_state.py
 │       │   │   └── __init__.py
 │       │   ├── market/
 │       │   │   ├── instrument/
@@ -378,20 +382,35 @@ trading-platform/
 │       │   │   │   ├── capital_allocation_intent.py
 │       │   │   │   ├── capital_fraction.py
 │       │   │   │   └── risk_budget_slice.py
+│       │   │   ├── capital_reservation/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── capital_release_reason_code.py
+│       │   │   │   ├── capital_reservation.py
+│       │   │   │   ├── capital_reservation_consumed_state.py
+│       │   │   │   ├── capital_reservation_pending_state.py
+│       │   │   │   ├── capital_reservation_rejected_state.py
+│       │   │   │   ├── capital_reservation_rejection_reason_code.py
+│       │   │   │   ├── capital_reservation_released_state.py
+│       │   │   │   ├── capital_reservation_reserved_state.py
+│       │   │   │   ├── capital_reservation_state_base.py
+│       │   │   │   └── capital_reservation_uninitialized_state.py
 │       │   │   ├── errors/
 │       │   │   │   ├── __init__.py
 │       │   │   │   └── risk_errors.py
 │       │   │   ├── events/
 │       │   │   │   ├── v1/
 │       │   │   │   │   ├── __init__.py
-│       │   │   │   │   ├── capital_allocated_event.py
+│       │   │   │   │   ├── capital_consumed_event.py
+│       │   │   │   │   ├── capital_released_event.py
+│       │   │   │   │   ├── capital_reservation_rejected_event.py
+│       │   │   │   │   ├── capital_reservation_requested_event.py
+│       │   │   │   │   ├── capital_reserved_event.py
 │       │   │   │   │   ├── equity_adjusted_event.py
 │       │   │   │   │   ├── killswitch_armed_event.py
 │       │   │   │   │   ├── killswitch_triggered_event.py
 │       │   │   │   │   ├── risk_breach_attributed_event.py
 │       │   │   │   │   ├── risk_breach_detected_event.py
-│       │   │   │   │   ├── risk_initialized_event.py
-│       │   │   │   │   └── strategy_lifecycle_changed_event.py
+│       │   │   │   │   └── risk_initialized_event.py
 │       │   │   │   └── __init__.py
 │       │   │   ├── governance/
 │       │   │   │   ├── aggregates/
@@ -410,11 +429,9 @@ trading-platform/
 │       │   │   │   │   ├── risk_state_base.py
 │       │   │   │   │   └── risk_uninitialized_state.py
 │       │   │   │   └── __init__.py
-│       │   │   ├── lifecycle/
+│       │   │   ├── identifiers/
 │       │   │   │   ├── __init__.py
-│       │   │   │   ├── strategy_eligibility_policy.py
-│       │   │   │   ├── strategy_lifecycle.py
-│       │   │   │   └── strategy_lifecycle_state.py
+│       │   │   │   └── capital_reservation_id.py
 │       │   │   ├── limits/
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── daily_loss_limit.py
@@ -456,7 +473,6 @@ trading-platform/
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── aggregate_id.py
 │       │   │   │   ├── intent_id.py
-│       │   │   │   ├── position_id.py
 │       │   │   │   └── strategy_id.py
 │       │   │   ├── money/
 │       │   │   │   ├── __init__.py
@@ -489,6 +505,7 @@ trading-platform/
 │       │   │   │   ├── currency.py
 │       │   │   │   ├── epoch_ms.py
 │       │   │   │   ├── pnl.py
+│       │   │   │   ├── position_side.py
 │       │   │   │   ├── price.py
 │       │   │   │   ├── symbol.py
 │       │   │   │   └── volume.py
@@ -533,7 +550,6 @@ trading-platform/
 │       │   │   │   │   ├── order_status.py
 │       │   │   │   │   ├── order_type.py
 │       │   │   │   │   ├── order_uninitialized_state.py
-│       │   │   │   │   ├── position_side.py
 │       │   │   │   │   └── time_in_force.py
 │       │   │   │   ├── position/
 │       │   │   │   │   ├── __init__.py
@@ -570,7 +586,8 @@ trading-platform/
 │       │   │   │   └── __init__.py
 │       │   │   ├── identifiers/
 │       │   │   │   ├── __init__.py
-│       │   │   │   └── broker_order_id.py
+│       │   │   │   ├── broker_order_id.py
+│       │   │   │   └── position_id.py
 │       │   │   └── __init__.py
 │       │   └── __init__.py
 │       ├── infrastructure/
