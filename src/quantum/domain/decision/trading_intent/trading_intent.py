@@ -19,19 +19,19 @@ from quantum.domain.decision.governance.decision_policy_evaluator import (
     DecisionPolicyEvaluator,
 )
 from quantum.domain.decision.identity.decision_identity import DecisionIdentity
-from quantum.domain.decision.intent.trading_intent_initialized_state import (
-    TradingIntentInitializedState,
-)
-from quantum.domain.decision.intent.trading_intent_state_base import (
-    TradingIntentStateBase,
-)
-from quantum.domain.decision.intent.trading_intent_uninitialized_state import (
-    TradingIntentUninitializedState,
-)
 from quantum.domain.decision.lifecycle.strategy_eligibility_policy import (
     StrategyEligibilityPolicy,
 )
 from quantum.domain.decision.lifecycle.strategy_lifecycle import StrategyLifecycle
+from quantum.domain.decision.trading_intent.trading_intent_initialized_state import (
+    TradingIntentInitializedState,
+)
+from quantum.domain.decision.trading_intent.trading_intent_state_base import (
+    TradingIntentStateBase,
+)
+from quantum.domain.decision.trading_intent.trading_intent_uninitialized_state import (
+    TradingIntentUninitializedState,
+)
 from quantum.domain.risk.capital.capital_allocation_intent import (
     CapitalAllocationIntent,
 )

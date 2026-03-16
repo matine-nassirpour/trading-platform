@@ -9,7 +9,6 @@ from quantum.domain.shared_kernel.events.event_sequence import EventSequence
 from quantum.domain.shared_kernel.events.recorded_event_envelope import (
     RecordedEventEnvelope,
 )
-from quantum.domain.shared_kernel.identifiers.position_id import PositionId
 from quantum.domain.shared_kernel.money.money_context import MoneyContext
 from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import (
     EventHandler,
@@ -35,6 +34,7 @@ from quantum.domain.trading.execution.position.position_state_base import (
 from quantum.domain.trading.execution.position.position_uninitialized_state import (
     PositionUninitializedState,
 )
+from quantum.domain.trading.identifiers.position_id import PositionId
 
 
 class Position(EventSourcedAggregateRoot[PositionStateBase]):

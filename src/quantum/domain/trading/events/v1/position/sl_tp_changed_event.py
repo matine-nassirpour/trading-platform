@@ -3,10 +3,10 @@ from typing import ClassVar
 
 from quantum.domain.shared_kernel.events.base.fact_event import FactEvent
 from quantum.domain.shared_kernel.identifiers.intent_id import IntentId
-from quantum.domain.shared_kernel.identifiers.position_id import PositionId
 from quantum.domain.shared_kernel.value_objects.price import Price
 from quantum.domain.shared_kernel.value_objects.symbol import Symbol
 from quantum.domain.trading.execution.safety.sl_tp_change_reason import SlTpChangeReason
+from quantum.domain.trading.identifiers.position_id import PositionId
 
 
 @dataclass(frozen=True, slots=True)
