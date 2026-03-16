@@ -9,9 +9,7 @@ from quantum.application.shared.base_handlers.aggregate_command_handler import (
 from quantum.application.shared.base_handlers.aggregate_existence_policy import (
     AggregateExistencePolicy,
 )
-from quantum.domain.risk.governance.aggregates.kill_switch.kill_switch_state import (
-    KillSwitchState,
-)
+from quantum.domain.risk.kill_switch.aggregate import KillSwitchState
 from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
 
 

@@ -1,9 +1,7 @@
 from dataclasses import dataclass
 
 from quantum.application.shared.commands.base_command import BaseCommand
-from quantum.domain.risk.governance.aggregates.kill_switch.reason import (
-    KillSwitchReason,
-)
+from quantum.domain.risk.kill_switch.reason import KillSwitchReason
 
 
 @dataclass(frozen=True, slots=True)
