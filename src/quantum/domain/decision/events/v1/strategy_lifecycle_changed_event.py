@@ -14,7 +14,7 @@ class StrategyLifecycleChangedEvent(FactEvent):
     Emitted whenever a strategy lifecycle state changes.
     """
 
-    event_name: ClassVar[str] = "trading.strategy.lifecycle_changed"
+    event_name: ClassVar[str] = "decision.strategy.lifecycle_changed"
     event_version: ClassVar[int] = 1
 
     strategy_id: StrategyId

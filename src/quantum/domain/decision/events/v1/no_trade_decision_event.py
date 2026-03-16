@@ -20,7 +20,7 @@ class NoTradeDecisionEvent(DecisionEvent):
     - It resulted in an intentional abstention
     """
 
-    event_name: ClassVar[str] = "trading.decision.no_trade"
+    event_name: ClassVar[str] = "decision.no_trade"
     event_version: ClassVar[int] = 1
 
     symbol: Symbol

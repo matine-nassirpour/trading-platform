@@ -18,7 +18,7 @@ class TradingIntentCreatedEvent(FactEvent):
     NOT its authorization.
     """
 
-    event_name: ClassVar[str] = "trading.intent.created"
+    event_name: ClassVar[str] = "decision.trading_intent.created"
     event_version: ClassVar[int] = 1
 
     intent_id: IntentId

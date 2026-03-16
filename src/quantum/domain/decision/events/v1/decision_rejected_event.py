@@ -10,7 +10,7 @@ from quantum.domain.shared_kernel.identifiers.intent_id import IntentId
 
 @dataclass(frozen=True, slots=True)
 class DecisionRejectedEvent(DecisionEvent):
-    event_name: ClassVar[str] = "trading.decision.rejected"
+    event_name: ClassVar[str] = "decision.rejected"
     event_version: ClassVar[int] = 1
 
     intent_id: IntentId
