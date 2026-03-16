@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from quantum.application.shared.commands.base_command import BaseCommand
 from quantum.domain.decision.governance.decision_policy import DecisionPolicy
-from quantum.domain.risk.lifecycle.strategy_lifecycle import StrategyLifecycle
+from quantum.domain.decision.lifecycle.strategy_lifecycle import StrategyLifecycle
 from quantum.domain.shared_kernel.identifiers.intent_id import IntentId
 from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
 

@@ -28,14 +28,14 @@ from quantum.domain.decision.intent.trading_intent_state_base import (
 from quantum.domain.decision.intent.trading_intent_uninitialized_state import (
     TradingIntentUninitializedState,
 )
+from quantum.domain.decision.lifecycle.strategy_eligibility_policy import (
+    StrategyEligibilityPolicy,
+)
+from quantum.domain.decision.lifecycle.strategy_lifecycle import StrategyLifecycle
 from quantum.domain.risk.capital.capital_allocation_intent import (
     CapitalAllocationIntent,
 )
 from quantum.domain.risk.events.v1.capital_allocated_event import CapitalAllocatedEvent
-from quantum.domain.risk.lifecycle.strategy_eligibility_policy import (
-    StrategyEligibilityPolicy,
-)
-from quantum.domain.risk.lifecycle.strategy_lifecycle import StrategyLifecycle
 from quantum.domain.shared_kernel.errors.invariants import (
     InvalidStateTransition,
     InvariantViolation,

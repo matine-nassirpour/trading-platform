@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import ClassVar
 
-from quantum.domain.risk.lifecycle.strategy_lifecycle_state import (
+from quantum.domain.decision.lifecycle.strategy_lifecycle_state import (
     StrategyLifecycleState,
 )
 from quantum.domain.shared_kernel.events.base.fact_event import FactEvent

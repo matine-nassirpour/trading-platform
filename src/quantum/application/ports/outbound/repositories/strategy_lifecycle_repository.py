@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from typing import Protocol, runtime_checkable
 
-from quantum.domain.risk.lifecycle.strategy_lifecycle import StrategyLifecycle
+from quantum.domain.decision.lifecycle.strategy_lifecycle import StrategyLifecycle
 from quantum.domain.shared_kernel.identifiers.strategy_id import StrategyId
 
 

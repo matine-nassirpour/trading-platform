@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from quantum.domain.risk.lifecycle.strategy_lifecycle_state import (
+from quantum.domain.decision.lifecycle.strategy_lifecycle_state import (
     StrategyLifecycleState,
 )
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
