@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 from typing import ClassVar
 
+from quantum.domain.risk.common.events.risk_event import RiskEvent
 from quantum.domain.risk.governance.risk_state.attribution.risk_attribution import (
     RiskAttribution,
 )
 from quantum.domain.risk.governance.risk_state.breaches.risk_breach import RiskBreach
-from quantum.domain.shared_kernel.events.base.risk_event import RiskEvent
 
 
 @dataclass(frozen=True, slots=True)

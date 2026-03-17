@@ -19,7 +19,6 @@ def _validate_allowed_values(values: frozenset[str], cls_name: str) -> frozenset
     - A frozenset[str]
     - Non-empty
     - Fully canonicalized
-    - Free of duplicates under canonicalization
     """
 
     if not isinstance(values, frozenset):
