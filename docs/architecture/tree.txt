@@ -363,91 +363,102 @@ trading-platform/
 │       │   │   │   └── volume_constraints.py
 │       │   │   └── __init__.py
 │       │   ├── risk/
-│       │   │   ├── attribution/
-│       │   │   │   ├── __init__.py
-│       │   │   │   ├── risk_attribution.py
-│       │   │   │   ├── risk_reference.py
-│       │   │   │   ├── risk_source.py
-│       │   │   │   └── risk_source_type.py
-│       │   │   ├── breaches/
-│       │   │   │   ├── __init__.py
-│       │   │   │   ├── daily_loss_breach.py
-│       │   │   │   ├── drawdown_breach.py
-│       │   │   │   ├── exposure_breach.py
-│       │   │   │   ├── leverage_breach.py
-│       │   │   │   ├── notional_breach.py
-│       │   │   │   └── risk_breach.py
 │       │   │   ├── capital/
-│       │   │   │   ├── __init__.py
-│       │   │   │   ├── capital_allocation_intent.py
-│       │   │   │   ├── capital_fraction.py
-│       │   │   │   └── risk_budget_slice.py
-│       │   │   ├── capital_reservation/
-│       │   │   │   ├── __init__.py
-│       │   │   │   ├── capital_release_reason_code.py
-│       │   │   │   ├── capital_reservation.py
-│       │   │   │   ├── capital_reservation_consumed_state.py
-│       │   │   │   ├── capital_reservation_pending_state.py
-│       │   │   │   ├── capital_reservation_rejected_state.py
-│       │   │   │   ├── capital_reservation_rejection_reason_code.py
-│       │   │   │   ├── capital_reservation_released_state.py
-│       │   │   │   ├── capital_reservation_reserved_state.py
-│       │   │   │   ├── capital_reservation_state_base.py
-│       │   │   │   └── capital_reservation_uninitialized_state.py
+│       │   │   │   ├── allocation/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── capital_allocation_intent.py
+│       │   │   │   │   ├── capital_fraction.py
+│       │   │   │   │   └── risk_budget_slice.py
+│       │   │   │   ├── reservation/
+│       │   │   │   │   ├── reason_codes/
+│       │   │   │   │   │   ├── __init__.py
+│       │   │   │   │   │   ├── capital_release_reason_code.py
+│       │   │   │   │   │   └── capital_reservation_rejection_reason_code.py
+│       │   │   │   │   ├── states/
+│       │   │   │   │   │   ├── __init__.py
+│       │   │   │   │   │   ├── capital_reservation_consumed_state.py
+│       │   │   │   │   │   ├── capital_reservation_pending_state.py
+│       │   │   │   │   │   ├── capital_reservation_rejected_state.py
+│       │   │   │   │   │   ├── capital_reservation_released_state.py
+│       │   │   │   │   │   ├── capital_reservation_reserved_state.py
+│       │   │   │   │   │   ├── capital_reservation_state_base.py
+│       │   │   │   │   │   └── capital_reservation_uninitialized_state.py
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   └── aggregate.py
+│       │   │   │   └── __init__.py
 │       │   │   ├── errors/
 │       │   │   │   ├── __init__.py
 │       │   │   │   └── risk_errors.py
 │       │   │   ├── events/
 │       │   │   │   ├── v1/
-│       │   │   │   │   ├── __init__.py
-│       │   │   │   │   ├── capital_consumed_event.py
-│       │   │   │   │   ├── capital_released_event.py
-│       │   │   │   │   ├── capital_reservation_rejected_event.py
-│       │   │   │   │   ├── capital_reservation_requested_event.py
-│       │   │   │   │   ├── capital_reserved_event.py
-│       │   │   │   │   ├── equity_adjusted_event.py
-│       │   │   │   │   ├── killswitch_armed_event.py
-│       │   │   │   │   ├── killswitch_triggered_event.py
-│       │   │   │   │   ├── risk_breach_attributed_event.py
-│       │   │   │   │   ├── risk_breach_detected_event.py
-│       │   │   │   │   └── risk_initialized_event.py
-│       │   │   │   └── __init__.py
-│       │   │   ├── governance/
-│       │   │   │   ├── aggregates/
+│       │   │   │   │   ├── capital/
+│       │   │   │   │   │   ├── __init__.py
+│       │   │   │   │   │   ├── capital_consumed_event.py
+│       │   │   │   │   │   ├── capital_released_event.py
+│       │   │   │   │   │   ├── capital_reservation_rejected_event.py
+│       │   │   │   │   │   ├── capital_reservation_requested_event.py
+│       │   │   │   │   │   └── capital_reserved_event.py
+│       │   │   │   │   ├── governance/
+│       │   │   │   │   │   ├── __init__.py
+│       │   │   │   │   │   ├── equity_adjusted_event.py
+│       │   │   │   │   │   ├── risk_breach_attributed_event.py
+│       │   │   │   │   │   ├── risk_breach_detected_event.py
+│       │   │   │   │   │   └── risk_initialized_event.py
 │       │   │   │   │   ├── kill_switch/
 │       │   │   │   │   │   ├── __init__.py
-│       │   │   │   │   │   ├── kill_switch_armed_state.py
-│       │   │   │   │   │   ├── kill_switch_state.py
-│       │   │   │   │   │   ├── kill_switch_state_base.py
-│       │   │   │   │   │   ├── kill_switch_triggered_state.py
-│       │   │   │   │   │   ├── kill_switch_uninitialized_state.py
-│       │   │   │   │   │   ├── reason.py
-│       │   │   │   │   │   └── status.py
+│       │   │   │   │   │   ├── killswitch_armed_event.py
+│       │   │   │   │   │   └── killswitch_triggered_event.py
+│       │   │   │   │   └── __init__.py
+│       │   │   │   └── __init__.py
+│       │   │   ├── governance/
+│       │   │   │   ├── attribution/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── risk_attribution.py
+│       │   │   │   │   ├── risk_reference.py
+│       │   │   │   │   ├── risk_source.py
+│       │   │   │   │   └── risk_source_type.py
+│       │   │   │   ├── breaches/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── daily_loss_breach.py
+│       │   │   │   │   ├── drawdown_breach.py
+│       │   │   │   │   ├── exposure_breach.py
+│       │   │   │   │   ├── leverage_breach.py
+│       │   │   │   │   ├── notional_breach.py
+│       │   │   │   │   └── risk_breach.py
+│       │   │   │   ├── limits/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── daily_loss_limit.py
+│       │   │   │   │   ├── drawdown_limit.py
+│       │   │   │   │   ├── exposure_limit.py
+│       │   │   │   │   ├── leverage_limit.py
+│       │   │   │   │   ├── notional_limit.py
+│       │   │   │   │   ├── risk_limits.py
+│       │   │   │   │   └── risk_threshold_policy.py
+│       │   │   │   ├── measures/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── daily_loss.py
+│       │   │   │   │   ├── drawdown.py
+│       │   │   │   │   ├── equity.py
+│       │   │   │   │   ├── exposure.py
+│       │   │   │   │   └── notional.py
+│       │   │   │   ├── states/
 │       │   │   │   │   ├── __init__.py
 │       │   │   │   │   ├── risk_initialized_state.py
-│       │   │   │   │   ├── risk_state.py
 │       │   │   │   │   ├── risk_state_base.py
 │       │   │   │   │   └── risk_uninitialized_state.py
-│       │   │   │   └── __init__.py
-│       │   │   ├── identifiers/
 │       │   │   │   ├── __init__.py
-│       │   │   │   └── capital_reservation_id.py
-│       │   │   ├── limits/
+│       │   │   │   └── aggregate.py
+│       │   │   ├── kill_switch/
+│       │   │   │   ├── states/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── kill_switch_armed_state.py
+│       │   │   │   │   ├── kill_switch_state_base.py
+│       │   │   │   │   ├── kill_switch_triggered_state.py
+│       │   │   │   │   └── kill_switch_uninitialized_state.py
 │       │   │   │   ├── __init__.py
-│       │   │   │   ├── daily_loss_limit.py
-│       │   │   │   ├── drawdown_limit.py
-│       │   │   │   ├── exposure_limit.py
-│       │   │   │   ├── leverage_limit.py
-│       │   │   │   ├── notional_limit.py
-│       │   │   │   ├── risk_limits.py
-│       │   │   │   └── risk_threshold_policy.py
-│       │   │   ├── value_objects/
-│       │   │   │   ├── __init__.py
-│       │   │   │   ├── daily_loss.py
-│       │   │   │   ├── drawdown.py
-│       │   │   │   ├── equity.py
-│       │   │   │   ├── notional.py
-│       │   │   │   └── risk_exposure.py
+│       │   │   │   ├── aggregate.py
+│       │   │   │   ├── reason.py
+│       │   │   │   └── status.py
 │       │   │   └── __init__.py
 │       │   ├── shared_kernel/
 │       │   │   ├── errors/
