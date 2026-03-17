@@ -16,7 +16,7 @@ class CapitalReservationRequestedEvent(RiskEvent):
     Request to reserve capital for a given TradingIntent.
     """
 
-    event_name: ClassVar[str] = "risk.capital_reservation.requested"
+    event_name: ClassVar[str] = "risk.capital.requested"
     event_version: ClassVar[int] = 1
 
     reservation_id: CapitalReservationId

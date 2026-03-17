@@ -16,7 +16,7 @@ class CapitalReservationRejectedEvent(RiskEvent):
     Reservation request has been rejected by risk/capital policy.
     """
 
-    event_name: ClassVar[str] = "risk.capital_reservation.rejected"
+    event_name: ClassVar[str] = "risk.capital.rejected"
     event_version: ClassVar[int] = 1
 
     reservation_id: CapitalReservationId

@@ -16,7 +16,7 @@ class CapitalReleasedEvent(RiskEvent):
     Previously reserved capital has been released.
     """
 
-    event_name: ClassVar[str] = "risk.capital_reservation.released"
+    event_name: ClassVar[str] = "risk.capital.released"
     event_version: ClassVar[int] = 1
 
     reservation_id: CapitalReservationId

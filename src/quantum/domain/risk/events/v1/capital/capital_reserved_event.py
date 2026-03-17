@@ -18,7 +18,7 @@ class CapitalReservedEvent(RiskEvent):
     The reserved allocation MAY differ from the requested allocation.
     """
 
-    event_name: ClassVar[str] = "risk.capital_reservation.reserved"
+    event_name: ClassVar[str] = "risk.capital.reserved"
     event_version: ClassVar[int] = 1
 
     reservation_id: CapitalReservationId

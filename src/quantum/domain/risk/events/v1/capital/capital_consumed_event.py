@@ -13,7 +13,7 @@ class CapitalConsumedEvent(RiskEvent):
     Reserved capital has been consumed by downstream execution.
     """
 
-    event_name: ClassVar[str] = "risk.capital_reservation.consumed"
+    event_name: ClassVar[str] = "risk.capital.consumed"
     event_version: ClassVar[int] = 1
 
     reservation_id: CapitalReservationId
