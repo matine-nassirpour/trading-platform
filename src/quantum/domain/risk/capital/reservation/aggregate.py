@@ -1,9 +1,26 @@
 from collections.abc import Mapping
-from dataclasses import dataclass
 from typing import Self
 
 from quantum.domain.risk.capital.allocation.capital_allocation_intent import (
     CapitalAllocationIntent,
+)
+from quantum.domain.risk.capital.reservation.capital_reservation_id import (
+    CapitalReservationId,
+)
+from quantum.domain.risk.capital.reservation.events.capital_consumed_event import (
+    CapitalConsumedEvent,
+)
+from quantum.domain.risk.capital.reservation.events.capital_released_event import (
+    CapitalReleasedEvent,
+)
+from quantum.domain.risk.capital.reservation.events.capital_reservation_rejected_event import (
+    CapitalReservationRejectedEvent,
+)
+from quantum.domain.risk.capital.reservation.events.capital_reservation_requested_event import (
+    CapitalReservationRequestedEvent,
+)
+from quantum.domain.risk.capital.reservation.events.capital_reserved_event import (
+    CapitalReservedEvent,
 )
 from quantum.domain.risk.capital.reservation.reason_codes.capital_release_reason_code import (
     CapitalReleaseReasonCode,
@@ -32,21 +49,6 @@ from quantum.domain.risk.capital.reservation.states.capital_reservation_state_ba
 from quantum.domain.risk.capital.reservation.states.capital_reservation_uninitialized_state import (
     CapitalReservationUninitializedState,
 )
-from quantum.domain.risk.events.v1.capital.capital_consumed_event import (
-    CapitalConsumedEvent,
-)
-from quantum.domain.risk.events.v1.capital.capital_released_event import (
-    CapitalReleasedEvent,
-)
-from quantum.domain.risk.events.v1.capital.capital_reservation_rejected_event import (
-    CapitalReservationRejectedEvent,
-)
-from quantum.domain.risk.events.v1.capital.capital_reservation_requested_event import (
-    CapitalReservationRequestedEvent,
-)
-from quantum.domain.risk.events.v1.capital.capital_reserved_event import (
-    CapitalReservedEvent,
-)
 from quantum.domain.shared_kernel.errors.invariants import (
     InvalidStateTransition,
     InvariantViolation,
@@ -56,22 +58,12 @@ from quantum.domain.shared_kernel.events.event_sequence import EventSequence
 from quantum.domain.shared_kernel.events.recorded_event_envelope import (
     RecordedEventEnvelope,
 )
-from quantum.domain.shared_kernel.identifiers.aggregate_id import AggregateId
 from quantum.domain.shared_kernel.identifiers.intent_id import IntentId
 from quantum.domain.shared_kernel.identifiers.strategy_id import StrategyId
 from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import (
     EventHandler,
     EventSourcedAggregateRoot,
 )
-
-
-@dataclass(frozen=True, slots=True)
-class CapitalReservationId(AggregateId):
-    """
-    Identity of the CapitalReservation aggregate (event stream id).
-    """
-
-    pass
 
 
 class CapitalReservation(

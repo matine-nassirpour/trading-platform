@@ -2,7 +2,9 @@ from dataclasses import dataclass
 
 from quantum.domain.risk.governance.limits.risk_limits import RiskLimits
 from quantum.domain.risk.governance.measures.equity import Equity
-from quantum.domain.risk.governance.states.risk_state_base import RiskStateBase
+from quantum.domain.risk.governance.risk_state.states.risk_state_base import (
+    RiskStateBase,
+)
 from quantum.domain.shared_kernel.errors.invariants import (
     CurrencyMismatch,
     InvariantViolation,
@@ -27,10 +29,11 @@ class RiskInitializedState(RiskStateBase):
             raise InvariantViolation("RiskInitializedState requires Equity peak")
 
     def _validate(self) -> None:
+        super()._validate()
+        self._validate_types()
+
         if self.last_sequence.is_initial():
             raise InvariantViolation("Initialized risk cannot be initial")
-
-        self._validate_types()
 
         if self.equity.context != self.equity_peak.context:
             raise InvariantViolation("Equity and equity_peak MoneyContext mismatch")

@@ -13,8 +13,10 @@ class KillSwitchTriggeredState(KillSwitchStateBase):
     reason: KillSwitchReason
 
     def _validate(self) -> None:
-        if self.last_sequence.is_initial():
-            raise InvariantViolation("Triggered KillSwitch cannot be initial")
+        super()._validate()
 
         if not isinstance(self.reason, KillSwitchReason):
             raise InvariantViolation("KillSwitchTriggeredState requires reason")
+
+        if self.last_sequence.is_initial():
+            raise InvariantViolation("Triggered KillSwitch cannot be initial")

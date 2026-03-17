@@ -7,7 +7,7 @@ from quantum.application.shared.base_handlers.aggregate_command_handler import (
 from quantum.application.shared.base_handlers.aggregate_existence_policy import (
     AggregateExistencePolicy,
 )
-from quantum.domain.risk.governance.aggregate import RiskState
+from quantum.domain.risk.governance.risk_state.aggregate import RiskState
 from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
 
 

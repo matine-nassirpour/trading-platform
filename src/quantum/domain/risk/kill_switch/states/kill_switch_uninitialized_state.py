@@ -10,6 +10,8 @@ from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 class KillSwitchUninitializedState(KillSwitchStateBase):
 
     def _validate(self) -> None:
+        super()._validate()
+
         if not self.last_sequence.is_initial():
             raise InvariantViolation(
                 "Uninitialized KillSwitch must have initial sequence"

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from quantum.domain.risk.governance.attribution.risk_source import RiskSource
+from quantum.domain.risk.governance.risk_state.attribution.risk_source import RiskSource
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.primitives.value_object import ValueObject
 

@@ -1,12 +1,12 @@
 from collections.abc import Mapping
-from dataclasses import dataclass
 
-from quantum.domain.risk.events.v1.kill_switch.killswitch_armed_event import (
+from quantum.domain.risk.kill_switch.events.killswitch_armed_event import (
     KillSwitchArmedEvent,
 )
-from quantum.domain.risk.events.v1.kill_switch.killswitch_triggered_event import (
+from quantum.domain.risk.kill_switch.events.killswitch_triggered_event import (
     KillSwitchTriggeredEvent,
 )
+from quantum.domain.risk.kill_switch.kill_switch_id import KillSwitchStateId
 from quantum.domain.risk.kill_switch.reason import KillSwitchReason
 from quantum.domain.risk.kill_switch.states.kill_switch_armed_state import (
     KillSwitchArmedState,
@@ -29,20 +29,10 @@ from quantum.domain.shared_kernel.events.event_sequence import EventSequence
 from quantum.domain.shared_kernel.events.recorded_event_envelope import (
     RecordedEventEnvelope,
 )
-from quantum.domain.shared_kernel.identifiers.aggregate_id import AggregateId
 from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import (
     EventHandler,
     EventSourcedAggregateRoot,
 )
-
-
-@dataclass(frozen=True, slots=True)
-class KillSwitchStateId(AggregateId):
-    """
-    Identity of the CapitalReservation aggregate (event stream id).
-    """
-
-    pass
 
 
 class KillSwitchState(
@@ -117,7 +107,10 @@ class KillSwitchState(
         if not isinstance(state, KillSwitchUninitializedState):
             raise InvariantViolation("KillSwitch already armed")
 
-        assert isinstance(event, KillSwitchArmedEvent)
+        if not isinstance(event, KillSwitchArmedEvent):
+            raise InvariantViolation(
+                "KillSwitchState._apply_armed requires KillSwitchArmedEvent"
+            )
 
         return KillSwitchArmedState(last_sequence=envelope.sequence)
 
@@ -131,7 +124,10 @@ class KillSwitchState(
         if not isinstance(state, KillSwitchArmedState):
             raise InvariantViolation("KillSwitch not armed")
 
-        assert isinstance(event, KillSwitchTriggeredEvent)
+        if not isinstance(event, KillSwitchTriggeredEvent):
+            raise InvariantViolation(
+                "KillSwitchState._apply_triggered requires KillSwitchTriggeredEvent"
+            )
 
         return KillSwitchTriggeredState(
             last_sequence=envelope.sequence,

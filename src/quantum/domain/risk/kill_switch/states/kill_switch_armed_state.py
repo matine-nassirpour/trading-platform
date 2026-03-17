@@ -10,5 +10,7 @@ from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 class KillSwitchArmedState(KillSwitchStateBase):
 
     def _validate(self) -> None:
+        super()._validate()
+
         if self.last_sequence.is_initial():
             raise InvariantViolation("Armed KillSwitch cannot be initial")

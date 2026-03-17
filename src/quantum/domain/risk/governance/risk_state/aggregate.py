@@ -1,32 +1,44 @@
 from collections.abc import Mapping
-from dataclasses import dataclass
 from decimal import Decimal
 
-from quantum.domain.risk.events.v1.governance.equity_adjusted_event import (
-    EquityAdjustedEvent,
-)
-from quantum.domain.risk.events.v1.governance.risk_breach_detected_event import (
-    RiskBreachDetectedEvent,
-)
-from quantum.domain.risk.events.v1.governance.risk_initialized_event import (
-    RiskInitializedEvent,
-)
-from quantum.domain.risk.governance.breaches.daily_loss_breach import DailyLossBreach
-from quantum.domain.risk.governance.breaches.drawdown_breach import DrawdownBreach
-from quantum.domain.risk.governance.breaches.exposure_breach import ExposureBreach
-from quantum.domain.risk.governance.breaches.leverage_breach import LeverageBreach
-from quantum.domain.risk.governance.breaches.notional_breach import NotionalBreach
 from quantum.domain.risk.governance.limits.risk_limits import RiskLimits
 from quantum.domain.risk.governance.measures.daily_loss import DailyLoss
 from quantum.domain.risk.governance.measures.drawdown import Drawdown
 from quantum.domain.risk.governance.measures.equity import Equity
 from quantum.domain.risk.governance.measures.exposure import Exposure
 from quantum.domain.risk.governance.measures.notional import Notional
-from quantum.domain.risk.governance.states.risk_initialized_state import (
+from quantum.domain.risk.governance.risk_state.breaches.daily_loss_breach import (
+    DailyLossBreach,
+)
+from quantum.domain.risk.governance.risk_state.breaches.drawdown_breach import (
+    DrawdownBreach,
+)
+from quantum.domain.risk.governance.risk_state.breaches.exposure_breach import (
+    ExposureBreach,
+)
+from quantum.domain.risk.governance.risk_state.breaches.leverage_breach import (
+    LeverageBreach,
+)
+from quantum.domain.risk.governance.risk_state.breaches.notional_breach import (
+    NotionalBreach,
+)
+from quantum.domain.risk.governance.risk_state.events.equity_adjusted_event import (
+    EquityAdjustedEvent,
+)
+from quantum.domain.risk.governance.risk_state.events.risk_breach_detected_event import (
+    RiskBreachDetectedEvent,
+)
+from quantum.domain.risk.governance.risk_state.events.risk_initialized_event import (
+    RiskInitializedEvent,
+)
+from quantum.domain.risk.governance.risk_state.risk_state_id import RiskStateId
+from quantum.domain.risk.governance.risk_state.states.risk_initialized_state import (
     RiskInitializedState,
 )
-from quantum.domain.risk.governance.states.risk_state_base import RiskStateBase
-from quantum.domain.risk.governance.states.risk_uninitialized_state import (
+from quantum.domain.risk.governance.risk_state.states.risk_state_base import (
+    RiskStateBase,
+)
+from quantum.domain.risk.governance.risk_state.states.risk_uninitialized_state import (
     RiskUninitializedState,
 )
 from quantum.domain.shared_kernel.errors.invariants import (
@@ -39,21 +51,11 @@ from quantum.domain.shared_kernel.events.event_sequence import EventSequence
 from quantum.domain.shared_kernel.events.recorded_event_envelope import (
     RecordedEventEnvelope,
 )
-from quantum.domain.shared_kernel.identifiers.aggregate_id import AggregateId
 from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import (
     EventHandler,
     EventSourcedAggregateRoot,
 )
 from quantum.domain.shared_kernel.value_objects.pnl import RealizedPnL
-
-
-@dataclass(frozen=True, slots=True)
-class RiskStateId(AggregateId):
-    """
-    Identity of the RiskState aggregate (event stream id).
-    """
-
-    pass
 
 
 class RiskState(EventSourcedAggregateRoot[RiskStateId, RiskStateBase]):
