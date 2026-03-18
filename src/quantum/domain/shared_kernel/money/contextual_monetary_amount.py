@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, fields
+from dataclasses import dataclass
 from decimal import Decimal
 
 from quantum.domain.shared_kernel.errors.invariants import (
@@ -9,15 +9,6 @@ from quantum.domain.shared_kernel.errors.invariants import (
 )
 from quantum.domain.shared_kernel.money.monetary_amount import MonetaryAmount
 from quantum.domain.shared_kernel.money.money_context import MoneyContext
-
-
-def _field_names_of_dataclass(cls: type) -> tuple[str, ...]:
-    """
-    Returns the declared dataclass field names of a class in definition order.
-
-    This function assumes cls is a dataclass class.
-    """
-    return tuple(f.name for f in fields(cls))
 
 
 @dataclass(frozen=True, slots=True)
@@ -34,25 +25,6 @@ class ContextualMonetaryAmount(MonetaryAmount):
     """
 
     context: MoneyContext
-
-    _CANONICAL_FIELD_NAMES: tuple[str, ...] = ("value", "currency", "context")
-
-    def __init_subclass__(cls, **kwargs: object) -> None:
-        super().__init_subclass__()
-
-        # Skip abstract intermediate classes.
-        if getattr(cls, "__abstractmethods__", False):
-            return
-
-        actual_fields = _field_names_of_dataclass(cls)
-
-        if actual_fields != cls._CANONICAL_FIELD_NAMES:
-            raise TypeError(
-                f"{cls.__name__} violates the closed structural contract of "
-                f"{ContextualMonetaryAmount.__name__}. "
-                f"Expected fields {cls._CANONICAL_FIELD_NAMES}, got {actual_fields}. "
-                "Concrete monetary algebra types must not declare additional fields."
-            )
 
     def _validate(self) -> None:
         super()._validate()
@@ -117,22 +89,13 @@ class ContextualMonetaryAmount(MonetaryAmount):
 
     def _rebuild_with_value(self, value: Decimal) -> ContextualMonetaryAmount:
         """
-        Reconstructs a new instance of the SAME concrete type using the
-        canonical structural shape of the closed monetary algebra.
+        Reconstructs a new instance of the SAME concrete type.
 
-        This path is safe because concrete descendants are forbidden from
-        introducing additional fields.
+        This method is intentionally centralized so algebraic subclasses
+        can rely on one canonical reconstruction path.
         """
-        rebuilt = self.__class__(
+        return self.__class__(
             value=value,
             currency=self.currency,
             context=self.context,
         )
-
-        if type(rebuilt) is not type(self):
-            raise TypeError(
-                f"{self.__class__.__name__} reconstruction violated nominal closure: "
-                f"expected {type(self).__name__}, got {type(rebuilt).__name__}."
-            )
-
-        return rebuilt
