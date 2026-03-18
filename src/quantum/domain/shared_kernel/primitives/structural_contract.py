@@ -170,12 +170,8 @@ def _assert_tuple_is_deeply_immutable(value: tuple[Any, ...], path: str) -> None
 
 
 def _assert_frozenset_is_deeply_immutable(value: frozenset[Any], path: str) -> None:
-    for index, item in enumerate(sorted(repr(item) for item in value)):
-        # Stable diagnostic path for unordered containers
-        _assert_deeply_immutable_value(
-            next(v for v in value if repr(v) == item),
-            f"{path}[#{index}]",
-        )
+    for item in value:
+        _assert_deeply_immutable_value(item, f"{path}[{item!r}]")
 
 
 def _assert_dataclass_instance_is_deeply_immutable(value: Any, path: str) -> None:
