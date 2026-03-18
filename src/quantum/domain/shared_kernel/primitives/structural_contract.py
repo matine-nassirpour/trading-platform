@@ -22,14 +22,6 @@ _ALLOWED_DEEPLY_IMMUTABLE_SCALARS = (
     type(None),
 )
 
-_FORBIDDEN_MUTABLE_TYPES = (
-    float,
-    list,
-    dict,
-    set,
-    bytearray,
-)
-
 
 class StructuralContractViolation(TypeError):
     """
