@@ -11,7 +11,9 @@ class RealizedPnL(SignedContextualAmount):
     Realized profit and loss from executed trades.
     """
 
-    pass
+    @classmethod
+    def nominal_type(cls) -> str:
+        return "realized_pnl"
 
 
 @dataclass(frozen=True, slots=True)
@@ -20,4 +22,6 @@ class UnrealizedPnL(SignedContextualAmount):
     Unrealized profit and loss bound to a MoneyContext.
     """
 
-    pass
+    @classmethod
+    def nominal_type(cls) -> str:
+        return "unrealized_pnl"

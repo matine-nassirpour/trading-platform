@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from abc import ABC
 from dataclasses import dataclass
 from decimal import Decimal
 
@@ -12,22 +13,27 @@ from quantum.domain.shared_kernel.money.money_context import MoneyContext
 
 
 @dataclass(frozen=True, slots=True)
-class ContextualMonetaryAmount(MonetaryAmount):
+class ContextualMonetaryAmount(MonetaryAmount, ABC):
     """
-    Monetary amount bound to a specific MoneyContext.
+    Abstract base class for monetary amounts bound to a MoneyContext.
 
     HARD GUARANTEES:
+    - Abstract by design: this class is NOT a complete domain concept
     - Currency-aware
     - Context-aware
     - Immutable
     - No cross-context contamination
     - No cross-currency contamination
+
+    ARCHITECTURAL CONSEQUENCE:
+    ContextualMonetaryAmount(...) is forbidden because it still lacks a
+    complete domain meaning (PnL, exposure, risk capital, fee, etc.).
     """
 
     context: MoneyContext
 
-    def _validate(self) -> None:
-        super()._validate()
+    def _validate_numeric_semantics(self) -> None:
+        super()._validate_numeric_semantics()
 
         if not isinstance(self.context, MoneyContext):
             raise InvariantViolation(
@@ -91,8 +97,14 @@ class ContextualMonetaryAmount(MonetaryAmount):
         """
         Reconstructs a new instance of the SAME concrete type.
 
-        This method is intentionally centralized so algebraic subclasses
-        can rely on one canonical reconstruction path.
+        This method assumes that concrete subclasses in this hierarchy do not
+        introduce additional construction fields beyond:
+            - value
+            - currency
+            - context
+
+        If a future subtype requires additional state, this method must be
+        overridden explicitly in that subtype.
         """
         return self.__class__(
             value=value,
