@@ -1,10 +1,10 @@
 from dataclasses import dataclass
 from typing import ClassVar
 
-from quantum.domain.shared_kernel.events.base.fact_event import FactEvent
 from quantum.domain.shared_kernel.identifiers.intent_id import IntentId
 from quantum.domain.shared_kernel.value_objects.symbol import Symbol
 from quantum.domain.shared_kernel.value_objects.volume import PositiveVolume
+from quantum.domain.trading.events.fact_event import FactEvent
 
 
 @dataclass(frozen=True, slots=True)

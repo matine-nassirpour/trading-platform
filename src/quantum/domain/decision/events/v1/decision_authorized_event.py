@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import ClassVar
 
-from quantum.domain.shared_kernel.events.base.decision_event import DecisionEvent
+from quantum.domain.decision.events.decision_event import DecisionEvent
 from quantum.domain.shared_kernel.identifiers.intent_id import IntentId
 
 

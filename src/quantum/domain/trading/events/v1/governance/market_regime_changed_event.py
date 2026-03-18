@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import ClassVar
 
 from quantum.domain.market.regime.market_regime import MarketRegime
-from quantum.domain.shared_kernel.events.base.fact_event import FactEvent
+from quantum.domain.trading.events.fact_event import FactEvent
 
 
 @dataclass(frozen=True, slots=True)
