@@ -3,7 +3,6 @@ import inspect
 from dataclasses import fields, is_dataclass
 from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
-from enum import Enum
 from functools import cache
 from typing import Any
 from uuid import UUID
@@ -111,6 +110,25 @@ def _assert_not_forbidden_temporal_type(value: Any, path: str) -> None:
         )
 
 
+def _assert_not_forbidden_enum_type(value: Any, path: str) -> None:
+    """
+    Explicitly forbids Enum members in domain primitives.
+
+    ARCHITECTURAL POLICY:
+    Domain concepts that look like enums must be modeled as explicit domain
+    Value Objects (for example ClosedSetValueObject), not as Python Enum.
+    """
+    enum_cls = value.__class__
+    enum_mro = getattr(enum_cls, "__mro__", ())
+
+    if any(base.__name__ == "Enum" for base in enum_mro):
+        raise StructuralContractViolation(
+            f"{path} contains {enum_cls.__name__}, which is forbidden in domain "
+            "primitives. Use an explicit ValueObject / ClosedSetValueObject instead "
+            "of Python Enum."
+        )
+
+
 def _assert_not_forbidden_mutable_or_aliasable_type(value: Any, path: str) -> None:
     """
     Rejects values that are mutable, aliasable, or only superficially read-only.
@@ -152,8 +170,12 @@ def _assert_tuple_is_deeply_immutable(value: tuple[Any, ...], path: str) -> None
 
 
 def _assert_frozenset_is_deeply_immutable(value: frozenset[Any], path: str) -> None:
-    for item in value:
-        _assert_deeply_immutable_value(item, f"{path}[{item!r}]")
+    for index, item in enumerate(sorted(repr(item) for item in value)):
+        # Stable diagnostic path for unordered containers
+        _assert_deeply_immutable_value(
+            next(v for v in value if repr(v) == item),
+            f"{path}[#{index}]",
+        )
 
 
 def _assert_dataclass_instance_is_deeply_immutable(value: Any, path: str) -> None:
@@ -187,7 +209,6 @@ def _assert_deeply_immutable_value(value: Any, path: str) -> None:
     - time
     - timedelta
     - timezone
-    - Enum
     - tuple[deeply immutable]
     - frozenset[deeply immutable]
     - frozen, slotted dataclass instances whose fields are themselves deeply immutable
@@ -195,6 +216,7 @@ def _assert_deeply_immutable_value(value: Any, path: str) -> None:
     Forbidden:
     - datetime
     - float
+    - Enum
     - list
     - dict
     - set
@@ -205,12 +227,10 @@ def _assert_deeply_immutable_value(value: Any, path: str) -> None:
     """
 
     _assert_not_forbidden_temporal_type(value, path)
+    _assert_not_forbidden_enum_type(value, path)
     _assert_not_forbidden_mutable_or_aliasable_type(value, path)
 
     if isinstance(value, _ALLOWED_DEEPLY_IMMUTABLE_SCALARS):
-        return
-
-    if isinstance(value, Enum):
         return
 
     if isinstance(value, tuple):
