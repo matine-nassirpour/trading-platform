@@ -55,7 +55,7 @@ class _ValidatedFrozenDataclass(ABC):
 
     def __post_init__(self) -> None:
         """
-        FINAL — must never be overridden.
+        Must never be overridden.
         """
 
         _validate_structural_contract(type(self))

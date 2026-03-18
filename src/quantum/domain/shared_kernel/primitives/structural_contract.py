@@ -5,6 +5,7 @@ from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
 from enum import Enum
 from functools import cache
+from types import MappingProxyType
 from typing import Any
 from uuid import UUID
 
@@ -156,9 +157,7 @@ def _assert_not_forbidden_mutable_or_aliasable_type(value: Any, path: str) -> No
             f"{path} contains unsupported mutable value of type {type(value).__name__}."
         )
 
-    # Deliberately avoid importing MappingProxyType at module scope so that
-    # its absence from the allowed contract remains explicit and intentional.
-    if type(value).__name__ == "mappingproxy":
+    if isinstance(value, MappingProxyType):
         raise StructuralContractViolation(
             f"{path} contains MappingProxyType, which is forbidden in domain "
             "primitives. MappingProxyType is only a read-only view over a "
