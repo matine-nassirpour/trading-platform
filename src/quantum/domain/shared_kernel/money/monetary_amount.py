@@ -10,7 +10,7 @@ from quantum.domain.shared_kernel.value_objects.currency import Currency
 @dataclass(frozen=True, slots=True)
 class MonetaryAmount(NumericValueObject):
     """
-    Abstract base class for all monetary quantities.
+    Base class for all monetary quantities.
 
     Guarantees:
     - Currency-aware

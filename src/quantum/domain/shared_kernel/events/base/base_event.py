@@ -35,7 +35,7 @@ class EventDefinitionViolation(TypeError):
     """
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class BaseEvent(ABC):
     """
     Canonical immutable Domain Event for an event-sourced domain model.
@@ -55,8 +55,6 @@ class BaseEvent(ABC):
     - Recording metadata (event_id, occurred_at, stream_id, correlation_id, etc.)
       These belong to the event envelope / store record, not to the domain event itself.
     """
-
-    __slots__ = ()
 
     event_name: ClassVar[str]
     event_version: ClassVar[int] = 1
