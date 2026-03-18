@@ -90,10 +90,11 @@ def _is_frozen_slotted_dataclass_class(cls: type) -> bool:
     return not hasattr(dummy, "__dict__")
 
 
-def _validate_datetime_is_deterministic(value: datetime, path: str) -> None:
-    if value.tzinfo is None or value.utcoffset() is None:
+def _assert_not_forbidden_temporal_type(value: Any, path: str) -> None:
+    if isinstance(value, datetime):
         raise StructuralContractViolation(
-            f"{path} must be timezone-aware; naive datetime is forbidden"
+            f"{path} contains datetime, which is forbidden in domain primitives. "
+            "Use EpochMs for all domain instants."
         )
 
 
@@ -137,7 +138,7 @@ def _assert_dataclass_instance_is_deeply_immutable(value: Any, path: str) -> Non
 
     if not _is_frozen_slotted_dataclass_class(cls):
         raise StructuralContractViolation(
-            f"{path} contains dataclass {cls.__name__} which is not " "frozen + slotted"
+            f"{path} contains dataclass {cls.__name__} which is not frozen + slotted"
         )
 
     for f in fields(value):
@@ -161,7 +162,7 @@ def _assert_deeply_immutable_value(value: Any, path: str) -> None:
     - date
     - time
     - timedelta
-    - timezone-aware datetime
+    - timezone
     - Enum
     - tuple[deeply immutable]
     - frozenset[deeply immutable]
@@ -169,6 +170,7 @@ def _assert_deeply_immutable_value(value: Any, path: str) -> None:
     - frozen, slotted dataclass instances whose fields are themselves deeply immutable
 
     Forbidden:
+    - datetime
     - float
     - list
     - dict
@@ -181,10 +183,7 @@ def _assert_deeply_immutable_value(value: Any, path: str) -> None:
     if isinstance(value, _ALLOWED_DEEPLY_IMMUTABLE_SCALARS):
         return
 
-    if isinstance(value, datetime):
-        _validate_datetime_is_deterministic(value, path)
-        return
-
+    _assert_not_forbidden_temporal_type(value, path)
     _assert_not_forbidden_mutable_type(value, path)
 
     if isinstance(value, Enum):
