@@ -5,7 +5,6 @@ from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
 from enum import Enum
 from functools import cache
-from types import MappingProxyType
 from typing import Any
 from uuid import UUID
 
@@ -112,7 +111,20 @@ def _assert_not_forbidden_temporal_type(value: Any, path: str) -> None:
         )
 
 
-def _assert_not_forbidden_mutable_type(value: Any, path: str) -> None:
+def _assert_not_forbidden_mutable_or_aliasable_type(value: Any, path: str) -> None:
+    """
+    Rejects values that are mutable, aliasable, or only superficially read-only.
+
+    IMPORTANT:
+    A value is accepted only if it is safe as a domain-state component under
+    deterministic replay, audit, and event-sourced reconstruction constraints.
+
+    In particular:
+    - MappingProxyType is intentionally forbidden.
+      It is only a read-only VIEW over an underlying dict.
+      If that dict mutates elsewhere, the mapping proxy observes the mutation.
+      Therefore it does NOT satisfy deep immutability or deterministic stability.
+    """
     if isinstance(value, float):
         raise StructuralContractViolation(
             f"{path} uses float, which is forbidden in domain primitives; "
@@ -124,6 +136,15 @@ def _assert_not_forbidden_mutable_type(value: Any, path: str) -> None:
             f"{path} contains unsupported mutable value of type {type(value).__name__}."
         )
 
+    # Deliberately avoid importing MappingProxyType at module scope so that
+    # its absence from the allowed contract remains explicit and intentional.
+    if type(value).__name__ == "mappingproxy":
+        raise StructuralContractViolation(
+            f"{path} contains MappingProxyType, which is forbidden in domain "
+            "primitives. MappingProxyType is only a read-only view over a "
+            "mutable dictionary and does not guarantee deep immutability."
+        )
+
 
 def _assert_tuple_is_deeply_immutable(value: tuple[Any, ...], path: str) -> None:
     for index, item in enumerate(value):
@@ -133,18 +154,6 @@ def _assert_tuple_is_deeply_immutable(value: tuple[Any, ...], path: str) -> None
 def _assert_frozenset_is_deeply_immutable(value: frozenset[Any], path: str) -> None:
     for item in value:
         _assert_deeply_immutable_value(item, f"{path}[{item!r}]")
-
-
-def _assert_mapping_proxy_is_deeply_immutable(
-    value: MappingProxyType, path: str
-) -> None:
-    for key, item in value.items():
-        if not isinstance(key, str):
-            raise StructuralContractViolation(
-                f"{path} contains non-string mapping key {key!r}; "
-                "only MappingProxyType[str, deeply immutable] is allowed."
-            )
-        _assert_deeply_immutable_value(item, f"{path}[{key!r}]")
 
 
 def _assert_dataclass_instance_is_deeply_immutable(value: Any, path: str) -> None:
@@ -181,7 +190,6 @@ def _assert_deeply_immutable_value(value: Any, path: str) -> None:
     - Enum
     - tuple[deeply immutable]
     - frozenset[deeply immutable]
-    - MappingProxyType[str, deeply immutable]
     - frozen, slotted dataclass instances whose fields are themselves deeply immutable
 
     Forbidden:
@@ -191,12 +199,13 @@ def _assert_deeply_immutable_value(value: Any, path: str) -> None:
     - dict
     - set
     - bytearray
+    - MappingProxyType
     - mutable dataclasses
-    - arbitrary objects exposing mutable or non-deterministic state
+    - arbitrary objects exposing mutable, aliasable, or non-deterministic state
     """
 
     _assert_not_forbidden_temporal_type(value, path)
-    _assert_not_forbidden_mutable_type(value, path)
+    _assert_not_forbidden_mutable_or_aliasable_type(value, path)
 
     if isinstance(value, _ALLOWED_DEEPLY_IMMUTABLE_SCALARS):
         return
@@ -212,17 +221,13 @@ def _assert_deeply_immutable_value(value: Any, path: str) -> None:
         _assert_frozenset_is_deeply_immutable(value, path)
         return
 
-    if isinstance(value, MappingProxyType):
-        _assert_mapping_proxy_is_deeply_immutable(value, path)
-        return
-
     if is_dataclass(value):
         _assert_dataclass_instance_is_deeply_immutable(value, path)
         return
 
     raise StructuralContractViolation(
-        f"{path} contains unsupported mutable or non-deterministic value "
-        f"of type {type(value).__name__}."
+        f"{path} contains unsupported mutable, aliasable, or non-deterministic "
+        f"value of type {type(value).__name__}."
     )
 
 
