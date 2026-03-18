@@ -27,6 +27,8 @@ class SignedContextualAmount(ContextualMonetaryAmount, ABC):
     even though they share the same physical representation.
     """
 
+    __slots__ = ()
+
     # --- Closed algebra -------------------------------------------------------
 
     @final

@@ -53,12 +53,6 @@ class _ValidatedFrozenDataclass(ABC):
 
     # --- Construction Guarantee -----------------------------------------------
 
-    def _run_validation(self) -> None:
-        """
-        Non-overridable validation entrypoint.
-        """
-        self._validate()
-
     def __post_init__(self) -> None:
         """
         FINAL — must never be overridden.
@@ -66,4 +60,4 @@ class _ValidatedFrozenDataclass(ABC):
 
         _validate_structural_contract(type(self))
         _assert_deep_immutability_of_instance_fields(self)
-        self._run_validation()
+        self._validate()
