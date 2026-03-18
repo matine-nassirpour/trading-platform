@@ -3,6 +3,7 @@ import inspect
 from dataclasses import fields, is_dataclass
 from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
+from enum import Enum
 from functools import cache
 from typing import Any
 from uuid import UUID
@@ -112,18 +113,19 @@ def _assert_not_forbidden_temporal_type(value: Any, path: str) -> None:
 
 def _assert_not_forbidden_enum_type(value: Any, path: str) -> None:
     """
-    Explicitly forbids Enum members in domain primitives.
+    Explicitly forbids Python Enum members in domain primitives.
+
+    HARD GUARANTEE:
+    This check is based on the canonical stdlib Enum runtime identity,
+    not on class-name heuristics.
 
     ARCHITECTURAL POLICY:
     Domain concepts that look like enums must be modeled as explicit domain
     Value Objects (for example ClosedSetValueObject), not as Python Enum.
     """
-    enum_cls = value.__class__
-    enum_mro = getattr(enum_cls, "__mro__", ())
-
-    if any(base.__name__ == "Enum" for base in enum_mro):
+    if isinstance(value, Enum):
         raise StructuralContractViolation(
-            f"{path} contains {enum_cls.__name__}, which is forbidden in domain "
+            f"{path} contains {type(value).__name__}, which is forbidden in domain "
             "primitives. Use an explicit ValueObject / ClosedSetValueObject instead "
             "of Python Enum."
         )
