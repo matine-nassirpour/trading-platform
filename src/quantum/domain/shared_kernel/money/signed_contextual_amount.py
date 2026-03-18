@@ -69,12 +69,10 @@ class SignedContextualAmount(ContextualMonetaryAmount, ABC):
         """
         rebuilt = self._rebuild_with_value(value)
 
-        # Runtime defensive guarantee:
-        # reconstruction must preserve the exact concrete type.
         if type(rebuilt) is not type(self):
             raise TypeError(
                 f"{self.__class__.__name__} reconstruction violated nominal closure: "
-                f"expected {type(self).__name__}, got {type(rebuilt).__name__}"
+                f"expected {type(self).__name__}, got {type(rebuilt).__name__}."
             )
 
         return rebuilt

@@ -22,6 +22,14 @@ _ALLOWED_DEEPLY_IMMUTABLE_SCALARS = (
     type(None),
 )
 
+_FORBIDDEN_MUTABLE_TYPES = (
+    float,
+    list,
+    dict,
+    set,
+    bytearray,
+)
+
 
 class StructuralContractViolation(TypeError):
     """
@@ -71,6 +79,12 @@ def _assert_no_forbidden_slots(cls: type) -> None:
 
 
 def _is_frozen_slotted_dataclass_class(cls: type) -> bool:
+    """
+    Returns True only if cls is a dataclass that is:
+    - frozen
+    - slotted
+    - effectively dict-free at instance level
+    """
     if not is_dataclass(cls):
         return False
 
@@ -84,17 +98,25 @@ def _is_frozen_slotted_dataclass_class(cls: type) -> bool:
     try:
         dummy = object.__new__(cls)
     except Exception:
-        # Defensive: if object creation is impossible, we still rely on class-level checks
+        # Defensive fallback:
+        # if allocation is impossible, class-level checks are deemed sufficient.
         return True
 
     return not hasattr(dummy, "__dict__")
 
 
 def _assert_not_forbidden_temporal_type(value: Any, path: str) -> None:
+    """
+    Explicitly forbids datetime.
+
+    IMPORTANT:
+    datetime is a subclass of date in Python, so this check MUST run
+    before generic scalar acceptance logic.
+    """
     if isinstance(value, datetime):
         raise StructuralContractViolation(
             f"{path} contains datetime, which is forbidden in domain primitives. "
-            "Use EpochMs for all domain instants."
+            "Use a dedicated instant ValueObject (e.g. EpochMs) instead."
         )
 
 
@@ -102,12 +124,12 @@ def _assert_not_forbidden_mutable_type(value: Any, path: str) -> None:
     if isinstance(value, float):
         raise StructuralContractViolation(
             f"{path} uses float, which is forbidden in domain primitives; "
-            "use Decimal or an explicit ValueObject"
+            "use Decimal or an explicit numeric ValueObject."
         )
 
     if isinstance(value, (list, dict, set, bytearray)):
         raise StructuralContractViolation(
-            f"{path} contains unsupported mutable value of type {type(value).__name__}"
+            f"{path} contains unsupported mutable value of type {type(value).__name__}."
         )
 
 
@@ -128,7 +150,7 @@ def _assert_mapping_proxy_is_deeply_immutable(
         if not isinstance(key, str):
             raise StructuralContractViolation(
                 f"{path} contains non-string mapping key {key!r}; "
-                "only MappingProxyType[str, deeply immutable] is allowed"
+                "only MappingProxyType[str, deeply immutable] is allowed."
             )
         _assert_deeply_immutable_value(item, f"{path}[{key!r}]")
 
@@ -138,7 +160,7 @@ def _assert_dataclass_instance_is_deeply_immutable(value: Any, path: str) -> Non
 
     if not _is_frozen_slotted_dataclass_class(cls):
         raise StructuralContractViolation(
-            f"{path} contains dataclass {cls.__name__} which is not frozen + slotted"
+            f"{path} contains dataclass {cls.__name__} which is not frozen + slotted."
         )
 
     for f in fields(value):
@@ -150,7 +172,8 @@ def _assert_dataclass_instance_is_deeply_immutable(value: Any, path: str) -> Non
 
 def _assert_deeply_immutable_value(value: Any, path: str) -> None:
     """
-    Recursively enforces the deep immutability contract for domain primitives.
+    Recursively enforces the structural deep-immutability contract
+    for domain primitives.
 
     Allowed:
     - None
@@ -177,14 +200,14 @@ def _assert_deeply_immutable_value(value: Any, path: str) -> None:
     - set
     - bytearray
     - mutable dataclasses
-    - arbitrary objects exposing mutable state
+    - arbitrary objects exposing mutable or non-deterministic state
     """
-
-    if isinstance(value, _ALLOWED_DEEPLY_IMMUTABLE_SCALARS):
-        return
 
     _assert_not_forbidden_temporal_type(value, path)
     _assert_not_forbidden_mutable_type(value, path)
+
+    if isinstance(value, _ALLOWED_DEEPLY_IMMUTABLE_SCALARS):
+        return
 
     if isinstance(value, Enum):
         return
@@ -207,7 +230,7 @@ def _assert_deeply_immutable_value(value: Any, path: str) -> None:
 
     raise StructuralContractViolation(
         f"{path} contains unsupported mutable or non-deterministic value "
-        f"of type {type(value).__name__}"
+        f"of type {type(value).__name__}."
     )
 
 
@@ -245,19 +268,19 @@ def _validate_structural_contract(cls: type) -> None:
 
     # --- 2. Must be dataclass
     if not is_dataclass(cls):
-        raise StructuralContractViolation(f"{cls.__name__} must be a dataclass")
+        raise StructuralContractViolation(f"{cls.__name__} must be a dataclass.")
 
     # --- 3. Must be frozen
     params = getattr(cls, "__dataclass_params__", None)
     if not params or not getattr(params, "frozen", False):
         raise StructuralContractViolation(
-            f"{cls.__name__} must be declared with frozen=True"
+            f"{cls.__name__} must be declared with frozen=True."
         )
 
     # --- 4. Must use slots (robust check)
     if not hasattr(cls, "__slots__"):
         raise StructuralContractViolation(
-            f"{cls.__name__} must expose a slots-only instance layout"
+            f"{cls.__name__} must expose a slots-only instance layout."
         )
 
     # --- 5. Slots must NOT expose __dict__ or __weakref__
