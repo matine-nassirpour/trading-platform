@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC
 from decimal import Decimal
-from typing import TypeVar
+from typing import TypeVar, final
 
 from quantum.domain.shared_kernel.money.contextual_monetary_amount import (
     ContextualMonetaryAmount,
@@ -14,32 +14,43 @@ T = TypeVar("T", bound="SignedContextualAmount")
 
 class SignedContextualAmount(ContextualMonetaryAmount, ABC):
     """
-    Algebraic base class for all signed monetary fluxes.
+    Algebraic base class for signed monetary domain quantities.
 
-    This class provides:
-    - add
-    - subtract
-    - zero()
+    HARD GUARANTEES:
+    - Closed operations preserve concrete nominal type
+    - Cross-type arithmetic is forbidden at runtime
+    - Cross-context arithmetic is forbidden
+    - Cross-currency arithmetic is forbidden
 
-    without duplicating logic across semantic subtypes.
-
-    Subclasses remain nominally distinct
-    (RealizedPnL != UnrealizedPnL != Swap).
+    DOMAIN CONSEQUENCE:
+    RealizedPnL and UnrealizedPnL are intentionally NOT interchangeable,
+    even though they share the same physical representation.
     """
 
-    # --- Algebraic operations -------------------------------------------------
+    # --- Closed algebra -------------------------------------------------------
 
+    @final
     def add(self: T, other: T) -> T:
-        self._assert_same_context_and_currency(other)
+        self._assert_closed_algebra_compatibility(other)
         return self._new(self.value + other.value)
 
+    @final
     def subtract(self: T, other: T) -> T:
-        self._assert_same_context_and_currency(other)
+        self._assert_closed_algebra_compatibility(other)
         return self._new(self.value - other.value)
+
+    @final
+    def negate(self: T) -> T:
+        return self._new(-self.value)
+
+    @final
+    def absolute(self: T) -> T:
+        return self._new(abs(self.value))
 
     # --- Factory --------------------------------------------------------------
 
     @classmethod
+    @final
     def zero(cls: type[T], context: MoneyContext) -> T:
         return cls(
             value=Decimal("0"),
@@ -49,15 +60,21 @@ class SignedContextualAmount(ContextualMonetaryAmount, ABC):
 
     # --- Internal constructor -------------------------------------------------
 
+    @final
     def _new(self: T, value: Decimal) -> T:
         """
-        Constructs a new instance of the SAME concrete type
-        with the given value.
+        Returns a new instance of the SAME concrete nominal type.
 
-        This preserves nominal typing and invariants.
+        This is the single canonical reconstruction path for algebraic operations.
         """
-        return self.__class__(
-            value=value,
-            currency=self.currency,
-            context=self.context,
-        )
+        rebuilt = self._rebuild_with_value(value)
+
+        # Runtime defensive guarantee:
+        # reconstruction must preserve the exact concrete type.
+        if type(rebuilt) is not type(self):
+            raise TypeError(
+                f"{self.__class__.__name__} reconstruction violated nominal closure: "
+                f"expected {type(self).__name__}, got {type(rebuilt).__name__}"
+            )
+
+        return rebuilt

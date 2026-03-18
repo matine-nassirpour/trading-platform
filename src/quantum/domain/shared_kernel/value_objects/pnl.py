@@ -9,11 +9,8 @@ from quantum.domain.shared_kernel.money.signed_contextual_amount import (
 class RealizedPnL(SignedContextualAmount):
     """
     Realized profit and loss from executed trades.
-
-    PnL is a contextual monetary flux.
     """
 
-    # No extra invariants
     pass
 
 
@@ -23,5 +20,4 @@ class UnrealizedPnL(SignedContextualAmount):
     Unrealized profit and loss bound to a MoneyContext.
     """
 
-    # No extra invariants
     pass
