@@ -13,8 +13,12 @@ class ReferencePrice(NumericValueObject):
     Non-executable price used as a decision or market snapshot reference.
     """
 
-    def _validate(self) -> None:
-        super()._validate()
+    @classmethod
+    def nominal_type(cls) -> str:
+        return "reference_price"
+
+    def _validate_numeric_semantics(self) -> None:
+        super()._validate_numeric_semantics()
 
         if self.value < Decimal("0"):
             raise InvariantViolation("ReferencePrice must be non-negative")

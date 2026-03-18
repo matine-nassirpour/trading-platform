@@ -22,8 +22,12 @@ class Equity(ContextualMonetaryAmount):
     - Equity may be negative (margin trading).
     """
 
-    def _validate(self) -> None:
-        super()._validate()
+    @classmethod
+    def nominal_type(cls) -> str:
+        return "equity"
+
+    def _validate_numeric_semantics(self) -> None:
+        super()._validate_numeric_semantics()
         # Equity ∈ ℝ → no sign restriction
 
     # --- Algebra --------------------------------------------------------------

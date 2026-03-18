@@ -16,8 +16,12 @@ class LeverageLimit(NumericValueObject):
         5.0 → 5x leverage
     """
 
-    def _validate(self) -> None:
-        super()._validate()
+    @classmethod
+    def nominal_type(cls) -> str:
+        return "leverage_limit"
+
+    def _validate_numeric_semantics(self) -> None:
+        super()._validate_numeric_semantics()
 
         if self.value <= Decimal("0"):
             raise InvariantViolation("LeverageLimit must be strictly positive")

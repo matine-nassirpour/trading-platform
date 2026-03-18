@@ -308,7 +308,8 @@ trading-platform/
 │       │   │   │   │   ├── no_trade_decision_event.py
 │       │   │   │   │   ├── strategy_lifecycle_changed_event.py
 │       │   │   │   │   └── trading_intent_created_event.py
-│       │   │   │   └── __init__.py
+│       │   │   │   ├── __init__.py
+│       │   │   │   └── decision_event.py
 │       │   │   ├── governance/
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── decision_authorization_reason_code.py
@@ -394,9 +395,14 @@ trading-platform/
 │       │   │   │   │   ├── aggregate.py
 │       │   │   │   │   └── capital_reservation_id.py
 │       │   │   │   └── __init__.py
-│       │   │   ├── errors/
-│       │   │   │   ├── __init__.py
-│       │   │   │   └── risk_errors.py
+│       │   │   ├── common/
+│       │   │   │   ├── errors/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   └── risk_errors.py
+│       │   │   │   ├── events/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   └── risk_event.py
+│       │   │   │   └── __init__.py
 │       │   │   ├── governance/
 │       │   │   │   ├── limits/
 │       │   │   │   │   ├── __init__.py
@@ -468,10 +474,7 @@ trading-platform/
 │       │   │   ├── events/
 │       │   │   │   ├── base/
 │       │   │   │   │   ├── __init__.py
-│       │   │   │   │   ├── base_event.py
-│       │   │   │   │   ├── decision_event.py
-│       │   │   │   │   ├── fact_event.py
-│       │   │   │   │   └── risk_event.py
+│       │   │   │   │   └── base_event.py
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── actor_id.py
 │       │   │   │   ├── causation_id.py
@@ -544,7 +547,8 @@ trading-platform/
 │       │   │   │   │   │   ├── position_opened_event.py
 │       │   │   │   │   │   └── sl_tp_changed_event.py
 │       │   │   │   │   └── __init__.py
-│       │   │   │   └── __init__.py
+│       │   │   │   ├── __init__.py
+│       │   │   │   └── fact_event.py
 │       │   │   ├── execution/
 │       │   │   │   ├── analytics/
 │       │   │   │   │   ├── __init__.py

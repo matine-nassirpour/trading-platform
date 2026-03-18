@@ -21,8 +21,12 @@ class Notional(ContextualMonetaryAmount):
     - exposure decomposition
     """
 
-    def _validate(self) -> None:
-        super()._validate()
+    @classmethod
+    def nominal_type(cls) -> str:
+        return "notional"
+
+    def _validate_numeric_semantics(self) -> None:
+        super()._validate_numeric_semantics()
 
         if self.value < Decimal("0"):
             raise InvariantViolation("Notional must be non-negative")

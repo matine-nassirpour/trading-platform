@@ -17,8 +17,12 @@ class PositiveVolume(NumericValueObject):
 
     value: Decimal
 
-    def _validate(self) -> None:
-        super()._validate()
+    @classmethod
+    def nominal_type(cls) -> str:
+        return "positive_volume"
+
+    def _validate_numeric_semantics(self) -> None:
+        super()._validate_numeric_semantics()
 
         if self.value <= Decimal("0"):
             raise InvariantViolation("PositiveVolume must be strictly > 0")
@@ -37,8 +41,12 @@ class NonNegativeVolume(NumericValueObject):
 
     value: Decimal
 
-    def _validate(self) -> None:
-        super()._validate()
+    @classmethod
+    def nominal_type(cls) -> str:
+        return "non_negative_volume"
+
+    def _validate_numeric_semantics(self) -> None:
+        super()._validate_numeric_semantics()
 
         if self.value < Decimal("0"):
             raise InvariantViolation("NonNegativeVolume must be ≥ 0")

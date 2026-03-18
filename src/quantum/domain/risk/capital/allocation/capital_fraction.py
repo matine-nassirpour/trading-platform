@@ -18,8 +18,12 @@ class CapitalFraction(NumericValueObject):
     - Independent of price / volume / leverage
     """
 
-    def _validate(self) -> None:
-        super()._validate()
+    @classmethod
+    def nominal_type(cls) -> str:
+        return "capital_fraction"
+
+    def _validate_numeric_semantics(self) -> None:
+        super()._validate_numeric_semantics()
 
         if self.value <= Decimal("0"):
             raise InvariantViolation("CapitalFraction must be strictly positive")

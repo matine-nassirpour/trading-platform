@@ -13,8 +13,12 @@ class Price(ContextualMonetaryAmount):
     Strictly positive monetary quantity.
     """
 
-    def _validate(self) -> None:
-        super()._validate()
+    @classmethod
+    def nominal_type(cls) -> str:
+        return "price"
+
+    def _validate_numeric_semantics(self) -> None:
+        super()._validate_numeric_semantics()
 
         if self.value <= Decimal("0"):
             raise InvariantViolation("Price must be strictly positive")

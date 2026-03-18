@@ -19,8 +19,12 @@ class RiskBudgetSlice(NumericValueObject):
     This is NOT monetary.
     """
 
-    def _validate(self) -> None:
-        super()._validate()
+    @classmethod
+    def nominal_type(cls) -> str:
+        return "risk_budget_slice"
+
+    def _validate_numeric_semantics(self) -> None:
+        super()._validate_numeric_semantics()
 
         if self.value <= Decimal("0"):
             raise InvariantViolation("RiskBudgetSlice must be strictly positive")

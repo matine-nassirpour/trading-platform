@@ -16,8 +16,12 @@ class TickValue(NumericValueObject):
 
     currency: Currency
 
-    def _validate(self) -> None:
-        super()._validate()
+    @classmethod
+    def nominal_type(cls) -> str:
+        return "tick_value"
+
+    def _validate_numeric_semantics(self) -> None:
+        super()._validate_numeric_semantics()
 
         if self.value <= Decimal("0"):
             raise InvariantViolation("TickValue must be strictly positive")
