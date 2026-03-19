@@ -42,7 +42,7 @@ class BaseEvent(DeeplyImmutableDomainObject, ABC):
     """
     Canonical immutable Domain Event for an event-sourced domain model.
 
-    HARD GUARANTEES:
+    GUARANTEES:
     - Concrete subclasses must be dataclasses
     - Concrete subclasses must be frozen
     - Concrete subclasses must use slots

@@ -55,7 +55,7 @@ class ClosedSetValueObject(ValueObject, ABC):
 
     This represents a FINITE, EXPLICITLY ENUMERATED domain concept.
 
-    HARD GUARANTEES:
+    GUARANTEES:
     - The value space is finite and closed
     - All values are canonicalized
     - No subclass may exist without declaring its full domain

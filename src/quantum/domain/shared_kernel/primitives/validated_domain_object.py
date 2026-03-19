@@ -9,13 +9,13 @@ class ValidatedDomainObject(ABC):
     """
     Canonical structural base for all critical domain objects.
 
-    HARD GUARANTEES:
+    GUARANTEES:
     - must be a dataclass
     - must be frozen
     - must use slots-only layout
     - must not expose __dict__
     - must not expose __weakref__
-    - validation pipeline is centralized and final
+    - validation pipeline is centralized
     - __post_init__ must not be overridden by subclasses
 
     IMPORTANT:
@@ -64,7 +64,7 @@ class ValidatedDomainObject(ABC):
 
     def __post_init__(self) -> None:
         """
-        Final construction pipeline. Must never be overridden.
+        Central construction pipeline. Must never be overridden.
         """
         self._validate_structure()
         self._validate()

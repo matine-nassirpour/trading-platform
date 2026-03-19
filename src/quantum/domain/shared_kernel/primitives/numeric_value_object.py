@@ -14,7 +14,7 @@ class NumericValueObject(ValueObject, ABC):
     """
     Canonical abstract base class for all numeric Value Objects.
 
-    HARD GUARANTEES:
+    GUARANTEES:
     - Abstract by design: this class is NOT a complete domain concept
     - Decimal only
     - No NaN

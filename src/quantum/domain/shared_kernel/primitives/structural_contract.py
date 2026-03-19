@@ -267,7 +267,7 @@ def _validate_structural_contract(cls: type) -> None:
     """
     Enforces the canonical structural contract for domain primitives.
 
-    HARD GUARANTEES:
+    GUARANTEES:
     - Must be a dataclass
     - Must be frozen
     - Must expose a slots-only instance layout
