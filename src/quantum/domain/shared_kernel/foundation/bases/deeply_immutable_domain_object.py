@@ -27,7 +27,7 @@ class DeeplyImmutableDomainObject(ValidatedDomainObject):
 
     __slots__ = ()
 
-    __structural_policy__: ClassVar[StructuralPolicy] = CompositeStructuralPolicy(
+    _STRUCTURAL_POLICY: ClassVar[StructuralPolicy] = CompositeStructuralPolicy(
         policies=(
             PythonDataclassRepresentationPolicy(),
             DeepImmutabilityPolicy(),

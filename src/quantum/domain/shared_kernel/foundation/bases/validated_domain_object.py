@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import ClassVar
+from typing import ClassVar, final
 
 from quantum.domain.shared_kernel.foundation.contracts.policies import StructuralPolicy
 from quantum.domain.shared_kernel.foundation.contracts.structural_policy import (
@@ -25,7 +25,7 @@ class ValidatedDomainObject(ABC):
 
     __slots__ = ()
 
-    __structural_policy__: ClassVar[StructuralPolicy] = CompositeStructuralPolicy(
+    _STRUCTURAL_POLICY: ClassVar[StructuralPolicy] = CompositeStructuralPolicy(
         policies=(PythonDataclassRepresentationPolicy(),)
     )
 
@@ -41,20 +41,25 @@ class ValidatedDomainObject(ABC):
             raise TypeError(
                 f"{cls.__name__} must not override __post_init__. "
                 "Override _validate_semantics() and, if strictly necessary, "
-                "_structural_policy() instead."
+                "_STRUCTURAL_POLICY instead."
             )
 
     # --- Mandatory domain contract --------------------------------------------
 
     @classmethod
+    @final
     def _structural_policy(cls) -> StructuralPolicy:
         """
         Returns the structural policy applied to this concrete type.
 
-        Subclasses may override this if they need a different composition,
-        though specialized base classes are preferred over ad-hoc overrides.
+        This method is intentionally final:
+        - policy variation must happen through the _STRUCTURAL_POLICY class
+          attribute;
+        - this preserves a single, inspectable, deterministic resolution path;
+        - it prevents ad-hoc method overrides from fragmenting the construction
+          contract across the hierarchy.
         """
-        return cls.__structural_policy__
+        return cls._STRUCTURAL_POLICY
 
     def _validate_structure(self) -> None:
         """
