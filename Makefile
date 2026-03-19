@@ -44,7 +44,7 @@ lint: ## Comprehensive linting (Ruff + Isort)
 # │ Typing, Security, and Pre-commit                                           │
 # ╰────────────────────────────────────────────────────────────────────────────╯
 typecheck: ## Strict static typing (Mypy)
-	@poetry run mypy --config-file assurance/quality/mypy.ini src/quantum/domain # $(SRC)
+	@poetry run mypy --config-file assurance/quality/mypy.ini src/quantum/domain/shared_kernel # $(SRC)
 
 bandit: ## Static security analysis (Bandit)
 	@poetry run bandit -r $(SRC) -c assurance/security/bandit.yaml

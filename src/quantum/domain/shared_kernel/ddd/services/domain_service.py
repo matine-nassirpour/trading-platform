@@ -1,47 +1,47 @@
 import inspect
 
-from abc import ABC
-from typing import final
+from abc import ABC, ABCMeta
+from typing import Any, final
 
 
 @final
-class _DomainServiceMeta(type):
+class _DomainServiceMeta(ABCMeta):
     """
     Metaclass enforcing strict Domain Service constraints.
 
     Guarantees:
-
-    - Cannot define instance state
-    - Cannot define __init__
-    - Cannot be instantiated
-    - Must only expose staticmethods or classmethods
-    - No side-effects allowed structurally
+    - cannot define instance state
+    - cannot define __init__
+    - cannot be instantiated
+    - must only expose staticmethods or classmethods as public behavior
     """
 
-    def __new__(mcls, name, bases, namespace):
-
+    def __new__(
+        mcls,
+        name: str,
+        bases: tuple[type, ...],
+        namespace: dict[str, Any],
+    ) -> type:
         cls = super().__new__(mcls, name, bases, namespace)
 
         if name == "DomainService":
             return cls
 
-        # Forbid instance constructor
+        # Forbid instance constructor on concrete subclasses
         if "__init__" in namespace:
             raise TypeError(
-                f"{name} must not define __init__. " f"Domain Services are stateless."
+                f"{name} must not define __init__. Domain Services are stateless."
             )
 
-        # Forbid instance attributes
+        # Forbid declared instance/class state on the service itself
         annotations = namespace.get("__annotations__", {})
         if annotations:
             raise TypeError(
-                f"{name} must not define instance attributes. "
-                f"Domain Services are stateless."
+                f"{name} must not define attributes. Domain Services are stateless."
             )
 
-        # Forbid non-static public methods
+        # Forbid public instance methods
         for attr_name, attr_value in namespace.items():
-
             if attr_name.startswith("_"):
                 continue
 
@@ -52,14 +52,14 @@ class _DomainServiceMeta(type):
 
             if not isinstance(descriptor, (staticmethod, classmethod)):
                 raise TypeError(
-                    f"{name}.{attr_name} must be staticmethod or classmethod"
+                    f"{name}.{attr_name} must be a staticmethod or classmethod."
                 )
 
         return cls
 
-    def __call__(cls, *args, **kwargs):
+    def __call__(cls, *args: Any, **kwargs: Any) -> Any:
         raise TypeError(
-            f"{cls.__name__} cannot be instantiated. " f"Domain Services are stateless."
+            f"{cls.__name__} cannot be instantiated. Domain Services are stateless."
         )
 
 
@@ -68,14 +68,11 @@ class DomainService(ABC, metaclass=_DomainServiceMeta):
     Marker base class for Domain Services.
 
     Domain Services represent domain logic that:
-
-    - Does not naturally belong to an Entity or Value Object
-    - Is stateless
-    - Is pure
-    - Is deterministic
-    - Has no side-effects
-
-    Required for DDD correctness and certification discipline.
+    - does not naturally belong to an Entity or Value Object
+    - is stateless
+    - is pure
+    - is deterministic
+    - has no side-effects
     """
 
     __slots__ = ()
