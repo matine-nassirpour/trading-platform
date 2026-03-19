@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
+from functools import cache
 from types import MappingProxyType
-from typing import ClassVar, Final, Generic, Protocol, Self, TypeVar, cast
+from typing import Final, Generic, Protocol, Self, TypeVar, cast
 
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
@@ -13,6 +14,9 @@ from quantum.domain.shared_kernel.events.recorded_event_envelope import (
 )
 from quantum.domain.shared_kernel.identifiers.aggregate_id import AggregateId
 from quantum.domain.shared_kernel.primitives.aggregate_state import AggregateState
+from quantum.domain.shared_kernel.primitives.validated_domain_object import (
+    ValidatedDomainObject,
+)
 
 S = TypeVar("S", bound=AggregateState)
 ID = TypeVar("ID", bound=AggregateId)
@@ -29,19 +33,21 @@ class EventHandler(Protocol[S, E]):
 
 
 @dataclass(frozen=True, slots=True)
-class EventSourcedAggregateRoot(Generic[ID, S], ABC):
+class EventSourcedAggregateRoot(ValidatedDomainObject, Generic[ID, S], ABC):
     """
     Canonical base class for Event-Sourced Aggregates.
 
-    Guarantees:
-    - Immutability
-    - Deterministic replay
-    - Strict sequence continuity
-    - Event identity integrity
-    - Aggregate identity protection
-    - No hidden mutation
+    HARD GUARANTEES:
+    - frozen dataclass
+    - slots-only instance layout
+    - root-owned aggregate identity
+    - immutable aggregate state
+    - deterministic replay
+    - strict sequence continuity
+    - event identity integrity
+    - no hidden instance mutation
 
-    Doctrine:
+    DOCTRINE:
     - Aggregate identity is owned EXCLUSIVELY by the root.
     - Aggregate state is identity-free.
     """
@@ -49,22 +55,20 @@ class EventSourcedAggregateRoot(Generic[ID, S], ABC):
     _aggregate_id: Final[ID]
     _state: Final[S]
 
-    _HANDLERS_CACHE: ClassVar[dict[type, Mapping[type[BaseEvent], EventHandler]]] = {}
-
-    def __post_init__(self) -> None:
+    def _validate(self) -> None:
         expected_id_type = self.aggregate_id_type()
         expected_state_type = self.state_type()
 
         if not isinstance(self._aggregate_id, expected_id_type):
             raise InvariantViolation(
                 f"{self.__class__.__name__} requires aggregate_id of type "
-                f"{expected_id_type.__name__}, got {type(self._aggregate_id).__name__}"
+                f"{expected_id_type.__name__}, got {type(self._aggregate_id).__name__}."
             )
 
         if not isinstance(self._state, expected_state_type):
             raise InvariantViolation(
                 f"{self.__class__.__name__} requires state of type "
-                f"{expected_state_type.__name__}, got {type(self._state).__name__}"
+                f"{expected_state_type.__name__}, got {type(self._state).__name__}."
             )
 
     # --- Identity / state contract --------------------------------------------
@@ -92,7 +96,7 @@ class EventSourcedAggregateRoot(Generic[ID, S], ABC):
         if not isinstance(aggregate_id, expected_id_type):
             raise InvariantViolation(
                 f"{cls.__name__} requires aggregate_id of type "
-                f"{expected_id_type.__name__}, got {type(aggregate_id).__name__}"
+                f"{expected_id_type.__name__}, got {type(aggregate_id).__name__}."
             )
 
         return cast(ID, aggregate_id)
@@ -143,9 +147,9 @@ class EventSourcedAggregateRoot(Generic[ID, S], ABC):
         Canonical deterministic initial state.
 
         MUST:
-        - Be pure
-        - Be deterministic
-        - Have EventSequence.initial()
+        - be pure
+        - be deterministic
+        - have EventSequence.initial()
         """
         raise NotImplementedError
 
@@ -162,7 +166,7 @@ class EventSourcedAggregateRoot(Generic[ID, S], ABC):
 
         if not state.last_event_sequence().is_initial():
             raise InvariantViolation(
-                f"{cls.__name__}.uninitialized_state() must have initial sequence"
+                f"{cls.__name__}.uninitialized_state() must have initial sequence."
             )
 
         return cls(_aggregate_id=validated_id, _state=state)
@@ -173,43 +177,59 @@ class EventSourcedAggregateRoot(Generic[ID, S], ABC):
     @abstractmethod
     def _handlers(cls) -> Mapping[type[BaseEvent], EventHandler[S, BaseEvent]]:
         """
-        Returns COMPLETE handler mapping.
-
-        This mapping defines the aggregate vocabulary.
+        Returns the COMPLETE handler mapping.
 
         MUST:
-        - Be total
-        - Be deterministic
-        - Not change at runtime
+        - be total for the aggregate vocabulary
+        - be deterministic
+        - not depend on runtime mutation
         """
         raise NotImplementedError
 
     @classmethod
-    def handlers(cls) -> Mapping[type[BaseEvent], EventHandler[S, BaseEvent]]:
-        """
-        Returns immutable handler mapping, cached per aggregate class.
-        """
-        cached = cls._HANDLERS_CACHE.get(cls)
-        if cached is not None:
-            return cast(Mapping[type[BaseEvent], EventHandler[S, BaseEvent]], cached)
-
-        handlers = cls._handlers()
-
+    def _validate_handler_mapping(
+        cls,
+        handlers: Mapping[type[BaseEvent], EventHandler[S, BaseEvent]],
+    ) -> Mapping[type[BaseEvent], EventHandler[S, BaseEvent]]:
         if not isinstance(handlers, Mapping):
             raise InvariantViolation(f"{cls.__name__}._handlers() must return Mapping")
 
-        frozen_handlers = MappingProxyType(dict(handlers))
-        cls._HANDLERS_CACHE[cls] = frozen_handlers
+        normalized: dict[type[BaseEvent], EventHandler[S, BaseEvent]] = {}
 
-        return cast(
-            Mapping[type[BaseEvent], EventHandler[S, BaseEvent]], frozen_handlers
-        )
+        for event_type, handler in handlers.items():
+            if not isinstance(event_type, type):
+                raise InvariantViolation(
+                    f"{cls.__name__} handler key must be an event class, "
+                    f"got {type(event_type).__name__}"
+                )
+
+            if not issubclass(event_type, BaseEvent):
+                raise InvariantViolation(
+                    f"{cls.__name__} handler key {event_type!r} is not a BaseEvent subtype"
+                )
+
+            if not callable(handler):
+                raise InvariantViolation(
+                    f"{cls.__name__} handler for {event_type.__name__} must be callable"
+                )
+
+            normalized[event_type] = handler
+
+        return MappingProxyType(normalized)
+
+    @classmethod
+    @cache
+    def handlers(cls) -> Mapping[type[BaseEvent], EventHandler[S, BaseEvent]]:
+        """
+        Returns an immutable, validated, cached handler mapping per aggregate class.
+        """
+        return cls._validate_handler_mapping(cls._handlers())
 
     # --- Single-event application (the ONLY semantic gate) --------------------
 
     def apply(self, envelope: RecordedEventEnvelope) -> Self:
         """
-        Applies ONE persisted event.
+        Applies exactly one recorded event.
 
         This is the ONLY legal state transition gateway.
         """
@@ -250,7 +270,7 @@ class EventSourcedAggregateRoot(Generic[ID, S], ABC):
         events: list[RecordedEventEnvelope],
         aggregate_id: ID | None,
     ) -> ID:
-        if len(events) == 0:
+        if not events:
             raise InvariantViolation(
                 f"{cls.__name__}.rehydrate() requires at least one recorded event"
             )
@@ -265,7 +285,6 @@ class EventSourcedAggregateRoot(Generic[ID, S], ABC):
 
         if aggregate_id is not None:
             validated_requested_id = cls._validate_aggregate_id(aggregate_id)
-
             if validated_requested_id != stream_id:
                 raise InvariantViolation(
                     "aggregate_id parameter mismatch with stream aggregate_id"
@@ -284,8 +303,8 @@ class EventSourcedAggregateRoot(Generic[ID, S], ABC):
         Deterministic rebuild from a persisted event stream.
 
         STRICT SEMANTICS:
-        - rehydrate() is ONLY valid for an existing aggregate
-        - the event stream MUST contain at least one recorded event
+        - valid only for an existing aggregate
+        - stream must contain at least one recorded event
         """
         if events is None:
             raise InvariantViolation("events cannot be None")

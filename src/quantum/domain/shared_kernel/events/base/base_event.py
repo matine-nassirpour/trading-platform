@@ -6,8 +6,8 @@ from dataclasses import dataclass, fields
 from typing import ClassVar, final
 
 from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.primitives._validated_frozen_dataclass import (
-    _ValidatedFrozenDataclass,
+from quantum.domain.shared_kernel.primitives.deeply_immutable_domain_object import (
+    DeeplyImmutableDomainObject,
 )
 
 _EVENT_NAME_PATTERN = re.compile(r"^[a-z]+(\.[a-z0-9_]+)+$")
@@ -24,6 +24,9 @@ _FORBIDDEN_EVENT_FIELDS = frozenset(
         "causation_id",
         "correlation_id",
         "stream_id",
+        "aggregate_id",
+        "recorded_at",
+        "metadata",
     }
 )
 
@@ -35,7 +38,7 @@ class EventDefinitionViolation(TypeError):
 
 
 @dataclass(frozen=True, slots=True)
-class BaseEvent(_ValidatedFrozenDataclass, ABC):
+class BaseEvent(DeeplyImmutableDomainObject, ABC):
     """
     Canonical immutable Domain Event for an event-sourced domain model.
 
@@ -48,18 +51,12 @@ class BaseEvent(_ValidatedFrozenDataclass, ABC):
     - Concrete subclasses must explicitly declare event_name
     - event_name must follow canonical naming convention
     - event_version must be an integer >= 1
-    - Forbidden metadata fields must not appear in the domain payload
+    - Forbidden envelope/record metadata fields must not appear in the payload
     - Payload values must be recursively immutable and deterministic
     - Semantic payload validation is extensible via _validate_payload()
 
     NON-GOALS:
-    - Recording metadata (event_id, occurred_at, stream_id, correlation_id, etc.)
-      These belong to the event envelope / store record, not to the domain event.
-
-    EXTENSION MODEL:
-    - Override _validate_payload() in concrete events for semantic invariants
-    - Never override __post_init__()
-    - Never override _validate()
+    - Recording metadata belongs to the envelope / event record, not to the event payload.
     """
 
     event_name: ClassVar[str]
@@ -69,10 +66,6 @@ class BaseEvent(_ValidatedFrozenDataclass, ABC):
 
     @classmethod
     def _assert_class_level_event_identity_definition(cls) -> None:
-        """
-        Validates the static event identity contract at class definition time
-        for concrete subclasses.
-        """
         event_name = cls.__dict__.get("event_name")
         if not isinstance(event_name, str) or not event_name:
             raise EventDefinitionViolation(
@@ -131,14 +124,12 @@ class BaseEvent(_ValidatedFrozenDataclass, ABC):
         if cls is BaseEvent:
             return
 
-        # Preserve the final validation pipeline.
         if "_validate" in cls.__dict__:
             raise EventDefinitionViolation(
                 f"{cls.__name__} must NOT override _validate(). "
                 "Use _validate_payload() instead."
             )
 
-        # Abstract intermediate event classes are allowed.
         if inspect.isabstract(cls):
             return
 
@@ -154,8 +145,6 @@ class BaseEvent(_ValidatedFrozenDataclass, ABC):
     def _validate_payload(self) -> None:
         """
         Semantic payload validation hook for concrete domain events.
-
-        Override in subclasses to enforce event-specific invariants.
         """
         return None
 

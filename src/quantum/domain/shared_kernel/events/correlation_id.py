@@ -25,9 +25,5 @@ class CorrelationId(ValueObject):
         if not isinstance(self.value, uuid.UUID):
             raise InvariantViolation("CorrelationId must be a UUID")
 
-    @staticmethod
-    def new() -> CorrelationId:
-        return CorrelationId(uuid.uuid4())
-
     def __str__(self) -> str:
         return str(self.value)
