@@ -22,8 +22,8 @@ class DeeplyImmutableDomainObject(ValidatedDomainObject):
 
     __slots__ = ()
 
-    def _before_validate(self) -> None:
-        super()._before_validate()
+    def _validate_structure(self) -> None:
+        super()._validate_structure()
         _assert_deep_immutability_of_instance_fields(self)
 
     @abstractmethod

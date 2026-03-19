@@ -51,14 +51,14 @@ class ValidatedDomainObject(ABC):
         """
         raise NotImplementedError
 
-    def _before_validate(self) -> None:
+    def _validate_structure(self) -> None:
         """
-        Optional protected hook executed before _validate().
+        Structural validation hook.
 
-        Subclasses may override this to add stricter guarantees while preserving
-        the final construction pipeline.
+        Base implementation enforces the canonical structural contract.
+        Specialized structural bases may strengthen it.
         """
-        return None
+        _validate_structural_contract(type(self))
 
     # --- Construction Guarantee -----------------------------------------------
 
@@ -66,6 +66,5 @@ class ValidatedDomainObject(ABC):
         """
         Final construction pipeline. Must never be overridden.
         """
-        _validate_structural_contract(type(self))
-        self._before_validate()
+        self._validate_structure()
         self._validate()
