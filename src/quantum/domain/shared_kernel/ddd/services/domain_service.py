@@ -1,7 +1,7 @@
 import inspect
 
 from abc import ABC, ABCMeta
-from ast import FunctionType
+from types import FunctionType
 from typing import Any, Final, final
 
 _ALLOWED_CLASS_NAMESPACE_NAMES: Final[frozenset[str]] = frozenset(
