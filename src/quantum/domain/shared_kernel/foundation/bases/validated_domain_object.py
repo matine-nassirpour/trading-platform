@@ -1,30 +1,33 @@
 from abc import ABC, abstractmethod
+from typing import ClassVar
 
-from quantum.domain.shared_kernel.foundation.contracts.structural_contract import (
-    _validate_structural_contract,
+from quantum.domain.shared_kernel.foundation.contracts.policies import StructuralPolicy
+from quantum.domain.shared_kernel.foundation.contracts.structural_policy import (
+    CompositeStructuralPolicy,
+    PythonDataclassRepresentationPolicy,
 )
 
 
 class ValidatedDomainObject(ABC):
     """
-    Canonical structural base for all critical domain objects.
+    Canonical base for structurally validated domain objects.
 
-    GUARANTEES:
-    - must be a dataclass
-    - must be frozen
-    - must use slots-only layout
-    - must not expose __dict__
-    - must not expose __weakref__
-    - validation pipeline is centralized
-    - __post_init__ must not be overridden by subclasses
+    DESIGN PRINCIPLES:
+    - structural validation is centralized;
+    - structure and semantics are separate concerns;
+    - structural policy is explicit and replaceable;
+    - this base enforces only the default representation discipline;
+    - stronger guarantees are added by specialized subclasses.
 
     IMPORTANT:
-    This base enforces STRUCTURAL discipline.
-    It does NOT automatically enforce recursive deep immutability of fields.
-    Specialized subclasses may add stronger guarantees.
+    Subclasses must be dataclasses themselves.
     """
 
     __slots__ = ()
+
+    __structural_policy__: ClassVar[StructuralPolicy] = CompositeStructuralPolicy(
+        policies=(PythonDataclassRepresentationPolicy(),)
+    )
 
     # --- Class creation enforcement -------------------------------------------
 
@@ -36,35 +39,45 @@ class ValidatedDomainObject(ABC):
 
         if "__post_init__" in cls.__dict__:
             raise TypeError(
-                f"{cls.__name__} must NOT override __post_init__. "
-                "Use _validate() and optional protected hooks instead."
+                f"{cls.__name__} must not override __post_init__. "
+                "Override _validate_semantics() and, if strictly necessary, "
+                "_structural_policy() instead."
             )
 
     # --- Mandatory domain contract --------------------------------------------
 
-    @abstractmethod
-    def _validate(self) -> None:
+    @classmethod
+    def _structural_policy(cls) -> StructuralPolicy:
         """
-        Enforces semantic invariants of the concrete domain object.
+        Returns the structural policy applied to this concrete type.
+
+        Subclasses may override this if they need a different composition,
+        though specialized base classes are preferred over ad-hoc overrides.
+        """
+        return cls.__structural_policy__
+
+    def _validate_structure(self) -> None:
+        """
+        Executes structural validation according to the configured policy.
+        """
+        type(self)._structural_policy().validate_instance(self)
+
+    @abstractmethod
+    def _validate_semantics(self) -> None:
+        """
+        Enforces semantic domain invariants.
 
         Must raise DomainError / InvariantViolation on failure.
         """
         raise NotImplementedError
 
-    def _validate_structure(self) -> None:
-        """
-        Structural validation hook.
-
-        Base implementation enforces the canonical structural contract.
-        Specialized structural bases may strengthen it.
-        """
-        _validate_structural_contract(type(self))
-
     # --- Construction Guarantee -----------------------------------------------
 
     def __post_init__(self) -> None:
         """
-        Central construction pipeline. Must never be overridden.
+        Final construction pipeline:
+        1. structural validation
+        2. semantic validation
         """
         self._validate_structure()
-        self._validate()
+        self._validate_semantics()

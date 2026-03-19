@@ -1,34 +1,39 @@
 from abc import abstractmethod
+from typing import ClassVar
 
 from quantum.domain.shared_kernel.foundation.bases.validated_domain_object import (
     ValidatedDomainObject,
 )
-from quantum.domain.shared_kernel.foundation.contracts.structural_contract import (
-    _assert_deep_immutability_of_instance_fields,
+from quantum.domain.shared_kernel.foundation.contracts.policies import StructuralPolicy
+from quantum.domain.shared_kernel.foundation.contracts.structural_policy import (
+    CompositeStructuralPolicy,
+    DeepImmutabilityPolicy,
+    PythonDataclassRepresentationPolicy,
 )
 
 
 class DeeplyImmutableDomainObject(ValidatedDomainObject):
     """
     Structural base for domain objects whose full field graph must satisfy
-    the deep-immutability contract.
+    the deep-immutability policy.
 
     Typical examples:
     - Value Objects
     - AggregateState
     - Domain Events
-    - Cursors
+    - snapshots
+    - cursors
     """
 
     __slots__ = ()
 
-    def _validate_structure(self) -> None:
-        super()._validate_structure()
-        _assert_deep_immutability_of_instance_fields(self)
+    __structural_policy__: ClassVar[StructuralPolicy] = CompositeStructuralPolicy(
+        policies=(
+            PythonDataclassRepresentationPolicy(),
+            DeepImmutabilityPolicy(),
+        )
+    )
 
     @abstractmethod
-    def _validate(self) -> None:
-        """
-        Must be implemented by concrete subclasses.
-        """
+    def _validate_semantics(self) -> None:
         raise NotImplementedError

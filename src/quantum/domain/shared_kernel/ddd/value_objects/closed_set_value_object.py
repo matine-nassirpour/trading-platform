@@ -83,23 +83,22 @@ class ClosedSetValueObject(ValueObject, ABC):
     def __init_subclass__(cls) -> None:
         super().__init_subclass__()
 
-        # Abstract subclasses are allowed to omit the contract
         if cls is ClosedSetValueObject or cls.__abstractmethods__:
             return
 
-        # Enforce explicit declaration of the closed set
         if "_allowed_values" not in cls.__dict__:
             raise TypeError(
                 f"{cls.__name__} must explicitly implement _allowed_values()"
             )
 
-        # Validate and freeze the closed set at import time
-        values = cls._allowed_values()
-        cls.__ALLOWED_VALUES__ = _validate_allowed_values(values, cls.__name__)
+        cls.__ALLOWED_VALUES__ = _validate_allowed_values(
+            cls._allowed_values(),
+            cls.__name__,
+        )
 
     # --- Semantic invariants --------------------------------------------------
 
-    def _validate(self) -> None:
+    def _validate_semantics(self) -> None:
         if not isinstance(self.value, str):
             raise InvariantViolation(
                 f"{self.__class__.__name__} value must be a string"
@@ -113,7 +112,6 @@ class ClosedSetValueObject(ValueObject, ABC):
                 f"Allowed values: {sorted(self.__class__.__ALLOWED_VALUES__)}"
             )
 
-        # Enforce canonical form
         object.__setattr__(self, "value", canonical)
 
     # --- Canonical string form ------------------------------------------------

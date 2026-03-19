@@ -13,7 +13,7 @@ class AggregateId(ValueObject):
 
     value: UUID
 
-    def _validate(self) -> None:
+    def _validate_semantics(self) -> None:
         if not isinstance(self.value, UUID):
             raise InvariantViolation("AggregateId must be UUID")
 

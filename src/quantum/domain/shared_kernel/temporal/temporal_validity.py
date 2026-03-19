@@ -18,7 +18,7 @@ class TemporalValidity(ValueObject):
 
     interval: TimeInterval
 
-    def _validate(self) -> None:
+    def _validate_semantics(self) -> None:
         if not isinstance(self.interval, TimeInterval):
             raise InvariantViolation("TemporalValidity requires a TimeInterval")
 

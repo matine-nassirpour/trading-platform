@@ -37,13 +37,8 @@ class NumericValueObject(ValueObject, ABC):
         if inspect.isabstract(cls):
             return
 
-        # Concrete subclasses must EXPLICITLY declare their nominal identity
         if "nominal_type" not in cls.__dict__:
-            raise TypeError(
-                f"{cls.__name__} must explicitly implement nominal_type(). "
-                "Concrete numeric Value Objects must declare their nominal "
-                "domain identity."
-            )
+            raise TypeError(f"{cls.__name__} must explicitly implement nominal_type().")
 
     @classmethod
     @abstractmethod
@@ -85,6 +80,6 @@ class NumericValueObject(ValueObject, ABC):
         return None
 
     @final
-    def _validate(self) -> None:
+    def _validate_semantics(self) -> None:
         self._validate_numeric_value()
         self._validate_numeric_semantics()
