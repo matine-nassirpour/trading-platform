@@ -39,7 +39,7 @@ def _assert_instance_layout_is_dict_free(
         return
 
     try:
-        dummy = object.__new__(type(cls))
+        dummy = object.__new__(cls)
     except Exception:
         # If the runtime cannot allocate a raw instance, class-level guarantees
         # are deemed sufficient.
