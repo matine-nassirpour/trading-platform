@@ -8,9 +8,9 @@ from quantum.domain.risk.governance.limits.notional_limit import NotionalLimit
 from quantum.domain.risk.governance.limits.risk_threshold_policy import (
     RiskThresholdPolicy,
 )
-from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.money.money_context import MoneyContext
-from quantum.domain.shared_kernel.primitives.value_object import ValueObject
+from quantum.domain.shared_kernel.ddd.value_objects.value_object import ValueObject
+from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.monetary.money_context import MoneyContext
 
 
 @dataclass(frozen=True, slots=True)

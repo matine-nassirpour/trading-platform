@@ -4,15 +4,17 @@ from typing import Generic, TypeVar
 from quantum.application.ports.outbound.transaction.event_store import EventStore
 from quantum.application.shared.errors.application_error import ApplicationError
 from quantum.application.shared.eventing.stream_name_resolver import StreamNameResolver
-from quantum.domain.shared_kernel.events.event_sequence import EventSequence
-from quantum.domain.shared_kernel.events.recorded_event_envelope import (
-    RecordedEventEnvelope,
-)
-from quantum.domain.shared_kernel.identifiers.aggregate_id import AggregateId
-from quantum.domain.shared_kernel.primitives.aggregate_state import AggregateState
-from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import (
+from quantum.domain.shared_kernel.ddd.entities.aggregate_state import AggregateState
+from quantum.domain.shared_kernel.event_sourcing.aggregates.event_sourced_aggregate_root import (
     EventSourcedAggregateRoot,
 )
+from quantum.domain.shared_kernel.event_sourcing.events.event_sequence import (
+    EventSequence,
+)
+from quantum.domain.shared_kernel.event_sourcing.events.recorded_event_envelope import (
+    RecordedEventEnvelope,
+)
+from quantum.domain.shared_kernel.identity.aggregate_id import AggregateId
 
 ID = TypeVar("ID", bound=AggregateId)
 S = TypeVar("S", bound=AggregateState)

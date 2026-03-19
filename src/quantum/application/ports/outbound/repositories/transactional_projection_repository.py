@@ -1,10 +1,12 @@
 from abc import ABC, abstractmethod
 from typing import Generic, TypeVar
 
-from quantum.domain.shared_kernel.events.recorded_event_envelope import (
+from quantum.domain.shared_kernel.event_sourcing.events.recorded_event_envelope import (
     RecordedEventEnvelope,
 )
-from quantum.domain.shared_kernel.projection.projection_cursor import ProjectionCursor
+from quantum.domain.shared_kernel.event_sourcing.projections.projection_cursor import (
+    ProjectionCursor,
+)
 
 S = TypeVar("S")
 

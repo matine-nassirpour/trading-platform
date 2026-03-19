@@ -12,9 +12,9 @@ from quantum.application.trading.integration_events.base.integration_event impor
 from quantum.application.trading.integration_events.base.integration_headers import (
     IntegrationHeaders,
 )
-from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.primitives.value_object import ValueObject
-from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
+from quantum.domain.shared_kernel.ddd.value_objects.value_object import ValueObject
+from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.temporal.epoch_ms import EpochMs
 
 
 @dataclass(frozen=True, slots=True)

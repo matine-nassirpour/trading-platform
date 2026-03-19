@@ -5,8 +5,10 @@ from typing import Protocol, runtime_checkable
 from quantum.application.shared.eventing.pending_event_envelope import (
     PendingEventEnvelope,
 )
-from quantum.domain.shared_kernel.events.event_sequence import EventSequence
-from quantum.domain.shared_kernel.events.recorded_event_envelope import (
+from quantum.domain.shared_kernel.event_sourcing.events.event_sequence import (
+    EventSequence,
+)
+from quantum.domain.shared_kernel.event_sourcing.events.recorded_event_envelope import (
     RecordedEventEnvelope,
 )
 

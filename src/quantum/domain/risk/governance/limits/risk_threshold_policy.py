@@ -3,10 +3,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal
 
-from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.primitives.closed_set_value_object import (
+from quantum.domain.shared_kernel.ddd.value_objects.closed_set_value_object import (
     ClosedSetValueObject,
 )
+from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
 
 
 @dataclass(frozen=True, slots=True)

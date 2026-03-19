@@ -2,7 +2,7 @@ from abc import abstractmethod
 from collections.abc import Iterable
 from typing import Protocol, runtime_checkable
 
-from quantum.domain.shared_kernel.events.recorded_event_envelope import (
+from quantum.domain.shared_kernel.event_sourcing.events.recorded_event_envelope import (
     RecordedEventEnvelope,
 )
 

@@ -1,9 +1,9 @@
 from pydantic import BaseModel, ConfigDict, Field
 
-from quantum.domain.shared_kernel.value_objects import PositiveVolume, Price
-from quantum.domain.shared_kernel.value_objects.symbol import Symbol
+from quantum.domain.market.instrument.symbol import Symbol
 from quantum.domain.trading.execution.order.order_type import OrderType
 from quantum.domain.trading.execution.order.time_in_force import TimeInForce
+from quantum.domain.trading.value_objects import PositiveVolume, Price
 from quantum.infrastructure.execution.type.order_filling_type import OrderFillingType
 from quantum.infrastructure.execution.type.trade_action import TradeAction
 

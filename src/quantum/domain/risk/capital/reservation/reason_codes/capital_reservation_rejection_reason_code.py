@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from quantum.domain.shared_kernel.primitives.closed_set_value_object import (
+from quantum.domain.shared_kernel.ddd.value_objects.closed_set_value_object import (
     ClosedSetValueObject,
 )
 

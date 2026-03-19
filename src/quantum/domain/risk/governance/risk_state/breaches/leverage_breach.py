@@ -9,7 +9,7 @@ from quantum.domain.risk.governance.limits.risk_threshold_policy import (
 from quantum.domain.risk.governance.measures.equity import Equity
 from quantum.domain.risk.governance.measures.exposure import Exposure
 from quantum.domain.risk.governance.risk_state.breaches.risk_breach import RiskBreach
-from quantum.domain.shared_kernel.errors.invariants import (
+from quantum.domain.shared_kernel.foundation.errors.invariants import (
     CurrencyMismatch,
     InvariantViolation,
 )

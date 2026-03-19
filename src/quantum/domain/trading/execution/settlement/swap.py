@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from quantum.domain.shared_kernel.money.signed_contextual_amount import (
+from quantum.domain.shared_kernel.monetary.signed_contextual_amount import (
     SignedContextualAmount,
 )
 

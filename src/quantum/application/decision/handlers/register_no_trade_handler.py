@@ -9,7 +9,7 @@ from quantum.application.shared.base_handlers.process_command_handler import (
 from quantum.domain.decision.events.v1.no_trade_decision_event import (
     NoTradeDecisionEvent,
 )
-from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
+from quantum.domain.shared_kernel.event_sourcing.events.base_event import BaseEvent
 
 
 class RegisterNoTradeHandler(ProcessCommandHandler[RegisterNoTradeCommand, None]):

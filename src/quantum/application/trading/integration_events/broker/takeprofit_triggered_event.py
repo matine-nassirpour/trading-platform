@@ -4,15 +4,15 @@ from typing import ClassVar
 from quantum.application.trading.integration_events.base.integration_event import (
     IntegrationEvent,
 )
-from quantum.domain.shared_kernel.identifiers.intent_id import IntentId
-from quantum.domain.shared_kernel.value_objects.price import Price
-from quantum.domain.shared_kernel.value_objects.symbol import Symbol
-from quantum.domain.shared_kernel.value_objects.volume import PositiveVolume
+from quantum.domain.market.instrument.symbol import Symbol
+from quantum.domain.shared_kernel.identity.intent_id import IntentId
+from quantum.domain.shared_kernel.monetary.price import Price
 from quantum.domain.trading.execution.order.deal_id import DealId
 from quantum.domain.trading.execution.taxonomy.deal_entry import DealEntry
 from quantum.domain.trading.execution.taxonomy.deal_reason import DealReason
 from quantum.domain.trading.identifiers.broker_order_id import BrokerOrderId
 from quantum.domain.trading.identifiers.position_id import PositionId
+from quantum.domain.trading.value_objects.volume import PositiveVolume
 
 
 @dataclass(frozen=True, slots=True)

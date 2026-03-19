@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 
-from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.primitives.value_object import ValueObject
-from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
-from quantum.domain.shared_kernel.value_objects.price import Price
-from quantum.domain.shared_kernel.value_objects.volume import PositiveVolume
+from quantum.domain.shared_kernel.ddd.value_objects.value_object import ValueObject
+from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.monetary.price import Price
+from quantum.domain.shared_kernel.temporal.epoch_ms import EpochMs
 from quantum.domain.trading.execution.order.execution_id import ExecutionId
+from quantum.domain.trading.value_objects.volume import PositiveVolume
 
 
 @dataclass(frozen=True, slots=True)

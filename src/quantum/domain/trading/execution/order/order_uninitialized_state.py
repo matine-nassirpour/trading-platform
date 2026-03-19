@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
 from quantum.domain.trading.execution.order.order_state_base import OrderStateBase
 
 

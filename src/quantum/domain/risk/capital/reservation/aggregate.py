@@ -49,21 +49,23 @@ from quantum.domain.risk.capital.reservation.states.capital_reservation_state_ba
 from quantum.domain.risk.capital.reservation.states.capital_reservation_uninitialized_state import (
     CapitalReservationUninitializedState,
 )
-from quantum.domain.shared_kernel.errors.invariants import (
-    InvalidStateTransition,
-    InvariantViolation,
-)
-from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
-from quantum.domain.shared_kernel.events.event_sequence import EventSequence
-from quantum.domain.shared_kernel.events.recorded_event_envelope import (
-    RecordedEventEnvelope,
-)
-from quantum.domain.shared_kernel.identifiers.intent_id import IntentId
-from quantum.domain.shared_kernel.identifiers.strategy_id import StrategyId
-from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import (
+from quantum.domain.shared_kernel.event_sourcing.aggregates.event_sourced_aggregate_root import (
     EventHandler,
     EventSourcedAggregateRoot,
 )
+from quantum.domain.shared_kernel.event_sourcing.events.base_event import BaseEvent
+from quantum.domain.shared_kernel.event_sourcing.events.event_sequence import (
+    EventSequence,
+)
+from quantum.domain.shared_kernel.event_sourcing.events.recorded_event_envelope import (
+    RecordedEventEnvelope,
+)
+from quantum.domain.shared_kernel.foundation.errors.invariants import (
+    InvalidStateTransition,
+    InvariantViolation,
+)
+from quantum.domain.shared_kernel.identity.intent_id import IntentId
+from quantum.domain.shared_kernel.identity.strategy_id import StrategyId
 
 
 class CapitalReservation(

@@ -9,7 +9,7 @@ from quantum.application.shared.base_handlers.aggregate_existence_policy import 
 from quantum.application.trading.commands.register_order_fill_command import (
     RegisterOrderFillCommand,
 )
-from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
+from quantum.domain.shared_kernel.event_sourcing.events.base_event import BaseEvent
 from quantum.domain.trading.execution.order.order import Order
 
 

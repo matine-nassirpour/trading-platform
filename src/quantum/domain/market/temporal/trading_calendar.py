@@ -3,9 +3,9 @@ from datetime import date
 
 from quantum.domain.market.temporal.market_session import MarketSession
 from quantum.domain.market.temporal.utc_minute import UtcMinuteOfDay
-from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.primitives.value_object import ValueObject
-from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
+from quantum.domain.shared_kernel.ddd.value_objects.value_object import ValueObject
+from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.temporal.epoch_ms import EpochMs
 
 
 @dataclass(frozen=True, slots=True)

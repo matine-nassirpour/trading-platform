@@ -24,14 +24,16 @@ from quantum.application.shared.eventing.event_enveloper import (
 from quantum.application.shared.eventing.event_sourced_repository import (
     EventSourcedRepository,
 )
-from quantum.domain.shared_kernel.errors.domain_error import DomainError
-from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
-from quantum.domain.shared_kernel.events.event_sequence import EventSequence
-from quantum.domain.shared_kernel.identifiers.aggregate_id import AggregateId
-from quantum.domain.shared_kernel.primitives.aggregate_state import AggregateState
-from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import (
+from quantum.domain.shared_kernel.ddd.entities.aggregate_state import AggregateState
+from quantum.domain.shared_kernel.event_sourcing.aggregates.event_sourced_aggregate_root import (
     EventSourcedAggregateRoot,
 )
+from quantum.domain.shared_kernel.event_sourcing.events.base_event import BaseEvent
+from quantum.domain.shared_kernel.event_sourcing.events.event_sequence import (
+    EventSequence,
+)
+from quantum.domain.shared_kernel.foundation.errors.domain_error import DomainError
+from quantum.domain.shared_kernel.identity.aggregate_id import AggregateId
 
 C = TypeVar("C", bound=BaseCommand)
 R = TypeVar("R")  # Result

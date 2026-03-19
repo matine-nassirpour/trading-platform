@@ -5,7 +5,7 @@ from quantum.domain.decision.events.decision_event import DecisionEvent
 from quantum.domain.decision.governance.decision_authorization_reason_code import (
     DecisionAuthorizationReasonCode,
 )
-from quantum.domain.shared_kernel.identifiers.intent_id import IntentId
+from quantum.domain.shared_kernel.identity.intent_id import IntentId
 
 
 @dataclass(frozen=True, slots=True)

@@ -1,7 +1,7 @@
 from decimal import ROUND_HALF_EVEN, Decimal
 from typing import Final
 
-from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
 
 
 class QuantizationService:

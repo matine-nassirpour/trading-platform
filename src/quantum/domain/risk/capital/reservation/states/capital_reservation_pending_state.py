@@ -6,10 +6,10 @@ from quantum.domain.risk.capital.allocation.capital_allocation_intent import (
 from quantum.domain.risk.capital.reservation.states.capital_reservation_state_base import (
     CapitalReservationStateBase,
 )
-from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.identifiers.intent_id import IntentId
-from quantum.domain.shared_kernel.identifiers.strategy_id import StrategyId
-from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
+from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.identity.intent_id import IntentId
+from quantum.domain.shared_kernel.identity.strategy_id import StrategyId
+from quantum.domain.shared_kernel.temporal.epoch_ms import EpochMs
 
 
 @dataclass(frozen=True, slots=True)

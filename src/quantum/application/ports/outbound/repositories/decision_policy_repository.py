@@ -2,7 +2,7 @@ from abc import abstractmethod
 from typing import Protocol, runtime_checkable
 
 from quantum.domain.decision.governance.decision_policy import DecisionPolicy
-from quantum.domain.shared_kernel.identifiers.strategy_id import StrategyId
+from quantum.domain.shared_kernel.identity.strategy_id import StrategyId
 
 
 @runtime_checkable

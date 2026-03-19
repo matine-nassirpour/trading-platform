@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from quantum.domain.shared_kernel.identifiers.aggregate_id import AggregateId
+from quantum.domain.shared_kernel.identity.aggregate_id import AggregateId
 
 
 @dataclass(frozen=True, slots=True)

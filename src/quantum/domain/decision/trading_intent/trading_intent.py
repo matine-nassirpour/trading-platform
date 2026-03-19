@@ -32,23 +32,25 @@ from quantum.domain.decision.trading_intent.trading_intent_state_base import (
 from quantum.domain.decision.trading_intent.trading_intent_uninitialized_state import (
     TradingIntentUninitializedState,
 )
-from quantum.domain.shared_kernel.errors.invariants import (
-    InvalidStateTransition,
-    InvariantViolation,
-)
-from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
-from quantum.domain.shared_kernel.events.event_sequence import EventSequence
-from quantum.domain.shared_kernel.events.recorded_event_envelope import (
-    RecordedEventEnvelope,
-)
-from quantum.domain.shared_kernel.identifiers.intent_id import IntentId
-from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import (
+from quantum.domain.market.instrument.symbol import Symbol
+from quantum.domain.market.value_objects.position_side import PositionSide
+from quantum.domain.shared_kernel.event_sourcing.aggregates.event_sourced_aggregate_root import (
     EventHandler,
     EventSourcedAggregateRoot,
 )
-from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
-from quantum.domain.shared_kernel.value_objects.position_side import PositionSide
-from quantum.domain.shared_kernel.value_objects.symbol import Symbol
+from quantum.domain.shared_kernel.event_sourcing.events.base_event import BaseEvent
+from quantum.domain.shared_kernel.event_sourcing.events.event_sequence import (
+    EventSequence,
+)
+from quantum.domain.shared_kernel.event_sourcing.events.recorded_event_envelope import (
+    RecordedEventEnvelope,
+)
+from quantum.domain.shared_kernel.foundation.errors.invariants import (
+    InvalidStateTransition,
+    InvariantViolation,
+)
+from quantum.domain.shared_kernel.identity.intent_id import IntentId
+from quantum.domain.shared_kernel.temporal.epoch_ms import EpochMs
 
 
 class TradingIntent(EventSourcedAggregateRoot[IntentId, TradingIntentStateBase]):

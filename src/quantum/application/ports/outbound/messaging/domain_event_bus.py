@@ -2,8 +2,8 @@ from abc import abstractmethod
 from collections.abc import Callable
 from typing import Protocol, runtime_checkable
 
-from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
-from quantum.domain.shared_kernel.events.recorded_event_envelope import (
+from quantum.domain.shared_kernel.event_sourcing.events.base_event import BaseEvent
+from quantum.domain.shared_kernel.event_sourcing.events.recorded_event_envelope import (
     RecordedEventEnvelope,
 )
 

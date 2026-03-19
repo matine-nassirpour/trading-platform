@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.money.contextual_monetary_amount import (
+from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.monetary.contextual_monetary_amount import (
     ContextualMonetaryAmount,
 )
-from quantum.domain.shared_kernel.value_objects.pnl import RealizedPnL
+from quantum.domain.shared_kernel.monetary.pnl import RealizedPnL
 
 
 @dataclass(frozen=True, slots=True)

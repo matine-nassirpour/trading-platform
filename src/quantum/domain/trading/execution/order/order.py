@@ -2,27 +2,25 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Self
 
-from quantum.domain.shared_kernel.errors.invariants import (
-    InvalidStateTransition,
-    InvariantViolation,
-)
-from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
-from quantum.domain.shared_kernel.events.event_sequence import EventSequence
-from quantum.domain.shared_kernel.events.recorded_event_envelope import (
-    RecordedEventEnvelope,
-)
-from quantum.domain.shared_kernel.identifiers.aggregate_id import AggregateId
-from quantum.domain.shared_kernel.identifiers.intent_id import IntentId
-from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import (
+from quantum.domain.market.instrument.symbol import Symbol
+from quantum.domain.market.value_objects.position_side import PositionSide
+from quantum.domain.shared_kernel.event_sourcing.aggregates.event_sourced_aggregate_root import (
     EventHandler,
     EventSourcedAggregateRoot,
 )
-from quantum.domain.shared_kernel.value_objects.position_side import PositionSide
-from quantum.domain.shared_kernel.value_objects.symbol import Symbol
-from quantum.domain.shared_kernel.value_objects.volume import (
-    NonNegativeVolume,
-    PositiveVolume,
+from quantum.domain.shared_kernel.event_sourcing.events.base_event import BaseEvent
+from quantum.domain.shared_kernel.event_sourcing.events.event_sequence import (
+    EventSequence,
 )
+from quantum.domain.shared_kernel.event_sourcing.events.recorded_event_envelope import (
+    RecordedEventEnvelope,
+)
+from quantum.domain.shared_kernel.foundation.errors.invariants import (
+    InvalidStateTransition,
+    InvariantViolation,
+)
+from quantum.domain.shared_kernel.identity.aggregate_id import AggregateId
+from quantum.domain.shared_kernel.identity.intent_id import IntentId
 from quantum.domain.trading.errors.order_errors import OrderNotFillable, OrderOverfill
 from quantum.domain.trading.events.v1.order.order_cancelled_event import (
     OrderCancelledEvent,
@@ -42,6 +40,10 @@ from quantum.domain.trading.execution.order.order_uninitialized_state import (
     OrderUninitializedState,
 )
 from quantum.domain.trading.identifiers.broker_order_id import BrokerOrderId
+from quantum.domain.trading.value_objects.volume import (
+    NonNegativeVolume,
+    PositiveVolume,
+)
 
 
 @dataclass(frozen=True, slots=True)

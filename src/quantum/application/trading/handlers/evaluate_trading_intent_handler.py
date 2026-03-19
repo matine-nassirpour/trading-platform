@@ -10,7 +10,7 @@ from quantum.application.trading.commands.evaluate_trading_intent_command import
     EvaluateTradingIntentCommand,
 )
 from quantum.domain.decision.trading_intent.trading_intent import TradingIntent
-from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
+from quantum.domain.shared_kernel.event_sourcing.events.base_event import BaseEvent
 
 
 class EvaluateTradingIntentHandler(

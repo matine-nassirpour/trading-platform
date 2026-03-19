@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 
 from quantum.domain.market.regime.market_regime import MarketRegime
-from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.identifiers.strategy_id import StrategyId
-from quantum.domain.shared_kernel.primitives.value_object import ValueObject
+from quantum.domain.shared_kernel.ddd.value_objects.value_object import ValueObject
+from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.identity.strategy_id import StrategyId
 from quantum.domain.shared_kernel.temporal.temporal_validity import TemporalValidity
 
 

@@ -1,16 +1,16 @@
 from dataclasses import dataclass
 from typing import ClassVar
 
+from quantum.domain.market.instrument.symbol import Symbol
+from quantum.domain.market.value_objects.position_side import PositionSide
 from quantum.domain.market.value_objects.reference_price import ReferencePrice
-from quantum.domain.shared_kernel.identifiers.intent_id import IntentId
-from quantum.domain.shared_kernel.value_objects.position_side import PositionSide
-from quantum.domain.shared_kernel.value_objects.price import Price
-from quantum.domain.shared_kernel.value_objects.symbol import Symbol
-from quantum.domain.shared_kernel.value_objects.volume import PositiveVolume
+from quantum.domain.shared_kernel.identity.intent_id import IntentId
+from quantum.domain.shared_kernel.monetary.price import Price
 from quantum.domain.trading.events.fact_event import FactEvent
 from quantum.domain.trading.execution.order.order_type import OrderType
 from quantum.domain.trading.execution.order.time_in_force import TimeInForce
 from quantum.domain.trading.identifiers.broker_order_id import BrokerOrderId
+from quantum.domain.trading.value_objects.volume import PositiveVolume
 
 
 @dataclass(frozen=True, slots=True)

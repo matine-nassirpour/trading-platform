@@ -20,18 +20,20 @@ from quantum.domain.risk.kill_switch.states.kill_switch_triggered_state import (
 from quantum.domain.risk.kill_switch.states.kill_switch_uninitialized_state import (
     KillSwitchUninitializedState,
 )
-from quantum.domain.shared_kernel.errors.invariants import (
-    InvalidStateTransition,
-    InvariantViolation,
-)
-from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
-from quantum.domain.shared_kernel.events.event_sequence import EventSequence
-from quantum.domain.shared_kernel.events.recorded_event_envelope import (
-    RecordedEventEnvelope,
-)
-from quantum.domain.shared_kernel.primitives.event_sourced_aggregate_root import (
+from quantum.domain.shared_kernel.event_sourcing.aggregates.event_sourced_aggregate_root import (
     EventHandler,
     EventSourcedAggregateRoot,
+)
+from quantum.domain.shared_kernel.event_sourcing.events.base_event import BaseEvent
+from quantum.domain.shared_kernel.event_sourcing.events.event_sequence import (
+    EventSequence,
+)
+from quantum.domain.shared_kernel.event_sourcing.events.recorded_event_envelope import (
+    RecordedEventEnvelope,
+)
+from quantum.domain.shared_kernel.foundation.errors.invariants import (
+    InvalidStateTransition,
+    InvariantViolation,
 )
 
 

@@ -6,7 +6,7 @@ from quantum.application.ports.outbound.messaging.integration_event_bus import (
 from quantum.application.trading.integration_events.base.integration_event_mapper import (
     IntegrationEventMapper,
 )
-from quantum.domain.shared_kernel.events.recorded_event_envelope import (
+from quantum.domain.shared_kernel.event_sourcing.events.recorded_event_envelope import (
     RecordedEventEnvelope,
 )
 

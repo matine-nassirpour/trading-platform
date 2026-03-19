@@ -4,7 +4,7 @@ from quantum.domain.risk.kill_switch.reason import KillSwitchReason
 from quantum.domain.risk.kill_switch.states.kill_switch_state_base import (
     KillSwitchStateBase,
 )
-from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
 
 
 @dataclass(frozen=True, slots=True)

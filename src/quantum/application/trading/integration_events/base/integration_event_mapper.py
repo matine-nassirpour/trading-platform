@@ -8,7 +8,7 @@ from quantum.application.trading.integration_events.base.integration_event_envel
 from quantum.application.trading.integration_events.base.integration_headers import (
     IntegrationHeaders,
 )
-from quantum.domain.shared_kernel.events.recorded_event_envelope import (
+from quantum.domain.shared_kernel.event_sourcing.events.recorded_event_envelope import (
     RecordedEventEnvelope,
 )
 

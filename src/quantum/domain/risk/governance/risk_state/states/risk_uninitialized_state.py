@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from quantum.domain.risk.governance.risk_state.states.risk_state_base import (
     RiskStateBase,
 )
-from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
 
 
 @dataclass(frozen=True, slots=True)

@@ -5,7 +5,7 @@ from quantum.domain.risk.governance.measures.equity import Equity
 from quantum.domain.risk.governance.risk_state.states.risk_state_base import (
     RiskStateBase,
 )
-from quantum.domain.shared_kernel.errors.invariants import (
+from quantum.domain.shared_kernel.foundation.errors.invariants import (
     CurrencyMismatch,
     InvariantViolation,
 )

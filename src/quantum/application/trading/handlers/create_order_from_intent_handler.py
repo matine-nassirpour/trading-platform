@@ -22,7 +22,7 @@ from quantum.application.shared.eventing.event_sourced_repository import (
 from quantum.application.trading.commands.create_order_from_intent_command import (
     CreateOrderFromIntentCommand,
 )
-from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
+from quantum.domain.shared_kernel.event_sourcing.events.base_event import BaseEvent
 from quantum.domain.trading.execution.order.order import Order, OrderId
 from quantum.domain.trading.execution.order.order_state_base import OrderStateBase
 

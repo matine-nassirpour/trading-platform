@@ -9,7 +9,7 @@ from quantum.application.shared.base_handlers.aggregate_existence_policy import 
 from quantum.application.trading.commands.close_position_command import (
     ClosePositionCommand,
 )
-from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
+from quantum.domain.shared_kernel.event_sourcing.events.base_event import BaseEvent
 from quantum.domain.trading.execution.position.position import Position
 
 

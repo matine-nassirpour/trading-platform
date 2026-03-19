@@ -2,9 +2,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from quantum.domain.shared_kernel.events.actor_id import ActorId
-from quantum.domain.shared_kernel.events.causation_id import CausationId
-from quantum.domain.shared_kernel.events.correlation_id import CorrelationId
+from quantum.domain.shared_kernel.event_sourcing.events.actor_id import ActorId
+from quantum.domain.shared_kernel.event_sourcing.events.causation_id import CausationId
+from quantum.domain.shared_kernel.event_sourcing.events.correlation_id import (
+    CorrelationId,
+)
 
 
 @dataclass(frozen=True, slots=True)

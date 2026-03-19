@@ -1,16 +1,16 @@
 from dataclasses import dataclass
 
-from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.value_objects.position_side import PositionSide
-from quantum.domain.shared_kernel.value_objects.symbol import Symbol
-from quantum.domain.shared_kernel.value_objects.volume import (
-    NonNegativeVolume,
-    PositiveVolume,
-)
+from quantum.domain.market.instrument.symbol import Symbol
+from quantum.domain.market.value_objects.position_side import PositionSide
+from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
 from quantum.domain.trading.execution.order.order_state_base import OrderStateBase
 from quantum.domain.trading.execution.order.order_status import OrderStatus
 from quantum.domain.trading.execution.order.order_type import OrderType
 from quantum.domain.trading.identifiers.broker_order_id import BrokerOrderId
+from quantum.domain.trading.value_objects.volume import (
+    NonNegativeVolume,
+    PositiveVolume,
+)
 
 
 @dataclass(frozen=True, slots=True)

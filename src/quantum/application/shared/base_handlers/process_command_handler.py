@@ -10,8 +10,8 @@ from quantum.application.shared.errors.application_error import DomainExecutionE
 from quantum.application.shared.eventing.event_enveloper import (
     ApplicationEventEnveloper,
 )
-from quantum.domain.shared_kernel.errors.domain_error import DomainError
-from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
+from quantum.domain.shared_kernel.event_sourcing.events.base_event import BaseEvent
+from quantum.domain.shared_kernel.foundation.errors.domain_error import DomainError
 
 C = TypeVar("C")
 R = TypeVar("R")

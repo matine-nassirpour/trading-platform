@@ -5,8 +5,8 @@ from quantum.domain.decision.governance.decision_authorization_result import (
     DecisionAuthorizationResult,
 )
 from quantum.domain.decision.lifecycle.strategy_lifecycle import StrategyLifecycle
-from quantum.domain.shared_kernel.primitives.domain_service import DomainService
-from quantum.domain.shared_kernel.value_objects.epoch_ms import EpochMs
+from quantum.domain.shared_kernel.ddd.services.domain_service import DomainService
+from quantum.domain.shared_kernel.temporal.epoch_ms import EpochMs
 
 
 class StrategyEligibilityPolicy(DomainService):

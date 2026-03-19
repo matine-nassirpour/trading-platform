@@ -6,8 +6,8 @@ from quantum.domain.risk.governance.risk_state.attribution.risk_reference import
 from quantum.domain.risk.governance.risk_state.attribution.risk_source_type import (
     RiskSourceType,
 )
-from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.primitives.value_object import ValueObject
+from quantum.domain.shared_kernel.ddd.value_objects.value_object import ValueObject
+from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
 
 
 @dataclass(frozen=True, slots=True)

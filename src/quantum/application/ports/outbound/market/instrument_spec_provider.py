@@ -2,7 +2,7 @@ from collections.abc import Iterable
 from typing import Protocol, runtime_checkable
 
 from quantum.domain.market.instrument.instrument_spec import InstrumentSpec
-from quantum.domain.shared_kernel.value_objects.symbol import Symbol
+from quantum.domain.market.instrument.symbol import Symbol
 
 
 @runtime_checkable

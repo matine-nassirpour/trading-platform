@@ -1,4 +1,4 @@
-from quantum.domain.shared_kernel.errors.domain_error import DomainError
+from quantum.domain.shared_kernel.foundation.errors.domain_error import DomainError
 
 
 class RiskError(DomainError):

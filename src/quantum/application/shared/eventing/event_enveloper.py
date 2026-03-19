@@ -8,9 +8,11 @@ from quantum.application.shared.eventing.application_event_context import (
 from quantum.application.shared.eventing.pending_event_envelope import (
     PendingEventEnvelope,
 )
-from quantum.domain.shared_kernel.events.base.base_event import BaseEvent
-from quantum.domain.shared_kernel.events.event_metadata import EventMetadata
-from quantum.domain.shared_kernel.identifiers.aggregate_id import AggregateId
+from quantum.domain.shared_kernel.event_sourcing.events.base_event import BaseEvent
+from quantum.domain.shared_kernel.event_sourcing.events.event_metadata import (
+    EventMetadata,
+)
+from quantum.domain.shared_kernel.identity.aggregate_id import AggregateId
 
 
 class ApplicationEventEnveloper:

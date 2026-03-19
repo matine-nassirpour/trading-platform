@@ -8,7 +8,7 @@ from quantum.domain.risk.governance.limits.risk_threshold_policy import (
 )
 from quantum.domain.risk.governance.measures.notional import Notional
 from quantum.domain.risk.governance.risk_state.breaches.risk_breach import RiskBreach
-from quantum.domain.shared_kernel.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
 
 
 @dataclass(frozen=True, slots=True)
