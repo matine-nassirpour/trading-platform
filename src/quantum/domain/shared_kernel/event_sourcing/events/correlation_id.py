@@ -21,7 +21,7 @@ class CorrelationId(ValueObject):
 
     value: uuid.UUID
 
-    def _validate(self) -> None:
+    def _validate_semantics(self) -> None:
         if not isinstance(self.value, uuid.UUID):
             raise InvariantViolation("CorrelationId must be a UUID")
 

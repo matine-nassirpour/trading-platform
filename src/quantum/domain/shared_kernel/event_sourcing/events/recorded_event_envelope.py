@@ -55,7 +55,7 @@ class RecordedEventEnvelope(ValueObject):
         if not isinstance(self.metadata, EventMetadata):
             raise InvariantViolation("EventMetadata is required")
 
-    def _validate(self) -> None:
+    def _validate_semantics(self) -> None:
         self._validate_types()
 
         if self.sequence.is_initial():

@@ -57,7 +57,7 @@ class EventSourcedAggregateRoot(ValidatedDomainObject, Generic[ID, S], ABC):
     _aggregate_id: Final[ID]
     _state: Final[S]
 
-    def _validate(self) -> None:
+    def _validate_semantics(self) -> None:
         expected_id_type = self.aggregate_id_type()
         expected_state_type = self.state_type()
 

@@ -19,7 +19,7 @@ class CausationId(ValueObject):
 
     value: EventId
 
-    def _validate(self) -> None:
+    def _validate_semantics(self) -> None:
         if not isinstance(self.value, EventId):
             raise InvariantViolation("CausationId must wrap EventId")
 

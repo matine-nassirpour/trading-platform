@@ -17,7 +17,7 @@ class EventSequence(ValueObject):
 
     value: int
 
-    def _validate(self) -> None:
+    def _validate_semantics(self) -> None:
         if type(self.value) is not int:
             raise InvariantViolation("EventSequence must be a strict integer")
 

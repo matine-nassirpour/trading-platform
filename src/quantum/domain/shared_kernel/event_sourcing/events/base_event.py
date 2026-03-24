@@ -124,9 +124,9 @@ class BaseEvent(DeeplyImmutableDomainObject, ABC):
         if cls is BaseEvent:
             return
 
-        if "_validate" in cls.__dict__:
+        if "_validate_semantics" in cls.__dict__:
             raise EventDefinitionViolation(
-                f"{cls.__name__} must NOT override _validate(). "
+                f"{cls.__name__} must NOT override _validate_semantics(). "
                 "Use _validate_payload() instead."
             )
 
@@ -149,7 +149,7 @@ class BaseEvent(DeeplyImmutableDomainObject, ABC):
         return None
 
     @final
-    def _validate(self) -> None:
+    def _validate_semantics(self) -> None:
         """
         FINAL validation pipeline.
 

@@ -23,7 +23,7 @@ class ProjectionCursor(Cursor):
 
     # --- Invariants -----------------------------------------------------------
 
-    def _validate(self) -> None:
+    def _validate_semantics(self) -> None:
         if not isinstance(self.last_event_id, EventId):
             raise InvariantViolation("ProjectionCursor requires EventId")
 

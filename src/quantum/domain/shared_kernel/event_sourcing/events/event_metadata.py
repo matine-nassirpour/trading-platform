@@ -21,7 +21,7 @@ class EventMetadata(ValueObject):
     correlation_id: CorrelationId
     causation_id: CausationId
 
-    def _validate(self) -> None:
+    def _validate_semantics(self) -> None:
         if not isinstance(self.actor_id, ActorId):
             raise InvariantViolation("Invalid ActorId")
 
