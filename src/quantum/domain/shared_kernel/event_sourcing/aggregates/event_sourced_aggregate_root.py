@@ -20,7 +20,7 @@ from quantum.domain.shared_kernel.foundation.bases.validated_domain_object impor
     ValidatedDomainObject,
 )
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.identity.aggregate_id import AggregateId
+from quantum.domain.shared_kernel.modeling.identity.aggregate_id import AggregateId
 
 S = TypeVar("S", bound=AggregateState)
 ID = TypeVar("ID", bound=AggregateId)

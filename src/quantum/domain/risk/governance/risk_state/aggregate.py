@@ -57,7 +57,7 @@ from quantum.domain.shared_kernel.foundation.errors.invariants import (
     InvalidStateTransition,
     InvariantViolation,
 )
-from quantum.domain.shared_kernel.monetary.pnl import RealizedPnL
+from quantum.domain.shared_kernel.modeling.monetary.pnl import RealizedPnL
 
 
 class RiskState(EventSourcedAggregateRoot[RiskStateId, RiskStateBase]):

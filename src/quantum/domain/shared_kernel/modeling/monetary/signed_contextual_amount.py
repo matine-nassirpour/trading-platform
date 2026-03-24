@@ -4,10 +4,10 @@ from abc import ABC
 from decimal import Decimal
 from typing import TypeVar, final
 
-from quantum.domain.shared_kernel.monetary.contextual_monetary_amount import (
+from quantum.domain.shared_kernel.modeling.monetary.contextual_monetary_amount import (
     ContextualMonetaryAmount,
 )
-from quantum.domain.shared_kernel.monetary.money_context import MoneyContext
+from quantum.domain.shared_kernel.modeling.monetary.money_context import MoneyContext
 
 T = TypeVar("T", bound="SignedContextualAmount")
 

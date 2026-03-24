@@ -12,8 +12,8 @@ class KillSwitchTriggeredState(KillSwitchStateBase):
 
     reason: KillSwitchReason
 
-    def _validate(self) -> None:
-        super()._validate()
+    def _validate_semantics(self) -> None:
+        super()._validate_semantics()
 
         if not isinstance(self.reason, KillSwitchReason):
             raise InvariantViolation("KillSwitchTriggeredState requires reason")

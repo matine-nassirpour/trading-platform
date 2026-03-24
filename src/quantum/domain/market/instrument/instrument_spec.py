@@ -7,10 +7,10 @@ from quantum.domain.market.instrument.symbol import Symbol
 from quantum.domain.market.value_objects.contract_size import ContractSize
 from quantum.domain.market.value_objects.tick_value import TickValue
 from quantum.domain.market.value_objects.volume_constraints import VolumeConstraints
-from quantum.domain.shared_kernel.ddd.value_objects.value_object import ValueObject
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.monetary.currency import Currency
-from quantum.domain.shared_kernel.monetary.money_context import MoneyContext
+from quantum.domain.shared_kernel.modeling.monetary.currency import Currency
+from quantum.domain.shared_kernel.modeling.monetary.money_context import MoneyContext
+from quantum.domain.shared_kernel.modeling.value_objects.value_object import ValueObject
 
 
 @dataclass(frozen=True, slots=True)

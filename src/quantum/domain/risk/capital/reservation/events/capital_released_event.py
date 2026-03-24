@@ -8,8 +8,8 @@ from quantum.domain.risk.capital.reservation.reason_codes.capital_release_reason
     CapitalReleaseReasonCode,
 )
 from quantum.domain.risk.common.events.risk_event import RiskEvent
-from quantum.domain.shared_kernel.identity.intent_id import IntentId
-from quantum.domain.shared_kernel.identity.strategy_id import StrategyId
+from quantum.domain.shared_kernel.modeling.identity.intent_id import IntentId
+from quantum.domain.shared_kernel.modeling.identity.strategy_id import StrategyId
 
 
 @dataclass(frozen=True, slots=True)

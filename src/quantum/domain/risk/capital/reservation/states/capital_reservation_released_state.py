@@ -7,7 +7,7 @@ from quantum.domain.risk.capital.reservation.states.capital_reservation_reserved
     CapitalReservationReservedState,
 )
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.temporal.epoch_ms import EpochMs
+from quantum.domain.shared_kernel.modeling.temporal.epoch_ms import EpochMs
 
 
 @dataclass(frozen=True, slots=True)
@@ -19,8 +19,8 @@ class CapitalReservationReleasedState(CapitalReservationReservedState):
     release_reason_code: CapitalReleaseReasonCode
     released_at: EpochMs
 
-    def _validate(self) -> None:
-        super()._validate()
+    def _validate_semantics(self) -> None:
+        super()._validate_semantics()
 
         if not isinstance(self.release_reason_code, CapitalReleaseReasonCode):
             raise InvariantViolation(

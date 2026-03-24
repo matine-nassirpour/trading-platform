@@ -9,6 +9,8 @@ from quantum.domain.trading.execution.position.position_state_base import (
 @dataclass(frozen=True, slots=True)
 class PositionUninitializedState(PositionStateBase):
 
-    def _validate(self):
+    def _validate_semantics(self):
+        super()._validate_semantics()
+
         if not self.last_sequence.is_initial():
             raise InvariantViolation("Uninitialized position must be initial")

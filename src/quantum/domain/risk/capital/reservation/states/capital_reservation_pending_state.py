@@ -7,9 +7,9 @@ from quantum.domain.risk.capital.reservation.states.capital_reservation_state_ba
     CapitalReservationStateBase,
 )
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.identity.intent_id import IntentId
-from quantum.domain.shared_kernel.identity.strategy_id import StrategyId
-from quantum.domain.shared_kernel.temporal.epoch_ms import EpochMs
+from quantum.domain.shared_kernel.modeling.identity.intent_id import IntentId
+from quantum.domain.shared_kernel.modeling.identity.strategy_id import StrategyId
+from quantum.domain.shared_kernel.modeling.temporal.epoch_ms import EpochMs
 
 
 @dataclass(frozen=True, slots=True)
@@ -23,8 +23,8 @@ class CapitalReservationPendingState(CapitalReservationStateBase):
     requested_allocation: CapitalAllocationIntent
     requested_at: EpochMs
 
-    def _validate(self) -> None:
-        super()._validate()
+    def _validate_semantics(self) -> None:
+        super()._validate_semantics()
 
         if self.last_sequence.is_initial():
             raise InvariantViolation(

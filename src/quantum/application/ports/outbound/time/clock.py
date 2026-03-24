@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import abstractmethod
 from typing import Protocol, runtime_checkable
 
-from quantum.domain.shared_kernel.temporal.epoch_ms import EpochMs
+from quantum.domain.shared_kernel.modeling.temporal.epoch_ms import EpochMs
 
 
 @runtime_checkable

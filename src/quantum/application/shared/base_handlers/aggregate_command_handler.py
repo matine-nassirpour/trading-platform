@@ -35,7 +35,7 @@ from quantum.domain.shared_kernel.event_sourcing.state.aggregate_state import (
     AggregateState,
 )
 from quantum.domain.shared_kernel.foundation.errors.domain_error import DomainError
-from quantum.domain.shared_kernel.identity.aggregate_id import AggregateId
+from quantum.domain.shared_kernel.modeling.identity.aggregate_id import AggregateId
 
 C = TypeVar("C", bound=BaseCommand)
 R = TypeVar("R")  # Result

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
-from quantum.domain.shared_kernel.ddd.value_objects.value_object import ValueObject
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.modeling.value_objects.value_object import ValueObject
 from quantum.domain.trading.execution.order.execution_id import ExecutionId
 from quantum.domain.trading.execution.taxonomy.liquidity_side import LiquiditySide
 
@@ -17,7 +17,7 @@ class ExecutionMetadata(ValueObject):
     execution_id: ExecutionId
     liquidity: LiquiditySide
 
-    def _validate(self) -> None:
+    def _validate_semantics(self) -> None:
         if not isinstance(self.execution_id, ExecutionId):
             raise InvariantViolation("ExecutionMetadata requires a valid ExecutionId")
 

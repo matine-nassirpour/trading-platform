@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Generic, TypeVar
 
-from quantum.domain.shared_kernel.identity.aggregate_id import AggregateId
+from quantum.domain.shared_kernel.modeling.identity.aggregate_id import AggregateId
 
 ID = TypeVar("ID", bound=AggregateId)
 

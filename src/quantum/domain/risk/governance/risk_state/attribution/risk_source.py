@@ -6,8 +6,8 @@ from quantum.domain.risk.governance.risk_state.attribution.risk_reference import
 from quantum.domain.risk.governance.risk_state.attribution.risk_source_type import (
     RiskSourceType,
 )
-from quantum.domain.shared_kernel.ddd.value_objects.value_object import ValueObject
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.modeling.value_objects.value_object import ValueObject
 
 
 @dataclass(frozen=True, slots=True)
@@ -24,7 +24,7 @@ class RiskSource(ValueObject):
     type: RiskSourceType
     reference: RiskReference
 
-    def _validate(self) -> None:
+    def _validate_semantics(self) -> None:
         if not isinstance(self.type, RiskSourceType):
             raise InvariantViolation("RiskSource requires a RiskSourceType")
 

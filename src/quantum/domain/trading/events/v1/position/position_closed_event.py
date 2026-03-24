@@ -2,8 +2,8 @@ from dataclasses import dataclass
 from typing import ClassVar
 
 from quantum.domain.market.value_objects.position_side import PositionSide
-from quantum.domain.shared_kernel.monetary.pnl import RealizedPnL
-from quantum.domain.shared_kernel.monetary.price import Price
+from quantum.domain.shared_kernel.modeling.monetary.pnl import RealizedPnL
+from quantum.domain.shared_kernel.modeling.monetary.price import Price
 from quantum.domain.trading.events.fact_event import FactEvent
 from quantum.domain.trading.identifiers.position_id import PositionId
 from quantum.domain.trading.value_objects.volume import PositiveVolume

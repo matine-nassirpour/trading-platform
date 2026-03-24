@@ -49,8 +49,8 @@ from quantum.domain.shared_kernel.foundation.errors.invariants import (
     InvalidStateTransition,
     InvariantViolation,
 )
-from quantum.domain.shared_kernel.identity.intent_id import IntentId
-from quantum.domain.shared_kernel.temporal.epoch_ms import EpochMs
+from quantum.domain.shared_kernel.modeling.identity.intent_id import IntentId
+from quantum.domain.shared_kernel.modeling.temporal.epoch_ms import EpochMs
 
 
 class TradingIntent(EventSourcedAggregateRoot[IntentId, TradingIntentStateBase]):

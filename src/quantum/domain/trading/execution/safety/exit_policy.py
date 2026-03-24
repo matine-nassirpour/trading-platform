@@ -2,7 +2,7 @@ from quantum.domain.market.instrument.instrument_spec import InstrumentSpec
 from quantum.domain.market.value_objects.position_side import PositionSide
 from quantum.domain.market.value_objects.reference_price import ReferencePrice
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.monetary.price import Price
+from quantum.domain.shared_kernel.modeling.monetary.price import Price
 from quantum.domain.trading.execution.pricing.pricing_context import PricingContext
 from quantum.domain.trading.execution.pricing.pricing_policy import PricingPolicy
 

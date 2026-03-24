@@ -1,10 +1,12 @@
 from dataclasses import dataclass
 
 from quantum.domain.market.regime.market_regime import MarketRegime
-from quantum.domain.shared_kernel.ddd.value_objects.value_object import ValueObject
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.identity.strategy_id import StrategyId
-from quantum.domain.shared_kernel.temporal.temporal_validity import TemporalValidity
+from quantum.domain.shared_kernel.modeling.identity.strategy_id import StrategyId
+from quantum.domain.shared_kernel.modeling.temporal.temporal_validity import (
+    TemporalValidity,
+)
+from quantum.domain.shared_kernel.modeling.value_objects.value_object import ValueObject
 
 
 @dataclass(frozen=True, slots=True)
@@ -33,7 +35,7 @@ class DecisionPolicy(ValueObject):
 
     validity: TemporalValidity
 
-    def _validate(self) -> None:
+    def _validate_semantics(self) -> None:
         if not isinstance(self.policy_id, str) or not self.policy_id.strip():
             raise InvariantViolation("DecisionPolicy requires a non-empty policy_id")
 

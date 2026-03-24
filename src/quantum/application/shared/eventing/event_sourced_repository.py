@@ -16,7 +16,7 @@ from quantum.domain.shared_kernel.event_sourcing.events.recorded_event_envelope 
 from quantum.domain.shared_kernel.event_sourcing.state.aggregate_state import (
     AggregateState,
 )
-from quantum.domain.shared_kernel.identity.aggregate_id import AggregateId
+from quantum.domain.shared_kernel.modeling.identity.aggregate_id import AggregateId
 
 ID = TypeVar("ID", bound=AggregateId)
 S = TypeVar("S", bound=AggregateState)

@@ -8,8 +8,10 @@ from quantum.domain.shared_kernel.foundation.errors.invariants import (
     CurrencyMismatch,
     InvariantViolation,
 )
-from quantum.domain.shared_kernel.monetary.monetary_amount import MonetaryAmount
-from quantum.domain.shared_kernel.monetary.money_context import MoneyContext
+from quantum.domain.shared_kernel.modeling.monetary.monetary_amount import (
+    MonetaryAmount,
+)
+from quantum.domain.shared_kernel.modeling.monetary.money_context import MoneyContext
 
 
 @dataclass(frozen=True, slots=True)

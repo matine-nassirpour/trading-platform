@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from quantum.domain.shared_kernel.ddd.value_objects.value_object import ValueObject
 from quantum.domain.shared_kernel.event_sourcing.events.event_id import EventId
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.modeling.value_objects.value_object import ValueObject
 
 
 @dataclass(frozen=True, slots=True)

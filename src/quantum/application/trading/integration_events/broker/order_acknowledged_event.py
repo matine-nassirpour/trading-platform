@@ -5,7 +5,7 @@ from quantum.application.trading.integration_events.base.integration_event impor
     IntegrationEvent,
 )
 from quantum.domain.market.instrument.symbol import Symbol
-from quantum.domain.shared_kernel.identity.intent_id import IntentId
+from quantum.domain.shared_kernel.modeling.identity.intent_id import IntentId
 from quantum.domain.trading.identifiers.broker_order_id import BrokerOrderId
 
 

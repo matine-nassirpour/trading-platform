@@ -9,8 +9,8 @@ from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantV
 @dataclass(frozen=True, slots=True)
 class KillSwitchUninitializedState(KillSwitchStateBase):
 
-    def _validate(self) -> None:
-        super()._validate()
+    def _validate_semantics(self) -> None:
+        super()._validate_semantics()
 
         if not self.last_sequence.is_initial():
             raise InvariantViolation(

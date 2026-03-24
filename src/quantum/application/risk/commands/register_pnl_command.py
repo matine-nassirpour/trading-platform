@@ -5,7 +5,7 @@ from quantum.domain.risk.governance.measures.daily_loss import DailyLoss
 from quantum.domain.risk.governance.measures.drawdown import Drawdown
 from quantum.domain.risk.governance.measures.exposure import Exposure
 from quantum.domain.risk.governance.measures.notional import Notional
-from quantum.domain.shared_kernel.monetary.pnl import RealizedPnL
+from quantum.domain.shared_kernel.modeling.monetary.pnl import RealizedPnL
 
 
 @dataclass(frozen=True, slots=True)

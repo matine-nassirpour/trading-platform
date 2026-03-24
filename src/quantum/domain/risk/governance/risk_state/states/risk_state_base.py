@@ -14,7 +14,7 @@ from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantV
 class RiskStateBase(AggregateState, ABC):
     last_sequence: EventSequence
 
-    def _validate(self) -> None:
+    def _validate_semantics(self) -> None:
         if not isinstance(self.last_sequence, EventSequence):
             raise InvariantViolation("RiskStateBase.last_sequence invalid")
 

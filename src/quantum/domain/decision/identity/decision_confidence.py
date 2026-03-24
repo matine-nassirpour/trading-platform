@@ -3,8 +3,8 @@ from dataclasses import dataclass
 from quantum.domain.decision.identity.decision_confidence_level import (
     DecisionConfidenceLevel,
 )
-from quantum.domain.shared_kernel.ddd.value_objects.value_object import ValueObject
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.modeling.value_objects.value_object import ValueObject
 
 
 @dataclass(frozen=True, slots=True)
@@ -25,7 +25,7 @@ class DecisionConfidence(ValueObject):
     level: DecisionConfidenceLevel
     rationale: str | None = None
 
-    def _validate(self) -> None:
+    def _validate_semantics(self) -> None:
         if not isinstance(self.level, DecisionConfidenceLevel):
             raise InvariantViolation("DecisionConfidence requires a valid level")
 

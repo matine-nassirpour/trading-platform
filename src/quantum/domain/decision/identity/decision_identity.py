@@ -3,9 +3,9 @@ from dataclasses import dataclass
 from quantum.domain.decision.identity.decision_confidence import DecisionConfidence
 from quantum.domain.decision.identity.decision_source import DecisionSource
 from quantum.domain.decision.identity.model_version import ModelVersion
-from quantum.domain.shared_kernel.ddd.value_objects.value_object import ValueObject
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.identity.strategy_id import StrategyId
+from quantum.domain.shared_kernel.modeling.identity.strategy_id import StrategyId
+from quantum.domain.shared_kernel.modeling.value_objects.value_object import ValueObject
 
 
 @dataclass(frozen=True, slots=True)
@@ -26,7 +26,7 @@ class DecisionIdentity(ValueObject):
     source: DecisionSource
     confidence: DecisionConfidence
 
-    def _validate(self) -> None:
+    def _validate_semantics(self) -> None:
         if not isinstance(self.strategy_id, StrategyId):
             raise InvariantViolation("DecisionIdentity requires a StrategyId")
 

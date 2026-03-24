@@ -2,8 +2,8 @@ from dataclasses import dataclass
 
 from quantum.domain.risk.capital.allocation.capital_fraction import CapitalFraction
 from quantum.domain.risk.capital.allocation.risk_budget_slice import RiskBudgetSlice
-from quantum.domain.shared_kernel.ddd.value_objects.value_object import ValueObject
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.modeling.value_objects.value_object import ValueObject
 
 
 @dataclass(frozen=True, slots=True)
@@ -23,7 +23,7 @@ class CapitalAllocationIntent(ValueObject):
     capital_fraction: CapitalFraction
     risk_budget: RiskBudgetSlice
 
-    def _validate(self) -> None:
+    def _validate_semantics(self) -> None:
         if not isinstance(self.capital_fraction, CapitalFraction):
             raise InvariantViolation("Invalid CapitalFraction")
 

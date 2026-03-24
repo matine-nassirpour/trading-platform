@@ -12,7 +12,7 @@ from quantum.domain.shared_kernel.event_sourcing.events.base_event import BaseEv
 from quantum.domain.shared_kernel.event_sourcing.events.event_metadata import (
     EventMetadata,
 )
-from quantum.domain.shared_kernel.identity.aggregate_id import AggregateId
+from quantum.domain.shared_kernel.modeling.identity.aggregate_id import AggregateId
 
 
 class ApplicationEventEnveloper:

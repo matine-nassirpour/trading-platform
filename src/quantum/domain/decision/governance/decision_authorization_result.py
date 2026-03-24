@@ -8,8 +8,8 @@ from quantum.domain.decision.governance.decision_authorization_reason_code impor
 from quantum.domain.decision.governance.decision_authorization_status import (
     DecisionAuthorizationStatus,
 )
-from quantum.domain.shared_kernel.ddd.value_objects.value_object import ValueObject
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.modeling.value_objects.value_object import ValueObject
 
 
 @dataclass(frozen=True, slots=True)
@@ -21,7 +21,7 @@ class DecisionAuthorizationResult(ValueObject):
     status: DecisionAuthorizationStatus
     reason_code: DecisionAuthorizationReasonCode | None
 
-    def _validate(self) -> None:
+    def _validate_semantics(self) -> None:
         if not isinstance(self.status, DecisionAuthorizationStatus):
             raise InvariantViolation("status must be DecisionAuthorizationStatus")
 

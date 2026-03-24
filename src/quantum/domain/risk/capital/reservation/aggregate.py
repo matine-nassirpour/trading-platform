@@ -64,8 +64,8 @@ from quantum.domain.shared_kernel.foundation.errors.invariants import (
     InvalidStateTransition,
     InvariantViolation,
 )
-from quantum.domain.shared_kernel.identity.intent_id import IntentId
-from quantum.domain.shared_kernel.identity.strategy_id import StrategyId
+from quantum.domain.shared_kernel.modeling.identity.intent_id import IntentId
+from quantum.domain.shared_kernel.modeling.identity.strategy_id import StrategyId
 
 
 class CapitalReservation(

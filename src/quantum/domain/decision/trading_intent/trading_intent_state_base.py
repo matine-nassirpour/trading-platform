@@ -23,7 +23,7 @@ class TradingIntentStateBase(AggregateState, ABC):
 
     last_sequence: EventSequence
 
-    def _validate(self) -> None:
+    def _validate_semantics(self) -> None:
         if not isinstance(self.last_sequence, EventSequence):
             raise InvariantViolation("TradingIntentStateBase.last_sequence invalid")
 

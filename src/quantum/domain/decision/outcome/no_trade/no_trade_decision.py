@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 
 from quantum.domain.decision.outcome.no_trade.no_trade_reason import NoTradeReason
-from quantum.domain.shared_kernel.ddd.value_objects.value_object import ValueObject
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.modeling.value_objects.value_object import ValueObject
 
 
 @dataclass(frozen=True, slots=True)
@@ -17,7 +17,7 @@ class NoTradeDecision(ValueObject):
     reason: NoTradeReason
     rationale: str | None = None
 
-    def _validate(self) -> None:
+    def _validate_semantics(self) -> None:
         if not isinstance(self.reason, NoTradeReason):
             raise InvariantViolation("NoTradeDecision requires a NoTradeReason")
 

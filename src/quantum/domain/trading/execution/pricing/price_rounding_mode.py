@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from decimal import ROUND_CEILING, ROUND_FLOOR, ROUND_HALF_EVEN
 
-from quantum.domain.shared_kernel.ddd.value_objects.closed_set_value_object import (
+from quantum.domain.shared_kernel.modeling.value_objects.closed_set_value_object import (
     ClosedSetValueObject,
 )
 

@@ -16,8 +16,8 @@ from quantum.domain.shared_kernel.foundation.errors.invariants import (
     InvalidStateTransition,
     InvariantViolation,
 )
-from quantum.domain.shared_kernel.monetary.money_context import MoneyContext
-from quantum.domain.shared_kernel.monetary.price import Price
+from quantum.domain.shared_kernel.modeling.monetary.money_context import MoneyContext
+from quantum.domain.shared_kernel.modeling.monetary.price import Price
 from quantum.domain.trading.errors.position_errors import PositionAlreadyClosed
 from quantum.domain.trading.events.v1.position.position_closed_event import (
     PositionClosedEvent,

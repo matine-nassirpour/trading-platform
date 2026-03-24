@@ -1,12 +1,12 @@
 from dataclasses import dataclass
 
-from quantum.domain.shared_kernel.ddd.value_objects.value_object import ValueObject
 from quantum.domain.shared_kernel.event_sourcing.events.actor_id import ActorId
 from quantum.domain.shared_kernel.event_sourcing.events.causation_id import CausationId
 from quantum.domain.shared_kernel.event_sourcing.events.correlation_id import (
     CorrelationId,
 )
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.modeling.value_objects.value_object import ValueObject
 
 
 @dataclass(frozen=True, slots=True)

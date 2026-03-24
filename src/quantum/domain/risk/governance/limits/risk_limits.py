@@ -8,9 +8,9 @@ from quantum.domain.risk.governance.limits.notional_limit import NotionalLimit
 from quantum.domain.risk.governance.limits.risk_threshold_policy import (
     RiskThresholdPolicy,
 )
-from quantum.domain.shared_kernel.ddd.value_objects.value_object import ValueObject
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.monetary.money_context import MoneyContext
+from quantum.domain.shared_kernel.modeling.monetary.money_context import MoneyContext
+from quantum.domain.shared_kernel.modeling.value_objects.value_object import ValueObject
 
 
 @dataclass(frozen=True, slots=True)
@@ -56,7 +56,7 @@ class RiskLimits(ValueObject):
         if not isinstance(self.threshold_policy, RiskThresholdPolicy):
             raise InvariantViolation("RiskLimits requires a RiskThresholdPolicy")
 
-    def _validate(self) -> None:
+    def _validate_semantics(self) -> None:
         self._validate_types()
 
         for name, limit in {

@@ -3,7 +3,7 @@ from typing import ClassVar
 
 from quantum.domain.risk.common.events.risk_event import RiskEvent
 from quantum.domain.risk.governance.measures.equity import Equity
-from quantum.domain.shared_kernel.monetary.pnl import RealizedPnL
+from quantum.domain.shared_kernel.modeling.monetary.pnl import RealizedPnL
 
 
 @dataclass(frozen=True, slots=True)

@@ -19,8 +19,8 @@ from quantum.domain.shared_kernel.foundation.errors.invariants import (
     InvalidStateTransition,
     InvariantViolation,
 )
-from quantum.domain.shared_kernel.identity.aggregate_id import AggregateId
-from quantum.domain.shared_kernel.identity.intent_id import IntentId
+from quantum.domain.shared_kernel.modeling.identity.aggregate_id import AggregateId
+from quantum.domain.shared_kernel.modeling.identity.intent_id import IntentId
 from quantum.domain.trading.errors.order_errors import OrderNotFillable, OrderOverfill
 from quantum.domain.trading.events.v1.order.order_cancelled_event import (
     OrderCancelledEvent,

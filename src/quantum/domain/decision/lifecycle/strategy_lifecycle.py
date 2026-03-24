@@ -3,10 +3,12 @@ from dataclasses import dataclass
 from quantum.domain.decision.lifecycle.strategy_lifecycle_state import (
     StrategyLifecycleState,
 )
-from quantum.domain.shared_kernel.ddd.value_objects.value_object import ValueObject
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.identity.strategy_id import StrategyId
-from quantum.domain.shared_kernel.temporal.temporal_validity import TemporalValidity
+from quantum.domain.shared_kernel.modeling.identity.strategy_id import StrategyId
+from quantum.domain.shared_kernel.modeling.temporal.temporal_validity import (
+    TemporalValidity,
+)
+from quantum.domain.shared_kernel.modeling.value_objects.value_object import ValueObject
 
 
 @dataclass(frozen=True, slots=True)
@@ -22,7 +24,7 @@ class StrategyLifecycle(ValueObject):
     state: StrategyLifecycleState
     validity: TemporalValidity
 
-    def _validate(self) -> None:
+    def _validate_semantics(self) -> None:
         if not isinstance(self.strategy_id, StrategyId):
             raise InvariantViolation("StrategyLifecycle requires a StrategyId")
 

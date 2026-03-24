@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 
-from quantum.domain.shared_kernel.ddd.value_objects.value_object import ValueObject
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.temporal.epoch_ms import EpochMs
+from quantum.domain.shared_kernel.modeling.temporal.epoch_ms import EpochMs
+from quantum.domain.shared_kernel.modeling.value_objects.value_object import ValueObject
 from quantum.domain.trading.execution.order.execution_id import ExecutionId
 from quantum.domain.trading.execution.taxonomy.execution_type import ExecutionType
 
@@ -20,7 +20,7 @@ class ExecutionReport(ValueObject):
     reason: str | None
     reported_at: EpochMs
 
-    def _validate(self) -> None:
+    def _validate_semantics(self) -> None:
         if not isinstance(self.execution_id, ExecutionId):
             raise InvariantViolation("ExecutionReport must have a valid ExecutionId")
 

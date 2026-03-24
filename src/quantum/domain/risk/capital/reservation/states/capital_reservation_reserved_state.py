@@ -7,7 +7,7 @@ from quantum.domain.risk.capital.reservation.states.capital_reservation_pending_
     CapitalReservationPendingState,
 )
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.temporal.epoch_ms import EpochMs
+from quantum.domain.shared_kernel.modeling.temporal.epoch_ms import EpochMs
 
 
 @dataclass(frozen=True, slots=True)
@@ -19,8 +19,8 @@ class CapitalReservationReservedState(CapitalReservationPendingState):
     reserved_allocation: CapitalAllocationIntent
     reserved_at: EpochMs
 
-    def _validate(self) -> None:
-        super()._validate()
+    def _validate_semantics(self) -> None:
+        super()._validate_semantics()
 
         if not isinstance(self.reserved_allocation, CapitalAllocationIntent):
             raise InvariantViolation(

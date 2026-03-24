@@ -27,7 +27,7 @@ from quantum.domain.decision.trading_intent.trading_intent_state_base import (
     TradingIntentStateBase,
 )
 from quantum.domain.shared_kernel.event_sourcing.events.base_event import BaseEvent
-from quantum.domain.shared_kernel.identity.intent_id import IntentId
+from quantum.domain.shared_kernel.modeling.identity.intent_id import IntentId
 
 
 class CreateTradingIntentHandler(

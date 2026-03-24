@@ -2,8 +2,8 @@ from dataclasses import dataclass
 from typing import ClassVar
 
 from quantum.domain.market.instrument.symbol import Symbol
-from quantum.domain.shared_kernel.identity.intent_id import IntentId
-from quantum.domain.shared_kernel.monetary.price import Price
+from quantum.domain.shared_kernel.modeling.identity.intent_id import IntentId
+from quantum.domain.shared_kernel.modeling.monetary.price import Price
 from quantum.domain.trading.events.fact_event import FactEvent
 from quantum.domain.trading.execution.safety.sl_tp_change_reason import SlTpChangeReason
 from quantum.domain.trading.identifiers.position_id import PositionId

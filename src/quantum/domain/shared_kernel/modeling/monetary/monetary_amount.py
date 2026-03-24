@@ -1,11 +1,11 @@
 from abc import ABC
 from dataclasses import dataclass
 
-from quantum.domain.shared_kernel.ddd.value_objects.numeric_value_object import (
+from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.modeling.monetary.currency import Currency
+from quantum.domain.shared_kernel.modeling.value_objects.numeric_value_object import (
     NumericValueObject,
 )
-from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.monetary.currency import Currency
 
 
 @dataclass(frozen=True, slots=True)

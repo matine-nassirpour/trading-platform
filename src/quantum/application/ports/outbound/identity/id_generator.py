@@ -4,7 +4,7 @@ from quantum.domain.shared_kernel.event_sourcing.events.correlation_id import (
     CorrelationId,
 )
 from quantum.domain.shared_kernel.event_sourcing.events.event_id import EventId
-from quantum.domain.shared_kernel.identity.intent_id import IntentId
+from quantum.domain.shared_kernel.modeling.identity.intent_id import IntentId
 from quantum.domain.trading.execution.order.execution_id import ExecutionId
 from quantum.domain.trading.identifiers.broker_order_id import BrokerOrderId
 from quantum.domain.trading.identifiers.position_id import PositionId

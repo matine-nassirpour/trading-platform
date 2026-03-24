@@ -28,8 +28,8 @@ class RiskInitializedState(RiskStateBase):
         if not isinstance(self.equity_peak, Equity):
             raise InvariantViolation("RiskInitializedState requires Equity peak")
 
-    def _validate(self) -> None:
-        super()._validate()
+    def _validate_semantics(self) -> None:
+        super()._validate_semantics()
         self._validate_types()
 
         if self.last_sequence.is_initial():

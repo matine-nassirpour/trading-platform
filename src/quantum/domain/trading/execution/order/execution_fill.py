@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 
-from quantum.domain.shared_kernel.ddd.value_objects.value_object import ValueObject
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.monetary.price import Price
-from quantum.domain.shared_kernel.temporal.epoch_ms import EpochMs
+from quantum.domain.shared_kernel.modeling.monetary.price import Price
+from quantum.domain.shared_kernel.modeling.temporal.epoch_ms import EpochMs
+from quantum.domain.shared_kernel.modeling.value_objects.value_object import ValueObject
 from quantum.domain.trading.execution.order.execution_id import ExecutionId
 from quantum.domain.trading.value_objects.volume import PositiveVolume
 
@@ -21,7 +21,7 @@ class ExecutionFill(ValueObject):
     volume: PositiveVolume
     executed_at: EpochMs
 
-    def _validate(self) -> None:
+    def _validate_semantics(self) -> None:
         if not isinstance(self.execution_id, ExecutionId):
             raise InvariantViolation("ExecutionFill requires a valid ExecutionId")
 

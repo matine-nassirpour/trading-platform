@@ -5,7 +5,7 @@ from quantum.domain.decision.events.decision_event import DecisionEvent
 from quantum.domain.decision.lifecycle.strategy_lifecycle_state import (
     StrategyLifecycleState,
 )
-from quantum.domain.shared_kernel.identity.strategy_id import StrategyId
+from quantum.domain.shared_kernel.modeling.identity.strategy_id import StrategyId
 
 
 @dataclass(frozen=True, slots=True)

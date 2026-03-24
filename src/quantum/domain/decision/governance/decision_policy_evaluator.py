@@ -7,8 +7,8 @@ from quantum.domain.decision.governance.decision_authorization_result import (
 )
 from quantum.domain.decision.governance.decision_policy import DecisionPolicy
 from quantum.domain.decision.identity.decision_identity import DecisionIdentity
-from quantum.domain.shared_kernel.ddd.services.domain_service import DomainService
-from quantum.domain.shared_kernel.temporal.epoch_ms import EpochMs
+from quantum.domain.shared_kernel.modeling.services.domain_service import DomainService
+from quantum.domain.shared_kernel.modeling.temporal.epoch_ms import EpochMs
 
 
 class DecisionPolicyEvaluator(DomainService):

@@ -55,8 +55,8 @@ class TradingIntentInitializedState(TradingIntentStateBase):
                 "TradingIntentInitializedState.authorization_result invalid"
             )
 
-    def _validate(self) -> None:
-        super()._validate()
+    def _validate_semantics(self) -> None:
+        super()._validate_semantics()
         self._validate_types()
 
         if self.last_sequence.is_initial():

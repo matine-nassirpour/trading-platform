@@ -2,8 +2,8 @@ import re
 
 from dataclasses import dataclass
 
-from quantum.domain.shared_kernel.ddd.value_objects.value_object import ValueObject
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.modeling.value_objects.value_object import ValueObject
 
 _VERSION_RE = re.compile(r"^v\d+(\.\d+){0,2}$")
 
@@ -21,7 +21,7 @@ class ModelVersion(ValueObject):
 
     value: str
 
-    def _validate(self) -> None:
+    def _validate_semantics(self) -> None:
         if not isinstance(self.value, str):
             raise InvariantViolation("ModelVersion must be a string")
 
