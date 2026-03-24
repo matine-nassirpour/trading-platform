@@ -469,19 +469,6 @@ trading-platform/
 │       │   │   │   └── reason.py
 │       │   │   └── __init__.py
 │       │   ├── shared_kernel/
-│       │   │   ├── ddd/
-│       │   │   │   ├── entities/
-│       │   │   │   │   ├── __init__.py
-│       │   │   │   │   └── aggregate_state.py
-│       │   │   │   ├── services/
-│       │   │   │   │   ├── __init__.py
-│       │   │   │   │   └── domain_service.py
-│       │   │   │   ├── value_objects/
-│       │   │   │   │   ├── __init__.py
-│       │   │   │   │   ├── closed_set_value_object.py
-│       │   │   │   │   ├── numeric_value_object.py
-│       │   │   │   │   └── value_object.py
-│       │   │   │   └── __init__.py
 │       │   │   ├── event_sourcing/
 │       │   │   │   ├── aggregates/
 │       │   │   │   │   ├── __init__.py
@@ -501,6 +488,9 @@ trading-platform/
 │       │   │   │   │   ├── cursor.py
 │       │   │   │   │   ├── domain_projection.py
 │       │   │   │   │   └── projection_cursor.py
+│       │   │   │   ├── state/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   └── aggregate_state.py
 │       │   │   │   └── __init__.py
 │       │   │   ├── foundation/
 │       │   │   │   ├── bases/
@@ -520,25 +510,35 @@ trading-platform/
 │       │   │   │   │   ├── invariants.py
 │       │   │   │   │   └── projection_error.py
 │       │   │   │   └── __init__.py
-│       │   │   ├── identity/
-│       │   │   │   ├── __init__.py
-│       │   │   │   ├── aggregate_id.py
-│       │   │   │   ├── intent_id.py
-│       │   │   │   └── strategy_id.py
-│       │   │   ├── monetary/
-│       │   │   │   ├── __init__.py
-│       │   │   │   ├── contextual_monetary_amount.py
-│       │   │   │   ├── currency.py
-│       │   │   │   ├── monetary_amount.py
-│       │   │   │   ├── money_context.py
-│       │   │   │   ├── pnl.py
-│       │   │   │   ├── price.py
-│       │   │   │   └── signed_contextual_amount.py
-│       │   │   ├── temporal/
-│       │   │   │   ├── __init__.py
-│       │   │   │   ├── epoch_ms.py
-│       │   │   │   ├── temporal_validity.py
-│       │   │   │   └── time_interval.py
+│       │   │   ├── modeling/
+│       │   │   │   ├── identity/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── aggregate_id.py
+│       │   │   │   │   ├── intent_id.py
+│       │   │   │   │   └── strategy_id.py
+│       │   │   │   ├── monetary/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── contextual_monetary_amount.py
+│       │   │   │   │   ├── currency.py
+│       │   │   │   │   ├── monetary_amount.py
+│       │   │   │   │   ├── money_context.py
+│       │   │   │   │   ├── pnl.py
+│       │   │   │   │   ├── price.py
+│       │   │   │   │   └── signed_contextual_amount.py
+│       │   │   │   ├── services/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   └── domain_service.py
+│       │   │   │   ├── temporal/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── epoch_ms.py
+│       │   │   │   │   ├── temporal_validity.py
+│       │   │   │   │   └── time_interval.py
+│       │   │   │   ├── value_objects/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── closed_set_value_object.py
+│       │   │   │   │   ├── numeric_value_object.py
+│       │   │   │   │   └── value_object.py
+│       │   │   │   └── __init__.py
 │       │   │   └── __init__.py
 │       │   ├── trading/
 │       │   │   ├── errors/

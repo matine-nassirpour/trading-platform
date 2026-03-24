@@ -2,6 +2,9 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import ClassVar
 
+from quantum.domain.shared_kernel.foundation.contracts.violations import (
+    StructuralContractViolation,
+)
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.modeling.value_objects.value_object import ValueObject
 
@@ -22,23 +25,27 @@ def _validate_allowed_values(values: frozenset[str], cls_name: str) -> frozenset
     """
 
     if not isinstance(values, frozenset):
-        raise TypeError(f"{cls_name}._allowed_values() must return a frozenset[str]")
+        raise StructuralContractViolation(
+            f"{cls_name}._allowed_values() must return a frozenset[str]"
+        )
 
     if not values:
-        raise TypeError(f"{cls_name}._allowed_values() must not be empty")
+        raise StructuralContractViolation(
+            f"{cls_name}._allowed_values() must not be empty"
+        )
 
     canonical: set[str] = set()
 
     for v in values:
         if not isinstance(v, str):
-            raise TypeError(
+            raise StructuralContractViolation(
                 f"{cls_name}._allowed_values() must contain only strings, got {type(v)}"
             )
 
         c = _canonicalize(v)
 
         if v != c:
-            raise TypeError(
+            raise StructuralContractViolation(
                 f"{cls_name}._allowed_values() must contain only canonical values. "
                 f"Invalid entry: {v!r}, expected: {c!r}"
             )
@@ -87,7 +94,7 @@ class ClosedSetValueObject(ValueObject, ABC):
             return
 
         if "_allowed_values" not in cls.__dict__:
-            raise TypeError(
+            raise StructuralContractViolation(
                 f"{cls.__name__} must explicitly implement _allowed_values()"
             )
 

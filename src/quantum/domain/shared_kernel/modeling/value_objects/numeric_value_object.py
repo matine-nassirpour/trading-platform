@@ -5,6 +5,9 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import final
 
+from quantum.domain.shared_kernel.foundation.contracts.violations import (
+    StructuralContractViolation,
+)
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.modeling.value_objects.value_object import ValueObject
 
@@ -38,7 +41,9 @@ class NumericValueObject(ValueObject, ABC):
             return
 
         if "nominal_type" not in cls.__dict__:
-            raise TypeError(f"{cls.__name__} must explicitly implement nominal_type().")
+            raise StructuralContractViolation(
+                f"{cls.__name__} must explicitly implement nominal_type()."
+            )
 
     @classmethod
     @abstractmethod

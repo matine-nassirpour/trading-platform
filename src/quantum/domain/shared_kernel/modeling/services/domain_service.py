@@ -1,6 +1,10 @@
 from abc import ABC, ABCMeta
 from typing import Any, Final, final
 
+from quantum.domain.shared_kernel.foundation.contracts.violations import (
+    StructuralContractViolation,
+)
+
 _FORBIDDEN_LIFECYCLE_NAMES: Final[frozenset[str]] = frozenset(
     {
         "__init__",
@@ -45,7 +49,7 @@ def _validate_domain_service_definition(cls: type) -> None:
     forbidden = _FORBIDDEN_LIFECYCLE_NAMES.intersection(namespace.keys())
     if forbidden:
         names = ", ".join(sorted(forbidden))
-        raise TypeError(
+        raise StructuralContractViolation(
             f"{cls.__name__} must not define {names}. "
             "Domain Services are stateless semantic types and must not own "
             "instance lifecycle or mutation hooks."
@@ -53,7 +57,7 @@ def _validate_domain_service_definition(cls: type) -> None:
 
     slots = namespace.get("__slots__", ())
     if slots != ():
-        raise TypeError(
+        raise StructuralContractViolation(
             f"{cls.__name__} must declare '__slots__ = ()' or inherit it unchanged. "
             "Domain Services must not expose instance storage."
         )
@@ -67,7 +71,7 @@ def _validate_domain_service_definition(cls: type) -> None:
         return
 
     if hasattr(dummy, "__dict__"):
-        raise TypeError(
+        raise StructuralContractViolation(
             f"{cls.__name__} exposes instance __dict__, which is forbidden for "
             "Domain Services."
         )
@@ -103,7 +107,7 @@ class _DomainServiceMeta(ABCMeta):
         return cls
 
     def __call__(cls, *args: Any, **kwargs: Any) -> Any:
-        raise TypeError(
+        raise StructuralContractViolation(
             f"{cls.__name__} cannot be instantiated. "
             "Domain Services are stateless semantic types."
         )
