@@ -5,7 +5,6 @@ from functools import cache
 from types import MappingProxyType
 from typing import Final, Generic, Protocol, Self, TypeVar, cast
 
-from quantum.domain.shared_kernel.ddd.entities.aggregate_state import AggregateState
 from quantum.domain.shared_kernel.event_sourcing.events.base_event import BaseEvent
 from quantum.domain.shared_kernel.event_sourcing.events.event_id import EventId
 from quantum.domain.shared_kernel.event_sourcing.events.event_sequence import (
@@ -13,6 +12,9 @@ from quantum.domain.shared_kernel.event_sourcing.events.event_sequence import (
 )
 from quantum.domain.shared_kernel.event_sourcing.events.recorded_event_envelope import (
     RecordedEventEnvelope,
+)
+from quantum.domain.shared_kernel.event_sourcing.state.aggregate_state import (
+    AggregateState,
 )
 from quantum.domain.shared_kernel.foundation.bases.validated_domain_object import (
     ValidatedDomainObject,
