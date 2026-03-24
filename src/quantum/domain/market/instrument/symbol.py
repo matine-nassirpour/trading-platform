@@ -12,7 +12,7 @@ _SYMBOL_RE = re.compile(r"^[A-Z0-9._\-]{3,20}$")
 class Symbol(ValueObject):
     value: str
 
-    def _validate(self) -> None:
+    def _validate_semantics(self) -> None:
         if not isinstance(self.value, str):
             raise InvariantViolation("Symbol must be a string")
 

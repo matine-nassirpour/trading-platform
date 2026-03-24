@@ -57,7 +57,7 @@ class InstrumentSpec(ValueObject):
         if value <= Decimal("0"):
             raise InvariantViolation(f"{name} must be strictly positive")
 
-    def _validate(self) -> None:
+    def _validate_semantics(self) -> None:
         if not isinstance(self.context, MoneyContext):
             raise InvariantViolation("InstrumentSpec requires a MoneyContext")
 

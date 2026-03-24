@@ -18,7 +18,7 @@ class MarketSession(ValueObject):
     opens_at: UtcMinuteOfDay
     closes_at: UtcMinuteOfDay
 
-    def _validate(self) -> None:
+    def _validate_semantics(self) -> None:
         if not self.name or not isinstance(self.name, str):
             raise InvariantViolation("MarketSession requires a name")
 

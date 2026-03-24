@@ -17,7 +17,7 @@ class PriceConstraints(ValueObject):
     stop_level: Decimal
     freeze_level: Decimal
 
-    def _validate(self) -> None:
+    def _validate_semantics(self) -> None:
         for name, v in {
             "stop_level": self.stop_level,
             "freeze_level": self.freeze_level,

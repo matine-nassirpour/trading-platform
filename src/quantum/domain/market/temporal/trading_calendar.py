@@ -23,7 +23,7 @@ class TradingCalendar(ValueObject):
     sessions: tuple[MarketSession, ...]
     holidays: frozenset[date]
 
-    def _validate(self) -> None:
+    def _validate_semantics(self) -> None:
         if not self.name:
             raise InvariantViolation("TradingCalendar requires a name")
 

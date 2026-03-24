@@ -16,7 +16,7 @@ class CurrencyPair(ValueObject):
     base: Currency
     quote: Currency
 
-    def _validate(self) -> None:
+    def _validate_semantics(self) -> None:
         if not isinstance(self.base, Currency):
             raise InvariantViolation("Base currency must be a Currency")
 

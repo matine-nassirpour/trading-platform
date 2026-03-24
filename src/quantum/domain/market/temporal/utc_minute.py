@@ -24,7 +24,7 @@ class UtcMinuteOfDay(ValueObject):
 
     value: int
 
-    def _validate(self) -> None:
+    def _validate_semantics(self) -> None:
         if not isinstance(self.value, int):
             raise InvariantViolation("UtcMinuteOfDay must be an integer")
 

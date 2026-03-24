@@ -14,7 +14,7 @@ class VolumeConstraints(ValueObject):
     min_volume: Decimal
     max_volume: Decimal
 
-    def _validate(self) -> None:
+    def _validate_semantics(self) -> None:
         for name, v in {
             "min_volume": self.min_volume,
             "max_volume": self.max_volume,
