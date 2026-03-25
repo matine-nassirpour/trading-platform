@@ -187,7 +187,7 @@ class Position(EventSourcedAggregateRoot[PositionStateBase]):
     @classmethod
     def _handlers(
         cls,
-    ) -> Mapping[type[BaseEvent], EventHandler]:
+    ) -> Mapping[type[BaseEvent], EventHandler[PositionStateBase, BaseEvent]]:
         return {
             PositionOpenedEvent: cls._apply_opened,
             PositionClosedEvent: cls._apply_closed,

@@ -30,8 +30,8 @@ class LeverageBreach(RiskBreach):
     equity: Equity
     limit: LeverageLimit
 
-    def _validate(self) -> None:
-        super()._validate()
+    def _validate_semantics(self) -> None:
+        super()._validate_semantics()
 
         if not isinstance(self.exposure, Exposure):
             raise InvariantViolation("LeverageBreach.exposure must be RiskExposure")

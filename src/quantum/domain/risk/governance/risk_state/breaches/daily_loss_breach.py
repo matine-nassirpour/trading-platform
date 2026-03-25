@@ -26,8 +26,8 @@ class DailyLossBreach(RiskBreach):
     current: DailyLoss
     limit: DailyLossLimit
 
-    def _validate(self) -> None:
-        super()._validate()
+    def _validate_semantics(self) -> None:
+        super()._validate_semantics()
 
         if not isinstance(self.current, DailyLoss):
             raise InvariantViolation("DailyLossBreach.current must be a DailyLoss")

@@ -19,7 +19,7 @@ class PositionOpenedState(PositionStateBase):
     entry_price: Price
     closed: bool
 
-    def _validate(self):
+    def _validate_semantics(self) -> None:
         super()._validate_semantics()
 
         if not isinstance(self.position_id, PositionId):

@@ -26,8 +26,8 @@ class NotionalBreach(RiskBreach):
     current: Notional
     limit: NotionalLimit
 
-    def _validate(self) -> None:
-        super()._validate()
+    def _validate_semantics(self) -> None:
+        super()._validate_semantics()
 
         if not isinstance(self.current, Notional):
             raise InvariantViolation("NotionalBreach.current must be a Notional")

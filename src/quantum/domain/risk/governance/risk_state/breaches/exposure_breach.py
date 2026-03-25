@@ -25,8 +25,8 @@ class ExposureBreach(RiskBreach):
     current: Exposure
     limit: ExposureLimit
 
-    def _validate(self) -> None:
-        super()._validate()
+    def _validate_semantics(self) -> None:
+        super()._validate_semantics()
 
         if not isinstance(self.current, Exposure):
             raise InvariantViolation("ExposureBreach.current must be an Exposure")

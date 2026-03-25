@@ -9,7 +9,7 @@ from quantum.domain.trading.execution.position.position_state_base import (
 @dataclass(frozen=True, slots=True)
 class PositionUninitializedState(PositionStateBase):
 
-    def _validate_semantics(self):
+    def _validate_semantics(self) -> None:
         super()._validate_semantics()
 
         if not self.last_sequence.is_initial():

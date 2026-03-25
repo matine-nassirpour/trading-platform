@@ -23,6 +23,6 @@ class RiskBreach(ValueObject, ABC):
 
     policy: RiskThresholdPolicy
 
-    def _validate(self) -> None:
+    def _validate_semantics(self) -> None:
         if not isinstance(self.policy, RiskThresholdPolicy):
             raise InvariantViolation("RiskBreach.policy must be a RiskThresholdPolicy")

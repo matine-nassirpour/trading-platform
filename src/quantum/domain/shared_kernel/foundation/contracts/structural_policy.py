@@ -1,3 +1,4 @@
+from collections.abc import Hashable
 from dataclasses import dataclass
 from functools import cache
 
@@ -13,7 +14,7 @@ from quantum.domain.shared_kernel.foundation.contracts.representation import (
 @cache
 def _validate_composite_policy_class(
     policies: tuple[StructuralPolicy, ...],
-    cls: type,
+    cls: type[Hashable],
 ) -> None:
     """
     Cached class-level validation for a composite structural policy.
@@ -88,7 +89,7 @@ class CompositeStructuralPolicy(StructuralPolicy):
         _validate_composite_policy_class(self.policies, cls)
 
     def validate_instance(self, instance: object) -> None:
-        _validate_composite_policy_class(self.policies, instance)
+        _validate_composite_policy_class(self.policies, type(instance))
 
         for policy in self.policies:
             policy.validate_instance(instance)
