@@ -2,7 +2,6 @@ from dataclasses import fields, is_dataclass
 from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
 from enum import Enum
-from functools import cache
 from types import MappingProxyType
 from typing import Any
 from uuid import UUID
@@ -121,7 +120,6 @@ def _try_validate_dataclass(value: Any, path: str) -> bool:
     return True
 
 
-@cache
 def _is_frozen_slotted_dataclass_class(cls: type) -> bool:
     """
     Returns True if cls is a frozen, slotted dataclass with no instance __dict__.

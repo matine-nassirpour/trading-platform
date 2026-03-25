@@ -88,7 +88,7 @@ class CompositeStructuralPolicy(StructuralPolicy):
         _validate_composite_policy_class(self.policies, cls)
 
     def validate_instance(self, instance: object) -> None:
-        _validate_composite_policy_class(self.policies, type(instance))
+        _validate_composite_policy_class(self.policies, instance)
 
         for policy in self.policies:
             policy.validate_instance(instance)

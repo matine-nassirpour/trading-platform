@@ -3,6 +3,7 @@ from __future__ import annotations
 from abc import ABC
 from dataclasses import dataclass
 from decimal import Decimal
+from typing import Self
 
 from quantum.domain.shared_kernel.foundation.errors.invariants import (
     CurrencyMismatch,
@@ -95,7 +96,7 @@ class ContextualMonetaryAmount(MonetaryAmount, ABC):
 
     # --- Controlled reconstruction --------------------------------------------
 
-    def _rebuild_with_value(self, value: Decimal) -> ContextualMonetaryAmount:
+    def _rebuild_with_value(self, value: Decimal) -> Self:
         """
         Reconstructs a new instance of the SAME concrete type.
 

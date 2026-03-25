@@ -3,7 +3,7 @@ from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from functools import cache
 from types import MappingProxyType
-from typing import Final, Generic, Protocol, Self, TypeVar, cast
+from typing import Generic, Protocol, Self, TypeVar
 
 from quantum.domain.shared_kernel.event_sourcing.events.base_event import BaseEvent
 from quantum.domain.shared_kernel.event_sourcing.events.event_id import EventId
@@ -56,8 +56,8 @@ class EventSourcedAggregateRoot(ValidatedDomainObject, Generic[ID, S], ABC):
     - Aggregate state is identity-free.
     """
 
-    _aggregate_id: Final[ID]
-    _state: Final[S]
+    _aggregate_id: ID
+    _state: S
 
     def _validate_semantics(self) -> None:
         expected_id_type = self.aggregate_id_type()
@@ -103,7 +103,7 @@ class EventSourcedAggregateRoot(ValidatedDomainObject, Generic[ID, S], ABC):
                 f"{expected_id_type.__name__}, got {type(aggregate_id).__name__}."
             )
 
-        return cast(ID, aggregate_id)
+        return aggregate_id
 
     @classmethod
     def _validate_state(cls, state: AggregateState) -> S:
@@ -115,7 +115,7 @@ class EventSourcedAggregateRoot(ValidatedDomainObject, Generic[ID, S], ABC):
                 f"{expected_state_type.__name__}, got {type(state).__name__}"
             )
 
-        return cast(S, state)
+        return state
 
     # --- Properties -----------------------------------------------------------
 

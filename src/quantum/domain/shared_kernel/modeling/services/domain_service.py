@@ -66,7 +66,7 @@ def _validate_domain_service_definition(cls: type) -> None:
     # if raw allocation succeeds and an instance dictionary appears,
     # the type violates the no-instance-storage contract.
     try:
-        dummy = object.__new__(cls)
+        dummy: object = object.__new__(cls)
     except Exception:
         return
 
