@@ -1,10 +1,11 @@
+from collections.abc import Hashable
 from dataclasses import fields, is_dataclass
 from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
 from enum import Enum
 from functools import cache
 from types import MappingProxyType
-from typing import Any
+from typing import Any, cast
 from uuid import UUID
 
 from quantum.domain.shared_kernel.foundation.contracts.violations import (
@@ -104,9 +105,9 @@ def _try_validate_dataclass(value: Any, path: str) -> bool:
     if not is_dataclass(value):
         return False
 
-    cls = type(value)
+    cls: type[Any] = type(value)
 
-    if not _is_frozen_slotted_dataclass_class(cls):
+    if not _is_frozen_slotted_dataclass_class(cast(Hashable, cls)):
         raise StructuralContractViolation(
             f"{path} contains dataclass {cls.__name__} which is not "
             "frozen + slotted + dict-free."
@@ -122,13 +123,16 @@ def _try_validate_dataclass(value: Any, path: str) -> bool:
 
 
 @cache
-def _is_frozen_slotted_dataclass_class(cls: type) -> bool:
+def _is_frozen_slotted_dataclass_class(cls: Hashable) -> bool:
     """
     Returns True if cls is a frozen, slotted dataclass with no instance __dict__.
 
     This helper exists because nested dataclass instances may appear inside
     deeply immutable field graphs.
     """
+    if not isinstance(cls, type):
+        return False
+
     if not is_dataclass(cls):
         return False
 

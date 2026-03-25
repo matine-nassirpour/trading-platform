@@ -1,6 +1,7 @@
 from collections.abc import Hashable
 from dataclasses import dataclass
 from functools import cache
+from typing import cast
 
 from quantum.domain.shared_kernel.foundation.contracts.deep_immutability import (
     validate_deep_immutability_of_dataclass_instance,
@@ -14,7 +15,7 @@ from quantum.domain.shared_kernel.foundation.contracts.representation import (
 @cache
 def _validate_composite_policy_class(
     policies: tuple[StructuralPolicy, ...],
-    cls: type[Hashable],
+    cls: Hashable,
 ) -> None:
     """
     Cached class-level validation for a composite structural policy.
@@ -30,6 +31,9 @@ def _validate_composite_policy_class(
 
     This function must remain pure and side-effect free.
     """
+    if not isinstance(cls, type):
+        raise TypeError("_validate_composite_policy_class expects a class object.")
+
     for policy in policies:
         policy.validate_class(cls)
 
@@ -89,7 +93,10 @@ class CompositeStructuralPolicy(StructuralPolicy):
         _validate_composite_policy_class(self.policies, cls)
 
     def validate_instance(self, instance: object) -> None:
-        _validate_composite_policy_class(self.policies, type(instance))
+        _validate_composite_policy_class(
+            self.policies,
+            cast(Hashable, type(instance)),
+        )
 
         for policy in self.policies:
             policy.validate_instance(instance)
