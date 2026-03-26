@@ -60,8 +60,8 @@ class EpochMs(ValueObject):
     value: int
 
     def _validate_semantics(self) -> None:
-        if not isinstance(self.value, int):
-            raise InvariantViolation("EpochMs must be an integer")
+        if type(self.value) is not int:
+            raise InvariantViolation("EpochMs must be a strict integer")
 
         if self.value < 0:
             raise InvariantViolation("EpochMs must be non-negative")
