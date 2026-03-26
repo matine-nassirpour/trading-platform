@@ -32,8 +32,8 @@ from quantum.domain.decision.trading_intent.trading_intent_state_base import (
 from quantum.domain.decision.trading_intent.trading_intent_uninitialized_state import (
     TradingIntentUninitializedState,
 )
-from quantum.domain.market.instrument.symbol import Symbol
-from quantum.domain.market.value_objects.position_side import PositionSide
+from quantum.domain.market.instrument.identity.symbol import Symbol
+from quantum.domain.market.positioning.position_side import PositionSide
 from quantum.domain.shared_kernel.event_sourcing.aggregates.event_sourced_aggregate_root import (
     EventHandler,
     EventSourcedAggregateRoot,

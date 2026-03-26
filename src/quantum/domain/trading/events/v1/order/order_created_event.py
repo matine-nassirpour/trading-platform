@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 from typing import ClassVar
 
-from quantum.domain.market.instrument.symbol import Symbol
-from quantum.domain.market.value_objects.position_side import PositionSide
-from quantum.domain.market.value_objects.reference_price import ReferencePrice
+from quantum.domain.market.instrument.identity.symbol import Symbol
+from quantum.domain.market.instrument.pricing.reference_price import ReferencePrice
+from quantum.domain.market.positioning.position_side import PositionSide
 from quantum.domain.shared_kernel.modeling.identity.intent_id import IntentId
 from quantum.domain.shared_kernel.modeling.monetary.price import Price
 from quantum.domain.trading.events.fact_event import FactEvent

@@ -8,6 +8,9 @@ from typing import ClassVar, final
 from quantum.domain.shared_kernel.foundation.bases.deeply_immutable_domain_object import (
     DeeplyImmutableDomainObject,
 )
+from quantum.domain.shared_kernel.foundation.contracts.violations import (
+    StructuralContractViolation,
+)
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
 
 _EVENT_NAME_PATTERN = re.compile(r"^[a-z]+(\.[a-z0-9_]+)+$")
@@ -29,12 +32,6 @@ _FORBIDDEN_EVENT_FIELDS = frozenset(
         "metadata",
     }
 )
-
-
-class EventDefinitionViolation(TypeError):
-    """
-    Raised when an event class violates the structural or definition contract.
-    """
 
 
 @dataclass(frozen=True, slots=True)
@@ -68,12 +65,12 @@ class BaseEvent(DeeplyImmutableDomainObject, ABC):
     def _assert_class_level_event_identity_definition(cls) -> None:
         event_name = cls.__dict__.get("event_name")
         if not isinstance(event_name, str) or not event_name:
-            raise EventDefinitionViolation(
+            raise StructuralContractViolation(
                 f"{cls.__name__}.event_name must be a non-empty string."
             )
 
         if not _EVENT_NAME_PATTERN.fullmatch(event_name):
-            raise EventDefinitionViolation(
+            raise StructuralContractViolation(
                 f"{cls.__name__}.event_name must match canonical format "
                 f"{_EVENT_NAME_PATTERN.pattern!r}, got {event_name!r}."
             )
@@ -82,13 +79,13 @@ class BaseEvent(DeeplyImmutableDomainObject, ABC):
             "event_version", getattr(cls, "event_version", 1)
         )
         if not isinstance(event_version, int) or event_version < 1:
-            raise EventDefinitionViolation(
+            raise StructuralContractViolation(
                 f"{cls.__name__}.event_version must be an integer >= 1."
             )
 
     def _validate_event_identity_at_runtime(self) -> None:
         if "event_name" not in self.__class__.__dict__:
-            raise EventDefinitionViolation(
+            raise StructuralContractViolation(
                 f"{self.__class__.__name__} must explicitly declare event_name"
             )
 
@@ -125,7 +122,7 @@ class BaseEvent(DeeplyImmutableDomainObject, ABC):
             return
 
         if "_validate_semantics" in cls.__dict__:
-            raise EventDefinitionViolation(
+            raise StructuralContractViolation(
                 f"{cls.__name__} must NOT override _validate_semantics(). "
                 "Use _validate_payload() instead."
             )
@@ -134,7 +131,7 @@ class BaseEvent(DeeplyImmutableDomainObject, ABC):
             return
 
         if "event_name" not in cls.__dict__:
-            raise EventDefinitionViolation(
+            raise StructuralContractViolation(
                 f"{cls.__name__} must explicitly declare event_name"
             )
 

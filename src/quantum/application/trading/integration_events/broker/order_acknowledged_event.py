@@ -4,7 +4,7 @@ from typing import ClassVar
 from quantum.application.trading.integration_events.base.integration_event import (
     IntegrationEvent,
 )
-from quantum.domain.market.instrument.symbol import Symbol
+from quantum.domain.market.instrument.identity.symbol import Symbol
 from quantum.domain.shared_kernel.modeling.identity.intent_id import IntentId
 from quantum.domain.trading.identifiers.broker_order_id import BrokerOrderId
 

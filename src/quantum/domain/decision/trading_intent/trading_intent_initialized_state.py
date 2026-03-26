@@ -8,8 +8,8 @@ from quantum.domain.decision.identity.decision_identity import DecisionIdentity
 from quantum.domain.decision.trading_intent.trading_intent_state_base import (
     TradingIntentStateBase,
 )
-from quantum.domain.market.instrument.symbol import Symbol
-from quantum.domain.market.value_objects.position_side import PositionSide
+from quantum.domain.market.instrument.identity.symbol import Symbol
+from quantum.domain.market.positioning.position_side import PositionSide
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
 
 

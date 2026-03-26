@@ -2,8 +2,8 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Self
 
-from quantum.domain.market.instrument.symbol import Symbol
-from quantum.domain.market.value_objects.position_side import PositionSide
+from quantum.domain.market.instrument.identity.symbol import Symbol
+from quantum.domain.market.positioning.position_side import PositionSide
 from quantum.domain.shared_kernel.event_sourcing.aggregates.event_sourced_aggregate_root import (
     EventHandler,
     EventSourcedAggregateRoot,

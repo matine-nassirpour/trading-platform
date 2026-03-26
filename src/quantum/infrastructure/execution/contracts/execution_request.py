@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict, Field
 
-from quantum.domain.market.instrument.symbol import Symbol
+from quantum.domain.market.instrument.identity.symbol import Symbol
 from quantum.domain.trading.execution.order.order_type import OrderType
 from quantum.domain.trading.execution.order.time_in_force import TimeInForce
 from quantum.domain.trading.value_objects import PositiveVolume, Price
