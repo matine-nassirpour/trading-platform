@@ -1,35 +1,35 @@
 from collections.abc import Mapping
 from typing import Self
 
-from quantum.domain.decision.context.trading_context import TradingContext
-from quantum.domain.decision.events.v1.decision_authorized_event import (
-    DecisionAuthorizedEvent,
-)
-from quantum.domain.decision.events.v1.decision_rejected_event import (
-    DecisionRejectedEvent,
-)
-from quantum.domain.decision.events.v1.trading_intent_created_event import (
-    TradingIntentCreatedEvent,
-)
-from quantum.domain.decision.governance.decision_authorization_result import (
+from quantum.domain.decision.authorization.decision_authorization_result import (
     DecisionAuthorizationResult,
 )
-from quantum.domain.decision.governance.decision_policy import DecisionPolicy
-from quantum.domain.decision.governance.decision_policy_evaluator import (
+from quantum.domain.decision.authorization.decision_policy import DecisionPolicy
+from quantum.domain.decision.authorization.decision_policy_evaluator import (
     DecisionPolicyEvaluator,
 )
-from quantum.domain.decision.identity.decision_identity import DecisionIdentity
-from quantum.domain.decision.lifecycle.strategy_eligibility_policy import (
+from quantum.domain.decision.authorization.strategy_eligibility_policy import (
     StrategyEligibilityPolicy,
 )
-from quantum.domain.decision.lifecycle.strategy_lifecycle import StrategyLifecycle
-from quantum.domain.decision.trading_intent.trading_intent_initialized_state import (
+from quantum.domain.decision.authorization.strategy_lifecycle import StrategyLifecycle
+from quantum.domain.decision.common.trading_context import TradingContext
+from quantum.domain.decision.qualification.decision_identity import DecisionIdentity
+from quantum.domain.decision.trading_intent.events.decision_authorized_event import (
+    DecisionAuthorizedEvent,
+)
+from quantum.domain.decision.trading_intent.events.decision_rejected_event import (
+    DecisionRejectedEvent,
+)
+from quantum.domain.decision.trading_intent.events.trading_intent_created_event import (
+    TradingIntentCreatedEvent,
+)
+from quantum.domain.decision.trading_intent.states.trading_intent_initialized_state import (
     TradingIntentInitializedState,
 )
-from quantum.domain.decision.trading_intent.trading_intent_state_base import (
+from quantum.domain.decision.trading_intent.states.trading_intent_state_base import (
     TradingIntentStateBase,
 )
-from quantum.domain.decision.trading_intent.trading_intent_uninitialized_state import (
+from quantum.domain.decision.trading_intent.states.trading_intent_uninitialized_state import (
     TradingIntentUninitializedState,
 )
 from quantum.domain.market.instrument.identity.symbol import Symbol

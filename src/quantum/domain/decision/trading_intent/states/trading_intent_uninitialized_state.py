@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from quantum.domain.decision.trading_intent.trading_intent_state_base import (
+from quantum.domain.decision.trading_intent.states.trading_intent_state_base import (
     TradingIntentStateBase,
 )
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation

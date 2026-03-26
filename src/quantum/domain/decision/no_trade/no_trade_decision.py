@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from quantum.domain.decision.outcome.no_trade.no_trade_reason import NoTradeReason
+from quantum.domain.decision.no_trade.no_trade_reason import NoTradeReason
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.modeling.value_objects.value_object import ValueObject
 

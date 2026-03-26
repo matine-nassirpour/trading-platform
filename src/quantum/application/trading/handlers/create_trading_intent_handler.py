@@ -22,8 +22,8 @@ from quantum.application.shared.eventing.event_sourced_repository import (
 from quantum.application.trading.commands.create_trading_intent_command import (
     CreateTradingIntentCommand,
 )
-from quantum.domain.decision.trading_intent.trading_intent import TradingIntent
-from quantum.domain.decision.trading_intent.trading_intent_state_base import (
+from quantum.domain.decision.trading_intent.aggregate import TradingIntent
+from quantum.domain.decision.trading_intent.states.trading_intent_state_base import (
     TradingIntentStateBase,
 )
 from quantum.domain.shared_kernel.event_sourcing.events.base_event import BaseEvent

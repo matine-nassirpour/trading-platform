@@ -297,73 +297,76 @@ trading-platform/
 │       │   └── __init__.py
 │       ├── domain/
 │       │   ├── decision/
-│       │   │   ├── context/
-│       │   │   │   ├── __init__.py
-│       │   │   │   └── trading_context.py
-│       │   │   ├── events/
-│       │   │   │   ├── v1/
-│       │   │   │   │   ├── __init__.py
-│       │   │   │   │   ├── decision_authorized_event.py
-│       │   │   │   │   ├── decision_rejected_event.py
-│       │   │   │   │   ├── no_trade_decision_event.py
-│       │   │   │   │   ├── strategy_lifecycle_changed_event.py
-│       │   │   │   │   └── trading_intent_created_event.py
-│       │   │   │   ├── __init__.py
-│       │   │   │   └── decision_event.py
-│       │   │   ├── governance/
+│       │   │   ├── authorization/
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── decision_authorization_reason_code.py
 │       │   │   │   ├── decision_authorization_result.py
 │       │   │   │   ├── decision_authorization_status.py
 │       │   │   │   ├── decision_policy.py
-│       │   │   │   └── decision_policy_evaluator.py
-│       │   │   ├── identity/
+│       │   │   │   ├── decision_policy_evaluator.py
+│       │   │   │   ├── strategy_eligibility_policy.py
+│       │   │   │   ├── strategy_lifecycle.py
+│       │   │   │   └── strategy_lifecycle_state.py
+│       │   │   ├── common/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── decision_event.py
+│       │   │   │   └── trading_context.py
+│       │   │   ├── no_trade/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── no_trade_decision.py
+│       │   │   │   ├── no_trade_decision_event.py
+│       │   │   │   └── no_trade_reason.py
+│       │   │   ├── qualification/
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── decision_confidence.py
 │       │   │   │   ├── decision_confidence_level.py
 │       │   │   │   ├── decision_identity.py
 │       │   │   │   ├── decision_source.py
 │       │   │   │   └── model_version.py
-│       │   │   ├── lifecycle/
-│       │   │   │   ├── __init__.py
-│       │   │   │   ├── strategy_eligibility_policy.py
-│       │   │   │   ├── strategy_lifecycle.py
-│       │   │   │   └── strategy_lifecycle_state.py
-│       │   │   ├── outcome/
-│       │   │   │   ├── no_trade/
-│       │   │   │   │   ├── __init__.py
-│       │   │   │   │   ├── no_trade_decision.py
-│       │   │   │   │   └── no_trade_reason.py
-│       │   │   │   └── __init__.py
 │       │   │   ├── trading_intent/
+│       │   │   │   ├── events/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── decision_authorized_event.py
+│       │   │   │   │   ├── decision_rejected_event.py
+│       │   │   │   │   └── trading_intent_created_event.py
+│       │   │   │   ├── states/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── trading_intent_initialized_state.py
+│       │   │   │   │   ├── trading_intent_state_base.py
+│       │   │   │   │   └── trading_intent_uninitialized_state.py
 │       │   │   │   ├── __init__.py
-│       │   │   │   ├── trading_intent.py
-│       │   │   │   ├── trading_intent_initialized_state.py
-│       │   │   │   ├── trading_intent_state_base.py
-│       │   │   │   └── trading_intent_uninitialized_state.py
+│       │   │   │   └── aggregate.py
 │       │   │   └── __init__.py
 │       │   ├── market/
-│       │   │   ├── instrument/
-│       │   │   │   ├── __init__.py
-│       │   │   │   ├── currency_pair.py
-│       │   │   │   ├── instrument_spec.py
-│       │   │   │   ├── price_constraints.py
-│       │   │   │   └── symbol.py
-│       │   │   ├── regime/
-│       │   │   │   ├── __init__.py
-│       │   │   │   └── market_regime.py
-│       │   │   ├── temporal/
+│       │   │   ├── calendar/
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── market_session.py
 │       │   │   │   ├── trading_calendar.py
 │       │   │   │   └── utc_minute.py
-│       │   │   ├── value_objects/
+│       │   │   ├── instrument/
+│       │   │   │   ├── currency/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   └── currency_pair.py
+│       │   │   │   ├── identity/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   └── symbol.py
+│       │   │   │   ├── pricing/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── price_constraints.py
+│       │   │   │   │   ├── reference_price.py
+│       │   │   │   │   └── tick_value.py
+│       │   │   │   ├── sizing/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── contract_size.py
+│       │   │   │   │   └── volume_constraints.py
 │       │   │   │   ├── __init__.py
-│       │   │   │   ├── contract_size.py
-│       │   │   │   ├── position_side.py
-│       │   │   │   ├── reference_price.py
-│       │   │   │   ├── tick_value.py
-│       │   │   │   └── volume_constraints.py
+│       │   │   │   └── instrument_spec.py
+│       │   │   ├── positioning/
+│       │   │   │   ├── __init__.py
+│       │   │   │   └── position_side.py
+│       │   │   ├── regime/
+│       │   │   │   ├── __init__.py
+│       │   │   │   └── market_regime.py
 │       │   │   └── __init__.py
 │       │   ├── risk/
 │       │   │   ├── capital/

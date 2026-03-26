@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from quantum.domain.decision.governance.decision_authorization_reason_code import (
+from quantum.domain.decision.authorization.decision_authorization_reason_code import (
     DecisionAuthorizationReasonCode,
 )
-from quantum.domain.decision.governance.decision_authorization_status import (
+from quantum.domain.decision.authorization.decision_authorization_status import (
     DecisionAuthorizationStatus,
 )
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation

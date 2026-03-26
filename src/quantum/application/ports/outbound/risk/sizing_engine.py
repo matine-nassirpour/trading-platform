@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from typing import Protocol, runtime_checkable
 
-from quantum.domain.decision.identity.decision_identity import DecisionIdentity
+from quantum.domain.decision.qualification.decision_identity import DecisionIdentity
 from quantum.domain.market.instrument.identity.symbol import Symbol
 from quantum.domain.trading.value_objects.volume import PositiveVolume
 

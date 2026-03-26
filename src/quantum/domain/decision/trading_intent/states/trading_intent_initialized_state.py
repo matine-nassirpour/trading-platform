@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 
-from quantum.domain.decision.context.trading_context import TradingContext
-from quantum.domain.decision.governance.decision_authorization_result import (
+from quantum.domain.decision.authorization.decision_authorization_result import (
     DecisionAuthorizationResult,
 )
-from quantum.domain.decision.identity.decision_identity import DecisionIdentity
-from quantum.domain.decision.trading_intent.trading_intent_state_base import (
+from quantum.domain.decision.common.trading_context import TradingContext
+from quantum.domain.decision.qualification.decision_identity import DecisionIdentity
+from quantum.domain.decision.trading_intent.states.trading_intent_state_base import (
     TradingIntentStateBase,
 )
 from quantum.domain.market.instrument.identity.symbol import Symbol

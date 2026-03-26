@@ -1,10 +1,10 @@
-from quantum.domain.decision.governance.decision_authorization_reason_code import (
+from quantum.domain.decision.authorization.decision_authorization_reason_code import (
     DecisionAuthorizationReasonCode,
 )
-from quantum.domain.decision.governance.decision_authorization_result import (
+from quantum.domain.decision.authorization.decision_authorization_result import (
     DecisionAuthorizationResult,
 )
-from quantum.domain.decision.lifecycle.strategy_lifecycle import StrategyLifecycle
+from quantum.domain.decision.authorization.strategy_lifecycle import StrategyLifecycle
 from quantum.domain.shared_kernel.modeling.services.domain_service import DomainService
 from quantum.domain.shared_kernel.modeling.temporal.epoch_ms import EpochMs
 
