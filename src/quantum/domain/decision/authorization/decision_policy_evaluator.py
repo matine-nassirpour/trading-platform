@@ -15,13 +15,7 @@ class DecisionPolicyEvaluator(DomainService):
     """
     Domain Service responsible for evaluating DecisionPolicy.
 
-    HARD RULES:
-    - Pure
-    - Deterministic
-    - No side effects
-    - No runtime assumptions
-
-    Domain responsibility:
+    Domain question answered:
         "Is this decision authorized under this policy?"
     """
 
@@ -39,7 +33,7 @@ class DecisionPolicyEvaluator(DomainService):
         # Strategy mismatch
         if decision.strategy_id != policy.strategy_id:
             return DecisionAuthorizationResult.rejected(
-                reason_code=DecisionAuthorizationReasonCode.strategy_not_authorized()
+                reason_code=DecisionAuthorizationReasonCode.strategy_scope_mismatch()
             )
 
         if not policy.validity.is_valid_at(at):

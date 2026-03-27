@@ -22,21 +22,21 @@ from quantum.application.shared.eventing.event_sourced_repository import (
 from quantum.application.trading.commands.create_trading_intent_command import (
     CreateTradingIntentCommand,
 )
-from quantum.domain.decision.trading_intent.aggregate import TradingIntent
-from quantum.domain.decision.trading_intent.states.trading_intent_state_base import (
-    TradingIntentStateBase,
+from quantum.domain.decision.trading_decision.aggregate import TradingDecision
+from quantum.domain.decision.trading_decision.states.trading_decision_state_base import (
+    TradingDecisionStateBase,
 )
 from quantum.domain.shared_kernel.event_sourcing.events.base_event import BaseEvent
-from quantum.domain.shared_kernel.modeling.identity.intent_id import IntentId
+from quantum.domain.shared_kernel.modeling.identity.decision_id import DecisionId
 
 
 class CreateTradingIntentHandler(
     AggregateCommandHandler[
         CreateTradingIntentCommand,
         None,
-        IntentId,
-        TradingIntentStateBase,
-        TradingIntent,
+        DecisionId,
+        TradingDecisionStateBase,
+        TradingDecision,
     ]
 ):
     """
@@ -47,7 +47,7 @@ class CreateTradingIntentHandler(
         self,
         *,
         repository: EventSourcedRepository[
-            IntentId, TradingIntentStateBase, TradingIntent
+            DecisionId, TradingDecisionStateBase, TradingDecision
         ],
         outbox: OutboxRepository,
         uow: UnitOfWork,
@@ -61,7 +61,7 @@ class CreateTradingIntentHandler(
             existence_policy=AggregateExistencePolicy.MUST_NOT_EXIST,
         )
 
-    def _aggregate_id(self, command: CreateTradingIntentCommand) -> IntentId:
+    def _aggregate_id(self, command: CreateTradingIntentCommand) -> DecisionId:
         return command.intent_id
 
     def _context(
@@ -74,13 +74,12 @@ class CreateTradingIntentHandler(
         self,
         *,
         command: CreateTradingIntentCommand,
-        aggregate: TradingIntent,
+        aggregate: TradingDecision,
     ) -> tuple[Iterable[BaseEvent], None]:
 
-        _, domain_events = TradingIntent.create_new(
+        _, domain_events = TradingDecision.create_new(
             aggregate_id=command.intent_id,
             symbol=command.symbol,
-            side=command.side,
             decision_identity=command.decision_identity,
             context=command.trading_context,
         )

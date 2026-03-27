@@ -170,14 +170,6 @@ trading-platform/
 ├── src/
 │   └── quantum/
 │       ├── application/
-│       │   ├── decision/
-│       │   │   ├── commands/
-│       │   │   │   ├── __init__.py
-│       │   │   │   └── register_no_trade_command.py
-│       │   │   ├── handlers/
-│       │   │   │   ├── __init__.py
-│       │   │   │   └── register_no_trade_handler.py
-│       │   │   └── __init__.py
 │       │   ├── integration/
 │       │   │   ├── handlers/
 │       │   │   │   ├── __init__.py
@@ -314,7 +306,6 @@ trading-platform/
 │       │   │   ├── no_trade/
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── no_trade_decision.py
-│       │   │   │   ├── no_trade_decision_event.py
 │       │   │   │   └── no_trade_reason.py
 │       │   │   ├── qualification/
 │       │   │   │   ├── __init__.py
@@ -323,17 +314,23 @@ trading-platform/
 │       │   │   │   ├── decision_identity.py
 │       │   │   │   ├── decision_source.py
 │       │   │   │   └── model_version.py
-│       │   │   ├── trading_intent/
+│       │   │   ├── trading_decision/
 │       │   │   │   ├── events/
 │       │   │   │   │   ├── __init__.py
-│       │   │   │   │   ├── decision_authorized_event.py
-│       │   │   │   │   ├── decision_rejected_event.py
-│       │   │   │   │   └── trading_intent_created_event.py
+│       │   │   │   │   ├── trading_decision_authorized_event.py
+│       │   │   │   │   ├── trading_decision_created_event.py
+│       │   │   │   │   ├── trading_decision_evaluated_as_no_trade_event.py
+│       │   │   │   │   ├── trading_decision_evaluated_as_trade_candidate_event.py
+│       │   │   │   │   └── trading_decision_rejected_event.py
 │       │   │   │   ├── states/
 │       │   │   │   │   ├── __init__.py
-│       │   │   │   │   ├── trading_intent_initialized_state.py
-│       │   │   │   │   ├── trading_intent_state_base.py
-│       │   │   │   │   └── trading_intent_uninitialized_state.py
+│       │   │   │   │   ├── trading_decision_authorized_state.py
+│       │   │   │   │   ├── trading_decision_no_trade_state.py
+│       │   │   │   │   ├── trading_decision_pending_evaluation_state.py
+│       │   │   │   │   ├── trading_decision_rejected_state.py
+│       │   │   │   │   ├── trading_decision_state_base.py
+│       │   │   │   │   ├── trading_decision_trade_candidate_pending_authorization_state.py
+│       │   │   │   │   └── trading_decision_uninitialized_state.py
 │       │   │   │   ├── __init__.py
 │       │   │   │   └── aggregate.py
 │       │   │   └── __init__.py
@@ -517,7 +514,7 @@ trading-platform/
 │       │   │   │   ├── identity/
 │       │   │   │   │   ├── __init__.py
 │       │   │   │   │   ├── aggregate_id.py
-│       │   │   │   │   ├── intent_id.py
+│       │   │   │   │   ├── decision_id.py
 │       │   │   │   │   └── strategy_id.py
 │       │   │   │   ├── monetary/
 │       │   │   │   │   ├── __init__.py

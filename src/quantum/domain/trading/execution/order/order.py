@@ -20,7 +20,7 @@ from quantum.domain.shared_kernel.foundation.errors.invariants import (
     InvariantViolation,
 )
 from quantum.domain.shared_kernel.modeling.identity.aggregate_id import AggregateId
-from quantum.domain.shared_kernel.modeling.identity.intent_id import IntentId
+from quantum.domain.shared_kernel.modeling.identity.decision_id import DecisionId
 from quantum.domain.trading.errors.order_errors import OrderNotFillable, OrderOverfill
 from quantum.domain.trading.events.v1.order.order_cancelled_event import (
     OrderCancelledEvent,
@@ -87,7 +87,7 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
     def decide_create(
         cls,
         *,
-        intent_id: IntentId,
+        intent_id: DecisionId,
         broker_order_id: BrokerOrderId,
         symbol: Symbol,
         order_type: OrderType,
@@ -120,7 +120,7 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
         cls,
         *,
         aggregate_id: OrderId,
-        intent_id: IntentId,
+        intent_id: DecisionId,
         broker_order_id: BrokerOrderId,
         symbol: Symbol,
         order_type: OrderType,

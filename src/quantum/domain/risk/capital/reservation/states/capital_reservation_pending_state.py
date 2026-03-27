@@ -7,7 +7,7 @@ from quantum.domain.risk.capital.reservation.states.capital_reservation_state_ba
     CapitalReservationStateBase,
 )
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.modeling.identity.intent_id import IntentId
+from quantum.domain.shared_kernel.modeling.identity.decision_id import DecisionId
 from quantum.domain.shared_kernel.modeling.identity.strategy_id import StrategyId
 from quantum.domain.shared_kernel.modeling.temporal.epoch_ms import EpochMs
 
@@ -18,7 +18,7 @@ class CapitalReservationPendingState(CapitalReservationStateBase):
     Reservation has been requested but not yet decided by risk/capital policy.
     """
 
-    intent_id: IntentId
+    intent_id: DecisionId
     strategy_id: StrategyId
     requested_allocation: CapitalAllocationIntent
     requested_at: EpochMs
@@ -31,7 +31,7 @@ class CapitalReservationPendingState(CapitalReservationStateBase):
                 "Pending CapitalReservation cannot have initial sequence"
             )
 
-        if not isinstance(self.intent_id, IntentId):
+        if not isinstance(self.intent_id, DecisionId):
             raise InvariantViolation("CapitalReservationPendingState.intent_id invalid")
 
         if not isinstance(self.strategy_id, StrategyId):

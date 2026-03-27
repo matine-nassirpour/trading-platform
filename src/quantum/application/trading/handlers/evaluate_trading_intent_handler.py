@@ -9,12 +9,12 @@ from quantum.application.shared.base_handlers.aggregate_existence_policy import 
 from quantum.application.trading.commands.evaluate_trading_intent_command import (
     EvaluateTradingIntentCommand,
 )
-from quantum.domain.decision.trading_intent.aggregate import TradingIntent
+from quantum.domain.decision.trading_decision.aggregate import TradingDecision
 from quantum.domain.shared_kernel.event_sourcing.events.base_event import BaseEvent
 
 
 class EvaluateTradingIntentHandler(
-    AggregateCommandHandler[EvaluateTradingIntentCommand, None, TradingIntent]
+    AggregateCommandHandler[EvaluateTradingIntentCommand, None, TradingDecision]
 ):
 
     def __init__(self, **kwargs):
@@ -30,7 +30,7 @@ class EvaluateTradingIntentHandler(
         self,
         *,
         command: EvaluateTradingIntentCommand,
-        aggregate: TradingIntent,
+        aggregate: TradingDecision,
     ) -> tuple[Iterable[BaseEvent], None]:
 
         domain_events = aggregate.evaluate(

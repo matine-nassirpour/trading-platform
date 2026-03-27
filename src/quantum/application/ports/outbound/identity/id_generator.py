@@ -4,7 +4,7 @@ from quantum.domain.shared_kernel.event_sourcing.events.correlation_id import (
     CorrelationId,
 )
 from quantum.domain.shared_kernel.event_sourcing.events.event_id import EventId
-from quantum.domain.shared_kernel.modeling.identity.intent_id import IntentId
+from quantum.domain.shared_kernel.modeling.identity.decision_id import DecisionId
 from quantum.domain.trading.execution.order.execution_id import ExecutionId
 from quantum.domain.trading.identifiers.broker_order_id import BrokerOrderId
 from quantum.domain.trading.identifiers.position_id import PositionId
@@ -18,7 +18,7 @@ class IdGenerator(Protocol):
     def new_correlation_id(self) -> CorrelationId:
         raise NotImplementedError
 
-    def new_intent_id(self) -> IntentId:
+    def new_intent_id(self) -> DecisionId:
         raise NotImplementedError
 
     def new_order_id(self) -> BrokerOrderId:

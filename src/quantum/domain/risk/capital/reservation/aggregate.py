@@ -64,7 +64,7 @@ from quantum.domain.shared_kernel.foundation.errors.invariants import (
     InvalidStateTransition,
     InvariantViolation,
 )
-from quantum.domain.shared_kernel.modeling.identity.intent_id import IntentId
+from quantum.domain.shared_kernel.modeling.identity.decision_id import DecisionId
 from quantum.domain.shared_kernel.modeling.identity.strategy_id import StrategyId
 
 
@@ -171,7 +171,7 @@ class CapitalReservation(
         cls,
         *,
         reservation_id: CapitalReservationId,
-        intent_id: IntentId,
+        intent_id: DecisionId,
         strategy_id: StrategyId,
         requested_allocation: CapitalAllocationIntent,
     ) -> list[BaseEvent]:
@@ -193,7 +193,7 @@ class CapitalReservation(
         cls,
         *,
         aggregate_id: CapitalReservationId,
-        intent_id: IntentId,
+        intent_id: DecisionId,
         strategy_id: StrategyId,
         requested_allocation: CapitalAllocationIntent,
     ) -> tuple[Self, list[BaseEvent]]:

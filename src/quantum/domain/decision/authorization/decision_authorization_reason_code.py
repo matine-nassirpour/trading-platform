@@ -23,12 +23,17 @@ class DecisionAuthorizationReasonCode(ClosedSetValueObject):
     def _allowed_values(cls) -> frozenset[str]:
         return frozenset(
             {
+                "strategy_scope_mismatch",
                 "strategy_not_authorized",
                 "strategy_lifecycle_invalid",
                 "market_regime_not_allowed",
                 "policy_not_valid",
             }
         )
+
+    @classmethod
+    def strategy_scope_mismatch(cls) -> DecisionAuthorizationReasonCode:
+        return cls("strategy_scope_mismatch")
 
     @classmethod
     def strategy_not_authorized(cls) -> DecisionAuthorizationReasonCode:

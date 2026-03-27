@@ -4,7 +4,7 @@ from quantum.domain.shared_kernel.modeling.identity.aggregate_id import Aggregat
 
 
 @dataclass(frozen=True, slots=True)
-class IntentId(AggregateId):
-    """Identity of the TradingIntent aggregate (event stream id)."""
+class DecisionId(AggregateId):
+    """Identity of the TradingDecision aggregate (event stream id)."""
 
     pass

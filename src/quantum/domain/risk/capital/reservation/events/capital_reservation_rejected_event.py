@@ -8,7 +8,7 @@ from quantum.domain.risk.capital.reservation.reason_codes.capital_reservation_re
     CapitalReservationRejectionReasonCode,
 )
 from quantum.domain.risk.common.events.risk_event import RiskEvent
-from quantum.domain.shared_kernel.modeling.identity.intent_id import IntentId
+from quantum.domain.shared_kernel.modeling.identity.decision_id import DecisionId
 from quantum.domain.shared_kernel.modeling.identity.strategy_id import StrategyId
 
 
@@ -22,6 +22,6 @@ class CapitalReservationRejectedEvent(RiskEvent):
     event_version: ClassVar[int] = 1
 
     reservation_id: CapitalReservationId
-    intent_id: IntentId
+    intent_id: DecisionId
     strategy_id: StrategyId
     reason_code: CapitalReservationRejectionReasonCode

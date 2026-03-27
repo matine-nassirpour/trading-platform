@@ -11,21 +11,16 @@ from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantV
 
 
 @dataclass(frozen=True, slots=True)
-class TradingIntentStateBase(AggregateState, ABC):
+class TradingDecisionStateBase(AggregateState, ABC):
     """
-    Algebraic base class for TradingIntent state.
-
-    Guarantees:
-
-    - Total state space explicitly modeled
-    - Fully event-sourced compatible
+    Algebraic base class for TradingDecision state.
     """
 
     last_sequence: EventSequence
 
     def _validate_semantics(self) -> None:
         if not isinstance(self.last_sequence, EventSequence):
-            raise InvariantViolation("TradingIntentStateBase.last_sequence invalid")
+            raise InvariantViolation("TradingDecisionStateBase.last_sequence invalid")
 
     def last_event_sequence(self) -> EventSequence:
         return self.last_sequence

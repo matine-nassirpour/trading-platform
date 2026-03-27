@@ -5,12 +5,12 @@ from quantum.domain.decision.common.trading_context import TradingContext
 from quantum.domain.decision.qualification.decision_identity import DecisionIdentity
 from quantum.domain.market.instrument.identity.symbol import Symbol
 from quantum.domain.market.positioning.position_side import PositionSide
-from quantum.domain.shared_kernel.modeling.identity.intent_id import IntentId
+from quantum.domain.shared_kernel.modeling.identity.decision_id import DecisionId
 
 
 @dataclass(frozen=True, slots=True)
 class CreateTradingIntentCommand(BaseCommand):
-    intent_id: IntentId
+    intent_id: DecisionId
     symbol: Symbol
     side: PositionSide
     decision_identity: DecisionIdentity

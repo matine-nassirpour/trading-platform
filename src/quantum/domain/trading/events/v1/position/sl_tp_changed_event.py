@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import ClassVar
 
 from quantum.domain.market.instrument.identity.symbol import Symbol
-from quantum.domain.shared_kernel.modeling.identity.intent_id import IntentId
+from quantum.domain.shared_kernel.modeling.identity.decision_id import DecisionId
 from quantum.domain.shared_kernel.modeling.monetary.price import Price
 from quantum.domain.trading.events.fact_event import FactEvent
 from quantum.domain.trading.execution.safety.sl_tp_change_reason import SlTpChangeReason
@@ -28,7 +28,7 @@ class SlTpChangedEvent(FactEvent):
     symbol: Symbol
 
     position_id: PositionId | None
-    intent_id: IntentId | None
+    intent_id: DecisionId | None
 
     old_sl: Price | None
     new_sl: Price | None

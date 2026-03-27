@@ -5,7 +5,7 @@ from quantum.application.trading.integration_events.base.integration_event impor
     IntegrationEvent,
 )
 from quantum.domain.market.instrument.identity.symbol import Symbol
-from quantum.domain.shared_kernel.modeling.identity.intent_id import IntentId
+from quantum.domain.shared_kernel.modeling.identity.decision_id import DecisionId
 from quantum.domain.trading.identifiers.broker_order_id import BrokerOrderId
 
 
@@ -20,6 +20,6 @@ class OrderAcknowledgedEvent(IntegrationEvent):
     event_name: ClassVar[str] = "broker.order.acknowledged"
     event_version: ClassVar[int] = 1
 
-    intent_id: IntentId
+    intent_id: DecisionId
     broker_order_id: BrokerOrderId
     symbol: Symbol
