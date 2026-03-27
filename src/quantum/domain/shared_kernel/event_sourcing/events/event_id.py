@@ -14,7 +14,13 @@ class EventId(ValueObject):
     """
     Globally unique, immutable event identifier.
 
-    UUID(0) is reserved as the NIL event (before the first real event).
+    SPECIAL CASE:
+    UUID(0) is reserved as the NIL event identifier sentinel.
+
+    DOCTRINE:
+    - EventId.nil() is allowed as a domain-level sentinel value;
+    - it may be used for root causation / pre-first-event semantics;
+    - it MUST NEVER be used as the identifier of a recorded event.
     """
 
     value: UUID
@@ -23,6 +29,22 @@ class EventId(ValueObject):
         if not isinstance(self.value, UUID):
             raise InvariantViolation("EventId must wrap a UUID")
 
+    def is_nil(self) -> bool:
+        """
+        Returns True if this EventId is the reserved NIL sentinel.
+        """
+        return self.value == _NIL_UUID
+
     @staticmethod
     def nil() -> EventId:
+        """
+        Reserved sentinel event identifier.
+
+        IMPORTANT:
+        This value is valid as a sentinel only.
+        It must never be assigned to a persisted / recorded event.
+        """
         return EventId(_NIL_UUID)
+
+    def __str__(self) -> str:
+        return str(self.value)

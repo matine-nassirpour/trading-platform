@@ -1,11 +1,11 @@
 from abc import ABC
 
-from quantum.domain.shared_kernel.foundation.bases.deeply_immutable_domain_object import (
-    DeeplyImmutableDomainObject,
+from quantum.domain.shared_kernel.foundation.bases.canonical_domain_state_object import (
+    CanonicalDomainStateObject,
 )
 
 
-class ValueObject(DeeplyImmutableDomainObject, ABC):
+class ValueObject(CanonicalDomainStateObject, ABC):
     """
     Canonical base class for all Value Objects.
     """

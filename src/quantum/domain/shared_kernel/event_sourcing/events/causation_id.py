@@ -12,9 +12,11 @@ class CausationId(ValueObject):
     """
     Identifies the direct cause of an event.
 
-    Typical usage:
-        - Event B has causation_id = Event A.id
-        - Allows full causal chain reconstruction
+    DOCTRINE:
+    - wraps an EventId;
+    - CausationId.root() is the canonical sentinel for genesis/system-originated flows;
+    - root causation uses EventId.nil() by convention;
+    - this DOES NOT mean a recorded event may use EventId.nil() as its own id.
     """
 
     value: EventId
@@ -30,9 +32,12 @@ class CausationId(ValueObject):
     @staticmethod
     def root() -> CausationId:
         """
-        Used for genesis / system-originated events.
+        Canonical root causation sentinel used for genesis/system-originated events.
         """
         return CausationId(EventId.nil())
+
+    def is_root(self) -> bool:
+        return self.value.is_nil()
 
     def __str__(self) -> str:
         return str(self.value.value)

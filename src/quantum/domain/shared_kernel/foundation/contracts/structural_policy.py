@@ -3,8 +3,8 @@ from dataclasses import dataclass
 from functools import cache
 from typing import cast
 
-from quantum.domain.shared_kernel.foundation.contracts.deep_immutability import (
-    validate_deep_immutability_of_dataclass_instance,
+from quantum.domain.shared_kernel.foundation.contracts.canonical_domain_state import (
+    validate_canonical_domain_state_of_dataclass_instance,
 )
 from quantum.domain.shared_kernel.foundation.contracts.policies import StructuralPolicy
 from quantum.domain.shared_kernel.foundation.contracts.representation import (
@@ -65,16 +65,22 @@ class PythonDataclassRepresentationPolicy(StructuralPolicy):
 
 
 @dataclass(frozen=True, slots=True)
-class DeepImmutabilityPolicy(StructuralPolicy):
+class CanonicalDomainStatePolicy(StructuralPolicy):
     """
-    Structural policy dedicated strictly to deep immutability of instance state.
+    Structural/domain-state policy for canonical replay-safe domain objects.
+
+    This policy is STRICTER than pure deep immutability.
+    It enforces:
+    - canonical domain-state modeling constraints
+    - replay-safe field graph discipline
+    - explicit domain representation rules beyond mere immutability
     """
 
     def validate_class(self, cls: type) -> None:
         return None
 
     def validate_instance(self, instance: object) -> None:
-        validate_deep_immutability_of_dataclass_instance(instance)
+        validate_canonical_domain_state_of_dataclass_instance(instance)
 
 
 @dataclass(frozen=True, slots=True)
@@ -84,6 +90,8 @@ class CompositeStructuralPolicy(StructuralPolicy):
 
     Order matters:
     - representation policies should typically run before instance graph policies
+    - stricter canonical domain-state policies should typically run after pure
+      representation validation
     - class-level validation is cached by target class and policy tuple
     """
 

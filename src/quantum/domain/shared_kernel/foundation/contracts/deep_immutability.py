@@ -1,8 +1,7 @@
 from collections.abc import Hashable
 from dataclasses import fields, is_dataclass
-from datetime import date, datetime, time, timedelta, timezone
+from datetime import date, time, timedelta, timezone
 from decimal import Decimal
-from enum import Enum
 from functools import cache
 from types import MappingProxyType
 from typing import Any, cast
@@ -26,39 +25,9 @@ _ALLOWED_SCALAR_TYPES = (
 )
 
 
-def _assert_not_forbidden_temporal_type(value: Any, path: str) -> None:
-    """
-    Business-level modeling rule:
-    datetime is forbidden inside deeply immutable domain state.
-
-    Rationale:
-    - timezone ambiguity
-    - serialization ambiguity
-    - replay drift risk
-    - desire for explicit domain time value objects
-    """
-    if isinstance(value, datetime):
-        raise StructuralContractViolation(
-            f"{path} contains datetime, which is forbidden in deeply immutable "
-            "domain state. Use an explicit domain temporal ValueObject instead."
-        )
-
-
-def _assert_not_forbidden_enum_type(value: Any, path: str) -> None:
-    """
-    Business-level modeling rule:
-    Python Enum is forbidden in deeply immutable domain state.
-    """
-    if isinstance(value, Enum):
-        raise StructuralContractViolation(
-            f"{path} contains {type(value).__name__}, which is forbidden in deeply "
-            "immutable domain state. Use an explicit ValueObject instead."
-        )
-
-
 def _assert_not_forbidden_mutable_or_aliasable_type(value: Any, path: str) -> None:
     """
-    Deep immutability / replay-safety policy.
+    Pure deep-immutability / replay-stability policy.
 
     Forbids mutable or aliasable runtime structures.
     """
@@ -153,7 +122,7 @@ def _is_frozen_slotted_dataclass_class(cls: Hashable) -> bool:
 
 def assert_deeply_immutable_value(value: Any, path: str) -> None:
     """
-    Recursively validates a value against the canonical deep-immutability policy.
+    Recursively validates a value against the pure deep-immutability policy.
 
     Allowed:
     - immutable scalar types
@@ -162,16 +131,19 @@ def assert_deeply_immutable_value(value: Any, path: str) -> None:
     - frozen, slotted dataclass instances whose fields are deeply immutable
 
     Forbidden:
-    - datetime
-    - Enum
     - float
     - list / dict / set / bytearray
     - MappingProxyType
     - mutable / non-slotted dataclass instances
     - arbitrary objects
+
+    IMPORTANT:
+    This policy is intentionally limited to structural immutability.
+    It does NOT enforce higher-level domain modeling rules such as:
+    - forbidding datetime
+    - forbidding Enum
+    Those belong to stricter canonical domain-state policies.
     """
-    _assert_not_forbidden_temporal_type(value, path)
-    _assert_not_forbidden_enum_type(value, path)
     _assert_not_forbidden_mutable_or_aliasable_type(value, path)
 
     if isinstance(value, _ALLOWED_SCALAR_TYPES):
@@ -189,22 +161,5 @@ def assert_deeply_immutable_value(value: Any, path: str) -> None:
     raise StructuralContractViolation(
         f"{path} contains unsupported value of type {type(value).__name__}. "
         "Only explicitly allowed deeply immutable structures may appear in "
-        "deep domain state."
+        "deeply immutable state."
     )
-
-
-def validate_deep_immutability_of_dataclass_instance(instance: object) -> None:
-    """
-    Validates every dataclass field of an instance against the deep-immutability
-    policy.
-    """
-    if not is_dataclass(instance):
-        raise StructuralContractViolation(
-            f"{type(instance).__name__} must be a dataclass instance."
-        )
-
-    for f in fields(instance):
-        assert_deeply_immutable_value(
-            getattr(instance, f.name),
-            f"{type(instance).__name__}.{f.name}",
-        )

@@ -6,23 +6,30 @@ from quantum.domain.shared_kernel.foundation.bases.validated_domain_object impor
 )
 from quantum.domain.shared_kernel.foundation.contracts.policies import StructuralPolicy
 from quantum.domain.shared_kernel.foundation.contracts.structural_policy import (
+    CanonicalDomainStatePolicy,
     CompositeStructuralPolicy,
-    DeepImmutabilityPolicy,
     PythonDataclassRepresentationPolicy,
 )
 
 
-class DeeplyImmutableDomainObject(ValidatedDomainObject):
+class CanonicalDomainStateObject(ValidatedDomainObject):
     """
-    Structural base for domain objects whose full field graph must satisfy
-    the deep-immutability policy.
+    Structural base for canonical replay-safe domain state objects.
 
-    Typical examples:
-    - Value Objects
-    - AggregateState
-    - Domain Events
-    - snapshots
-    - cursors
+    This base enforces the canonical structural doctrine required for domain
+    objects whose full field graph must remain:
+
+    - representation-disciplined
+    - deeply immutable
+    - replay-safe
+    - explicit in domain modeling
+
+    GUARANTEES:
+    - Python dataclass representation discipline
+    - frozen instance semantics
+    - slots-only instance layout
+    - no instance __dict__
+    - canonical domain-state validation over the full field graph
     """
 
     __slots__ = ()
@@ -30,7 +37,7 @@ class DeeplyImmutableDomainObject(ValidatedDomainObject):
     _STRUCTURAL_POLICY: ClassVar[StructuralPolicy] = CompositeStructuralPolicy(
         policies=(
             PythonDataclassRepresentationPolicy(),
-            DeepImmutabilityPolicy(),
+            CanonicalDomainStatePolicy(),
         )
     )
 

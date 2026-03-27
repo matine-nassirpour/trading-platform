@@ -20,6 +20,13 @@ class RecordedEventEnvelope(ValueObject):
     Domain-grade immutable event record.
 
     This represents an event that is OFFICIALLY RECORDED in the event stream.
+
+    HARD GUARANTEES:
+    - aggregate_id is mandatory
+    - id is mandatory and MUST NOT be EventId.nil()
+    - sequence must be >= 1
+    - recorded_at must be >= occurred_at
+    - event and metadata must be valid domain objects
     """
 
     aggregate_id: AggregateId
@@ -44,10 +51,10 @@ class RecordedEventEnvelope(ValueObject):
             raise InvariantViolation("EventSequence is required")
 
         if not isinstance(self.occurred_at, EpochMs):
-            raise InvariantViolation("EpochMs is required")
+            raise InvariantViolation("EpochMs is required for occurred_at")
 
         if not isinstance(self.recorded_at, EpochMs):
-            raise InvariantViolation("EpochMs is required")
+            raise InvariantViolation("EpochMs is required for recorded_at")
 
         if not isinstance(self.event, BaseEvent):
             raise InvariantViolation("BaseEvent is required")
@@ -57,6 +64,12 @@ class RecordedEventEnvelope(ValueObject):
 
     def _validate_semantics(self) -> None:
         self._validate_types()
+
+        if self.id.is_nil():
+            raise InvariantViolation(
+                "RecordedEventEnvelope.id must not be EventId.nil(). "
+                "The NIL event identifier is reserved as a sentinel only."
+            )
 
         if self.sequence.is_initial():
             raise InvariantViolation("RecordedEventEnvelope.sequence must be >= 1")

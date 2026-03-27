@@ -5,8 +5,8 @@ from abc import ABC
 from dataclasses import dataclass, fields
 from typing import ClassVar, final
 
-from quantum.domain.shared_kernel.foundation.bases.deeply_immutable_domain_object import (
-    DeeplyImmutableDomainObject,
+from quantum.domain.shared_kernel.foundation.bases.canonical_domain_state_object import (
+    CanonicalDomainStateObject,
 )
 from quantum.domain.shared_kernel.foundation.contracts.violations import (
     StructuralContractViolation,
@@ -35,7 +35,7 @@ _FORBIDDEN_EVENT_FIELDS = frozenset(
 
 
 @dataclass(frozen=True, slots=True)
-class BaseEvent(DeeplyImmutableDomainObject, ABC):
+class BaseEvent(CanonicalDomainStateObject, ABC):
     """
     Canonical immutable Domain Event for an event-sourced domain model.
 
