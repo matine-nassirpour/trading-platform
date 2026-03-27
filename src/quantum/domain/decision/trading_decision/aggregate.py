@@ -14,7 +14,9 @@ from quantum.domain.decision.authorization.strategy_eligibility_policy import (
 from quantum.domain.decision.authorization.strategy_lifecycle import StrategyLifecycle
 from quantum.domain.decision.common.trading_context import TradingContext
 from quantum.domain.decision.no_trade.no_trade_decision import NoTradeDecision
-from quantum.domain.decision.qualification.decision_identity import DecisionIdentity
+from quantum.domain.decision.qualification.decision_qualification import (
+    DecisionQualification,
+)
 from quantum.domain.decision.trading_decision.events.trading_decision_authorized_event import (
     TradingDecisionAuthorizedEvent,
 )
@@ -140,7 +142,7 @@ class TradingDecision(EventSourcedAggregateRoot[DecisionId, TradingDecisionState
         cls,
         *,
         symbol: Symbol,
-        decision_identity: DecisionIdentity,
+        decision_qualification: DecisionQualification,
         context: TradingContext,
     ) -> list[BaseEvent]:
         """
@@ -150,7 +152,7 @@ class TradingDecision(EventSourcedAggregateRoot[DecisionId, TradingDecisionState
         return [
             TradingDecisionCreatedEvent(
                 symbol=symbol,
-                decision_identity=decision_identity,
+                decision_qualification=decision_qualification,
                 trading_context=context,
             )
         ]
@@ -161,7 +163,7 @@ class TradingDecision(EventSourcedAggregateRoot[DecisionId, TradingDecisionState
         *,
         aggregate_id: DecisionId,
         symbol: Symbol,
-        decision_identity: DecisionIdentity,
+        decision_qualification: DecisionQualification,
         context: TradingContext,
     ) -> tuple[Self, list[BaseEvent]]:
         """
@@ -175,7 +177,7 @@ class TradingDecision(EventSourcedAggregateRoot[DecisionId, TradingDecisionState
 
         domain_events = cls.decide_create(
             symbol=symbol,
-            decision_identity=decision_identity,
+            decision_qualification=decision_qualification,
             context=context,
         )
 
@@ -234,7 +236,7 @@ class TradingDecision(EventSourcedAggregateRoot[DecisionId, TradingDecisionState
         state = self._require_trade_candidate_pending_authorization()
 
         lifecycle_result = StrategyEligibilityPolicy.evaluate(
-            decision=state.decision_identity,
+            decision=state.decision_qualification,
             lifecycle=lifecycle,
             at=evaluated_at,
         )
@@ -248,7 +250,7 @@ class TradingDecision(EventSourcedAggregateRoot[DecisionId, TradingDecisionState
 
         policy_result = DecisionPolicyEvaluator.evaluate(
             policy=policy,
-            decision=state.decision_identity,
+            decision=state.decision_qualification,
             context=state.context,
             at=evaluated_at,
         )
@@ -284,7 +286,7 @@ class TradingDecision(EventSourcedAggregateRoot[DecisionId, TradingDecisionState
         return TradingDecisionPendingEvaluationState(
             last_sequence=envelope.sequence,
             symbol=event.symbol,
-            decision_identity=event.decision_identity,
+            decision_qualification=event.decision_qualification,
             context=event.trading_context,
         )
 
@@ -310,7 +312,7 @@ class TradingDecision(EventSourcedAggregateRoot[DecisionId, TradingDecisionState
             last_sequence=envelope.sequence,
             symbol=state.symbol,
             side=event.side,
-            decision_identity=state.decision_identity,
+            decision_qualification=state.decision_qualification,
             context=state.context,
         )
 
@@ -335,7 +337,7 @@ class TradingDecision(EventSourcedAggregateRoot[DecisionId, TradingDecisionState
         return TradingDecisionNoTradeState(
             last_sequence=envelope.sequence,
             symbol=state.symbol,
-            decision_identity=state.decision_identity,
+            decision_qualification=state.decision_qualification,
             context=state.context,
             no_trade_decision=event.no_trade_decision,
         )
@@ -364,7 +366,7 @@ class TradingDecision(EventSourcedAggregateRoot[DecisionId, TradingDecisionState
             last_sequence=envelope.sequence,
             symbol=state.symbol,
             side=state.side,
-            decision_identity=state.decision_identity,
+            decision_qualification=state.decision_qualification,
             context=state.context,
             authorization_result=DecisionAuthorizationResult.authorized(),
         )
@@ -393,7 +395,7 @@ class TradingDecision(EventSourcedAggregateRoot[DecisionId, TradingDecisionState
             last_sequence=envelope.sequence,
             symbol=state.symbol,
             side=state.side,
-            decision_identity=state.decision_identity,
+            decision_qualification=state.decision_qualification,
             context=state.context,
             authorization_result=DecisionAuthorizationResult.rejected(
                 reason_code=event.reason_code

@@ -67,14 +67,13 @@ def assert_canonical_domain_state_value(value: Any, path: str) -> None:
     _assert_not_forbidden_enum_type(value, path)
 
     if is_dataclass(value):
+        assert_deeply_immutable_value(value, path)
         for f in fields(value):
             assert_canonical_domain_state_value(
                 getattr(value, f.name),
                 f"{path}.{f.name}",
             )
         return
-
-    assert_deeply_immutable_value(value, path)
 
 
 def validate_canonical_domain_state_of_dataclass_instance(instance: object) -> None:

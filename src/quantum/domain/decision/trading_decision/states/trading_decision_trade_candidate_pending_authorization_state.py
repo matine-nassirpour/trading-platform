@@ -1,7 +1,9 @@
 from dataclasses import dataclass
 
 from quantum.domain.decision.common.trading_context import TradingContext
-from quantum.domain.decision.qualification.decision_identity import DecisionIdentity
+from quantum.domain.decision.qualification.decision_qualification import (
+    DecisionQualification,
+)
 from quantum.domain.decision.trading_decision.states.trading_decision_state_base import (
     TradingDecisionStateBase,
 )
@@ -18,7 +20,7 @@ class TradingDecisionTradeCandidatePendingAuthorizationState(TradingDecisionStat
 
     symbol: Symbol
     side: PositionSide
-    decision_identity: DecisionIdentity
+    decision_qualification: DecisionQualification
     context: TradingContext
 
     def _validate_semantics(self) -> None:
@@ -39,9 +41,9 @@ class TradingDecisionTradeCandidatePendingAuthorizationState(TradingDecisionStat
                 "TradingDecisionTradeCandidatePendingAuthorizationState.side invalid"
             )
 
-        if not isinstance(self.decision_identity, DecisionIdentity):
+        if not isinstance(self.decision_qualification, DecisionQualification):
             raise InvariantViolation(
-                "TradingDecisionTradeCandidatePendingAuthorizationState.decision_identity invalid"
+                "TradingDecisionTradeCandidatePendingAuthorizationState.decision_qualification invalid"
             )
 
         if not isinstance(self.context, TradingContext):

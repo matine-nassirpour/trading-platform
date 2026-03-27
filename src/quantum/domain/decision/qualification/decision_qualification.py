@@ -9,7 +9,7 @@ from quantum.domain.shared_kernel.modeling.value_objects.value_object import Val
 
 
 @dataclass(frozen=True, slots=True)
-class DecisionIdentity(ValueObject):
+class DecisionQualification(ValueObject):
     """
     Canonical identity of a trading decision.
 
@@ -28,13 +28,15 @@ class DecisionIdentity(ValueObject):
 
     def _validate_semantics(self) -> None:
         if not isinstance(self.strategy_id, StrategyId):
-            raise InvariantViolation("DecisionIdentity requires a StrategyId")
+            raise InvariantViolation("DecisionQualification requires a StrategyId")
 
         if not isinstance(self.model_version, ModelVersion):
-            raise InvariantViolation("DecisionIdentity requires a ModelVersion")
+            raise InvariantViolation("DecisionQualification requires a ModelVersion")
 
         if not isinstance(self.source, DecisionSource):
-            raise InvariantViolation("DecisionIdentity requires a DecisionSource")
+            raise InvariantViolation("DecisionQualification requires a DecisionSource")
 
         if not isinstance(self.confidence, DecisionConfidence):
-            raise InvariantViolation("DecisionIdentity requires DecisionConfidence")
+            raise InvariantViolation(
+                "DecisionQualification requires DecisionConfidence"
+            )

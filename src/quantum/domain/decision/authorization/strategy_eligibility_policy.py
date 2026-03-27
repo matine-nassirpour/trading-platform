@@ -5,7 +5,9 @@ from quantum.domain.decision.authorization.decision_authorization_result import 
     DecisionAuthorizationResult,
 )
 from quantum.domain.decision.authorization.strategy_lifecycle import StrategyLifecycle
-from quantum.domain.decision.qualification.decision_identity import DecisionIdentity
+from quantum.domain.decision.qualification.decision_qualification import (
+    DecisionQualification,
+)
 from quantum.domain.shared_kernel.modeling.services.domain_service import DomainService
 from quantum.domain.shared_kernel.modeling.temporal.epoch_ms import EpochMs
 
@@ -24,14 +26,14 @@ class StrategyEligibilityPolicy(DomainService):
     @staticmethod
     def evaluate(
         *,
-        decision: DecisionIdentity,
+        decision: DecisionQualification,
         lifecycle: StrategyLifecycle,
         at: EpochMs,
     ) -> DecisionAuthorizationResult:
 
         if lifecycle.strategy_id != decision.strategy_id:
             return DecisionAuthorizationResult.rejected(
-                reason_code=DecisionAuthorizationReasonCode.strategy_not_authorized()
+                reason_code=DecisionAuthorizationReasonCode.strategy_scope_mismatch()
             )
 
         if not lifecycle.validity.is_valid_at(at):

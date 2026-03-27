@@ -6,7 +6,9 @@ from quantum.domain.decision.authorization.decision_authorization_result import 
 )
 from quantum.domain.decision.authorization.decision_policy import DecisionPolicy
 from quantum.domain.decision.common.trading_context import TradingContext
-from quantum.domain.decision.qualification.decision_identity import DecisionIdentity
+from quantum.domain.decision.qualification.decision_qualification import (
+    DecisionQualification,
+)
 from quantum.domain.shared_kernel.modeling.services.domain_service import DomainService
 from quantum.domain.shared_kernel.modeling.temporal.epoch_ms import EpochMs
 
@@ -25,7 +27,7 @@ class DecisionPolicyEvaluator(DomainService):
     def evaluate(
         *,
         policy: DecisionPolicy,
-        decision: DecisionIdentity,
+        decision: DecisionQualification,
         context: TradingContext,
         at: EpochMs,
     ) -> DecisionAuthorizationResult:

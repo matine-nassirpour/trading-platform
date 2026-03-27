@@ -3,7 +3,9 @@ from typing import ClassVar
 
 from quantum.domain.decision.common.decision_event import DecisionEvent
 from quantum.domain.decision.common.trading_context import TradingContext
-from quantum.domain.decision.qualification.decision_identity import DecisionIdentity
+from quantum.domain.decision.qualification.decision_qualification import (
+    DecisionQualification,
+)
 from quantum.domain.market.instrument.identity.symbol import Symbol
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
 
@@ -22,16 +24,16 @@ class TradingDecisionCreatedEvent(DecisionEvent):
     event_version: ClassVar[int] = 1
 
     symbol: Symbol
-    decision_identity: DecisionIdentity
+    decision_qualification: DecisionQualification
     trading_context: TradingContext
 
     def _validate_payload(self) -> None:
         if not isinstance(self.symbol, Symbol):
             raise InvariantViolation("TradingDecisionCreatedEvent.symbol invalid")
 
-        if not isinstance(self.decision_identity, DecisionIdentity):
+        if not isinstance(self.decision_qualification, DecisionQualification):
             raise InvariantViolation(
-                "TradingDecisionCreatedEvent.decision_identity invalid"
+                "TradingDecisionCreatedEvent.decision_qualification invalid"
             )
 
         if not isinstance(self.trading_context, TradingContext):

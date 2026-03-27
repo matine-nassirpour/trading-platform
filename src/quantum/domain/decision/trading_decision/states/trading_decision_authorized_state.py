@@ -4,7 +4,9 @@ from quantum.domain.decision.authorization.decision_authorization_result import 
     DecisionAuthorizationResult,
 )
 from quantum.domain.decision.common.trading_context import TradingContext
-from quantum.domain.decision.qualification.decision_identity import DecisionIdentity
+from quantum.domain.decision.qualification.decision_qualification import (
+    DecisionQualification,
+)
 from quantum.domain.decision.trading_decision.states.trading_decision_state_base import (
     TradingDecisionStateBase,
 )
@@ -21,7 +23,7 @@ class TradingDecisionAuthorizedState(TradingDecisionStateBase):
 
     symbol: Symbol
     side: PositionSide
-    decision_identity: DecisionIdentity
+    decision_qualification: DecisionQualification
     context: TradingContext
     authorization_result: DecisionAuthorizationResult
 
@@ -39,9 +41,9 @@ class TradingDecisionAuthorizedState(TradingDecisionStateBase):
         if not isinstance(self.side, PositionSide):
             raise InvariantViolation("TradingDecisionAuthorizedState.side invalid")
 
-        if not isinstance(self.decision_identity, DecisionIdentity):
+        if not isinstance(self.decision_qualification, DecisionQualification):
             raise InvariantViolation(
-                "TradingDecisionAuthorizedState.decision_identity invalid"
+                "TradingDecisionAuthorizedState.decision_qualification invalid"
             )
 
         if not isinstance(self.context, TradingContext):

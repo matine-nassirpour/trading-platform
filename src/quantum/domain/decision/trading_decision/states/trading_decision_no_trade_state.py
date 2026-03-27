@@ -2,7 +2,9 @@ from dataclasses import dataclass
 
 from quantum.domain.decision.common.trading_context import TradingContext
 from quantum.domain.decision.no_trade.no_trade_decision import NoTradeDecision
-from quantum.domain.decision.qualification.decision_identity import DecisionIdentity
+from quantum.domain.decision.qualification.decision_qualification import (
+    DecisionQualification,
+)
 from quantum.domain.decision.trading_decision.states.trading_decision_state_base import (
     TradingDecisionStateBase,
 )
@@ -17,7 +19,7 @@ class TradingDecisionNoTradeState(TradingDecisionStateBase):
     """
 
     symbol: Symbol
-    decision_identity: DecisionIdentity
+    decision_qualification: DecisionQualification
     context: TradingContext
     no_trade_decision: NoTradeDecision
 
@@ -32,9 +34,9 @@ class TradingDecisionNoTradeState(TradingDecisionStateBase):
         if not isinstance(self.symbol, Symbol):
             raise InvariantViolation("TradingDecisionNoTradeState.symbol invalid")
 
-        if not isinstance(self.decision_identity, DecisionIdentity):
+        if not isinstance(self.decision_qualification, DecisionQualification):
             raise InvariantViolation(
-                "TradingDecisionNoTradeState.decision_identity invalid"
+                "TradingDecisionNoTradeState.decision_qualification invalid"
             )
 
         if not isinstance(self.context, TradingContext):
