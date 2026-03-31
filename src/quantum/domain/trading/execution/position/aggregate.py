@@ -1,6 +1,5 @@
 from collections.abc import Mapping
 
-from quantum.domain.market.positioning.position_side import PositionSide
 from quantum.domain.shared_kernel.event_sourcing.aggregates.event_sourced_aggregate_root import (
     EventHandler,
     EventSourcedAggregateRoot,
@@ -18,23 +17,24 @@ from quantum.domain.shared_kernel.foundation.errors.invariants import (
 )
 from quantum.domain.shared_kernel.modeling.monetary.money_context import MoneyContext
 from quantum.domain.shared_kernel.modeling.monetary.price import Price
-from quantum.domain.trading.errors.position_errors import PositionAlreadyClosed
-from quantum.domain.trading.events.v1.position.position_closed_event import (
+from quantum.domain.trading.common.errors.position_errors import PositionAlreadyClosed
+from quantum.domain.trading.execution.position.events.position_closed_event import (
     PositionClosedEvent,
 )
-from quantum.domain.trading.events.v1.position.position_opened_event import (
+from quantum.domain.trading.execution.position.events.position_opened_event import (
     PositionOpenedEvent,
 )
 from quantum.domain.trading.execution.position.pnl_service import PnLService
-from quantum.domain.trading.execution.position.position_opened_state import (
+from quantum.domain.trading.execution.position.states.position_opened_state import (
     PositionOpenedState,
 )
-from quantum.domain.trading.execution.position.position_state_base import (
+from quantum.domain.trading.execution.position.states.position_state_base import (
     PositionStateBase,
 )
-from quantum.domain.trading.execution.position.position_uninitialized_state import (
+from quantum.domain.trading.execution.position.states.position_uninitialized_state import (
     PositionUninitializedState,
 )
+from quantum.domain.trading.execution.position_side import PositionSide
 from quantum.domain.trading.identifiers.position_id import PositionId
 from quantum.domain.trading.value_objects.volume import PositiveVolume
 

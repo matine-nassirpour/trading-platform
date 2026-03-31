@@ -7,7 +7,9 @@ from quantum.application.trading.integration_events.broker.order_acknowledged_ev
 from quantum.domain.shared_kernel.event_sourcing.events.recorded_event_envelope import (
     RecordedEventEnvelope,
 )
-from quantum.domain.trading.events.v1.order.order_created_event import OrderCreatedEvent
+from quantum.domain.trading.execution.order.events.order_created_event import (
+    OrderCreatedEvent,
+)
 
 
 class OrderCreatedIntegrationHandler(IntegrationEventHandler):

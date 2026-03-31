@@ -1,8 +1,8 @@
 from decimal import ROUND_CEILING, ROUND_FLOOR, ROUND_HALF_EVEN
 from typing import Final
 
-from quantum.domain.market.positioning.position_side import PositionSide
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
+from quantum.domain.trading.execution.position_side import PositionSide
 from quantum.domain.trading.execution.pricing.pricing_context import PricingContext
 
 

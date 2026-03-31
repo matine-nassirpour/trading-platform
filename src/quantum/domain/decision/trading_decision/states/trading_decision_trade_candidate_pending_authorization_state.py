@@ -7,8 +7,8 @@ from quantum.domain.decision.qualification.decision_qualification import (
 from quantum.domain.decision.trading_decision.states.trading_decision_state_base import (
     TradingDecisionStateBase,
 )
+from quantum.domain.decision.trading_decision.trade_direction import TradeDirection
 from quantum.domain.market.instrument.identity.symbol import Symbol
-from quantum.domain.market.positioning.position_side import PositionSide
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
 
 
@@ -19,7 +19,7 @@ class TradingDecisionTradeCandidatePendingAuthorizationState(TradingDecisionStat
     """
 
     symbol: Symbol
-    side: PositionSide
+    trade_direction: TradeDirection
     decision_qualification: DecisionQualification
     context: TradingContext
 
@@ -36,9 +36,9 @@ class TradingDecisionTradeCandidatePendingAuthorizationState(TradingDecisionStat
                 "TradingDecisionTradeCandidatePendingAuthorizationState.symbol invalid"
             )
 
-        if not isinstance(self.side, PositionSide):
+        if not isinstance(self.trade_direction, TradeDirection):
             raise InvariantViolation(
-                "TradingDecisionTradeCandidatePendingAuthorizationState.side invalid"
+                "TradingDecisionTradeCandidatePendingAuthorizationState.trade_direction invalid"
             )
 
         if not isinstance(self.decision_qualification, DecisionQualification):

@@ -10,7 +10,7 @@ from quantum.application.trading.commands.close_position_command import (
     ClosePositionCommand,
 )
 from quantum.domain.shared_kernel.event_sourcing.events.base_event import BaseEvent
-from quantum.domain.trading.execution.position.position import Position
+from quantum.domain.trading.execution.position.aggregate import Position
 
 
 class ClosePositionHandler(

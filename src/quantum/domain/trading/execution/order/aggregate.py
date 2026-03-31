@@ -3,7 +3,6 @@ from dataclasses import dataclass
 from typing import Self
 
 from quantum.domain.market.instrument.identity.symbol import Symbol
-from quantum.domain.market.positioning.position_side import PositionSide
 from quantum.domain.shared_kernel.event_sourcing.aggregates.event_sourced_aggregate_root import (
     EventHandler,
     EventSourcedAggregateRoot,
@@ -21,24 +20,32 @@ from quantum.domain.shared_kernel.foundation.errors.invariants import (
 )
 from quantum.domain.shared_kernel.modeling.identity.aggregate_id import AggregateId
 from quantum.domain.shared_kernel.modeling.identity.decision_id import DecisionId
-from quantum.domain.trading.errors.order_errors import OrderNotFillable, OrderOverfill
-from quantum.domain.trading.events.v1.order.order_cancelled_event import (
+from quantum.domain.trading.common.errors.order_errors import (
+    OrderNotFillable,
+    OrderOverfill,
+)
+from quantum.domain.trading.execution.order.events.order_cancelled_event import (
     OrderCancelledEvent,
 )
-from quantum.domain.trading.events.v1.order.order_created_event import OrderCreatedEvent
-from quantum.domain.trading.events.v1.order.order_fill_registered_event import (
+from quantum.domain.trading.execution.order.events.order_created_event import (
+    OrderCreatedEvent,
+)
+from quantum.domain.trading.execution.order.events.order_fill_registered_event import (
     OrderFillRegisteredEvent,
 )
 from quantum.domain.trading.execution.order.execution_fill import ExecutionFill
-from quantum.domain.trading.execution.order.order_initialized_state import (
-    OrderInitializedState,
-)
-from quantum.domain.trading.execution.order.order_state_base import OrderStateBase
 from quantum.domain.trading.execution.order.order_status import OrderStatus
 from quantum.domain.trading.execution.order.order_type import OrderType
-from quantum.domain.trading.execution.order.order_uninitialized_state import (
+from quantum.domain.trading.execution.order.states.order_initialized_state import (
+    OrderInitializedState,
+)
+from quantum.domain.trading.execution.order.states.order_state_base import (
+    OrderStateBase,
+)
+from quantum.domain.trading.execution.order.states.order_uninitialized_state import (
     OrderUninitializedState,
 )
+from quantum.domain.trading.execution.position_side import PositionSide
 from quantum.domain.trading.identifiers.broker_order_id import BrokerOrderId
 from quantum.domain.trading.value_objects.volume import (
     NonNegativeVolume,

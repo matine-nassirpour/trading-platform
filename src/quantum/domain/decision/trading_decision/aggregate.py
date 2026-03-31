@@ -53,8 +53,8 @@ from quantum.domain.decision.trading_decision.states.trading_decision_trade_cand
 from quantum.domain.decision.trading_decision.states.trading_decision_uninitialized_state import (
     TradingDecisionUninitializedState,
 )
+from quantum.domain.decision.trading_decision.trade_direction import TradeDirection
 from quantum.domain.market.instrument.identity.symbol import Symbol
-from quantum.domain.market.positioning.position_side import PositionSide
 from quantum.domain.shared_kernel.event_sourcing.aggregates.event_sourced_aggregate_root import (
     EventHandler,
     EventSourcedAggregateRoot,
@@ -188,7 +188,7 @@ class TradingDecision(EventSourcedAggregateRoot[DecisionId, TradingDecisionState
     def evaluate_as_trade_candidate(
         self,
         *,
-        side: PositionSide,
+        trade_direction: TradeDirection,
     ) -> list[BaseEvent]:
         """
         Resolves a pending decision into a trade candidate.
@@ -198,7 +198,7 @@ class TradingDecision(EventSourcedAggregateRoot[DecisionId, TradingDecisionState
 
         return [
             TradingDecisionEvaluatedAsTradeCandidateEvent(
-                side=side,
+                trade_direction=trade_direction,
             )
         ]
 
@@ -311,7 +311,7 @@ class TradingDecision(EventSourcedAggregateRoot[DecisionId, TradingDecisionState
         return TradingDecisionTradeCandidatePendingAuthorizationState(
             last_sequence=envelope.sequence,
             symbol=state.symbol,
-            side=event.side,
+            trade_direction=event.trade_direction,
             decision_qualification=state.decision_qualification,
             context=state.context,
         )
@@ -365,7 +365,7 @@ class TradingDecision(EventSourcedAggregateRoot[DecisionId, TradingDecisionState
         return TradingDecisionAuthorizedState(
             last_sequence=envelope.sequence,
             symbol=state.symbol,
-            side=state.side,
+            trade_direction=state.trade_direction,
             decision_qualification=state.decision_qualification,
             context=state.context,
             authorization_result=DecisionAuthorizationResult.authorized(),
@@ -394,7 +394,7 @@ class TradingDecision(EventSourcedAggregateRoot[DecisionId, TradingDecisionState
         return TradingDecisionRejectedState(
             last_sequence=envelope.sequence,
             symbol=state.symbol,
-            side=state.side,
+            trade_direction=state.trade_direction,
             decision_qualification=state.decision_qualification,
             context=state.context,
             authorization_result=DecisionAuthorizationResult.rejected(

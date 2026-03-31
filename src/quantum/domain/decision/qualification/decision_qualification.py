@@ -11,14 +11,13 @@ from quantum.domain.shared_kernel.modeling.value_objects.value_object import Val
 @dataclass(frozen=True, slots=True)
 class DecisionQualification(ValueObject):
     """
-    Canonical identity of a trading decision.
+    Canonical qualification of a trading decision.
 
     Answers:
-    - WHO decided?
-    - WHICH logic?
-    - WHICH version?
-    - WITH WHICH CONFIDENCE?
-    - WITH WHICH CAPITAL & RISK ALLOCATION?
+    - WHICH strategy produced the decision?
+    - WHICH model / logic version produced it?
+    - FROM WHICH source did it originate?
+    - WITH WHICH declared confidence was it emitted?
     """
 
     strategy_id: StrategyId

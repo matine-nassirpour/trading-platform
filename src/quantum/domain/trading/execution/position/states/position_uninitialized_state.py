@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
-from quantum.domain.trading.execution.position.position_state_base import (
+from quantum.domain.trading.execution.position.states.position_state_base import (
     PositionStateBase,
 )
 

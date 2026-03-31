@@ -1,11 +1,13 @@
 from dataclasses import dataclass
 
 from quantum.domain.market.instrument.identity.symbol import Symbol
-from quantum.domain.market.positioning.position_side import PositionSide
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
-from quantum.domain.trading.execution.order.order_state_base import OrderStateBase
 from quantum.domain.trading.execution.order.order_status import OrderStatus
 from quantum.domain.trading.execution.order.order_type import OrderType
+from quantum.domain.trading.execution.order.states.order_state_base import (
+    OrderStateBase,
+)
+from quantum.domain.trading.execution.position_side import PositionSide
 from quantum.domain.trading.identifiers.broker_order_id import BrokerOrderId
 from quantum.domain.trading.value_objects.volume import (
     NonNegativeVolume,

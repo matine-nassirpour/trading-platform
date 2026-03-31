@@ -4,7 +4,7 @@ from typing import ClassVar
 from quantum.domain.market.instrument.identity.symbol import Symbol
 from quantum.domain.shared_kernel.modeling.identity.decision_id import DecisionId
 from quantum.domain.shared_kernel.modeling.monetary.price import Price
-from quantum.domain.trading.events.fact_event import FactEvent
+from quantum.domain.trading.common.events.fact_event import FactEvent
 from quantum.domain.trading.execution.safety.sl_tp_change_reason import SlTpChangeReason
 from quantum.domain.trading.identifiers.position_id import PositionId
 

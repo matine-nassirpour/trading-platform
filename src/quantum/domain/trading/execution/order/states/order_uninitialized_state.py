@@ -1,7 +1,9 @@
 from dataclasses import dataclass
 
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
-from quantum.domain.trading.execution.order.order_state_base import OrderStateBase
+from quantum.domain.trading.execution.order.states.order_state_base import (
+    OrderStateBase,
+)
 
 
 @dataclass(frozen=True, slots=True)
