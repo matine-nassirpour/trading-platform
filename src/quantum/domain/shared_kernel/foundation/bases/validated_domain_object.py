@@ -61,12 +61,6 @@ class ValidatedDomainObject(ABC):
         """
         return cls._STRUCTURAL_POLICY
 
-    def _validate_structure(self) -> None:
-        """
-        Executes structural validation according to the configured policy.
-        """
-        type(self)._structural_policy().validate_instance(self)
-
     @abstractmethod
     def _validate_semantics(self) -> None:
         """
@@ -84,5 +78,5 @@ class ValidatedDomainObject(ABC):
         1. structural validation
         2. semantic validation
         """
-        self._validate_structure()
+        type(self)._structural_policy().validate_instance(self)
         self._validate_semantics()

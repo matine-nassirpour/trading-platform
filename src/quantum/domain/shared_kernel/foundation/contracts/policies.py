@@ -7,10 +7,9 @@ class StructuralPolicy(Protocol):
     """
     A structural policy validates one orthogonal architectural concern.
 
-    Examples:
-    - Python representation discipline
-    - deep immutability
-    - forbidden runtime types in domain objects
+    IMPORTANT:
+    Implementations are expected to be immutable and hashable because composite
+    policy validation may be cached by policy tuple + target class.
     """
 
     def validate_class(self, cls: type) -> None:
