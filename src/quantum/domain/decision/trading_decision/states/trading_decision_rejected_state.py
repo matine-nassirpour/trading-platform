@@ -1,5 +1,8 @@
 from dataclasses import dataclass
 
+from quantum.domain.decision.authorization.decision_authorization_basis import (
+    DecisionAuthorizationBasis,
+)
 from quantum.domain.decision.authorization.decision_authorization_result import (
     DecisionAuthorizationResult,
 )
@@ -26,15 +29,9 @@ class TradingDecisionRejectedState(TradingDecisionStateBase):
     decision_qualification: DecisionQualification
     context: TradingContext
     authorization_result: DecisionAuthorizationResult
+    authorization_basis: DecisionAuthorizationBasis
 
-    def _validate_semantics(self) -> None:
-        super()._validate_semantics()
-
-        if self.last_sequence.is_initial():
-            raise InvariantViolation(
-                "Rejected TradingDecision cannot have initial sequence"
-            )
-
+    def _validate_types(self) -> None:
         if not isinstance(self.symbol, Symbol):
             raise InvariantViolation("TradingDecisionRejectedState.symbol invalid")
 
@@ -55,6 +52,21 @@ class TradingDecisionRejectedState(TradingDecisionStateBase):
             raise InvariantViolation(
                 "TradingDecisionRejectedState.authorization_result invalid"
             )
+
+        if not isinstance(self.authorization_basis, DecisionAuthorizationBasis):
+            raise InvariantViolation(
+                "TradingDecisionRejectedState.authorization_basis invalid"
+            )
+
+    def _validate_semantics(self) -> None:
+        super()._validate_semantics()
+
+        if self.last_sequence.is_initial():
+            raise InvariantViolation(
+                "Rejected TradingDecision cannot have initial sequence"
+            )
+
+        self._validate_types()
 
         if not self.authorization_result.is_rejected():
             raise InvariantViolation(

@@ -1,6 +1,9 @@
 from collections.abc import Mapping
 from typing import Self
 
+from quantum.domain.decision.authorization.decision_authorization_basis import (
+    DecisionAuthorizationBasis,
+)
 from quantum.domain.decision.authorization.decision_authorization_result import (
     DecisionAuthorizationResult,
 )
@@ -235,6 +238,11 @@ class TradingDecision(EventSourcedAggregateRoot[DecisionId, TradingDecisionState
 
         state = self._require_trade_candidate_pending_authorization()
 
+        authorization_basis = DecisionAuthorizationBasis(
+            policy_id=policy.policy_id,
+            lifecycle_state=lifecycle.state,
+        )
+
         lifecycle_result = StrategyEligibilityPolicy.evaluate(
             decision=state.decision_qualification,
             lifecycle=lifecycle,
@@ -245,6 +253,7 @@ class TradingDecision(EventSourcedAggregateRoot[DecisionId, TradingDecisionState
             return [
                 TradingDecisionRejectedEvent(
                     reason_code=lifecycle_result.reason_code,
+                    authorization_basis=authorization_basis,
                 )
             ]
 
@@ -259,11 +268,14 @@ class TradingDecision(EventSourcedAggregateRoot[DecisionId, TradingDecisionState
             return [
                 TradingDecisionRejectedEvent(
                     reason_code=policy_result.reason_code,
+                    authorization_basis=authorization_basis,
                 )
             ]
 
         return [
-            TradingDecisionAuthorizedEvent(),
+            TradingDecisionAuthorizedEvent(
+                authorization_basis=authorization_basis,
+            ),
         ]
 
     # --- Event → State transitions --------------------------------------------
@@ -369,6 +381,7 @@ class TradingDecision(EventSourcedAggregateRoot[DecisionId, TradingDecisionState
             decision_qualification=state.decision_qualification,
             context=state.context,
             authorization_result=DecisionAuthorizationResult.authorized(),
+            authorization_basis=event.authorization_basis,
         )
 
     @staticmethod
@@ -400,6 +413,7 @@ class TradingDecision(EventSourcedAggregateRoot[DecisionId, TradingDecisionState
             authorization_result=DecisionAuthorizationResult.rejected(
                 reason_code=event.reason_code
             ),
+            authorization_basis=event.authorization_basis,
         )
 
     # --- Handler registry -----------------------------------------------------

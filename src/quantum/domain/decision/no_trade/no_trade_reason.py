@@ -24,12 +24,8 @@ class NoTradeReason(ClosedSetValueObject):
             {
                 "no_signal",  # no actionable signal
                 "regime_unfavorable",  # market regime not suitable
-                "risk_blocked",  # risk policy veto
                 "boundary_blocked",  # decision boundary veto
-                "strategy_inactive",  # lifecycle / eligibility
                 "confidence_too_low",  # declared confidence insufficient
-                "capital_unavailable",  # capital / risk budget exhausted
-                "manual_override",  # human veto
             }
         )
 
@@ -44,25 +40,9 @@ class NoTradeReason(ClosedSetValueObject):
         return cls("regime_unfavorable")
 
     @classmethod
-    def risk_blocked(cls) -> NoTradeReason:
-        return cls("risk_blocked")
-
-    @classmethod
     def boundary_blocked(cls) -> NoTradeReason:
         return cls("boundary_blocked")
 
     @classmethod
-    def strategy_inactive(cls) -> NoTradeReason:
-        return cls("strategy_inactive")
-
-    @classmethod
     def confidence_too_low(cls) -> NoTradeReason:
         return cls("confidence_too_low")
-
-    @classmethod
-    def capital_unavailable(cls) -> NoTradeReason:
-        return cls("capital_unavailable")
-
-    @classmethod
-    def manual_override(cls) -> NoTradeReason:
-        return cls("manual_override")

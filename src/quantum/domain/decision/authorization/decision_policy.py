@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from quantum.domain.decision.authorization.decision_policy_id import DecisionPolicyId
 from quantum.domain.market.regime.market_regime import MarketRegime
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.modeling.identity.strategy_id import StrategyId
@@ -28,16 +29,14 @@ class DecisionPolicy(ValueObject):
       regardless of profitability or execution correctness.
     """
 
-    policy_id: str
-
+    policy_id: DecisionPolicyId
     strategy_id: StrategyId
     allowed_regimes: frozenset[MarketRegime]
-
     validity: TemporalValidity
 
     def _validate_semantics(self) -> None:
-        if not isinstance(self.policy_id, str) or not self.policy_id.strip():
-            raise InvariantViolation("DecisionPolicy requires a non-empty policy_id")
+        if not isinstance(self.policy_id, DecisionPolicyId):
+            raise InvariantViolation("DecisionPolicy requires a DecisionPolicyId")
 
         if not isinstance(self.strategy_id, StrategyId):
             raise InvariantViolation("DecisionPolicy requires a StrategyId")
