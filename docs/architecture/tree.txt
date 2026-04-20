@@ -291,11 +291,13 @@ trading-platform/
 │       │   ├── decision/
 │       │   │   ├── authorization/
 │       │   │   │   ├── __init__.py
+│       │   │   │   ├── decision_authorization_basis.py
 │       │   │   │   ├── decision_authorization_reason_code.py
 │       │   │   │   ├── decision_authorization_result.py
 │       │   │   │   ├── decision_authorization_status.py
 │       │   │   │   ├── decision_policy.py
 │       │   │   │   ├── decision_policy_evaluator.py
+│       │   │   │   ├── decision_policy_id.py
 │       │   │   │   ├── strategy_eligibility_policy.py
 │       │   │   │   ├── strategy_lifecycle.py
 │       │   │   │   └── strategy_lifecycle_state.py

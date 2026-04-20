@@ -250,9 +250,15 @@ class TradingDecision(EventSourcedAggregateRoot[DecisionId, TradingDecisionState
         )
 
         if lifecycle_result.is_rejected():
+            reason_code = lifecycle_result.reason_code
+            if reason_code is None:
+                raise InvariantViolation(
+                    "Rejected lifecycle authorization result must define reason_code"
+                )
+
             return [
                 TradingDecisionRejectedEvent(
-                    reason_code=lifecycle_result.reason_code,
+                    reason_code=reason_code,
                     authorization_basis=authorization_basis,
                 )
             ]
@@ -265,9 +271,15 @@ class TradingDecision(EventSourcedAggregateRoot[DecisionId, TradingDecisionState
         )
 
         if policy_result.is_rejected():
+            reason_code = policy_result.reason_code
+            if reason_code is None:
+                raise InvariantViolation(
+                    "Rejected policy authorization result must define reason_code"
+                )
+
             return [
                 TradingDecisionRejectedEvent(
-                    reason_code=policy_result.reason_code,
+                    reason_code=reason_code,
                     authorization_basis=authorization_basis,
                 )
             ]

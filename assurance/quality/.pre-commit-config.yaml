@@ -42,7 +42,7 @@ repos:
     hooks:
       - id: pip-audit
         name: pip-audit (poetry)
-        entry: poetry run pip-audit -l --skip-editable --ignore-vuln CVE-2026-4539
+        entry: poetry run pip-audit -l --skip-editable
         language: system
         pass_filenames: false
 
