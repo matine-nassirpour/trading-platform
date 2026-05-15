@@ -1,7 +1,7 @@
 from dataclasses import dataclass
-from datetime import date
 
 from quantum.domain.market.calendar.market_session import MarketSession
+from quantum.domain.market.calendar.utc_date import UtcDate
 from quantum.domain.market.calendar.utc_minute import UtcMinuteOfDay
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.modeling.temporal.epoch_ms import EpochMs
@@ -14,38 +14,70 @@ class TradingCalendar(ValueObject):
     Canonical trading calendar.
 
     Defines:
-    - which days are tradable
+    - which UTC dates are tradable
     - which sessions are active
-    - whether trading is allowed at a given time
+    - whether trading is allowed at a given UTC timestamp
     """
 
     name: str
     sessions: tuple[MarketSession, ...]
-    holidays: frozenset[date]
+    holidays: frozenset[UtcDate]
 
-    def _validate_semantics(self) -> None:
-        if not self.name:
-            raise InvariantViolation("TradingCalendar requires a name")
+    @staticmethod
+    def _canonicalize_calendar_name(name: str) -> str:
+        if not isinstance(name, str):
+            raise InvariantViolation("TradingCalendar.name must be a string")
 
-        if not self.sessions:
+        canonical_name = name.strip().lower()
+
+        if not canonical_name:
+            raise InvariantViolation("TradingCalendar.name must not be empty")
+
+        return canonical_name
+
+    @staticmethod
+    def _validate_sessions(sessions: tuple[MarketSession, ...]) -> None:
+        if not isinstance(sessions, tuple):
+            raise InvariantViolation("TradingCalendar.sessions must be a tuple")
+
+        if not sessions:
             raise InvariantViolation("At least one MarketSession is required")
 
-        for s in self.sessions:
-            if not isinstance(s, MarketSession):
-                raise InvariantViolation("Invalid MarketSession")
+        for session in sessions:
+            if not isinstance(session, MarketSession):
+                raise InvariantViolation(
+                    "TradingCalendar.sessions must contain only MarketSession"
+                )
 
-        for h in self.holidays:
-            if not isinstance(h, date):
-                raise InvariantViolation("Invalid holiday")
+    @staticmethod
+    def _validate_holidays(holidays: frozenset[UtcDate]) -> None:
+        if not isinstance(holidays, frozenset):
+            raise InvariantViolation(
+                "TradingCalendar.holidays must be a frozenset[UtcDate]"
+            )
 
-    def is_trading_day(self, d: date) -> bool:
+        for holiday in holidays:
+            if not isinstance(holiday, UtcDate):
+                raise InvariantViolation(
+                    "TradingCalendar.holidays must contain only UtcDate"
+                )
+
+    def _validate_semantics(self) -> None:
+        canonical_name = self._canonicalize_calendar_name(self.name)
+
+        object.__setattr__(self, "name", canonical_name)
+
+        self._validate_sessions(self.sessions)
+        self._validate_holidays(self.holidays)
+
+    def is_trading_day(self, day: UtcDate) -> bool:
         """
         Returns True if the date is a valid trading day.
         """
-        if d.weekday() >= 5:  # Saturday / Sunday
+        if day.weekday() >= 5:  # Saturday / Sunday
             return False
 
-        if d in self.holidays:
+        if day in self.holidays:
             return False
 
         return True
@@ -54,8 +86,7 @@ class TradingCalendar(ValueObject):
         """
         Returns True if market is open at given time.
         """
-        dt = at.to_datetime()
-        day = dt.date()
+        day = UtcDate.from_epoch(at)
 
         if not self.is_trading_day(day):
             return False

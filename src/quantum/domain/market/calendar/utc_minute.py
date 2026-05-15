@@ -25,8 +25,8 @@ class UtcMinuteOfDay(ValueObject):
     value: int
 
     def _validate_semantics(self) -> None:
-        if not isinstance(self.value, int):
-            raise InvariantViolation("UtcMinuteOfDay must be an integer")
+        if type(self.value) is not int:
+            raise InvariantViolation("UtcMinuteOfDay must be a strict integer")
 
         if not 0 <= self.value <= 1439:
             raise InvariantViolation(

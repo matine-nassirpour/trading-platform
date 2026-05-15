@@ -19,8 +19,15 @@ class MarketSession(ValueObject):
     closes_at: UtcMinuteOfDay
 
     def _validate_semantics(self) -> None:
-        if not self.name or not isinstance(self.name, str):
-            raise InvariantViolation("MarketSession requires a name")
+        if not isinstance(self.name, str):
+            raise InvariantViolation("MarketSession.name must be a string")
+
+        canonical = self.name.strip().lower()
+
+        if not canonical:
+            raise InvariantViolation("MarketSession.name must not be empty")
+
+        object.__setattr__(self, "name", canonical)
 
         if not isinstance(self.opens_at, UtcMinuteOfDay):
             raise InvariantViolation("opens_at must be UtcMinuteOfDay")
