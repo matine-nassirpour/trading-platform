@@ -30,6 +30,14 @@ class ProjectionCursor(Cursor):
         if not isinstance(self.last_sequence, EventSequence):
             raise InvariantViolation("ProjectionCursor requires EventSequence")
 
+        if self.last_sequence.is_initial() and not self.last_event_id.is_nil():
+            raise InvariantViolation("Initial ProjectionCursor must use EventId.nil().")
+
+        if not self.last_sequence.is_initial() and self.last_event_id.is_nil():
+            raise InvariantViolation(
+                "Non-initial ProjectionCursor must not use EventId.nil()."
+            )
+
     # --- Constructors --------------------------------------------------------
 
     @staticmethod

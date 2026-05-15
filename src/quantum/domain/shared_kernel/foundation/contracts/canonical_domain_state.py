@@ -68,6 +68,16 @@ def assert_canonical_domain_state_value(value: Any, path: str) -> None:
 
     assert_deeply_immutable_value(value, path)
 
+    if isinstance(value, tuple):
+        for index, item in enumerate(value):
+            assert_canonical_domain_state_value(item, f"{path}[{index}]")
+        return
+
+    if isinstance(value, frozenset):
+        for item in value:
+            assert_canonical_domain_state_value(item, f"{path}[{item!r}]")
+        return
+
     if is_dataclass(value):
         for f in fields(value):
             assert_canonical_domain_state_value(

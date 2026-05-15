@@ -268,27 +268,58 @@ class EventSourcedAggregateRoot(ValidatedDomainObject, Generic[ID, S], ABC):
     # --- Replay (strictly defined in terms of apply) --------------------------
 
     @classmethod
+    def _validate_rehydrate_events(cls, events: list[RecordedEventEnvelope]) -> None:
+        if not events:
+            raise InvariantViolation(
+                f"{cls.__name__}.rehydrate() requires at least one recorded event"
+            )
+
+        first_sequence = events[0].sequence
+
+        if not isinstance(first_sequence, EventSequence):
+            raise InvariantViolation(
+                "Event stream contains an invalid first EventSequence"
+            )
+
+        if first_sequence.value != 1:
+            raise InvariantViolation(
+                f"Event stream must start at sequence 1. "
+                f"Got {first_sequence.value}."
+            )
+
+        for expected_value, envelope in enumerate(events, start=1):
+            if not isinstance(envelope, RecordedEventEnvelope):
+                raise InvariantViolation(
+                    f"Event stream item at position {expected_value} "
+                    f"must be a RecordedEventEnvelope"
+                )
+
+            if not isinstance(envelope.sequence, EventSequence):
+                raise InvariantViolation(
+                    f"Event stream item at position {expected_value} "
+                    f"has invalid EventSequence"
+                )
+
+            if envelope.sequence.value != expected_value:
+                raise InvariantViolation(
+                    f"Event stream must be gapless from sequence 1. "
+                    f"Expected {expected_value}, got {envelope.sequence.value}."
+                )
+
+    @classmethod
     def _validate_rehydrate_input(
         cls,
         *,
         events: list[RecordedEventEnvelope],
         aggregate_id: ID | None,
     ) -> ID:
-        if not events:
-            raise InvariantViolation(
-                f"{cls.__name__}.rehydrate() requires at least one recorded event"
-            )
-
-        for i in range(1, len(events)):
-            if events[i].sequence.value <= events[i - 1].sequence.value:
-                raise InvariantViolation(
-                    "Event stream is not strictly ordered by sequence"
-                )
+        cls._validate_rehydrate_events(events)
 
         stream_id = cls._validate_aggregate_id(events[0].aggregate_id)
 
         if aggregate_id is not None:
             validated_requested_id = cls._validate_aggregate_id(aggregate_id)
+
             if validated_requested_id != stream_id:
                 raise InvariantViolation(
                     "aggregate_id parameter mismatch with stream aggregate_id"
