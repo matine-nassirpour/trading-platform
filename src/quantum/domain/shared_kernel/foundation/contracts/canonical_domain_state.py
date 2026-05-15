@@ -48,6 +48,38 @@ def _assert_not_forbidden_enum_type(value: Any, path: str) -> None:
         )
 
 
+def _assert_not_forbidden_unordered_collection(value: Any, path: str) -> None:
+    """
+    Canonical domain-state modeling rule.
+
+    frozenset is forbidden inside canonical domain state.
+
+    RATIONALE:
+    - frozenset is immutable but unordered
+    - unordered state is not suitable for canonical serialization
+    - event-sourced replay must be deterministic
+    - snapshots, hashes, signatures and projections require stable ordering
+
+    Use tuple[...] with explicit deterministic business ordering instead.
+    """
+    if isinstance(value, frozenset):
+        raise StructuralContractViolation(
+            f"{path} contains frozenset, which is forbidden in canonical domain "
+            "state because it is unordered. Use tuple[...] with explicit "
+            "deterministic ordering instead."
+        )
+
+
+def _assert_canonical_domain_state_value_shallow(value: Any, path: str) -> None:
+    """
+    Applies all shallow canonical-domain-state prohibitions before recursive
+    traversal.
+    """
+    _assert_not_forbidden_temporal_type(value, path)
+    _assert_not_forbidden_enum_type(value, path)
+    _assert_not_forbidden_unordered_collection(value, path)
+
+
 def assert_canonical_domain_state_value(value: Any, path: str) -> None:
     """
     Recursively validates a value against the canonical domain-state policy.
@@ -58,24 +90,25 @@ def assert_canonical_domain_state_value(value: Any, path: str) -> None:
     - deep immutability
     - replay-safe modeling constraints
     - explicit domain-state representation discipline
+    - deterministic ordered canonical collections
 
     Additional canonical-domain rules currently include:
     - datetime is forbidden
     - Enum is forbidden
+    - frozenset is forbidden
+
+    IMPORTANT:
+    frozenset remains potentially acceptable for non-canonical internal
+    structures validated only by deep immutability, but it is forbidden in
+    canonical replayable domain state.
     """
-    _assert_not_forbidden_temporal_type(value, path)
-    _assert_not_forbidden_enum_type(value, path)
+    _assert_canonical_domain_state_value_shallow(value, path)
 
     assert_deeply_immutable_value(value, path)
 
     if isinstance(value, tuple):
         for index, item in enumerate(value):
             assert_canonical_domain_state_value(item, f"{path}[{index}]")
-        return
-
-    if isinstance(value, frozenset):
-        for item in value:
-            assert_canonical_domain_state_value(item, f"{path}[{item!r}]")
         return
 
     if is_dataclass(value):

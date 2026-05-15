@@ -21,7 +21,7 @@ class TradingCalendar(ValueObject):
 
     name: str
     sessions: tuple[MarketSession, ...]
-    holidays: frozenset[UtcDate]
+    holidays: tuple[UtcDate, ...]
 
     @staticmethod
     def _canonicalize_calendar_name(name: str) -> str:
@@ -50,17 +50,33 @@ class TradingCalendar(ValueObject):
                 )
 
     @staticmethod
-    def _validate_holidays(holidays: frozenset[UtcDate]) -> None:
-        if not isinstance(holidays, frozenset):
+    def _date_key(day: UtcDate) -> tuple[int, int, int]:
+        return day.year, day.month, day.day
+
+    @classmethod
+    def _validate_holidays(cls, holidays: tuple[UtcDate, ...]) -> None:
+        if not isinstance(holidays, tuple):
             raise InvariantViolation(
-                "TradingCalendar.holidays must be a frozenset[UtcDate]"
+                "TradingCalendar.holidays must be a tuple[UtcDate, ...]"
             )
+
+        previous_key: tuple[int, int, int] | None = None
 
         for holiday in holidays:
             if not isinstance(holiday, UtcDate):
                 raise InvariantViolation(
                     "TradingCalendar.holidays must contain only UtcDate"
                 )
+
+            current_key = cls._date_key(holiday)
+
+            if previous_key is not None and current_key <= previous_key:
+                raise InvariantViolation(
+                    "TradingCalendar.holidays must be strictly sorted by UTC date "
+                    "and must not contain duplicates"
+                )
+
+            previous_key = current_key
 
     def _validate_semantics(self) -> None:
         canonical_name = self._canonicalize_calendar_name(self.name)
@@ -74,6 +90,7 @@ class TradingCalendar(ValueObject):
         """
         Returns True if the date is a valid trading day.
         """
+
         if day.weekday() >= 5:  # Saturday / Sunday
             return False
 
@@ -86,6 +103,7 @@ class TradingCalendar(ValueObject):
         """
         Returns True if market is open at given time.
         """
+
         day = UtcDate.from_epoch(at)
 
         if not self.is_trading_day(day):

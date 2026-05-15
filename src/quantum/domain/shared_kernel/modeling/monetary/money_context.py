@@ -14,17 +14,12 @@ class MoneyContext(ValueObject):
     """
 
     reporting_currency: Currency
-    allowed_currencies: frozenset[Currency]
+    allowed_currencies: tuple[Currency, ...]
 
-    def _validate_semantics(self) -> None:
-        if not isinstance(self.reporting_currency, Currency):
+    def _validate_allowed_currencies(self) -> None:
+        if not isinstance(self.allowed_currencies, tuple):
             raise InvariantViolation(
-                "MoneyContext.reporting_currency must be a Currency"
-            )
-
-        if not isinstance(self.allowed_currencies, frozenset):
-            raise InvariantViolation(
-                "MoneyContext.allowed_currencies must be a frozenset[Currency]"
+                "MoneyContext.allowed_currencies must be a tuple[Currency, ...]"
             )
 
         if not self.allowed_currencies:
@@ -32,13 +27,42 @@ class MoneyContext(ValueObject):
                 "MoneyContext.allowed_currencies must not be empty"
             )
 
-        for c in self.allowed_currencies:
-            if not isinstance(c, Currency):
+        seen: set[str] = set()
+        previous_value: str | None = None
+
+        for currency in self.allowed_currencies:
+            if not isinstance(currency, Currency):
                 raise InvariantViolation(
-                    f"MoneyContext.allowed_currencies must contain only Currency, got {type(c)}"
+                    "MoneyContext.allowed_currencies must contain only Currency, "
+                    f"got {type(currency).__name__}"
                 )
+
+            current_value = currency.value
+
+            if current_value in seen:
+                raise InvariantViolation(
+                    "MoneyContext.allowed_currencies must not contain duplicates"
+                )
+
+            if previous_value is not None and current_value <= previous_value:
+                raise InvariantViolation(
+                    "MoneyContext.allowed_currencies must be strictly sorted by "
+                    "canonical currency value"
+                )
+
+            seen.add(current_value)
+            previous_value = current_value
+
+    def _validate_semantics(self) -> None:
+        if not isinstance(self.reporting_currency, Currency):
+            raise InvariantViolation(
+                "MoneyContext.reporting_currency must be a Currency"
+            )
+
+        self._validate_allowed_currencies()
 
         if self.reporting_currency not in self.allowed_currencies:
             raise InvariantViolation(
-                "MoneyContext.reporting_currency must be included in allowed_currencies"
+                "MoneyContext.reporting_currency must be included in "
+                "allowed_currencies"
             )

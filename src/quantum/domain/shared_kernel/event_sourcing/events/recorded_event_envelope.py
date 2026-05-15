@@ -78,3 +78,9 @@ class RecordedEventEnvelope(ValueObject):
             raise InvariantViolation(
                 "RecordedEventEnvelope.recorded_at must be >= occurred_at"
             )
+
+        if self.metadata.causation_id.value == self.id:
+            raise InvariantViolation(
+                "RecordedEventEnvelope.metadata.causation_id must not reference "
+                "the envelope's own EventId."
+            )
