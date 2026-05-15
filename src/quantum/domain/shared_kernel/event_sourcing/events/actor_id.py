@@ -13,6 +13,14 @@ _ACTOR_ID_RE = re.compile(
 )
 
 
+def _canonicalize(value: str) -> str:
+    return value.strip().lower()
+
+
+def _is_canonical(value: str) -> bool:
+    return value == _canonicalize(value)
+
+
 @dataclass(frozen=True, slots=True)
 class ActorId(ValueObject):
     """
@@ -21,46 +29,44 @@ class ActorId(ValueObject):
     Format:
         <namespace>:<identifier>
 
-    Examples:
-        - strategy:mean_reversion_v3
-        - system:risk_engine
-        - user:trader_42
-        - scheduler:daily-close
-        - service:execution.router
+    IMPORTANT:
+    This object does NOT normalize input.
 
-    HARD GUARANTEES:
-    - string only
-    - no surrounding whitespace
-    - no internal whitespace
-    - exactly one colon
-    - non-empty namespace
-    - non-empty identifier
-    - canonical lowercase representation
-    - deterministic parsing
+    Accepted:
+    - ActorId("strategy:mean_reversion_v3")
+    - ActorId("system:risk_engine")
+    - ActorId("service:execution.router")
+
+    Rejected:
+    - ActorId(" Strategy:Mean_Reversion ")
+    - ActorId("strategy:Mean_Reversion")
+    - ActorId(" system:risk_engine ")
     """
 
     value: str
 
     def _validate_semantics(self) -> None:
         if not isinstance(self.value, str):
-            raise InvariantViolation("ActorId must be a string")
+            raise InvariantViolation("ActorId must be a string.")
 
-        canonical = self.value.strip().lower()
+        if not self.value:
+            raise InvariantViolation("ActorId must not be empty.")
 
-        if not canonical:
-            raise InvariantViolation("ActorId must not be empty")
-
-        if any(ch.isspace() for ch in canonical):
-            raise InvariantViolation("ActorId must not contain whitespace")
-
-        match = _ACTOR_ID_RE.fullmatch(canonical)
-        if match is None:
+        if not _is_canonical(self.value):
             raise InvariantViolation(
-                "ActorId must match canonical format '<namespace>:<identifier>' "
-                "with exactly one colon, lowercase canonical form, and no empty segments"
+                f"ActorId must already be canonical. "
+                f"Got {self.value!r}, expected {_canonicalize(self.value)!r}. "
+                "Normalization must happen outside the domain."
             )
 
-        object.__setattr__(self, "value", canonical)
+        if any(ch.isspace() for ch in self.value):
+            raise InvariantViolation("ActorId must not contain whitespace.")
+
+        if _ACTOR_ID_RE.fullmatch(self.value) is None:
+            raise InvariantViolation(
+                "ActorId must match canonical format '<namespace>:<identifier>' "
+                "with exactly one colon, lowercase canonical form, and no empty segments."
+            )
 
     def namespace(self) -> str:
         return self.value.split(":", 1)[0]
