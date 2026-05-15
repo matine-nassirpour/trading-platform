@@ -1,8 +1,11 @@
-from dataclasses import fields, is_dataclass
-from datetime import datetime
+from dataclasses import fields
+from datetime import date, datetime, time, timedelta, timezone
 from enum import Enum
 from typing import Any
 
+from quantum.domain.shared_kernel.foundation.contracts.dataclass_introspection import (
+    is_dataclass_instance,
+)
 from quantum.domain.shared_kernel.foundation.contracts.deep_immutability import (
     assert_deeply_immutable_value,
 )
@@ -10,23 +13,35 @@ from quantum.domain.shared_kernel.foundation.contracts.violations import (
     StructuralContractViolation,
 )
 
+_FORBIDDEN_CANONICAL_TEMPORAL_TYPES = (
+    datetime,
+    date,
+    time,
+    timedelta,
+    timezone,
+)
+
 
 def _assert_not_forbidden_temporal_type(value: Any, path: str) -> None:
     """
     Canonical domain-state modeling rule.
 
-    Python datetime is forbidden inside canonical domain state.
+    Native Python temporal types are forbidden inside canonical domain state.
 
     RATIONALE:
     - timezone ambiguity
     - serialization ambiguity
+    - precision ambiguity
     - replay drift risk
+    - source-clock ambiguity
+    - market-calendar ambiguity
     - desire for explicit domain temporal Value Objects
     """
-    if isinstance(value, datetime):
+    if isinstance(value, _FORBIDDEN_CANONICAL_TEMPORAL_TYPES):
         raise StructuralContractViolation(
-            f"{path} contains datetime, which is forbidden in canonical domain "
-            "state. Use an explicit domain temporal ValueObject instead."
+            f"{path} contains native temporal type {type(value).__name__}, "
+            "which is forbidden in canonical domain state. Use an explicit "
+            "domain temporal ValueObject instead."
         )
 
 
@@ -35,11 +50,6 @@ def _assert_not_forbidden_enum_type(value: Any, path: str) -> None:
     Canonical domain-state modeling rule.
 
     Python Enum is forbidden inside canonical domain state.
-
-    RATIONALE:
-    - implicit serialization conventions
-    - fragile cross-boundary representation semantics
-    - preference for explicit Value Objects / closed-set domain types
     """
     if isinstance(value, Enum):
         raise StructuralContractViolation(
@@ -53,14 +63,6 @@ def _assert_not_forbidden_unordered_collection(value: Any, path: str) -> None:
     Canonical domain-state modeling rule.
 
     frozenset is forbidden inside canonical domain state.
-
-    RATIONALE:
-    - frozenset is immutable but unordered
-    - unordered state is not suitable for canonical serialization
-    - event-sourced replay must be deterministic
-    - snapshots, hashes, signatures and projections require stable ordering
-
-    Use tuple[...] with explicit deterministic business ordering instead.
     """
     if isinstance(value, frozenset):
         raise StructuralContractViolation(
@@ -93,14 +95,9 @@ def assert_canonical_domain_state_value(value: Any, path: str) -> None:
     - deterministic ordered canonical collections
 
     Additional canonical-domain rules currently include:
-    - datetime is forbidden
+    - native Python temporal types are forbidden
     - Enum is forbidden
     - frozenset is forbidden
-
-    IMPORTANT:
-    frozenset remains potentially acceptable for non-canonical internal
-    structures validated only by deep immutability, but it is forbidden in
-    canonical replayable domain state.
     """
     _assert_canonical_domain_state_value_shallow(value, path)
 
@@ -111,7 +108,7 @@ def assert_canonical_domain_state_value(value: Any, path: str) -> None:
             assert_canonical_domain_state_value(item, f"{path}[{index}]")
         return
 
-    if is_dataclass(value):
+    if is_dataclass_instance(value):
         for f in fields(value):
             assert_canonical_domain_state_value(
                 getattr(value, f.name),
@@ -125,7 +122,7 @@ def validate_canonical_domain_state_of_dataclass_instance(instance: object) -> N
     Validates every dataclass field of an instance against the canonical
     domain-state policy.
     """
-    if not is_dataclass(instance):
+    if not is_dataclass_instance(instance):
         raise StructuralContractViolation(
             f"{type(instance).__name__} must be a dataclass instance."
         )

@@ -7,6 +7,9 @@ from types import MappingProxyType
 from typing import Any, cast
 from uuid import UUID
 
+from quantum.domain.shared_kernel.foundation.contracts.dataclass_introspection import (
+    is_dataclass_instance,
+)
 from quantum.domain.shared_kernel.foundation.contracts.violations import (
     StructuralContractViolation,
 )
@@ -26,11 +29,6 @@ _ALLOWED_SCALAR_TYPES = (
 
 
 def _assert_not_forbidden_mutable_or_aliasable_type(value: Any, path: str) -> None:
-    """
-    Pure deep-immutability / replay-stability policy.
-
-    Forbids mutable or aliasable runtime structures.
-    """
     if isinstance(value, float):
         raise StructuralContractViolation(
             f"{path} uses float, which is forbidden. "
@@ -70,8 +68,8 @@ def _try_validate_frozenset(value: Any, path: str) -> bool:
     return True
 
 
-def _try_validate_dataclass(value: Any, path: str) -> bool:
-    if not is_dataclass(value):
+def _try_validate_dataclass_instance(value: Any, path: str) -> bool:
+    if not is_dataclass_instance(value):
         return False
 
     cls: type[Any] = type(value)
@@ -155,7 +153,7 @@ def assert_deeply_immutable_value(value: Any, path: str) -> None:
     if _try_validate_frozenset(value, path):
         return
 
-    if _try_validate_dataclass(value, path):
+    if _try_validate_dataclass_instance(value, path):
         return
 
     raise StructuralContractViolation(
