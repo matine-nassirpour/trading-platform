@@ -20,13 +20,30 @@ class PricingPolicy(DomainService):
     - This is the ONLY allowed pricing entry point.
     - All executable pricing MUST go through this policy.
     - No alternative pricing services are allowed.
+    - directional execution rounding is applied at increment level,
+      not only at decimal-scale level.
     """
 
     __slots__ = ()
 
     _NEUTRAL_ROUNDING: Final[str] = _RoundingStrategy.NEUTRAL
 
-    # --- Price ----------------------------------------------------------------
+    @staticmethod
+    def _resolve_rounding(
+        *,
+        context: PricingContext,
+        side: PositionSide | None,
+    ) -> str:
+        if context.is_neutral():
+            return PricingPolicy._NEUTRAL_ROUNDING
+
+        if not isinstance(side, PositionSide):
+            raise InvariantViolation("Execution pricing requires a valid PositionSide")
+
+        return _RoundingStrategy.execution(
+            context=context,
+            side=side,
+        )
 
     @staticmethod
     def quantize_price(
@@ -38,41 +55,20 @@ class PricingPolicy(DomainService):
     ) -> Decimal:
         """
         Canonical price quantization.
-
-        Pipeline:
-        1) Market increment (multiple-of-increment)
-        2) Context-aware directional rounding
-        3) Decimal scale quantization
         """
 
-        if not isinstance(context, PricingContext):
-            raise InvariantViolation("Invalid PricingContext")
-
-        if not context.is_neutral() and side is None:
-            raise InvariantViolation(
-                "Execution pricing requires an explicit PositionSide"
-            )
-
-        # Step 1 — market increment
-        raw = QuantizationService.quantize_to_increment(
-            value=value,
-            increment=instrument.price_increment,
+        rounding = PricingPolicy._resolve_rounding(
+            context=context,
+            side=side,
         )
 
-        # Step 2 — rounding selection
-        if context.is_neutral():
-            rounding = PricingPolicy._NEUTRAL_ROUNDING
-        else:
-            if not isinstance(side, PositionSide):
-                raise InvariantViolation("Invalid PositionSide")
+        increment_quantized = QuantizationService.quantize_to_increment(
+            value=value,
+            increment=instrument.price_increment,
+            rounding=rounding,
+        )
 
-            rounding = _RoundingStrategy.execution(
-                context=context,
-                side=side,
-            )
-
-        # Step 3 — decimal scale
-        return raw.quantize(
+        return increment_quantized.quantize(
             instrument.price_scale,
             rounding=rounding,
         )
@@ -88,6 +84,7 @@ class PricingPolicy(DomainService):
         raw = QuantizationService.quantize_to_increment(
             value=value,
             increment=instrument.volume_increment,
+            rounding=PricingPolicy._NEUTRAL_ROUNDING,
         )
 
         return raw.quantize(

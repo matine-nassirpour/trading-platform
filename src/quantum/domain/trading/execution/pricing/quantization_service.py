@@ -12,18 +12,20 @@ class QuantizationService(DomainService):
     Guarantees:
     - Deterministic
     - Broker-aligned
-    - Multiple-of-increment (NOT decimal scale)
+    - Multiple-of-increment
+    - Rounding mode applied at increment level
     """
 
     __slots__ = ()
 
-    ROUNDING_MODE: Final[str] = ROUND_HALF_EVEN
+    DEFAULT_ROUNDING_MODE: Final[str] = ROUND_HALF_EVEN
 
     @staticmethod
     def quantize_to_increment(
         *,
         value: Decimal,
         increment: Decimal,
+        rounding: str = DEFAULT_ROUNDING_MODE,
     ) -> Decimal:
         """
         Quantize `value` to the nearest multiple of `increment`.
@@ -33,13 +35,14 @@ class QuantizationService(DomainService):
             value=1.12, increment=0.25 → 1.00
         """
         if increment <= Decimal("0"):
-            raise InvariantViolation("Increment must be strictly positive")
+            raise InvariantViolation("increment must be strictly positive")
 
         if value.is_nan() or value.is_infinite():
-            raise InvariantViolation("Value must be finite")
+            raise InvariantViolation("value must be finite")
 
-        multiplier = (value / increment).to_integral_value(
-            rounding=QuantizationService.ROUNDING_MODE
-        )
+        if increment.is_nan() or increment.is_infinite():
+            raise InvariantViolation("increment must be finite")
+
+        multiplier = (value / increment).to_integral_value(rounding=rounding)
 
         return multiplier * increment
