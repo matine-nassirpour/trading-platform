@@ -11,5 +11,6 @@ class Swap(SignedContextualAmount):
     Swap / rollover monetary adjustment.
     """
 
-    # No extra invariants
-    pass
+    @classmethod
+    def nominal_type(cls) -> str:
+        return "swap"

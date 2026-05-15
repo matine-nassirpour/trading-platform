@@ -1,5 +1,7 @@
 from collections.abc import Mapping
+from dataclasses import dataclass
 
+from quantum.domain.market.instrument.instrument_spec import InstrumentSpec
 from quantum.domain.shared_kernel.event_sourcing.aggregates.event_sourced_aggregate_root import (
     EventHandler,
     EventSourcedAggregateRoot,
@@ -15,7 +17,7 @@ from quantum.domain.shared_kernel.foundation.errors.invariants import (
     InvalidStateTransition,
     InvariantViolation,
 )
-from quantum.domain.shared_kernel.modeling.monetary.money_context import MoneyContext
+from quantum.domain.shared_kernel.modeling.identity.aggregate_id import AggregateId
 from quantum.domain.shared_kernel.modeling.monetary.price import Price
 from quantum.domain.trading.common.errors.position_errors import PositionAlreadyClosed
 from quantum.domain.trading.execution.position.events.position_closed_event import (
@@ -25,6 +27,9 @@ from quantum.domain.trading.execution.position.events.position_opened_event impo
     PositionOpenedEvent,
 )
 from quantum.domain.trading.execution.position.pnl_service import PnLService
+from quantum.domain.trading.execution.position.states.position_closed_state import (
+    PositionClosedState,
+)
 from quantum.domain.trading.execution.position.states.position_opened_state import (
     PositionOpenedState,
 )
@@ -39,12 +44,27 @@ from quantum.domain.trading.identifiers.broker_position_ref import BrokerPositio
 from quantum.domain.trading.value_objects.volume import PositiveVolume
 
 
-class Position(EventSourcedAggregateRoot[PositionStateBase]):
+@dataclass(frozen=True, slots=True)
+class PositionId(AggregateId):
+    """Identity of the Order aggregate (event stream id)."""
+
+    pass
+
+
+class Position(EventSourcedAggregateRoot[PositionId, PositionStateBase]):
     """
     Event-sourced Position aggregate.
     """
 
     __slots__ = ()
+
+    @classmethod
+    def aggregate_id_type(cls) -> type[PositionId]:
+        return PositionId
+
+    @classmethod
+    def state_type(cls) -> type[PositionStateBase]:
+        return PositionStateBase
 
     @classmethod
     def uninitialized_state(cls) -> PositionStateBase:
@@ -85,7 +105,7 @@ class Position(EventSourcedAggregateRoot[PositionStateBase]):
         self,
         *,
         exit_price: Price,
-        context: MoneyContext,
+        instrument: InstrumentSpec,
     ) -> list[BaseEvent]:
         """
         Answers the question:
@@ -97,18 +117,18 @@ class Position(EventSourcedAggregateRoot[PositionStateBase]):
 
         state = self.state
 
+        if isinstance(state, PositionClosedState):
+            raise PositionAlreadyClosed("Position already closed")
+
         if not isinstance(state, PositionOpenedState):
             raise InvalidStateTransition("Position not opened")
-
-        if state.closed:
-            raise PositionAlreadyClosed("Position already closed")
 
         pnl = PnLService.compute_realized_pnl(
             entry_price=state.entry_price,
             exit_price=exit_price,
             volume=state.volume,
             side=state.side,
-            context=context,
+            instrument=instrument,
         )
 
         return [
@@ -148,7 +168,6 @@ class Position(EventSourcedAggregateRoot[PositionStateBase]):
             side=event.side,
             volume=event.volume,
             entry_price=event.entry_price,
-            closed=False,
         )
 
     @staticmethod
@@ -158,11 +177,14 @@ class Position(EventSourcedAggregateRoot[PositionStateBase]):
         envelope: RecordedEventEnvelope,
     ) -> PositionStateBase:
         """
-        Answers the question:
-            "Given that this event has occurred, what is the new aggregate state?"
+        Applies PositionClosedEvent to an opened position.
 
-        This method represents a PURE EVENT → STATE TRANSITION.
+        This transition is intentionally defensive:
+        the persisted event must be compatible with the current aggregate state.
         """
+
+        if isinstance(state, PositionClosedState):
+            raise InvariantViolation("Position already closed")
 
         if not isinstance(state, PositionOpenedState):
             raise InvariantViolation("Position not opened")
@@ -170,16 +192,25 @@ class Position(EventSourcedAggregateRoot[PositionStateBase]):
         if not isinstance(event, PositionClosedEvent):
             raise InvariantViolation("Invalid event type")
 
-        if state.closed:
-            raise InvariantViolation("Position already closed")
+        if event.broker_position_ref != state.broker_position_ref:
+            raise InvariantViolation(
+                "Illegal close event: broker_position_ref mismatch"
+            )
 
-        return PositionOpenedState(
+        if event.side != state.side:
+            raise InvariantViolation("Illegal close event: side mismatch")
+
+        if event.volume != state.volume:
+            raise InvariantViolation("Illegal close event: volume mismatch")
+
+        return PositionClosedState(
             last_sequence=envelope.sequence,
             broker_position_ref=state.broker_position_ref,
             side=state.side,
             volume=state.volume,
             entry_price=state.entry_price,
-            closed=True,
+            exit_price=event.exit_price,
+            realized_pnl=event.realized_pnl,
         )
 
     # --- Handler registry -----------------------------------------------------

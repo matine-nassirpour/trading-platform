@@ -2,12 +2,13 @@ from quantum.domain.market.instrument.instrument_spec import InstrumentSpec
 from quantum.domain.market.instrument.pricing.reference_price import ReferencePrice
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.modeling.monetary.price import Price
+from quantum.domain.shared_kernel.modeling.services.domain_service import DomainService
 from quantum.domain.trading.execution.position_side import PositionSide
 from quantum.domain.trading.execution.pricing.pricing_context import PricingContext
 from quantum.domain.trading.execution.pricing.pricing_policy import PricingPolicy
 
 
-class ExitPolicy:
+class ExitPolicy(DomainService):
     """
     Canonical Stop Loss / Take Profit validation policy.
 
@@ -17,6 +18,8 @@ class ExitPolicy:
     - Ordering rules are side-dependent (LONG / SHORT)
     - SL and TP must never collapse to the same executable tick
     """
+
+    __slots__ = ()
 
     # --- Internal Helpers -----------------------------------------------------
 

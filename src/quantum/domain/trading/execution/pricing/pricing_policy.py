@@ -3,6 +3,7 @@ from typing import Final
 
 from quantum.domain.market.instrument.instrument_spec import InstrumentSpec
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.modeling.services.domain_service import DomainService
 from quantum.domain.trading.execution.position_side import PositionSide
 from quantum.domain.trading.execution.pricing.pricing_context import PricingContext
 from quantum.domain.trading.execution.pricing.quantization_service import (
@@ -11,7 +12,7 @@ from quantum.domain.trading.execution.pricing.quantization_service import (
 from quantum.domain.trading.execution.pricing.rounding_strategy import _RoundingStrategy
 
 
-class PricingPolicy:
+class PricingPolicy(DomainService):
     """
     Canonical and SINGLE pricing policy for the entire Domain.
 
@@ -20,6 +21,8 @@ class PricingPolicy:
     - All executable pricing MUST go through this policy.
     - No alternative pricing services are allowed.
     """
+
+    __slots__ = ()
 
     _NEUTRAL_ROUNDING: Final[str] = _RoundingStrategy.NEUTRAL
 

@@ -2,17 +2,20 @@ from decimal import ROUND_CEILING, ROUND_FLOOR, ROUND_HALF_EVEN
 from typing import Final
 
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.modeling.services.domain_service import DomainService
 from quantum.domain.trading.execution.position_side import PositionSide
 from quantum.domain.trading.execution.pricing.pricing_context import PricingContext
 
 
-class _RoundingStrategy:
+class _RoundingStrategy(DomainService):
     """
     INTERNAL pricing rounding strategy.
 
     This class MUST NOT be used directly outside PricingPolicy.
     It encapsulates all directional rounding rules.
     """
+
+    __slots__ = ()
 
     NEUTRAL: Final[str] = ROUND_HALF_EVEN
 

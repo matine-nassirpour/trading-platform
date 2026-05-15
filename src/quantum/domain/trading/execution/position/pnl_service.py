@@ -1,14 +1,15 @@
 from decimal import Decimal
 
-from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.modeling.monetary.money_context import MoneyContext
+from quantum.domain.market.instrument.instrument_spec import InstrumentSpec
 from quantum.domain.shared_kernel.modeling.monetary.pnl import RealizedPnL
 from quantum.domain.shared_kernel.modeling.monetary.price import Price
+from quantum.domain.shared_kernel.modeling.services.domain_service import DomainService
 from quantum.domain.trading.execution.position_side import PositionSide
+from quantum.domain.trading.execution.pricing.pricing_policy import PricingPolicy
 from quantum.domain.trading.value_objects.volume import PositiveVolume
 
 
-class PnLService:
+class PnLService(DomainService):
     """
     Canonical domain service for PnL computation.
 
@@ -19,6 +20,8 @@ class PnLService:
     - Sign-correct (LONG / SHORT)
     """
 
+    __slots__ = ()
+
     @staticmethod
     def compute_realized_pnl(
         *,
@@ -26,7 +29,7 @@ class PnLService:
         exit_price: Price,
         volume: PositiveVolume,
         side: PositionSide,
-        context: MoneyContext,
+        instrument: InstrumentSpec,
     ) -> RealizedPnL:
         """
         Computes realized PnL for a closed position.
@@ -37,14 +40,21 @@ class PnLService:
         The result is bound to the given MoneyContext.
         """
 
-        if not isinstance(context, MoneyContext):
-            raise InvariantViolation("PnLService requires a MoneyContext")
+        price_delta = exit_price.value - entry_price.value
+        raw_pnl = (
+            price_delta
+            * volume.value
+            * instrument.contract_size.value
+            * Decimal(side.sign())
+        )
 
-        delta = exit_price.value - entry_price.value
-        pnl_value = delta * volume.value * Decimal(side.sign())
+        quantized_pnl = PricingPolicy.quantize_money(
+            value=raw_pnl,
+            instrument=instrument,
+        )
 
         return RealizedPnL(
-            value=pnl_value,
-            currency=context.reporting_currency,
-            context=context,
+            value=quantized_pnl,
+            currency=instrument.pnl_currency,
+            context=instrument.context,
         )

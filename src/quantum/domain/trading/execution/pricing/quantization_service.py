@@ -2,9 +2,10 @@ from decimal import ROUND_HALF_EVEN, Decimal
 from typing import Final
 
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.modeling.services.domain_service import DomainService
 
 
-class QuantizationService:
+class QuantizationService(DomainService):
     """
     Canonical multiple-of-increment quantization.
 
@@ -13,6 +14,8 @@ class QuantizationService:
     - Broker-aligned
     - Multiple-of-increment (NOT decimal scale)
     """
+
+    __slots__ = ()
 
     ROUNDING_MODE: Final[str] = ROUND_HALF_EVEN
 
