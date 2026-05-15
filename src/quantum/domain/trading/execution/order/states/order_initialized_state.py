@@ -1,14 +1,18 @@
 from dataclasses import dataclass
 
 from quantum.domain.market.instrument.identity.symbol import Symbol
+from quantum.domain.market.instrument.pricing.reference_price import ReferencePrice
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.modeling.identity.decision_id import DecisionId
+from quantum.domain.shared_kernel.modeling.monetary.price import Price
 from quantum.domain.trading.execution.order.order_status import OrderStatus
 from quantum.domain.trading.execution.order.order_type import OrderType
 from quantum.domain.trading.execution.order.states.order_state_base import (
     OrderStateBase,
 )
+from quantum.domain.trading.execution.order.time_in_force import TimeInForce
 from quantum.domain.trading.execution.position_side import PositionSide
-from quantum.domain.trading.identifiers.broker_order_id import BrokerOrderId
+from quantum.domain.trading.identifiers.broker_order_ref import BrokerOrderRef
 from quantum.domain.trading.value_objects.volume import (
     NonNegativeVolume,
     PositiveVolume,
@@ -21,7 +25,7 @@ class OrderInitializedState(OrderStateBase):
     Fully initialized immutable Order aggregate state.
     """
 
-    broker_order_id: BrokerOrderId
+    broker_order_ref: BrokerOrderRef
     symbol: Symbol
 
     order_type: OrderType
@@ -32,27 +36,45 @@ class OrderInitializedState(OrderStateBase):
 
     status: OrderStatus
 
+    intent_id: DecisionId
+
+    reference_price: ReferencePrice | None
+    stop_price: Price | None
+    limit_price: Price | None
+
+    sl: Price | None
+    tp: Price | None
+
+    time_in_force: TimeInForce
+
     def _validate_types(self) -> None:
-        if not isinstance(self.broker_order_id, BrokerOrderId):
-            raise InvariantViolation("OrderInitializedState.broker_order_id invalid")
+        required_fields: tuple[tuple[str, object, type[object]], ...] = (
+            ("broker_order_ref", self.broker_order_ref, BrokerOrderRef),
+            ("symbol", self.symbol, Symbol),
+            ("order_type", self.order_type, OrderType),
+            ("side", self.side, PositionSide),
+            ("requested_volume", self.requested_volume, PositiveVolume),
+            ("filled_volume", self.filled_volume, NonNegativeVolume),
+            ("status", self.status, OrderStatus),
+            ("intent_id", self.intent_id, DecisionId),
+            ("time_in_force", self.time_in_force, TimeInForce),
+        )
 
-        if not isinstance(self.symbol, Symbol):
-            raise InvariantViolation("OrderInitializedState.symbol invalid")
+        optional_fields: tuple[tuple[str, object, type[object]], ...] = (
+            ("reference_price", self.reference_price, ReferencePrice),
+            ("stop_price", self.stop_price, Price),
+            ("limit_price", self.limit_price, Price),
+            ("sl", self.sl, Price),
+            ("tp", self.tp, Price),
+        )
 
-        if not isinstance(self.order_type, OrderType):
-            raise InvariantViolation("OrderInitializedState.order_type invalid")
+        for field_name, value, expected_type in required_fields:
+            if not isinstance(value, expected_type):
+                raise InvariantViolation(f"OrderInitializedState.{field_name} invalid")
 
-        if not isinstance(self.side, PositionSide):
-            raise InvariantViolation("OrderInitializedState.side invalid")
-
-        if not isinstance(self.requested_volume, PositiveVolume):
-            raise InvariantViolation("OrderInitializedState.requested_volume invalid")
-
-        if not isinstance(self.filled_volume, NonNegativeVolume):
-            raise InvariantViolation("OrderInitializedState.filled_volume invalid")
-
-        if not isinstance(self.status, OrderStatus):
-            raise InvariantViolation("OrderInitializedState.status invalid")
+        for field_name, value, expected_type in optional_fields:
+            if value is not None and not isinstance(value, expected_type):
+                raise InvariantViolation(f"OrderInitializedState.{field_name} invalid")
 
     def _assert_status_consistency(self) -> None:
         if (

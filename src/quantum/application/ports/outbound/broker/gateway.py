@@ -4,7 +4,7 @@ from typing import Protocol, runtime_checkable
 from quantum.domain.trading.execution.order.events.order_created_event import (
     OrderCreatedEvent,
 )
-from quantum.domain.trading.identifiers.broker_order_id import BrokerOrderId
+from quantum.domain.trading.identifiers.broker_order_ref import BrokerOrderRef
 
 
 @runtime_checkable
@@ -15,5 +15,5 @@ class BrokerGateway(Protocol):
         raise NotImplementedError
 
     @abstractmethod
-    def cancel_order(self, broker_order_id: BrokerOrderId) -> None:
+    def cancel_order(self, broker_order_ref: BrokerOrderRef) -> None:
         raise NotImplementedError

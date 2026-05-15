@@ -35,7 +35,7 @@ from quantum.domain.trading.execution.position.states.position_uninitialized_sta
     PositionUninitializedState,
 )
 from quantum.domain.trading.execution.position_side import PositionSide
-from quantum.domain.trading.identifiers.position_id import PositionId
+from quantum.domain.trading.identifiers.broker_position_ref import BrokerPositionRef
 from quantum.domain.trading.value_objects.volume import PositiveVolume
 
 
@@ -57,7 +57,7 @@ class Position(EventSourcedAggregateRoot[PositionStateBase]):
     @staticmethod
     def open(
         *,
-        position_id: PositionId,
+        broker_position_ref: BrokerPositionRef,
         side: PositionSide,
         volume: PositiveVolume,
         entry_price: Price,
@@ -72,7 +72,7 @@ class Position(EventSourcedAggregateRoot[PositionStateBase]):
 
         return [
             PositionOpenedEvent(
-                position_id=position_id,
+                broker_position_ref=broker_position_ref,
                 side=side,
                 volume=volume,
                 entry_price=entry_price,
@@ -113,7 +113,7 @@ class Position(EventSourcedAggregateRoot[PositionStateBase]):
 
         return [
             PositionClosedEvent(
-                position_id=state.position_id,
+                broker_position_ref=state.broker_position_ref,
                 side=state.side,
                 volume=state.volume,
                 exit_price=exit_price,
@@ -144,7 +144,7 @@ class Position(EventSourcedAggregateRoot[PositionStateBase]):
 
         return PositionOpenedState(
             last_sequence=envelope.sequence,
-            position_id=event.position_id,
+            broker_position_ref=event.broker_position_ref,
             side=event.side,
             volume=event.volume,
             entry_price=event.entry_price,
@@ -175,7 +175,7 @@ class Position(EventSourcedAggregateRoot[PositionStateBase]):
 
         return PositionOpenedState(
             last_sequence=envelope.sequence,
-            position_id=state.position_id,
+            broker_position_ref=state.broker_position_ref,
             side=state.side,
             volume=state.volume,
             entry_price=state.entry_price,

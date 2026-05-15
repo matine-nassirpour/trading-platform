@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from typing import Self
 
 from quantum.domain.market.instrument.identity.symbol import Symbol
+from quantum.domain.market.instrument.pricing.reference_price import ReferencePrice
 from quantum.domain.shared_kernel.event_sourcing.aggregates.event_sourced_aggregate_root import (
     EventHandler,
     EventSourcedAggregateRoot,
@@ -20,6 +21,7 @@ from quantum.domain.shared_kernel.foundation.errors.invariants import (
 )
 from quantum.domain.shared_kernel.modeling.identity.aggregate_id import AggregateId
 from quantum.domain.shared_kernel.modeling.identity.decision_id import DecisionId
+from quantum.domain.shared_kernel.modeling.monetary.price import Price
 from quantum.domain.trading.common.errors.order_errors import (
     OrderNotFillable,
     OrderOverfill,
@@ -45,8 +47,9 @@ from quantum.domain.trading.execution.order.states.order_state_base import (
 from quantum.domain.trading.execution.order.states.order_uninitialized_state import (
     OrderUninitializedState,
 )
+from quantum.domain.trading.execution.order.time_in_force import TimeInForce
 from quantum.domain.trading.execution.position_side import PositionSide
-from quantum.domain.trading.identifiers.broker_order_id import BrokerOrderId
+from quantum.domain.trading.identifiers.broker_order_ref import BrokerOrderRef
 from quantum.domain.trading.value_objects.volume import (
     NonNegativeVolume,
     PositiveVolume,
@@ -95,11 +98,17 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
         cls,
         *,
         intent_id: DecisionId,
-        broker_order_id: BrokerOrderId,
+        broker_order_ref: BrokerOrderRef,
         symbol: Symbol,
         order_type: OrderType,
         side: PositionSide,
         volume: PositiveVolume,
+        reference_price: ReferencePrice | None = None,
+        stop_price: Price | None = None,
+        limit_price: Price | None = None,
+        sl: Price | None = None,
+        tp: Price | None = None,
+        time_in_force: TimeInForce | None = None,
     ) -> list[BaseEvent]:
         """
         Pure domain decision for aggregate creation.
@@ -108,17 +117,23 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
         It only answers the business question:
             "Which event(s) must exist for a new Order to be created?"
 
-        It returns NEW domain events, not recorded envelopes.
+        Returns NEW domain events, not recorded envelopes.
         """
 
         return [
             OrderCreatedEvent(
                 intent_id=intent_id,
-                broker_order_id=broker_order_id,
+                broker_order_ref=broker_order_ref,
                 symbol=symbol,
                 order_type=order_type,
                 side=side,
                 volume=volume,
+                reference_price=reference_price,
+                stop_price=stop_price,
+                limit_price=limit_price,
+                sl=sl,
+                tp=tp,
+                time_in_force=time_in_force or TimeInForce("gtc"),
             )
         ]
 
@@ -128,11 +143,17 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
         *,
         aggregate_id: OrderId,
         intent_id: DecisionId,
-        broker_order_id: BrokerOrderId,
+        broker_order_ref: BrokerOrderRef,
         symbol: Symbol,
         order_type: OrderType,
         side: PositionSide,
         volume: PositiveVolume,
+        reference_price: ReferencePrice | None = None,
+        stop_price: Price | None = None,
+        limit_price: Price | None = None,
+        sl: Price | None = None,
+        tp: Price | None = None,
+        time_in_force: TimeInForce | None = None,
     ) -> tuple[Self, list[BaseEvent]]:
         """
         Canonical factory for a brand-new Order aggregate.
@@ -152,11 +173,17 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
 
         events = cls.decide_create(
             intent_id=intent_id,
-            broker_order_id=broker_order_id,
+            broker_order_ref=broker_order_ref,
             symbol=symbol,
             order_type=order_type,
             side=side,
             volume=volume,
+            reference_price=reference_price,
+            stop_price=stop_price,
+            limit_price=limit_price,
+            sl=sl,
+            tp=tp,
+            time_in_force=time_in_force,
         )
 
         return aggregate, events
@@ -182,7 +209,7 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
 
         return [
             OrderFillRegisteredEvent(
-                broker_order_id=state.broker_order_id,
+                broker_order_ref=state.broker_order_ref,
                 fill=fill,
             )
         ]
@@ -201,7 +228,7 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
 
         return [
             OrderCancelledEvent(
-                broker_order_id=state.broker_order_id,
+                broker_order_ref=state.broker_order_ref,
             )
         ]
 
@@ -221,13 +248,20 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
 
         return OrderInitializedState(
             last_sequence=envelope.sequence,
-            broker_order_id=event.broker_order_id,
+            intent_id=event.intent_id,
+            broker_order_ref=event.broker_order_ref,
             symbol=event.symbol,
             order_type=event.order_type,
             side=event.side,
             requested_volume=event.volume,
             filled_volume=NonNegativeVolume.zero(),
             status=OrderStatus.pending(),
+            reference_price=event.reference_price,
+            stop_price=event.stop_price,
+            limit_price=event.limit_price,
+            sl=event.sl,
+            tp=event.tp,
+            time_in_force=event.time_in_force,
         )
 
     @staticmethod
@@ -242,7 +276,7 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
         if not isinstance(event, OrderFillRegisteredEvent):
             raise InvariantViolation("Invalid event type")
 
-        if event.broker_order_id != state.broker_order_id:
+        if event.broker_order_ref != state.broker_order_ref:
             raise InvariantViolation("Illegal fill event: broker_order_id mismatch")
 
         if not state.status.is_fillable():
@@ -261,13 +295,20 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
 
         return OrderInitializedState(
             last_sequence=envelope.sequence,
-            broker_order_id=state.broker_order_id,
+            intent_id=state.intent_id,
+            broker_order_ref=state.broker_order_ref,
             symbol=state.symbol,
             order_type=state.order_type,
             side=state.side,
             requested_volume=state.requested_volume,
             filled_volume=NonNegativeVolume(new_filled),
             status=new_status,
+            reference_price=state.reference_price,
+            stop_price=state.stop_price,
+            limit_price=state.limit_price,
+            sl=state.sl,
+            tp=state.tp,
+            time_in_force=state.time_in_force,
         )
 
     @staticmethod
@@ -282,7 +323,7 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
         if not isinstance(event, OrderCancelledEvent):
             raise InvariantViolation("Invalid event type")
 
-        if event.broker_order_id != state.broker_order_id:
+        if event.broker_order_ref != state.broker_order_ref:
             raise InvariantViolation("Illegal cancel event: broker_order_id mismatch")
 
         if state.status.is_terminal():
@@ -290,13 +331,20 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
 
         return OrderInitializedState(
             last_sequence=envelope.sequence,
-            broker_order_id=state.broker_order_id,
+            intent_id=state.intent_id,
+            broker_order_ref=state.broker_order_ref,
             symbol=state.symbol,
             order_type=state.order_type,
             side=state.side,
             requested_volume=state.requested_volume,
             filled_volume=state.filled_volume,
             status=OrderStatus.cancelled(),
+            reference_price=state.reference_price,
+            stop_price=state.stop_price,
+            limit_price=state.limit_price,
+            sl=state.sl,
+            tp=state.tp,
+            time_in_force=state.time_in_force,
         )
 
     # --- Handler registry -----------------------------------------------------

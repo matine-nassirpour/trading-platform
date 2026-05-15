@@ -6,14 +6,14 @@ from quantum.domain.trading.execution.position.states.position_state_base import
     PositionStateBase,
 )
 from quantum.domain.trading.execution.position_side import PositionSide
-from quantum.domain.trading.identifiers.position_id import PositionId
+from quantum.domain.trading.identifiers.broker_position_ref import BrokerPositionRef
 from quantum.domain.trading.value_objects.volume import PositiveVolume
 
 
 @dataclass(frozen=True, slots=True)
 class PositionOpenedState(PositionStateBase):
 
-    position_id: PositionId
+    broker_position_ref: BrokerPositionRef
     side: PositionSide
     volume: PositiveVolume
     entry_price: Price
@@ -22,8 +22,8 @@ class PositionOpenedState(PositionStateBase):
     def _validate_semantics(self) -> None:
         super()._validate_semantics()
 
-        if not isinstance(self.position_id, PositionId):
-            raise InvariantViolation("PositionOpenedState.position_id invalid")
+        if not isinstance(self.broker_position_ref, BrokerPositionRef):
+            raise InvariantViolation("PositionOpenedState.broker_position_ref invalid")
 
         if not isinstance(self.side, PositionSide):
             raise InvariantViolation("PositionOpenedState.side invalid")

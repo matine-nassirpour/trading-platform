@@ -6,7 +6,7 @@ from quantum.domain.shared_kernel.modeling.identity.decision_id import DecisionI
 from quantum.domain.trading.execution.order.aggregate import OrderId
 from quantum.domain.trading.execution.order.order_type import OrderType
 from quantum.domain.trading.execution.position_side import PositionSide
-from quantum.domain.trading.identifiers.broker_order_id import BrokerOrderId
+from quantum.domain.trading.identifiers.broker_order_ref import BrokerOrderRef
 from quantum.domain.trading.value_objects.volume import PositiveVolume
 
 
@@ -14,7 +14,7 @@ from quantum.domain.trading.value_objects.volume import PositiveVolume
 class CreateOrderFromIntentCommand(BaseCommand):
     order_id: OrderId
     intent_id: DecisionId
-    broker_order_id: BrokerOrderId
+    broker_order_ref: BrokerOrderRef
     symbol: Symbol
     order_type: OrderType
     side: PositionSide

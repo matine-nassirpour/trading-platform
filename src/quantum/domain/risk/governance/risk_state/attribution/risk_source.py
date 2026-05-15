@@ -14,11 +14,6 @@ from quantum.domain.shared_kernel.modeling.value_objects.value_object import Val
 class RiskSource(ValueObject):
     """
     Concrete origin of a risk.
-
-    Examples:
-    - strategy = mean_reversion_v3
-    - instrument = EURUSD
-    - position = PositionId(42)
     """
 
     type: RiskSourceType
