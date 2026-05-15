@@ -153,16 +153,19 @@ class EpochMs(ValueObject):
         if millisecond < 0 or millisecond >= _MILLISECONDS_PER_SECOND:
             raise InvariantViolation("millisecond must be in range [0..999]")
 
-        dt = datetime(
-            year=year,
-            month=month,
-            day=day,
-            hour=hour,
-            minute=minute,
-            second=second,
-            microsecond=millisecond * _MICROSECONDS_PER_MILLISECOND,
-            tzinfo=UTC,
-        )
+        try:
+            dt = datetime(
+                year=year,
+                month=month,
+                day=day,
+                hour=hour,
+                minute=minute,
+                second=second,
+                microsecond=millisecond * _MICROSECONDS_PER_MILLISECOND,
+                tzinfo=UTC,
+            )
+        except ValueError as exc:
+            raise InvariantViolation(f"Invalid UTC datetime components: {exc}") from exc
 
         return EpochMs.from_datetime(dt)
 

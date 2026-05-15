@@ -11,46 +11,53 @@ from quantum.domain.shared_kernel.modeling.value_objects.value_object import Val
 
 def _canonicalize(value: str) -> str:
     """
-    Canonical normalization function for closed-set values.
+    Canonical normalization function used only to validate canonical form.
+
+    IMPORTANT:
+    Domain objects do not normalize input.
+    Normalization belongs to Anti-Corruption Layers.
     """
     return value.strip().lower()
+
+
+def _is_canonical(value: str) -> bool:
+    return value == _canonicalize(value)
 
 
 def _validate_allowed_values(values: frozenset[str], cls_name: str) -> frozenset[str]:
     """
     Validates that a closed set is:
-    - A frozenset[str]
-    - Non-empty
-    - Fully canonicalized
+    - a frozenset[str]
+    - non-empty
+    - fully canonicalized
     """
 
     if not isinstance(values, frozenset):
         raise StructuralContractViolation(
-            f"{cls_name}._allowed_values() must return a frozenset[str]"
+            f"{cls_name}._allowed_values() must return a frozenset[str]."
         )
 
     if not values:
         raise StructuralContractViolation(
-            f"{cls_name}._allowed_values() must not be empty"
+            f"{cls_name}._allowed_values() must not be empty."
         )
 
     canonical: set[str] = set()
 
-    for v in values:
-        if not isinstance(v, str):
+    for value in values:
+        if not isinstance(value, str):
             raise StructuralContractViolation(
-                f"{cls_name}._allowed_values() must contain only strings, got {type(v)}"
+                f"{cls_name}._allowed_values() must contain only strings, "
+                f"got {type(value).__name__}."
             )
 
-        c = _canonicalize(v)
-
-        if v != c:
+        if not _is_canonical(value):
             raise StructuralContractViolation(
                 f"{cls_name}._allowed_values() must contain only canonical values. "
-                f"Invalid entry: {v!r}, expected: {c!r}"
+                f"Invalid entry: {value!r}, expected: {_canonicalize(value)!r}."
             )
 
-        canonical.add(c)
+        canonical.add(value)
 
     return frozenset(canonical)
 
@@ -60,13 +67,20 @@ class ClosedSetValueObject(ValueObject, ABC):
     """
     Algebraic closed-set Value Object.
 
-    This represents a FINITE, EXPLICITLY ENUMERATED domain concept.
+    IMPORTANT:
+    This object does NOT normalize input values.
+    Inputs must already be canonical.
 
-    GUARANTEES:
-    - The value space is finite and closed
-    - All values are canonicalized
-    - No subclass may exist without declaring its full domain
-    - Invalid or partial implementations are rejected at import-time
+    Normalization from external systems belongs to:
+    - interfaces/
+    - infrastructure/
+    - Anti-Corruption Layers
+    - mappers / translators / DTO parsers
+
+    Domain consequence:
+    - Currency("usd") is valid
+    - Currency(" USD ") is rejected
+    - Currency("USD") is rejected
     """
 
     value: str
@@ -95,7 +109,7 @@ class ClosedSetValueObject(ValueObject, ABC):
 
         if "_allowed_values" not in cls.__dict__:
             raise StructuralContractViolation(
-                f"{cls.__name__} must explicitly implement _allowed_values()"
+                f"{cls.__name__} must explicitly implement _allowed_values()."
             )
 
         cls.__ALLOWED_VALUES__ = _validate_allowed_values(
@@ -108,18 +122,21 @@ class ClosedSetValueObject(ValueObject, ABC):
     def _validate_semantics(self) -> None:
         if not isinstance(self.value, str):
             raise InvariantViolation(
-                f"{self.__class__.__name__} value must be a string"
+                f"{self.__class__.__name__} value must be a string."
             )
 
-        canonical = _canonicalize(self.value)
+        if not _is_canonical(self.value):
+            raise InvariantViolation(
+                f"{self.__class__.__name__} value must already be canonical. "
+                f"Got {self.value!r}, expected {_canonicalize(self.value)!r}. "
+                "Normalization must happen outside the domain."
+            )
 
-        if canonical not in self.__class__.__ALLOWED_VALUES__:
+        if self.value not in self.__class__.__ALLOWED_VALUES__:
             raise InvariantViolation(
                 f"{self.__class__.__name__} invalid value: {self.value!r}. "
-                f"Allowed values: {sorted(self.__class__.__ALLOWED_VALUES__)}"
+                f"Allowed values: {sorted(self.__class__.__ALLOWED_VALUES__)}."
             )
-
-        object.__setattr__(self, "value", canonical)
 
     # --- Canonical string form ------------------------------------------------
 
