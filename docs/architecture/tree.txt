@@ -342,6 +342,7 @@ trading-platform/
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── market_session.py
 │       │   │   │   ├── trading_calendar.py
+│       │   │   │   ├── utc_date.py
 │       │   │   │   └── utc_minute.py
 │       │   │   ├── instrument/
 │       │   │   │   ├── currency/
@@ -571,7 +572,7 @@ trading-platform/
 │       │   │   │   │   │   └── order_uninitialized_state.py
 │       │   │   │   │   ├── __init__.py
 │       │   │   │   │   ├── aggregate.py
-│       │   │   │   │   ├── deal_id.py
+│       │   │   │   │   ├── broker_deal_ref.py
 │       │   │   │   │   ├── execution_fill.py
 │       │   │   │   │   ├── execution_id.py
 │       │   │   │   │   ├── order_status.py
@@ -620,8 +621,10 @@ trading-platform/
 │       │   │   │   └── position_side.py
 │       │   │   ├── identifiers/
 │       │   │   │   ├── __init__.py
-│       │   │   │   ├── broker_order_id.py
-│       │   │   │   └── position_id.py
+│       │   │   │   ├── broker_account_id.py
+│       │   │   │   ├── broker_order_ref.py
+│       │   │   │   ├── broker_position_ref.py
+│       │   │   │   └── broker_venue_id.py
 │       │   │   ├── value_objects/
 │       │   │   │   ├── __init__.py
 │       │   │   │   └── volume.py
