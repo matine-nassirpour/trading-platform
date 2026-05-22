@@ -27,7 +27,12 @@ class MarketSession(ValueObject):
         if not canonical:
             raise InvariantViolation("MarketSession.name must not be empty")
 
-        object.__setattr__(self, "name", canonical)
+        if self.name != canonical:
+            raise InvariantViolation(
+                f"MarketSession.name must already be canonical. "
+                f"Got {self.name!r}, expected {canonical!r}. "
+                "Normalization must happen outside the domain."
+            )
 
         if not isinstance(self.opens_at, UtcMinuteOfDay):
             raise InvariantViolation("opens_at must be UtcMinuteOfDay")

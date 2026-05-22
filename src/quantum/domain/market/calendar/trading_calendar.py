@@ -24,7 +24,7 @@ class TradingCalendar(ValueObject):
     holidays: tuple[UtcDate, ...]
 
     @staticmethod
-    def _canonicalize_calendar_name(name: str) -> str:
+    def _validate_canonical_calendar_name(name: str) -> None:
         if not isinstance(name, str):
             raise InvariantViolation("TradingCalendar.name must be a string")
 
@@ -33,7 +33,12 @@ class TradingCalendar(ValueObject):
         if not canonical_name:
             raise InvariantViolation("TradingCalendar.name must not be empty")
 
-        return canonical_name
+        if name != canonical_name:
+            raise InvariantViolation(
+                f"TradingCalendar.name must already be canonical. "
+                f"Got {name!r}, expected {canonical_name!r}. "
+                "Normalization must happen outside the domain."
+            )
 
     @staticmethod
     def _validate_sessions(sessions: tuple[MarketSession, ...]) -> None:
@@ -79,10 +84,7 @@ class TradingCalendar(ValueObject):
             previous_key = current_key
 
     def _validate_semantics(self) -> None:
-        canonical_name = self._canonicalize_calendar_name(self.name)
-
-        object.__setattr__(self, "name", canonical_name)
-
+        self._validate_canonical_calendar_name(self.name)
         self._validate_sessions(self.sessions)
         self._validate_holidays(self.holidays)
 

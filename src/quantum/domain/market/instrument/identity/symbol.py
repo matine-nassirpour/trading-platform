@@ -16,12 +16,20 @@ class Symbol(ValueObject):
         if not isinstance(self.value, str):
             raise InvariantViolation("Symbol must be a string")
 
-        v = self.value.strip().upper()
+        canonical = self.value.strip().upper()
 
-        if not _SYMBOL_RE.match(v):
-            raise InvariantViolation(f"Invalid symbol: {self.value}")
+        if not canonical:
+            raise InvariantViolation("Symbol must not be empty")
 
-        object.__setattr__(self, "value", v)
+        if self.value != canonical:
+            raise InvariantViolation(
+                f"Symbol must already be canonical. "
+                f"Got {self.value!r}, expected {canonical!r}. "
+                "Normalization must happen outside the domain."
+            )
+
+        if _SYMBOL_RE.fullmatch(self.value) is None:
+            raise InvariantViolation(f"Invalid symbol: {self.value!r}")
 
     def __str__(self) -> str:
         return self.value
