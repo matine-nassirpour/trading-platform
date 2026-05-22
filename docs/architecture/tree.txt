@@ -573,11 +573,10 @@ trading-platform/
 │       │   │   │   │   │   └── order_uninitialized_state.py
 │       │   │   │   │   ├── __init__.py
 │       │   │   │   │   ├── aggregate.py
-│       │   │   │   │   ├── broker_deal_ref.py
 │       │   │   │   │   ├── execution_fill.py
 │       │   │   │   │   ├── execution_id.py
+│       │   │   │   │   ├── order_kind.py
 │       │   │   │   │   ├── order_status.py
-│       │   │   │   │   ├── order_type.py
 │       │   │   │   │   └── time_in_force.py
 │       │   │   │   ├── position/
 │       │   │   │   │   ├── events/
@@ -624,6 +623,8 @@ trading-platform/
 │       │   │   ├── identifiers/
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── broker_account_id.py
+│       │   │   │   ├── broker_deal_ref.py
+│       │   │   │   ├── broker_entity_ref.py
 │       │   │   │   ├── broker_order_ref.py
 │       │   │   │   ├── broker_position_ref.py
 │       │   │   │   └── broker_venue_id.py

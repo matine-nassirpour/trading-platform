@@ -4,11 +4,11 @@ from quantum.domain.trading.identifiers.broker_entity_ref import BrokerEntityRef
 
 
 @dataclass(frozen=True, slots=True)
-class BrokerOrderRef(BrokerEntityRef):
+class BrokerDealRef(BrokerEntityRef):
     """
-    Globally safe broker order reference.
+    Globally safe broker deal reference.
     """
 
     @classmethod
     def entity_kind(cls) -> str:
-        return "order"
+        return "deal"
