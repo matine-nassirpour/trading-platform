@@ -7,23 +7,24 @@ from quantum.domain.shared_kernel.modeling.value_objects.value_object import Val
 
 @dataclass(frozen=True, slots=True)
 class VolumeConstraints(ValueObject):
-    """
-    Canonical volume constraints for an instrument.
-    """
-
     min_volume: Decimal
     max_volume: Decimal
+    volume_step: Decimal
 
     def _validate_semantics(self) -> None:
-        for name, v in {
+        for name, value in {
             "min_volume": self.min_volume,
             "max_volume": self.max_volume,
+            "volume_step": self.volume_step,
         }.items():
-            if not isinstance(v, Decimal):
+            if not isinstance(value, Decimal):
                 raise InvariantViolation(f"{name} must be a Decimal")
 
-            if v <= Decimal("0"):
+            if value <= Decimal("0"):
                 raise InvariantViolation(f"{name} must be strictly positive")
 
         if self.min_volume > self.max_volume:
             raise InvariantViolation("min_volume cannot exceed max_volume")
+
+        if self.volume_step > self.max_volume:
+            raise InvariantViolation("volume_step cannot exceed max_volume")

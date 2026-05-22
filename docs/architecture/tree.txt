@@ -345,21 +345,31 @@ trading-platform/
 │       │   │   │   ├── utc_date.py
 │       │   │   │   └── utc_minute.py
 │       │   │   ├── instrument/
+│       │   │   │   ├── constraints/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── instrument_constraints.py
+│       │   │   │   │   ├── price_constraints.py
+│       │   │   │   │   └── volume_constraints.py
 │       │   │   │   ├── currency/
 │       │   │   │   │   ├── __init__.py
-│       │   │   │   │   └── currency_pair.py
+│       │   │   │   │   ├── currency_pair.py
+│       │   │   │   │   └── instrument_currencies.py
+│       │   │   │   ├── economics/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   └── instrument_economics.py
 │       │   │   │   ├── identity/
 │       │   │   │   │   ├── __init__.py
 │       │   │   │   │   └── symbol.py
-│       │   │   │   ├── pricing/
-│       │   │   │   │   ├── __init__.py
-│       │   │   │   │   ├── price_constraints.py
-│       │   │   │   │   ├── reference_price.py
-│       │   │   │   │   └── tick_value.py
-│       │   │   │   ├── sizing/
+│       │   │   │   ├── microstructure/
 │       │   │   │   │   ├── __init__.py
 │       │   │   │   │   ├── contract_size.py
-│       │   │   │   │   └── volume_constraints.py
+│       │   │   │   │   └── tick_value.py
+│       │   │   │   ├── precision/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   └── instrument_precision.py
+│       │   │   │   ├── pricing/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   └── reference_price.py
 │       │   │   │   ├── __init__.py
 │       │   │   │   └── instrument_spec.py
 │       │   │   ├── regime/
