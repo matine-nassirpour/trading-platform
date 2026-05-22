@@ -25,12 +25,20 @@ class BrokerAccountId(ValueObject):
 
         canonical = self.value.strip().lower()
 
-        if not _BROKER_ACCOUNT_ID_RE.fullmatch(canonical):
+        if not canonical:
+            raise InvariantViolation("BrokerAccountId must not be empty")
+
+        if self.value != canonical:
+            raise InvariantViolation(
+                f"BrokerAccountId must already be canonical. "
+                f"Got {self.value!r}, expected {canonical!r}. "
+                "Normalization must happen outside the domain."
+            )
+
+        if _BROKER_ACCOUNT_ID_RE.fullmatch(self.value) is None:
             raise InvariantViolation(
                 "BrokerAccountId must match pattern: [a-z0-9][a-z0-9_.-]{1,63}"
             )
-
-        object.__setattr__(self, "value", canonical)
 
     def __str__(self) -> str:
         return self.value

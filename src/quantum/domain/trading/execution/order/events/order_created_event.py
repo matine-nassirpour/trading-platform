@@ -7,7 +7,7 @@ from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantV
 from quantum.domain.shared_kernel.modeling.identity.decision_id import DecisionId
 from quantum.domain.shared_kernel.modeling.monetary.price import Price
 from quantum.domain.trading.common.events.fact_event import FactEvent
-from quantum.domain.trading.execution.order.order_type import OrderType
+from quantum.domain.trading.execution.order.order_kind import OrderKind
 from quantum.domain.trading.execution.order.time_in_force import TimeInForce
 from quantum.domain.trading.execution.position_side import PositionSide
 from quantum.domain.trading.identifiers.broker_order_ref import BrokerOrderRef
@@ -31,7 +31,7 @@ class OrderCreatedEvent(FactEvent):
     broker_order_ref: BrokerOrderRef
     symbol: Symbol
 
-    order_type: OrderType
+    order_kind: OrderKind
     side: PositionSide
     volume: PositiveVolume
 
@@ -51,17 +51,17 @@ class OrderCreatedEvent(FactEvent):
     tp: Price | None = None
 
     def _validate_payload(self) -> None:
-        if self.order_type.requires_limit_price() and self.limit_price is None:
+        if self.order_kind.requires_limit_price() and self.limit_price is None:
             raise InvariantViolation("limit_price is required for this order type")
 
-        if self.order_type.forbids_limit_price() and self.limit_price is not None:
+        if self.order_kind.forbids_limit_price() and self.limit_price is not None:
             raise InvariantViolation("limit_price is forbidden for this order type")
 
-        if self.order_type.requires_stop_price() and self.stop_price is None:
+        if self.order_kind.requires_stop_price() and self.stop_price is None:
             raise InvariantViolation("stop_price is required for this order type")
 
-        if self.order_type.forbids_stop_price() and self.stop_price is not None:
+        if self.order_kind.forbids_stop_price() and self.stop_price is not None:
             raise InvariantViolation("stop_price is forbidden for this order type")
 
-        if self.order_type.requires_price_reference() and self.reference_price is None:
+        if self.order_kind.requires_price_reference() and self.reference_price is None:
             raise InvariantViolation("reference_price is required for this order type")

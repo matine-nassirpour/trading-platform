@@ -36,8 +36,8 @@ from quantum.domain.trading.execution.order.events.order_fill_registered_event i
     OrderFillRegisteredEvent,
 )
 from quantum.domain.trading.execution.order.execution_fill import ExecutionFill
+from quantum.domain.trading.execution.order.order_kind import OrderKind
 from quantum.domain.trading.execution.order.order_status import OrderStatus
-from quantum.domain.trading.execution.order.order_type import OrderType
 from quantum.domain.trading.execution.order.states.order_initialized_state import (
     OrderInitializedState,
 )
@@ -100,7 +100,7 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
         intent_id: DecisionId,
         broker_order_ref: BrokerOrderRef,
         symbol: Symbol,
-        order_type: OrderType,
+        order_kind: OrderKind,
         side: PositionSide,
         volume: PositiveVolume,
         reference_price: ReferencePrice | None = None,
@@ -125,7 +125,7 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
                 intent_id=intent_id,
                 broker_order_ref=broker_order_ref,
                 symbol=symbol,
-                order_type=order_type,
+                order_kind=order_kind,
                 side=side,
                 volume=volume,
                 reference_price=reference_price,
@@ -145,7 +145,7 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
         intent_id: DecisionId,
         broker_order_ref: BrokerOrderRef,
         symbol: Symbol,
-        order_type: OrderType,
+        order_kind: OrderKind,
         side: PositionSide,
         volume: PositiveVolume,
         reference_price: ReferencePrice | None = None,
@@ -175,7 +175,7 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
             intent_id=intent_id,
             broker_order_ref=broker_order_ref,
             symbol=symbol,
-            order_type=order_type,
+            order_kind=order_kind,
             side=side,
             volume=volume,
             reference_price=reference_price,
@@ -251,7 +251,7 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
             intent_id=event.intent_id,
             broker_order_ref=event.broker_order_ref,
             symbol=event.symbol,
-            order_type=event.order_type,
+            order_kind=event.order_kind,
             side=event.side,
             requested_volume=event.volume,
             filled_volume=NonNegativeVolume.zero(),
@@ -298,7 +298,7 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
             intent_id=state.intent_id,
             broker_order_ref=state.broker_order_ref,
             symbol=state.symbol,
-            order_type=state.order_type,
+            order_kind=state.order_kind,
             side=state.side,
             requested_volume=state.requested_volume,
             filled_volume=NonNegativeVolume(new_filled),
@@ -334,7 +334,7 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
             intent_id=state.intent_id,
             broker_order_ref=state.broker_order_ref,
             symbol=state.symbol,
-            order_type=state.order_type,
+            order_kind=state.order_kind,
             side=state.side,
             requested_volume=state.requested_volume,
             filled_volume=state.filled_volume,

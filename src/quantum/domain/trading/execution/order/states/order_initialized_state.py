@@ -5,8 +5,8 @@ from quantum.domain.market.instrument.pricing.reference_price import ReferencePr
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.modeling.identity.decision_id import DecisionId
 from quantum.domain.shared_kernel.modeling.monetary.price import Price
+from quantum.domain.trading.execution.order.order_kind import OrderKind
 from quantum.domain.trading.execution.order.order_status import OrderStatus
-from quantum.domain.trading.execution.order.order_type import OrderType
 from quantum.domain.trading.execution.order.states.order_state_base import (
     OrderStateBase,
 )
@@ -28,7 +28,7 @@ class OrderInitializedState(OrderStateBase):
     broker_order_ref: BrokerOrderRef
     symbol: Symbol
 
-    order_type: OrderType
+    order_kind: OrderKind
     side: PositionSide
 
     requested_volume: PositiveVolume
@@ -51,7 +51,7 @@ class OrderInitializedState(OrderStateBase):
         required_fields: tuple[tuple[str, object, type[object]], ...] = (
             ("broker_order_ref", self.broker_order_ref, BrokerOrderRef),
             ("symbol", self.symbol, Symbol),
-            ("order_type", self.order_type, OrderType),
+            ("order_kind", self.order_kind, OrderKind),
             ("side", self.side, PositionSide),
             ("requested_volume", self.requested_volume, PositiveVolume),
             ("filled_volume", self.filled_volume, NonNegativeVolume),
