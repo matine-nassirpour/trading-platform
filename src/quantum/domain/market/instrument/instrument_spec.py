@@ -42,7 +42,7 @@ class InstrumentSpec(ValueObject):
 
     # --- Economics
     contract_size: ContractSize
-    tick_value: TickValue
+    tick_value: TickValue  # Monetary value of one price_increment movement for one unit of volume.
 
     # --- Currencies
     currencies: CurrencyPair

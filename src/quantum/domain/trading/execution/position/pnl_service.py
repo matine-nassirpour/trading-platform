@@ -5,19 +5,24 @@ from quantum.domain.shared_kernel.modeling.monetary.pnl import RealizedPnL
 from quantum.domain.shared_kernel.modeling.monetary.price import Price
 from quantum.domain.shared_kernel.modeling.services.domain_service import DomainService
 from quantum.domain.trading.execution.position_side import PositionSide
+from quantum.domain.trading.execution.pricing.pricing_context import PricingContext
 from quantum.domain.trading.execution.pricing.pricing_policy import PricingPolicy
 from quantum.domain.trading.value_objects.volume import PositiveVolume
 
 
 class PnLService(DomainService):
     """
-    Canonical domain service for PnL computation.
+    Canonical domain service for multi-asset realized PnL computation.
 
-    HARD GUARANTEES:
-    - PnL is always contextual (MoneyContext-bound)
-    - Currency-safe
-    - Deterministic
-    - Sign-correct (LONG / SHORT)
+    Formula:
+        ticks = (exit_price - entry_price) / price_increment
+        pnl   = ticks * tick_value * volume * side_sign
+
+    Rationale:
+    - avoids assuming that 1 price point equals 1 monetary unit;
+    - supports FX, CFDs, indices, metals, futures-like instruments;
+    - uses instrument-defined tick economics;
+    - keeps PnL contextual and currency-safe.
     """
 
     __slots__ = ()
@@ -34,18 +39,27 @@ class PnLService(DomainService):
         """
         Computes realized PnL for a closed position.
 
-        Formula:
-            pnl = (exit_price - entry_price) * volume * side_sign
-
         The result is bound to the given MoneyContext.
         """
 
-        price_delta = exit_price.value - entry_price.value
+        q_entry = PricingPolicy.quantize_price(
+            value=entry_price.value,
+            instrument=instrument,
+            context=PricingContext.neutral(),
+        )
+
+        q_exit = PricingPolicy.quantize_price(
+            value=exit_price.value,
+            instrument=instrument,
+            context=PricingContext.neutral(),
+        )
+
+        price_delta = q_exit - q_entry
+
+        ticks = price_delta / instrument.price_increment
+
         raw_pnl = (
-            price_delta
-            * volume.value
-            * instrument.contract_size.value
-            * Decimal(side.sign())
+            ticks * instrument.tick_value.value * volume.value * Decimal(side.sign())
         )
 
         quantized_pnl = PricingPolicy.quantize_money(
