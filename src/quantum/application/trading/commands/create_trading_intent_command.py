@@ -7,7 +7,7 @@ from quantum.domain.decision.qualification.decision_qualification import (
 )
 from quantum.domain.market.instrument.identity.symbol import Symbol
 from quantum.domain.shared_kernel.modeling.identity.decision_id import DecisionId
-from quantum.domain.trading.execution.position_side import PositionSide
+from quantum.domain.trading.common.value_objects.position_side import PositionSide
 
 
 @dataclass(frozen=True, slots=True)

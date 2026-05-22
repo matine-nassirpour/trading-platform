@@ -5,7 +5,7 @@ from quantum.domain.decision.qualification.decision_qualification import (
     DecisionQualification,
 )
 from quantum.domain.market.instrument.identity.symbol import Symbol
-from quantum.domain.trading.value_objects.volume import PositiveVolume
+from quantum.domain.trading.common.value_objects.volume import PositiveVolume
 
 
 @runtime_checkable

@@ -10,7 +10,7 @@ from quantum.application.trading.commands.open_position_command import (
     OpenPositionCommand,
 )
 from quantum.domain.shared_kernel.event_sourcing.events.base_event import BaseEvent
-from quantum.domain.trading.execution.position.aggregate import Position
+from quantum.domain.trading.position.aggregate import Position
 
 
 class OpenPositionHandler(AggregateCommandHandler[OpenPositionCommand, None, Position]):

@@ -23,10 +23,8 @@ from quantum.application.trading.commands.create_order_from_intent_command impor
     CreateOrderFromIntentCommand,
 )
 from quantum.domain.shared_kernel.event_sourcing.events.base_event import BaseEvent
-from quantum.domain.trading.execution.order.aggregate import Order, OrderId
-from quantum.domain.trading.execution.order.states.order_state_base import (
-    OrderStateBase,
-)
+from quantum.domain.trading.order.aggregate import Order, OrderId
+from quantum.domain.trading.order.states.order_state_base import OrderStateBase
 
 
 class CreateOrderFromIntentHandler(

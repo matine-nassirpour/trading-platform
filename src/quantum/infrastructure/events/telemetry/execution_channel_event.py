@@ -1,7 +1,7 @@
 from typing import ClassVar
 
 from quantum.domain.shared_kernel.event_sourcing.events import BaseEvent
-from quantum.domain.trading.value_objects import EpochMs
+from quantum.domain.trading.common.value_objects import EpochMs
 from quantum.infrastructure.execution.contracts.execution_code import ExecutionCode
 from quantum.infrastructure.execution.type.execution_channel import ExecutionChannel
 
