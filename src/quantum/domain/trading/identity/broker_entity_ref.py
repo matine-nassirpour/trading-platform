@@ -3,8 +3,8 @@ from dataclasses import dataclass
 
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.modeling.value_objects.value_object import ValueObject
-from quantum.domain.trading.identifiers.broker_account_id import BrokerAccountId
-from quantum.domain.trading.identifiers.broker_venue_id import BrokerVenueId
+from quantum.domain.trading.identity.broker_account_id import BrokerAccountId
+from quantum.domain.trading.identity.broker_venue_id import BrokerVenueId
 
 
 @dataclass(frozen=True, slots=True)

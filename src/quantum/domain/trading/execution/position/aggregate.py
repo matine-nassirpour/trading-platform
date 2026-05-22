@@ -40,7 +40,7 @@ from quantum.domain.trading.execution.position.states.position_uninitialized_sta
     PositionUninitializedState,
 )
 from quantum.domain.trading.execution.position_side import PositionSide
-from quantum.domain.trading.identifiers.broker_position_ref import BrokerPositionRef
+from quantum.domain.trading.identity.broker_position_ref import BrokerPositionRef
 from quantum.domain.trading.value_objects.volume import PositiveVolume
 
 

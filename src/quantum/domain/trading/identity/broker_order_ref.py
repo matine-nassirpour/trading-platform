@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from quantum.domain.trading.identifiers.broker_entity_ref import BrokerEntityRef
+from quantum.domain.trading.identity.broker_entity_ref import BrokerEntityRef
 
 
 @dataclass(frozen=True, slots=True)

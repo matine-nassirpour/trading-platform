@@ -6,7 +6,7 @@ from quantum.application.trading.integration_events.base.integration_event impor
 )
 from quantum.domain.market.instrument.identity.symbol import Symbol
 from quantum.domain.shared_kernel.modeling.identity.decision_id import DecisionId
-from quantum.domain.trading.identifiers.broker_order_ref import BrokerOrderRef
+from quantum.domain.trading.identity.broker_order_ref import BrokerOrderRef
 
 
 @dataclass(frozen=True, slots=True)

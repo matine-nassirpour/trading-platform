@@ -12,7 +12,7 @@ from quantum.domain.trading.execution.order.states.order_state_base import (
 )
 from quantum.domain.trading.execution.order.time_in_force import TimeInForce
 from quantum.domain.trading.execution.position_side import PositionSide
-from quantum.domain.trading.identifiers.broker_order_ref import BrokerOrderRef
+from quantum.domain.trading.identity.broker_order_ref import BrokerOrderRef
 from quantum.domain.trading.value_objects.volume import (
     NonNegativeVolume,
     PositiveVolume,

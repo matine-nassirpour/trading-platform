@@ -3,7 +3,7 @@ from typing import ClassVar
 
 from quantum.domain.trading.common.events.fact_event import FactEvent
 from quantum.domain.trading.execution.order.execution_fill import ExecutionFill
-from quantum.domain.trading.identifiers.broker_order_ref import BrokerOrderRef
+from quantum.domain.trading.identity.broker_order_ref import BrokerOrderRef
 
 
 @dataclass(frozen=True, slots=True)

@@ -6,7 +6,7 @@ from quantum.domain.shared_kernel.modeling.identity.decision_id import DecisionI
 from quantum.domain.trading.execution.order.aggregate import OrderId
 from quantum.domain.trading.execution.order.order_kind import OrderKind
 from quantum.domain.trading.execution.position_side import PositionSide
-from quantum.domain.trading.identifiers.broker_order_ref import BrokerOrderRef
+from quantum.domain.trading.identity.broker_order_ref import BrokerOrderRef
 from quantum.domain.trading.value_objects.volume import PositiveVolume
 
 

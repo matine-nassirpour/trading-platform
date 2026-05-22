@@ -10,7 +10,7 @@ from quantum.domain.trading.common.events.fact_event import FactEvent
 from quantum.domain.trading.execution.order.order_kind import OrderKind
 from quantum.domain.trading.execution.order.time_in_force import TimeInForce
 from quantum.domain.trading.execution.position_side import PositionSide
-from quantum.domain.trading.identifiers.broker_order_ref import BrokerOrderRef
+from quantum.domain.trading.identity.broker_order_ref import BrokerOrderRef
 from quantum.domain.trading.value_objects.volume import PositiveVolume
 
 
