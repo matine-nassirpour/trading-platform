@@ -620,7 +620,7 @@ trading-platform/
 │       │   │   │   │   └── order_check_outcome.py
 │       │   │   │   ├── __init__.py
 │       │   │   │   └── position_side.py
-│       │   │   ├── identifiers/
+│       │   │   ├── identity/
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── broker_account_id.py
 │       │   │   │   ├── broker_deal_ref.py

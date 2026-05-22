@@ -25,14 +25,19 @@ class DecisionPolicyId(ValueObject):
         if not isinstance(self.value, str):
             raise InvariantViolation("DecisionPolicyId must be a string")
 
-        v = self.value.strip().lower()
+        canonical = self.value.strip().lower()
 
-        if not _POLICY_ID_RE.fullmatch(v):
+        if self.value != canonical:
+            raise InvariantViolation(
+                f"DecisionPolicyId must already be canonical. "
+                f"Got {self.value!r}, expected {canonical!r}. "
+                "Normalization must happen outside the domain."
+            )
+
+        if _POLICY_ID_RE.fullmatch(self.value) is None:
             raise InvariantViolation(
                 "DecisionPolicyId must match pattern: [a-z][a-z0-9_:-]{2,63}"
             )
-
-        object.__setattr__(self, "value", v)
 
     def __str__(self) -> str:
         return self.value

@@ -13,10 +13,19 @@ class ModelVersion(ValueObject):
     """
     Canonical model / logic version.
 
-    Examples:
-    - v1
-    - v2.1
-    - v3.4.2
+    IMPORTANT:
+    This object does NOT normalize input.
+    Normalization belongs to Anti-Corruption Layers.
+
+    Accepted:
+    - ModelVersion("v1")
+    - ModelVersion("v2.1")
+    - ModelVersion("v3.4.2")
+
+    Rejected:
+    - ModelVersion(" V1 ")
+    - ModelVersion("V2.1")
+    - ModelVersion("v1.2.3.4")
     """
 
     value: str
@@ -25,14 +34,19 @@ class ModelVersion(ValueObject):
         if not isinstance(self.value, str):
             raise InvariantViolation("ModelVersion must be a string")
 
-        v = self.value.strip().lower()
+        canonical = self.value.strip().lower()
 
-        if not _VERSION_RE.match(v):
+        if self.value != canonical:
             raise InvariantViolation(
-                "ModelVersion must follow semantic pattern: vN(.N)*"
+                f"ModelVersion must already be canonical. "
+                f"Got {self.value!r}, expected {canonical!r}. "
+                "Normalization must happen outside the domain."
             )
 
-        object.__setattr__(self, "value", v)
+        if _VERSION_RE.fullmatch(self.value) is None:
+            raise InvariantViolation(
+                "ModelVersion must follow semantic pattern: vN(.N){0,2}"
+            )
 
     def __str__(self) -> str:
         return self.value
