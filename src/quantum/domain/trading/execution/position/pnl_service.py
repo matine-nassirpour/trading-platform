@@ -56,10 +56,13 @@ class PnLService(DomainService):
 
         price_delta = q_exit - q_entry
 
-        ticks = price_delta / instrument.price_increment
+        ticks = price_delta / instrument.precision.price_increment
 
         raw_pnl = (
-            ticks * instrument.tick_value.value * volume.value * Decimal(side.sign())
+            ticks
+            * instrument.microstructure.tick_value.value
+            * volume.value
+            * Decimal(side.sign())
         )
 
         quantized_pnl = PricingPolicy.quantize_money(
@@ -69,6 +72,6 @@ class PnLService(DomainService):
 
         return RealizedPnL(
             value=quantized_pnl,
-            currency=instrument.pnl_currency,
+            currency=instrument.currencies.pnl_currency,
             context=instrument.context,
         )

@@ -64,12 +64,12 @@ class PricingPolicy(DomainService):
 
         increment_quantized = QuantizationService.quantize_to_increment(
             value=value,
-            increment=instrument.price_increment,
+            increment=instrument.precision.price_increment,
             rounding=rounding,
         )
 
         return increment_quantized.quantize(
-            instrument.price_scale,
+            instrument.precision.price_scale,
             rounding=rounding,
         )
 
@@ -83,12 +83,12 @@ class PricingPolicy(DomainService):
     ) -> Decimal:
         raw = QuantizationService.quantize_to_increment(
             value=value,
-            increment=instrument.volume_increment,
+            increment=instrument.precision.volume_increment,
             rounding=PricingPolicy._NEUTRAL_ROUNDING,
         )
 
         return raw.quantize(
-            instrument.volume_scale,
+            instrument.precision.volume_scale,
             rounding=PricingPolicy._NEUTRAL_ROUNDING,
         )
 
@@ -101,7 +101,7 @@ class PricingPolicy(DomainService):
         instrument: InstrumentSpec,
     ) -> Decimal:
         return value.quantize(
-            instrument.money_scale,
+            instrument.precision.money_scale,
             rounding=PricingPolicy._NEUTRAL_ROUNDING,
         )
 
