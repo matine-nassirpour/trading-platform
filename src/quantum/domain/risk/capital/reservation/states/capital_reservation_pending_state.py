@@ -18,7 +18,7 @@ class CapitalReservationPendingState(CapitalReservationStateBase):
     Reservation has been requested but not yet decided by risk/capital policy.
     """
 
-    intent_id: DecisionId
+    decision_id: DecisionId
     strategy_id: StrategyId
     requested_allocation: CapitalAllocationIntent
     requested_at: EpochMs
@@ -31,8 +31,10 @@ class CapitalReservationPendingState(CapitalReservationStateBase):
                 "Pending CapitalReservation cannot have initial sequence"
             )
 
-        if not isinstance(self.intent_id, DecisionId):
-            raise InvariantViolation("CapitalReservationPendingState.intent_id invalid")
+        if not isinstance(self.decision_id, DecisionId):
+            raise InvariantViolation(
+                "CapitalReservationPendingState.decision_id invalid"
+            )
 
         if not isinstance(self.strategy_id, StrategyId):
             raise InvariantViolation(

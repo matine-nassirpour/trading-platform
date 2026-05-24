@@ -171,7 +171,7 @@ class CapitalReservation(
         cls,
         *,
         reservation_id: CapitalReservationId,
-        intent_id: DecisionId,
+        decision_id: DecisionId,
         strategy_id: StrategyId,
         requested_allocation: CapitalAllocationIntent,
     ) -> list[BaseEvent]:
@@ -182,7 +182,7 @@ class CapitalReservation(
         return [
             CapitalReservationRequestedEvent(
                 reservation_id=reservation_id,
-                intent_id=intent_id,
+                decision_id=decision_id,
                 strategy_id=strategy_id,
                 requested_allocation=requested_allocation,
             )
@@ -193,7 +193,7 @@ class CapitalReservation(
         cls,
         *,
         aggregate_id: CapitalReservationId,
-        intent_id: DecisionId,
+        decision_id: DecisionId,
         strategy_id: StrategyId,
         requested_allocation: CapitalAllocationIntent,
     ) -> tuple[Self, list[BaseEvent]]:
@@ -208,7 +208,7 @@ class CapitalReservation(
 
         domain_events = cls.decide_request(
             reservation_id=aggregate.aggregate_id,
-            intent_id=intent_id,
+            decision_id=decision_id,
             strategy_id=strategy_id,
             requested_allocation=requested_allocation,
         )
@@ -233,7 +233,7 @@ class CapitalReservation(
         return [
             CapitalReservedEvent(
                 reservation_id=self.aggregate_id,
-                intent_id=state.intent_id,
+                decision_id=state.decision_id,
                 strategy_id=state.strategy_id,
                 reserved_allocation=reserved_allocation,
             )
@@ -253,7 +253,7 @@ class CapitalReservation(
         return [
             CapitalReservationRejectedEvent(
                 reservation_id=self.aggregate_id,
-                intent_id=state.intent_id,
+                decision_id=state.decision_id,
                 strategy_id=state.strategy_id,
                 reason_code=reason_code,
             )
@@ -273,7 +273,7 @@ class CapitalReservation(
         return [
             CapitalReleasedEvent(
                 reservation_id=self.aggregate_id,
-                intent_id=state.intent_id,
+                decision_id=state.decision_id,
                 strategy_id=state.strategy_id,
                 reason_code=reason_code,
             )
@@ -289,7 +289,7 @@ class CapitalReservation(
         return [
             CapitalConsumedEvent(
                 reservation_id=self.aggregate_id,
-                intent_id=state.intent_id,
+                decision_id=state.decision_id,
                 strategy_id=state.strategy_id,
             )
         ]
@@ -318,7 +318,7 @@ class CapitalReservation(
 
         return CapitalReservationPendingState(
             last_sequence=envelope.sequence,
-            intent_id=event.intent_id,
+            decision_id=event.decision_id,
             strategy_id=event.strategy_id,
             requested_allocation=event.requested_allocation,
             requested_at=envelope.occurred_at,
@@ -343,9 +343,9 @@ class CapitalReservation(
             envelope=envelope,
         )
 
-        if event.intent_id != state.intent_id:
+        if event.decision_id != state.decision_id:
             raise InvariantViolation(
-                "CapitalReservedEvent.intent_id does not match reservation intent_id"
+                "CapitalReservedEvent.decision_id does not match reservation decision_id"
             )
 
         if event.strategy_id != state.strategy_id:
@@ -355,7 +355,7 @@ class CapitalReservation(
 
         return CapitalReservationReservedState(
             last_sequence=envelope.sequence,
-            intent_id=state.intent_id,
+            decision_id=state.decision_id,
             strategy_id=state.strategy_id,
             requested_allocation=state.requested_allocation,
             requested_at=state.requested_at,
@@ -383,10 +383,10 @@ class CapitalReservation(
             envelope=envelope,
         )
 
-        if event.intent_id != state.intent_id:
+        if event.decision_id != state.decision_id:
             raise InvariantViolation(
-                "CapitalReservationRejectedEvent.intent_id does not match "
-                "reservation intent_id"
+                "CapitalReservationRejectedEvent.decision_id does not match "
+                "reservation decision_id"
             )
 
         if event.strategy_id != state.strategy_id:
@@ -397,7 +397,7 @@ class CapitalReservation(
 
         return CapitalReservationRejectedState(
             last_sequence=envelope.sequence,
-            intent_id=state.intent_id,
+            decision_id=state.decision_id,
             strategy_id=state.strategy_id,
             requested_allocation=state.requested_allocation,
             requested_at=state.requested_at,
@@ -424,9 +424,9 @@ class CapitalReservation(
             envelope=envelope,
         )
 
-        if event.intent_id != state.intent_id:
+        if event.decision_id != state.decision_id:
             raise InvariantViolation(
-                "CapitalReleasedEvent.intent_id does not match reservation intent_id"
+                "CapitalReleasedEvent.decision_id does not match reservation decision_id"
             )
 
         if event.strategy_id != state.strategy_id:
@@ -436,7 +436,7 @@ class CapitalReservation(
 
         return CapitalReservationReleasedState(
             last_sequence=envelope.sequence,
-            intent_id=state.intent_id,
+            decision_id=state.decision_id,
             strategy_id=state.strategy_id,
             requested_allocation=state.requested_allocation,
             requested_at=state.requested_at,
@@ -465,9 +465,9 @@ class CapitalReservation(
             envelope=envelope,
         )
 
-        if event.intent_id != state.intent_id:
+        if event.decision_id != state.decision_id:
             raise InvariantViolation(
-                "CapitalConsumedEvent.intent_id does not match reservation intent_id"
+                "CapitalConsumedEvent.decision_id does not match reservation decision_id"
             )
 
         if event.strategy_id != state.strategy_id:
@@ -477,7 +477,7 @@ class CapitalReservation(
 
         return CapitalReservationConsumedState(
             last_sequence=envelope.sequence,
-            intent_id=state.intent_id,
+            decision_id=state.decision_id,
             strategy_id=state.strategy_id,
             requested_allocation=state.requested_allocation,
             requested_at=state.requested_at,

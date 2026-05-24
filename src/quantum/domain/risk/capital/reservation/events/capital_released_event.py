@@ -22,6 +22,6 @@ class CapitalReleasedEvent(RiskEvent):
     event_version: ClassVar[int] = 1
 
     reservation_id: CapitalReservationId
-    intent_id: DecisionId
+    decision_id: DecisionId
     strategy_id: StrategyId
     reason_code: CapitalReleaseReasonCode
