@@ -211,6 +211,9 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
         if new_total > state.requested_volume.value:
             raise OrderOverfill("Fill exceeds remaining order volume")
 
+        if fill.link.broker_order_ref != state.broker_order_ref:
+            raise InvariantViolation("Fill broker_order_ref mismatch")
+
         return [
             OrderFillRegisteredEvent(
                 broker_order_ref=state.broker_order_ref,
@@ -295,6 +298,9 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
 
         if event.broker_order_ref != state.broker_order_ref:
             raise InvariantViolation("Illegal fill event: broker_order_id mismatch")
+
+        if event.fill.link.broker_order_ref != state.broker_order_ref:
+            raise InvariantViolation("Illegal fill event: fill link order mismatch")
 
         if not state.status.is_fillable():
             raise InvariantViolation("Illegal fill event: order is not fillable")
