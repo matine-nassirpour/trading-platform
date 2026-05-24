@@ -24,6 +24,7 @@ class OrderLifecycleStatus(ClosedSetValueObject):
                 "submitted",
                 "acknowledged",
                 "accepted",
+                "completed",
                 "rejected",
                 "cancelled",
                 "expired",
@@ -47,6 +48,10 @@ class OrderLifecycleStatus(ClosedSetValueObject):
         return cls("accepted")
 
     @classmethod
+    def completed(cls) -> OrderLifecycleStatus:
+        return cls("completed")
+
+    @classmethod
     def rejected(cls) -> OrderLifecycleStatus:
         return cls("rejected")
 
@@ -60,6 +65,7 @@ class OrderLifecycleStatus(ClosedSetValueObject):
 
     def is_terminal(self) -> bool:
         return self.value in {
+            "completed",
             "rejected",
             "cancelled",
             "expired",
@@ -68,7 +74,6 @@ class OrderLifecycleStatus(ClosedSetValueObject):
     def can_receive_fill(self) -> bool:
         return self.value in {
             "accepted",
-            "acknowledged",
         }
 
     def can_be_cancelled(self) -> bool:

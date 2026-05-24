@@ -254,13 +254,8 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
         if not isinstance(state, OrderInitializedState):
             raise InvalidStateTransition("Cannot accept uninitialized order")
 
-        if state.lifecycle_status not in {
-            OrderLifecycleStatus.submitted(),
-            OrderLifecycleStatus.acknowledged(),
-        }:
-            raise InvalidStateTransition(
-                "Only submitted or acknowledged orders can be accepted"
-            )
+        if state.lifecycle_status != OrderLifecycleStatus.acknowledged():
+            raise InvalidStateTransition("Only acknowledged orders can be accepted")
 
         return [
             OrderAcceptedEvent(
@@ -464,13 +459,8 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
         if event.broker_order_ref != state.broker_order_ref:
             raise InvariantViolation("Illegal accept event: broker_order_id mismatch")
 
-        if state.lifecycle_status not in {
-            OrderLifecycleStatus.submitted(),
-            OrderLifecycleStatus.acknowledged(),
-        }:
-            raise InvariantViolation(
-                "Only submitted or acknowledged orders can become accepted"
-            )
+        if state.lifecycle_status != OrderLifecycleStatus.acknowledged():
+            raise InvariantViolation("Only acknowledged orders can become accepted")
 
         return state.with_lifecycle_status(
             lifecycle_status=OrderLifecycleStatus.accepted(),
@@ -564,23 +554,17 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
             else OrderFillStatus.partially_filled()
         )
 
-        return OrderInitializedState(
+        new_lifecycle_status = (
+            OrderLifecycleStatus.completed()
+            if new_fill_status.is_filled()
+            else state.lifecycle_status
+        )
+
+        return state.with_registered_fill(
             last_sequence=envelope.sequence,
-            decision_id=state.decision_id,
-            broker_order_ref=state.broker_order_ref,
-            symbol=state.symbol,
-            order_kind=state.order_kind,
-            side=state.side,
-            requested_volume=state.requested_volume,
             filled_volume=NonNegativeVolume(new_filled),
-            lifecycle_status=state.lifecycle_status,
             fill_status=new_fill_status,
-            reference_price=state.reference_price,
-            stop_price=state.stop_price,
-            limit_price=state.limit_price,
-            sl=state.sl,
-            tp=state.tp,
-            time_in_force=state.time_in_force,
+            lifecycle_status=new_lifecycle_status,
         )
 
     @staticmethod
@@ -604,23 +588,9 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
         if state.fill_status.is_filled():
             raise OrderNotFillable("Fully filled order cannot be cancelled")
 
-        return OrderInitializedState(
-            last_sequence=envelope.sequence,
-            decision_id=state.decision_id,
-            broker_order_ref=state.broker_order_ref,
-            symbol=state.symbol,
-            order_kind=state.order_kind,
-            side=state.side,
-            requested_volume=state.requested_volume,
-            filled_volume=state.filled_volume,
+        return state.with_lifecycle_status(
             lifecycle_status=OrderLifecycleStatus.cancelled(),
-            fill_status=state.fill_status,
-            reference_price=state.reference_price,
-            stop_price=state.stop_price,
-            limit_price=state.limit_price,
-            sl=state.sl,
-            tp=state.tp,
-            time_in_force=state.time_in_force,
+            last_sequence=envelope.sequence,
         )
 
     # --- Handler registry -----------------------------------------------------
