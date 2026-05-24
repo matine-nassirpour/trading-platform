@@ -27,7 +27,7 @@ class OrderCreatedEvent(FactEvent):
     event_name: ClassVar[str] = "trading.order.created"
     event_version: ClassVar[int] = 1
 
-    intent_id: DecisionId
+    decision_id: DecisionId
     broker_order_ref: BrokerOrderRef
     symbol: Symbol
 

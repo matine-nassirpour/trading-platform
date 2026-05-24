@@ -34,6 +34,9 @@ from quantum.domain.trading.common.value_objects.volume import (
     PositiveVolume,
 )
 from quantum.domain.trading.execution.fills.execution_fill import ExecutionFill
+from quantum.domain.trading.execution.reports.execution_rejection import (
+    ExecutionRejection,
+)
 from quantum.domain.trading.identity.broker_order_ref import BrokerOrderRef
 from quantum.domain.trading.order.cancellation.order_cancellation_origin import (
     OrderCancellationOrigin,
@@ -41,21 +44,33 @@ from quantum.domain.trading.order.cancellation.order_cancellation_origin import 
 from quantum.domain.trading.order.cancellation.order_cancellation_reason import (
     OrderCancellationReason,
 )
+from quantum.domain.trading.order.events.order_accepted_event import OrderAcceptedEvent
+from quantum.domain.trading.order.events.order_acknowledged_event import (
+    OrderAcknowledgedEvent,
+)
 from quantum.domain.trading.order.events.order_cancelled_event import (
     OrderCancelledEvent,
 )
 from quantum.domain.trading.order.events.order_created_event import OrderCreatedEvent
+from quantum.domain.trading.order.events.order_expired_event import OrderExpiredEvent
 from quantum.domain.trading.order.events.order_fill_registered_event import (
     OrderFillRegisteredEvent,
 )
+from quantum.domain.trading.order.events.order_rejected_event import OrderRejectedEvent
+from quantum.domain.trading.order.events.order_submitted_event import (
+    OrderSubmittedEvent,
+)
 from quantum.domain.trading.order.order_kind import OrderKind
-from quantum.domain.trading.order.order_status import OrderStatus
 from quantum.domain.trading.order.states.order_initialized_state import (
     OrderInitializedState,
 )
 from quantum.domain.trading.order.states.order_state_base import OrderStateBase
 from quantum.domain.trading.order.states.order_uninitialized_state import (
     OrderUninitializedState,
+)
+from quantum.domain.trading.order.status.order_fill_status import OrderFillStatus
+from quantum.domain.trading.order.status.order_lifecycle_status import (
+    OrderLifecycleStatus,
 )
 from quantum.domain.trading.order.time_in_force import TimeInForce
 
@@ -101,7 +116,7 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
     def decide_create(
         cls,
         *,
-        intent_id: DecisionId,
+        decision_id: DecisionId,
         broker_order_ref: BrokerOrderRef,
         symbol: Symbol,
         order_kind: OrderKind,
@@ -126,7 +141,7 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
 
         return [
             OrderCreatedEvent(
-                intent_id=intent_id,
+                decision_id=decision_id,
                 broker_order_ref=broker_order_ref,
                 symbol=symbol,
                 order_kind=order_kind,
@@ -146,7 +161,7 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
         cls,
         *,
         aggregate_id: OrderId,
-        intent_id: DecisionId,
+        decision_id: DecisionId,
         broker_order_ref: BrokerOrderRef,
         symbol: Symbol,
         order_kind: OrderKind,
@@ -176,7 +191,7 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
         aggregate = cls.new(aggregate_id=aggregate_id)
 
         events = cls.decide_create(
-            intent_id=intent_id,
+            decision_id=decision_id,
             broker_order_ref=broker_order_ref,
             symbol=symbol,
             order_kind=order_kind,
@@ -194,6 +209,104 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
 
     # --- Instance commands (valid only after creation) ------------------------
 
+    def submit(
+        self,
+        *,
+        submitted_by: ActorId,
+    ) -> list[BaseEvent]:
+        state = self.state
+
+        if not isinstance(state, OrderInitializedState):
+            raise InvalidStateTransition("Cannot submit uninitialized order")
+
+        if state.lifecycle_status != OrderLifecycleStatus.created():
+            raise InvalidStateTransition("Only created orders can be submitted")
+
+        return [
+            OrderSubmittedEvent(
+                broker_order_ref=state.broker_order_ref,
+                decision_id=state.decision_id,
+                symbol=state.symbol,
+                submitted_by=submitted_by,
+            )
+        ]
+
+    def acknowledge(self) -> list[BaseEvent]:
+        state = self.state
+
+        if not isinstance(state, OrderInitializedState):
+            raise InvalidStateTransition("Cannot acknowledge uninitialized order")
+
+        if state.lifecycle_status != OrderLifecycleStatus.submitted():
+            raise InvalidStateTransition("Only submitted orders can be acknowledged")
+
+        return [
+            OrderAcknowledgedEvent(
+                decision_id=state.decision_id,
+                broker_order_ref=state.broker_order_ref,
+                symbol=state.symbol,
+            )
+        ]
+
+    def accept(self) -> list[BaseEvent]:
+        state = self.state
+
+        if not isinstance(state, OrderInitializedState):
+            raise InvalidStateTransition("Cannot accept uninitialized order")
+
+        if state.lifecycle_status not in {
+            OrderLifecycleStatus.submitted(),
+            OrderLifecycleStatus.acknowledged(),
+        }:
+            raise InvalidStateTransition(
+                "Only submitted or acknowledged orders can be accepted"
+            )
+
+        return [
+            OrderAcceptedEvent(
+                broker_order_ref=state.broker_order_ref,
+            )
+        ]
+
+    def reject(self, *, rejection: ExecutionRejection) -> list[BaseEvent]:
+        state = self.state
+
+        if not isinstance(state, OrderInitializedState):
+            raise InvalidStateTransition("Cannot reject uninitialized order")
+
+        if state.lifecycle_status.is_terminal():
+            raise OrderNotFillable("Order lifecycle is already terminal")
+
+        if state.fill_status.is_filled():
+            raise OrderNotFillable("Fully filled order cannot be rejected")
+
+        return [
+            OrderRejectedEvent(
+                broker_order_ref=state.broker_order_ref,
+                decision_id=state.decision_id,
+                symbol=state.symbol,
+                rejection=rejection,
+            )
+        ]
+
+    def expire(self) -> list[BaseEvent]:
+        state = self.state
+
+        if not isinstance(state, OrderInitializedState):
+            raise InvalidStateTransition("Cannot expire uninitialized order")
+
+        if state.lifecycle_status.is_terminal():
+            raise OrderNotFillable("Order lifecycle is already terminal")
+
+        if state.fill_status.is_filled():
+            raise OrderNotFillable("Fully filled order cannot expire")
+
+        return [
+            OrderExpiredEvent(
+                broker_order_ref=state.broker_order_ref,
+            )
+        ]
+
     def register_fill(self, *, fill: ExecutionFill) -> list[BaseEvent]:
         """
         Registers an execution fill against this order.
@@ -203,8 +316,11 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
         if not isinstance(state, OrderInitializedState):
             raise InvalidStateTransition("Cannot fill uninitialized order")
 
-        if not state.status.is_fillable():
-            raise OrderNotFillable("Order is not in a fillable state")
+        if not state.lifecycle_status.can_receive_fill():
+            raise OrderNotFillable("Order lifecycle cannot receive fills")
+
+        if state.fill_status.is_filled():
+            raise OrderNotFillable("Order is already fully filled")
 
         new_total = state.filled_volume.value + fill.volume.value
 
@@ -238,8 +354,11 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
         if not isinstance(state, OrderInitializedState):
             raise InvalidStateTransition("Cannot cancel uninitialized order")
 
-        if state.status.is_terminal():
-            raise OrderNotFillable("Order already terminal")
+        if state.lifecycle_status.is_terminal():
+            raise OrderNotFillable("Order lifecycle is already terminal")
+
+        if state.fill_status.is_filled():
+            raise OrderNotFillable("Fully filled order cannot be cancelled")
 
         return [
             OrderCancelledEvent(
@@ -268,20 +387,146 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
 
         return OrderInitializedState(
             last_sequence=envelope.sequence,
-            intent_id=event.intent_id,
+            decision_id=event.decision_id,
             broker_order_ref=event.broker_order_ref,
             symbol=event.symbol,
             order_kind=event.order_kind,
             side=event.side,
             requested_volume=event.volume,
             filled_volume=NonNegativeVolume.zero(),
-            status=OrderStatus.pending(),
+            lifecycle_status=OrderLifecycleStatus.created(),
+            fill_status=OrderFillStatus.unfilled(),
             reference_price=event.reference_price,
             stop_price=event.stop_price,
             limit_price=event.limit_price,
             sl=event.sl,
             tp=event.tp,
             time_in_force=event.time_in_force,
+        )
+
+    @staticmethod
+    def _apply_submitted(
+        state: OrderStateBase,
+        event: BaseEvent,
+        envelope: RecordedEventEnvelope,
+    ) -> OrderStateBase:
+        if not isinstance(state, OrderInitializedState):
+            raise InvariantViolation("Order not initialized")
+
+        if not isinstance(event, OrderSubmittedEvent):
+            raise InvariantViolation("Invalid event type")
+
+        if state.lifecycle_status != OrderLifecycleStatus.created():
+            raise InvariantViolation("Only created orders can become submitted")
+
+        return state.with_lifecycle_status(
+            lifecycle_status=OrderLifecycleStatus.submitted(),
+            last_sequence=envelope.sequence,
+        )
+
+    @staticmethod
+    def _apply_acknowledged(
+        state: OrderStateBase,
+        event: BaseEvent,
+        envelope: RecordedEventEnvelope,
+    ) -> OrderStateBase:
+        if not isinstance(state, OrderInitializedState):
+            raise InvariantViolation("Order not initialized")
+
+        if not isinstance(event, OrderAcknowledgedEvent):
+            raise InvariantViolation("Invalid event type")
+
+        if event.broker_order_ref != state.broker_order_ref:
+            raise InvariantViolation(
+                "Illegal acknowledge event: broker_order_id mismatch"
+            )
+
+        if state.lifecycle_status != OrderLifecycleStatus.submitted():
+            raise InvariantViolation("Only submitted orders can become acknowledged")
+
+        return state.with_lifecycle_status(
+            lifecycle_status=OrderLifecycleStatus.acknowledged(),
+            last_sequence=envelope.sequence,
+        )
+
+    @staticmethod
+    def _apply_accepted(
+        state: OrderStateBase,
+        event: BaseEvent,
+        envelope: RecordedEventEnvelope,
+    ) -> OrderStateBase:
+        if not isinstance(state, OrderInitializedState):
+            raise InvariantViolation("Order not initialized")
+
+        if not isinstance(event, OrderAcceptedEvent):
+            raise InvariantViolation("Invalid event type")
+
+        if event.broker_order_ref != state.broker_order_ref:
+            raise InvariantViolation("Illegal accept event: broker_order_id mismatch")
+
+        if state.lifecycle_status not in {
+            OrderLifecycleStatus.submitted(),
+            OrderLifecycleStatus.acknowledged(),
+        }:
+            raise InvariantViolation(
+                "Only submitted or acknowledged orders can become accepted"
+            )
+
+        return state.with_lifecycle_status(
+            lifecycle_status=OrderLifecycleStatus.accepted(),
+            last_sequence=envelope.sequence,
+        )
+
+    @staticmethod
+    def _apply_rejected(
+        state: OrderStateBase,
+        event: BaseEvent,
+        envelope: RecordedEventEnvelope,
+    ) -> OrderStateBase:
+        if not isinstance(state, OrderInitializedState):
+            raise InvariantViolation("Order not initialized")
+
+        if not isinstance(event, OrderRejectedEvent):
+            raise InvariantViolation("Invalid event type")
+
+        if event.broker_order_ref != state.broker_order_ref:
+            raise InvariantViolation("Illegal reject event: broker_order_id mismatch")
+
+        if state.lifecycle_status.is_terminal():
+            raise OrderNotFillable("Order lifecycle is already terminal")
+
+        if state.fill_status.is_filled():
+            raise OrderNotFillable("Fully filled order cannot be rejected")
+
+        return state.with_lifecycle_status(
+            lifecycle_status=OrderLifecycleStatus.rejected(),
+            last_sequence=envelope.sequence,
+        )
+
+    @staticmethod
+    def _apply_expired(
+        state: OrderStateBase,
+        event: BaseEvent,
+        envelope: RecordedEventEnvelope,
+    ) -> OrderStateBase:
+        if not isinstance(state, OrderInitializedState):
+            raise InvariantViolation("Order not initialized")
+
+        if not isinstance(event, OrderExpiredEvent):
+            raise InvariantViolation("Invalid event type")
+
+        if event.broker_order_ref != state.broker_order_ref:
+            raise InvariantViolation("Illegal expire event: broker_order_id mismatch")
+
+        if state.lifecycle_status.is_terminal():
+            raise OrderNotFillable("Order lifecycle is already terminal")
+
+        if state.fill_status.is_filled():
+            raise OrderNotFillable("Fully filled order cannot expire")
+
+        return state.with_lifecycle_status(
+            lifecycle_status=OrderLifecycleStatus.expired(),
+            last_sequence=envelope.sequence,
         )
 
     @staticmethod
@@ -302,30 +547,34 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
         if event.fill.link.broker_order_ref != state.broker_order_ref:
             raise InvariantViolation("Illegal fill event: fill link order mismatch")
 
-        if not state.status.is_fillable():
-            raise InvariantViolation("Illegal fill event: order is not fillable")
+        if not state.lifecycle_status.can_receive_fill():
+            raise OrderNotFillable("Order lifecycle cannot receive fills")
+
+        if state.fill_status.is_filled():
+            raise OrderNotFillable("Order is already fully filled")
 
         new_filled = state.filled_volume.value + event.fill.volume.value
 
         if new_filled > state.requested_volume.value:
             raise InvariantViolation("Illegal fill event: overfill")
 
-        new_status = (
-            OrderStatus.filled()
+        new_fill_status = (
+            OrderFillStatus.filled()
             if new_filled == state.requested_volume.value
-            else OrderStatus.partially_filled()
+            else OrderFillStatus.partially_filled()
         )
 
         return OrderInitializedState(
             last_sequence=envelope.sequence,
-            intent_id=state.intent_id,
+            decision_id=state.decision_id,
             broker_order_ref=state.broker_order_ref,
             symbol=state.symbol,
             order_kind=state.order_kind,
             side=state.side,
             requested_volume=state.requested_volume,
             filled_volume=NonNegativeVolume(new_filled),
-            status=new_status,
+            lifecycle_status=state.lifecycle_status,
+            fill_status=new_fill_status,
             reference_price=state.reference_price,
             stop_price=state.stop_price,
             limit_price=state.limit_price,
@@ -349,19 +598,23 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
         if event.broker_order_ref != state.broker_order_ref:
             raise InvariantViolation("Illegal cancel event: broker_order_id mismatch")
 
-        if state.status.is_terminal():
-            raise InvariantViolation("Illegal cancel event: order already terminal")
+        if state.lifecycle_status.is_terminal():
+            raise OrderNotFillable("Order lifecycle is already terminal")
+
+        if state.fill_status.is_filled():
+            raise OrderNotFillable("Fully filled order cannot be cancelled")
 
         return OrderInitializedState(
             last_sequence=envelope.sequence,
-            intent_id=state.intent_id,
+            decision_id=state.decision_id,
             broker_order_ref=state.broker_order_ref,
             symbol=state.symbol,
             order_kind=state.order_kind,
             side=state.side,
             requested_volume=state.requested_volume,
             filled_volume=state.filled_volume,
-            status=OrderStatus.cancelled(),
+            lifecycle_status=OrderLifecycleStatus.cancelled(),
+            fill_status=state.fill_status,
             reference_price=state.reference_price,
             stop_price=state.stop_price,
             limit_price=state.limit_price,
@@ -378,6 +631,11 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
     ) -> Mapping[type[BaseEvent], EventHandler[OrderStateBase, BaseEvent]]:
         return {
             OrderCreatedEvent: cls._apply_created,
+            OrderSubmittedEvent: cls._apply_submitted,
+            OrderAcknowledgedEvent: cls._apply_acknowledged,
+            OrderAcceptedEvent: cls._apply_accepted,
+            OrderRejectedEvent: cls._apply_rejected,
+            OrderExpiredEvent: cls._apply_expired,
             OrderFillRegisteredEvent: cls._apply_fill_registered,
             OrderCancelledEvent: cls._apply_cancelled,
         }
