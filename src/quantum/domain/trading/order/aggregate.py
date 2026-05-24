@@ -8,6 +8,7 @@ from quantum.domain.shared_kernel.event_sourcing.aggregates.event_sourced_aggreg
     EventHandler,
     EventSourcedAggregateRoot,
 )
+from quantum.domain.shared_kernel.event_sourcing.events.actor_id import ActorId
 from quantum.domain.shared_kernel.event_sourcing.events.base_event import BaseEvent
 from quantum.domain.shared_kernel.event_sourcing.events.event_sequence import (
     EventSequence,
@@ -22,6 +23,7 @@ from quantum.domain.shared_kernel.foundation.errors.invariants import (
 from quantum.domain.shared_kernel.modeling.identity.aggregate_id import AggregateId
 from quantum.domain.shared_kernel.modeling.identity.decision_id import DecisionId
 from quantum.domain.shared_kernel.modeling.monetary.price import Price
+from quantum.domain.shared_kernel.modeling.temporal.epoch_ms import EpochMs
 from quantum.domain.trading.common.errors.order_errors import (
     OrderNotFillable,
     OrderOverfill,
@@ -33,6 +35,12 @@ from quantum.domain.trading.common.value_objects.volume import (
 )
 from quantum.domain.trading.execution.fills.execution_fill import ExecutionFill
 from quantum.domain.trading.identity.broker_order_ref import BrokerOrderRef
+from quantum.domain.trading.order.cancellation.order_cancellation_origin import (
+    OrderCancellationOrigin,
+)
+from quantum.domain.trading.order.cancellation.order_cancellation_reason import (
+    OrderCancellationReason,
+)
 from quantum.domain.trading.order.events.order_cancelled_event import (
     OrderCancelledEvent,
 )
@@ -210,7 +218,15 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
             )
         ]
 
-    def cancel(self) -> list[BaseEvent]:
+    def cancel(
+        self,
+        *,
+        cancelled_by: ActorId,
+        reason: OrderCancellationReason,
+        origin: OrderCancellationOrigin,
+        cancelled_at: EpochMs,
+        comment: str | None = None,
+    ) -> list[BaseEvent]:
         """
         Cancels the order if it has not yet reached a terminal state.
         """
@@ -225,6 +241,11 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
         return [
             OrderCancelledEvent(
                 broker_order_ref=state.broker_order_ref,
+                cancelled_by=cancelled_by,
+                reason=reason,
+                origin=origin,
+                cancelled_at=cancelled_at,
+                comment=comment,
             )
         ]
 
