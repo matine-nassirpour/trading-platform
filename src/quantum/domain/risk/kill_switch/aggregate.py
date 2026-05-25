@@ -1,12 +1,13 @@
 from collections.abc import Mapping
 
+from quantum.domain.risk.kill_switch.detail import KillSwitchDetail
 from quantum.domain.risk.kill_switch.events.killswitch_armed_event import (
     KillSwitchArmedEvent,
 )
 from quantum.domain.risk.kill_switch.events.killswitch_triggered_event import (
     KillSwitchTriggeredEvent,
 )
-from quantum.domain.risk.kill_switch.kill_switch_id import KillSwitchStateId
+from quantum.domain.risk.kill_switch.kill_switch_id import KillSwitchId
 from quantum.domain.risk.kill_switch.reason import KillSwitchReason
 from quantum.domain.risk.kill_switch.states.kill_switch_armed_state import (
     KillSwitchArmedState,
@@ -37,9 +38,7 @@ from quantum.domain.shared_kernel.foundation.errors.invariants import (
 )
 
 
-class KillSwitchState(
-    EventSourcedAggregateRoot[KillSwitchStateId, KillSwitchStateBase]
-):
+class KillSwitchState(EventSourcedAggregateRoot[KillSwitchId, KillSwitchStateBase]):
     """
     Fully event-sourced Kill Switch aggregate.
 
@@ -51,8 +50,8 @@ class KillSwitchState(
     __slots__ = ()
 
     @classmethod
-    def aggregate_id_type(cls) -> type[KillSwitchStateId]:
-        return KillSwitchStateId
+    def aggregate_id_type(cls) -> type[KillSwitchId]:
+        return KillSwitchId
 
     @classmethod
     def state_type(cls) -> type[KillSwitchStateBase]:
@@ -79,7 +78,7 @@ class KillSwitchState(
         self,
         *,
         reason: KillSwitchReason,
-        detail: str | None = None,
+        detail: KillSwitchDetail | None = None,
     ) -> list[BaseEvent]:
 
         state = self.state
@@ -134,6 +133,7 @@ class KillSwitchState(
         return KillSwitchTriggeredState(
             last_sequence=envelope.sequence,
             reason=event.reason,
+            detail=event.detail,
         )
 
     # --- Handler registry -----------------------------------------------------

@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from decimal import Decimal
 
+from quantum.domain.market.instrument.volume.volume_unit import VolumeUnit
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.modeling.value_objects.numeric_value_object import (
     NumericValueObject,
@@ -17,6 +18,8 @@ class PositionVolume(NumericValueObject):
     into an executable order instruction.
     """
 
+    unit: VolumeUnit
+
     @classmethod
     def nominal_type(cls) -> str:
         return "position_volume"
@@ -26,3 +29,6 @@ class PositionVolume(NumericValueObject):
 
         if self.value <= Decimal("0"):
             raise InvariantViolation("PositionVolume must be strictly positive")
+
+        if not isinstance(self.unit, VolumeUnit):
+            raise InvariantViolation("PositionVolume.unit must be VolumeUnit")

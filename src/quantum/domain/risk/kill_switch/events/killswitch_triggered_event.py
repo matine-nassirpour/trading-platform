@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import ClassVar
 
 from quantum.domain.risk.common.events.risk_event import RiskEvent
+from quantum.domain.risk.kill_switch.detail import KillSwitchDetail
 from quantum.domain.risk.kill_switch.reason import KillSwitchReason
 
 
@@ -11,4 +12,4 @@ class KillSwitchTriggeredEvent(RiskEvent):
     event_version: ClassVar[int] = 1
 
     reason: KillSwitchReason
-    detail: str | None = None
+    detail: KillSwitchDetail | None = None

@@ -4,7 +4,7 @@ from quantum.domain.shared_kernel.modeling.identity.aggregate_id import Aggregat
 
 
 @dataclass(frozen=True, slots=True)
-class KillSwitchStateId(AggregateId):
+class KillSwitchId(AggregateId):
     """
     Identity of the KillSwitchState aggregate (event stream id).
     """

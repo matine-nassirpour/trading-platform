@@ -135,20 +135,20 @@ class RiskState(EventSourcedAggregateRoot[RiskStateId, RiskStateBase]):
 
         limits = state.limits
 
-        if pnl.context != limits.context:
-            raise InvariantViolation("PnL MoneyContext mismatch")
-
-        if daily_loss.context != limits.context:
-            raise InvariantViolation("DailyLoss MoneyContext mismatch")
-
-        if exposure.context != limits.context:
-            raise InvariantViolation("Exposure MoneyContext mismatch")
-
-        if notional.context != limits.context:
-            raise InvariantViolation("Notional MoneyContext mismatch")
+        for value, name in (
+            (pnl, "PnL"),
+            (daily_loss, "DailyLoss"),
+            (exposure, "Exposure"),
+            (notional, "Notional"),
+        ):
+            if value.context != limits.context:
+                raise InvariantViolation(f"{name} MoneyContext mismatch")
 
         if pnl.currency != state.equity.currency:
             raise CurrencyMismatch("PnL currency mismatch")
+
+        if daily_loss.currency != state.equity.currency:
+            raise CurrencyMismatch("DailyLoss currency mismatch")
 
         if exposure.currency != state.equity.currency:
             raise CurrencyMismatch("Exposure currency mismatch")

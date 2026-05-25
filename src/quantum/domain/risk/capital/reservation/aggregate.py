@@ -4,8 +4,17 @@ from typing import Self
 from quantum.domain.risk.capital.allocation.capital_allocation_intent import (
     CapitalAllocationIntent,
 )
+from quantum.domain.risk.capital.allocation.capital_allocation_policy import (
+    CapitalAllocationPolicy,
+)
+from quantum.domain.risk.capital.reservation.capital_budget_snapshot import (
+    CapitalBudgetSnapshot,
+)
 from quantum.domain.risk.capital.reservation.capital_reservation_id import (
     CapitalReservationId,
+)
+from quantum.domain.risk.capital.reservation.capital_reservation_policy import (
+    CapitalReservationPolicy,
 )
 from quantum.domain.risk.capital.reservation.events.capital_consumed_event import (
     CapitalConsumedEvent,
@@ -221,14 +230,30 @@ class CapitalReservation(
         self,
         *,
         reserved_allocation: CapitalAllocationIntent,
+        budget: CapitalBudgetSnapshot,
     ) -> list[BaseEvent]:
         """
         Accepts the reservation request and commits capital.
-
-        The approved reservation MAY differ from the originally requested one.
         """
 
         state = self._require_pending()
+
+        CapitalAllocationPolicy.assert_economically_consistent(reserved_allocation)
+
+        rejection_reason = CapitalReservationPolicy.evaluate(
+            requested_allocation=reserved_allocation,
+            budget=budget,
+        )
+
+        if rejection_reason is not None:
+            return [
+                CapitalReservationRejectedEvent(
+                    reservation_id=self.aggregate_id,
+                    decision_id=state.decision_id,
+                    strategy_id=state.strategy_id,
+                    reason_code=rejection_reason,
+                )
+            ]
 
         return [
             CapitalReservedEvent(

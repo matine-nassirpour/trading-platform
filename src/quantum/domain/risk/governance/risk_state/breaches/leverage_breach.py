@@ -33,17 +33,15 @@ class LeverageBreach(RiskBreach):
     def _validate_semantics(self) -> None:
         super()._validate_semantics()
 
-        if not isinstance(self.exposure, Exposure):
-            raise InvariantViolation("LeverageBreach.exposure must be RiskExposure")
+        required_fields: tuple[tuple[str, object, type[object]], ...] = (
+            ("exposure", self.exposure, Exposure),
+            ("equity", self.equity, Equity),
+            ("limit", self.limit, LeverageLimit),
+        )
 
-        if not isinstance(self.limit, LeverageLimit):
-            raise InvariantViolation("LeverageBreach.limit must be LeverageLimit")
-
-        if not isinstance(self.equity, Equity):
-            raise InvariantViolation("LeverageBreach.equity must be Equity")
-
-        if self.equity.value <= 0:
-            raise InvariantViolation("Equity must be strictly positive")
+        for field_name, value, expected_type in required_fields:
+            if not isinstance(value, expected_type):
+                raise InvariantViolation(f"LeverageBreach.{field_name} invalid")
 
         if self.exposure.context != self.equity.context:
             raise InvariantViolation("Exposure context mismatch")
@@ -61,6 +59,14 @@ class LeverageBreach(RiskBreach):
         limit: LeverageLimit,
         policy: RiskThresholdPolicy,
     ) -> LeverageBreach | None:
+
+        if equity.value <= 0:
+            return LeverageBreach(
+                exposure=exposure,
+                equity=equity,
+                limit=limit,
+                policy=policy,
+            )
 
         leverage = exposure.value / equity.value
 

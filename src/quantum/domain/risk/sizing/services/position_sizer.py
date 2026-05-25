@@ -21,10 +21,7 @@ from quantum.domain.risk.sizing.value_objects.sizing_rounding_policy import (
     SizingRoundingPolicy,
 )
 from quantum.domain.risk.sizing.value_objects.stop_distance import StopDistance
-from quantum.domain.shared_kernel.foundation.errors.invariants import (
-    CurrencyMismatch,
-    InvariantViolation,
-)
+from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.modeling.services.domain_service import DomainService
 from quantum.domain.shared_kernel.modeling.value_objects.value_object import ValueObject
 
@@ -91,6 +88,7 @@ class _ComputedSizing:
     min_volume: Decimal
     max_volume: Decimal
     volume_step: Decimal
+    volume_step_anchor: Decimal
 
 
 class PositionSizer(DomainService):
@@ -128,15 +126,21 @@ class PositionSizer(DomainService):
         raw_volume: Decimal,
         min_volume: Decimal,
         volume_step: Decimal,
+        volume_step_anchor: Decimal,
     ) -> Decimal:
         if raw_volume < min_volume:
             return Decimal("0")
 
-        steps = ((raw_volume - min_volume) / volume_step).to_integral_value(
+        steps = ((raw_volume - volume_step_anchor) / volume_step).to_integral_value(
             rounding=ROUND_FLOOR
         )
 
-        return min_volume + steps * volume_step
+        rounded = volume_step_anchor + steps * volume_step
+
+        if rounded < min_volume:
+            return Decimal("0")
+
+        return rounded
 
     @staticmethod
     def _is_step_aligned(
@@ -144,13 +148,16 @@ class PositionSizer(DomainService):
         volume: Decimal,
         min_volume: Decimal,
         volume_step: Decimal,
+        volume_step_anchor: Decimal,
     ) -> bool:
         if volume < min_volume:
             return False
 
-        return ((volume - min_volume) / volume_step) == (
-            (volume - min_volume) / volume_step
-        ).to_integral_value()
+        if volume < volume_step_anchor:
+            return False
+
+        ratio = (volume - volume_step_anchor) / volume_step
+        return ratio == ratio.to_integral_value()
 
     # --- Internal Helpers -----------------------------------------------------
 
@@ -163,9 +170,16 @@ class PositionSizer(DomainService):
         if equity.context != instrument.context:
             raise InvariantViolation("Equity MoneyContext mismatch with instrument")
 
-        if equity.currency != instrument.context.reporting_currency:
-            raise CurrencyMismatch(
-                "Equity currency must match instrument reporting currency"
+        pnl_currency = instrument.currencies.pnl_currency
+
+        if pnl_currency not in instrument.context.allowed_currencies:
+            raise InvariantViolation(
+                "Instrument pnl_currency must belong to instrument MoneyContext"
+            )
+
+        if equity.currency not in instrument.context.allowed_currencies:
+            raise InvariantViolation(
+                "Equity currency must belong to instrument MoneyContext"
             )
 
     @staticmethod
@@ -281,6 +295,7 @@ class PositionSizer(DomainService):
             min_volume=volume_constraints.min_volume,
             max_volume=volume_constraints.max_volume,
             volume_step=volume_constraints.volume_step,
+            volume_step_anchor=volume_constraints.volume_step_anchor,
         )
 
     @staticmethod
@@ -313,6 +328,7 @@ class PositionSizer(DomainService):
             raw_volume=raw_volume,
             min_volume=computed.min_volume,
             volume_step=computed.volume_step,
+            volume_step_anchor=computed.volume_step_anchor,
         )
 
     @staticmethod
@@ -325,6 +341,7 @@ class PositionSizer(DomainService):
             volume=raw_volume,
             min_volume=computed.min_volume,
             volume_step=computed.volume_step,
+            volume_step_anchor=computed.volume_step_anchor,
         ):
             return PositionSizingEvaluation.rejected(
                 PositionSizingRejectionReasonCode.volume_not_step_aligned()
@@ -356,16 +373,20 @@ class PositionSizer(DomainService):
         final_volume: Decimal,
         computed: _ComputedSizing,
         equity: Equity,
+        instrument: InstrumentSpec,
     ) -> PositionSizingEvaluation:
         risk_amount = RiskAmount(
             value=computed.risk_amount_value,
-            currency=equity.currency,
+            currency=instrument.currencies.pnl_currency,
             context=equity.context,
         )
 
         result = PositionSizingResult(
             risk_amount=risk_amount,
-            volume=PositionVolume(final_volume),
+            volume=PositionVolume(
+                value=final_volume,
+                unit=instrument.constraints.volume.volume_unit,
+            ),
         )
 
         return PositionSizingEvaluation.sized(result)
@@ -420,4 +441,5 @@ class PositionSizer(DomainService):
             final_volume=final_volume,
             computed=computed,
             equity=equity,
+            instrument=instrument,
         )

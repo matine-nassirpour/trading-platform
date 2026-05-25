@@ -5,6 +5,7 @@ from quantum.domain.risk.governance.limits.drawdown_limit import DrawdownLimit
 from quantum.domain.risk.governance.limits.exposure_limit import ExposureLimit
 from quantum.domain.risk.governance.limits.leverage_limit import LeverageLimit
 from quantum.domain.risk.governance.limits.notional_limit import NotionalLimit
+from quantum.domain.risk.governance.limits.risk_scope import RiskScope
 from quantum.domain.risk.governance.limits.risk_threshold_policy import (
     RiskThresholdPolicy,
 )
@@ -16,14 +17,15 @@ from quantum.domain.shared_kernel.modeling.value_objects.value_object import Val
 @dataclass(frozen=True, slots=True)
 class RiskLimits(ValueObject):
     """
-    Canonical desk-level risk limits.
+    Canonical risk limits for one explicit risk scope.
 
-    Properties:
-    - All limits are monetary thresholds
-    - Limits are NOT algebraic quantities
-    - All limits must share the same MoneyContext
+    One RiskLimits instance applies to exactly one:
+    - risk scope
+    - monetary context
+    - threshold policy
     """
 
+    scope: RiskScope
     context: MoneyContext
 
     max_drawdown: DrawdownLimit
@@ -34,38 +36,36 @@ class RiskLimits(ValueObject):
 
     threshold_policy: RiskThresholdPolicy
 
-    def _validate_types(self) -> None:
-        if not isinstance(self.context, MoneyContext):
-            raise InvariantViolation("RiskLimits requires a MoneyContext")
-
-        if not isinstance(self.max_drawdown, DrawdownLimit):
-            raise InvariantViolation("max_drawdown must be DrawdownLimit")
-
-        if not isinstance(self.max_notional, NotionalLimit):
-            raise InvariantViolation("max_notional must be NotionalLimit")
-
-        if not isinstance(self.max_daily_loss, DailyLossLimit):
-            raise InvariantViolation("max_daily_loss must be DailyLossLimit")
-
-        if not isinstance(self.max_exposure, ExposureLimit):
-            raise InvariantViolation("RiskLimits requires a ExposureLimit")
-
-        if not isinstance(self.max_leverage, LeverageLimit):
-            raise InvariantViolation("RiskLimits requires a LeverageLimit")
-
-        if not isinstance(self.threshold_policy, RiskThresholdPolicy):
-            raise InvariantViolation("RiskLimits requires a RiskThresholdPolicy")
-
     def _validate_semantics(self) -> None:
-        self._validate_types()
+        required_fields: tuple[tuple[str, object, type[object]], ...] = (
+            ("scope", self.scope, RiskScope),
+            ("context", self.context, MoneyContext),
+            ("max_drawdown", self.max_drawdown, DrawdownLimit),
+            ("max_notional", self.max_notional, NotionalLimit),
+            ("max_daily_loss", self.max_daily_loss, DailyLossLimit),
+            ("max_exposure", self.max_exposure, ExposureLimit),
+            ("max_leverage", self.max_leverage, LeverageLimit),
+            ("threshold_policy", self.threshold_policy, RiskThresholdPolicy),
+        )
 
-        for name, limit in {
+        for field_name, value, expected_type in required_fields:
+            if not isinstance(value, expected_type):
+                raise InvariantViolation(f"RiskLimits.{field_name} invalid")
+
+        contextual_limits = {
             "max_drawdown": self.max_drawdown,
             "max_notional": self.max_notional,
             "max_daily_loss": self.max_daily_loss,
             "max_exposure": self.max_exposure,
-        }.items():
+        }
+
+        for name, limit in contextual_limits.items():
             if limit.context != self.context:
                 raise InvariantViolation(
                     f"{name} MoneyContext mismatch: {limit.context} vs {self.context}"
+                )
+
+            if limit.currency != self.context.reporting_currency:
+                raise InvariantViolation(
+                    f"{name} currency must equal MoneyContext.reporting_currency"
                 )

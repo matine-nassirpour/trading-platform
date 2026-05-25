@@ -13,11 +13,6 @@ class CapitalAllocationIntent(ValueObject):
 
     This object answers:
         "How much capital AND risk is this decision allowed to consume?"
-
-    IMPORTANT:
-    - Declarative, not computed
-    - Stable over time
-    - Fully auditable
     """
 
     capital_fraction: CapitalFraction
