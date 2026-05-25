@@ -10,12 +10,12 @@ from quantum.domain.shared_kernel.modeling.value_objects.value_object import Val
 @dataclass(frozen=True, slots=True)
 class CapitalBudgetSnapshot(ValueObject):
     """
-    Immutable snapshot of available capacity at the time of booking.
+    Immutable snapshot of already consumed reservation capacity.
 
-    Represents the state already aggregated by a projection/application service:
-    - capital already reserved
-    - risk already reserved
-    - remaining capacity
+    Invariants:
+    - used_capital_fraction is optional, but if present: 0 < value <= 1
+    - used_risk_budget is optional, but if present: 0 < value <= 1
+    - remaining capacity is never negative
     """
 
     used_capital_fraction: CapitalFraction | None
@@ -31,6 +31,16 @@ class CapitalBudgetSnapshot(ValueObject):
             self.used_risk_budget, RiskBudgetSlice
         ):
             raise InvariantViolation("used_risk_budget invalid")
+
+        if self.remaining_capital_fraction() < Decimal("0"):
+            raise InvariantViolation(
+                "used_capital_fraction must not exceed total capital capacity"
+            )
+
+        if self.remaining_risk_budget() < Decimal("0"):
+            raise InvariantViolation(
+                "used_risk_budget must not exceed total risk budget capacity"
+            )
 
     def remaining_capital_fraction(self) -> Decimal:
         used = (

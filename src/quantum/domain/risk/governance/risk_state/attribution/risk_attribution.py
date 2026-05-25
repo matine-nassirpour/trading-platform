@@ -70,6 +70,17 @@ class RiskAttribution(ValueObject):
 
     @staticmethod
     def ranked(sources: tuple[RiskSource, ...]) -> RiskAttribution:
+        if not sources:
+            raise InvariantViolation(
+                "RiskAttribution.ranked() requires at least one RiskSource"
+            )
+
+        for source in sources:
+            if not isinstance(source, RiskSource):
+                raise InvariantViolation(
+                    "RiskAttribution.ranked() requires only RiskSource instances"
+                )
+
         return RiskAttribution(
             sources=tuple(
                 RankedRiskSource(

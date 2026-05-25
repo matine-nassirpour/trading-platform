@@ -8,6 +8,9 @@ from quantum.domain.risk.governance.limits.risk_threshold_policy import (
 )
 from quantum.domain.risk.governance.measures.exposure import Exposure
 from quantum.domain.risk.governance.risk_state.breaches.risk_breach import RiskBreach
+from quantum.domain.risk.governance.services.threshold_breach_detector import (
+    ThresholdBreachDetector,
+)
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
 
 
@@ -46,12 +49,13 @@ class ExposureBreach(RiskBreach):
         limit: ExposureLimit,
         policy: RiskThresholdPolicy,
     ) -> ExposureBreach | None:
-
-        if not policy.is_breached(current.value, limit.value):
-            return None
-
-        return ExposureBreach(
-            current=current,
-            limit=limit,
+        return ThresholdBreachDetector.detect(
+            current_value=current.value,
+            limit_value=limit.value,
             policy=policy,
+            breach_factory=lambda: ExposureBreach(
+                current=current,
+                limit=limit,
+                policy=policy,
+            ),
         )

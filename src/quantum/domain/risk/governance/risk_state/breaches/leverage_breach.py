@@ -9,6 +9,9 @@ from quantum.domain.risk.governance.limits.risk_threshold_policy import (
 from quantum.domain.risk.governance.measures.equity import Equity
 from quantum.domain.risk.governance.measures.exposure import Exposure
 from quantum.domain.risk.governance.risk_state.breaches.risk_breach import RiskBreach
+from quantum.domain.risk.governance.services.threshold_breach_detector import (
+    ThresholdBreachDetector,
+)
 from quantum.domain.shared_kernel.foundation.errors.invariants import (
     CurrencyMismatch,
     InvariantViolation,
@@ -70,12 +73,14 @@ class LeverageBreach(RiskBreach):
 
         leverage = exposure.value / equity.value
 
-        if not policy.is_breached(leverage, limit.value):
-            return None
-
-        return LeverageBreach(
-            exposure=exposure,
-            equity=equity,
-            limit=limit,
+        return ThresholdBreachDetector.detect(
+            current_value=leverage,
+            limit_value=limit.value,
             policy=policy,
+            breach_factory=lambda: LeverageBreach(
+                exposure=exposure,
+                equity=equity,
+                limit=limit,
+                policy=policy,
+            ),
         )

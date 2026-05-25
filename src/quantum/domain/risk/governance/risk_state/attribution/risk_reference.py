@@ -71,8 +71,8 @@ class RiskReference(ValueObject):
         return RiskReference(f"strategy:{strategy_id}")
 
     @staticmethod
-    def symbol(symbol: str) -> RiskReference:
-        return RiskReference(f"symbol:{symbol.lower()}")
+    def instrument(symbol: str) -> RiskReference:
+        return RiskReference(f"instrument:{symbol.lower()}")
 
     @staticmethod
     def position(position_id: str) -> RiskReference:

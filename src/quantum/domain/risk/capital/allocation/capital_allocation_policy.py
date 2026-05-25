@@ -13,6 +13,28 @@ class CapitalAllocationPolicy(DomainService):
     __slots__ = ()
 
     @staticmethod
+    def assert_reserved_not_greater_than_requested(
+        *,
+        requested: CapitalAllocationIntent,
+        reserved: CapitalAllocationIntent,
+    ) -> None:
+        if not isinstance(requested, CapitalAllocationIntent):
+            raise InvariantViolation("requested must be CapitalAllocationIntent")
+
+        if not isinstance(reserved, CapitalAllocationIntent):
+            raise InvariantViolation("reserved must be CapitalAllocationIntent")
+
+        if reserved.capital_fraction.value > requested.capital_fraction.value:
+            raise InvariantViolation(
+                "reserved capital_fraction must not exceed requested capital_fraction"
+            )
+
+        if reserved.risk_budget.value > requested.risk_budget.value:
+            raise InvariantViolation(
+                "reserved risk_budget must not exceed requested risk_budget"
+            )
+
+    @staticmethod
     def assert_economically_consistent(
         allocation: CapitalAllocationIntent,
     ) -> None:

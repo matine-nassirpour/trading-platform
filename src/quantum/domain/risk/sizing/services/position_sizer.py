@@ -12,6 +12,9 @@ from quantum.domain.risk.governance.measures.equity import Equity
 from quantum.domain.risk.sizing.reason_codes.position_sizing_rejection_reason_code import (
     PositionSizingRejectionReasonCode,
 )
+from quantum.domain.risk.sizing.services.sizing_currency_validator import (
+    SizingCurrencyValidator,
+)
 from quantum.domain.risk.sizing.value_objects.position_sizing_result import (
     PositionSizingResult,
 )
@@ -21,7 +24,10 @@ from quantum.domain.risk.sizing.value_objects.sizing_rounding_policy import (
     SizingRoundingPolicy,
 )
 from quantum.domain.risk.sizing.value_objects.stop_distance import StopDistance
-from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.foundation.errors.invariants import (
+    CurrencyMismatch,
+    InvariantViolation,
+)
 from quantum.domain.shared_kernel.modeling.services.domain_service import DomainService
 from quantum.domain.shared_kernel.modeling.value_objects.value_object import ValueObject
 
@@ -162,27 +168,6 @@ class PositionSizer(DomainService):
     # --- Internal Helpers -----------------------------------------------------
 
     @staticmethod
-    def _validate_context(
-        *,
-        equity: Equity,
-        instrument: InstrumentSpec,
-    ) -> None:
-        if equity.context != instrument.context:
-            raise InvariantViolation("Equity MoneyContext mismatch with instrument")
-
-        pnl_currency = instrument.currencies.pnl_currency
-
-        if pnl_currency not in instrument.context.allowed_currencies:
-            raise InvariantViolation(
-                "Instrument pnl_currency must belong to instrument MoneyContext"
-            )
-
-        if equity.currency not in instrument.context.allowed_currencies:
-            raise InvariantViolation(
-                "Equity currency must belong to instrument MoneyContext"
-            )
-
-    @staticmethod
     def _reject_invalid_inputs(
         *,
         equity: Equity,
@@ -214,6 +199,15 @@ class PositionSizer(DomainService):
         stop_distance: StopDistance,
         instrument: InstrumentSpec,
     ) -> Decimal | PositionSizingEvaluation:
+
+        tick_value_currency = instrument.microstructure.tick_value.currency
+
+        if equity.currency != tick_value_currency:
+            raise CurrencyMismatch(
+                "Cannot compute risk-limited volume: equity.currency must equal "
+                "instrument.microstructure.tick_value.currency"
+            )
+
         risk_amount_value = equity.value * allocation.risk_budget.value
 
         if risk_amount_value <= Decimal("0"):
@@ -403,7 +397,10 @@ class PositionSizer(DomainService):
         reference_price: ReferencePrice,
         rounding_policy: SizingRoundingPolicy,
     ) -> PositionSizingEvaluation:
-        PositionSizer._validate_context(equity=equity, instrument=instrument)
+        SizingCurrencyValidator.validate(
+            equity=equity,
+            instrument=instrument,
+        )
 
         rejection = PositionSizer._reject_invalid_inputs(
             equity=equity,

@@ -1,27 +1,10 @@
 from collections.abc import Mapping
-from decimal import Decimal
 
 from quantum.domain.risk.governance.limits.risk_limits import RiskLimits
 from quantum.domain.risk.governance.measures.daily_loss import DailyLoss
-from quantum.domain.risk.governance.measures.drawdown import Drawdown
 from quantum.domain.risk.governance.measures.equity import Equity
 from quantum.domain.risk.governance.measures.exposure import Exposure
 from quantum.domain.risk.governance.measures.notional import Notional
-from quantum.domain.risk.governance.risk_state.breaches.daily_loss_breach import (
-    DailyLossBreach,
-)
-from quantum.domain.risk.governance.risk_state.breaches.drawdown_breach import (
-    DrawdownBreach,
-)
-from quantum.domain.risk.governance.risk_state.breaches.exposure_breach import (
-    ExposureBreach,
-)
-from quantum.domain.risk.governance.risk_state.breaches.leverage_breach import (
-    LeverageBreach,
-)
-from quantum.domain.risk.governance.risk_state.breaches.notional_breach import (
-    NotionalBreach,
-)
 from quantum.domain.risk.governance.risk_state.events.equity_adjusted_event import (
     EquityAdjustedEvent,
 )
@@ -41,6 +24,9 @@ from quantum.domain.risk.governance.risk_state.states.risk_state_base import (
 from quantum.domain.risk.governance.risk_state.states.risk_uninitialized_state import (
     RiskUninitializedState,
 )
+from quantum.domain.risk.governance.services.risk_governance_evaluator import (
+    RiskGovernanceEvaluator,
+)
 from quantum.domain.shared_kernel.event_sourcing.aggregates.event_sourced_aggregate_root import (
     EventHandler,
     EventSourcedAggregateRoot,
@@ -53,7 +39,6 @@ from quantum.domain.shared_kernel.event_sourcing.events.recorded_event_envelope 
     RecordedEventEnvelope,
 )
 from quantum.domain.shared_kernel.foundation.errors.invariants import (
-    CurrencyMismatch,
     InvalidStateTransition,
     InvariantViolation,
 )
@@ -122,106 +107,6 @@ class RiskState(EventSourcedAggregateRoot[RiskStateId, RiskStateBase]):
         ]
 
     # --- Commands -------------------------------------------------------------
-
-    @staticmethod
-    def _validate_inputs(
-        *,
-        state: RiskInitializedState,
-        pnl: RealizedPnL,
-        daily_loss: DailyLoss,
-        exposure: Exposure,
-        notional: Notional,
-    ) -> None:
-
-        limits = state.limits
-
-        for value, name in (
-            (pnl, "PnL"),
-            (daily_loss, "DailyLoss"),
-            (exposure, "Exposure"),
-            (notional, "Notional"),
-        ):
-            if value.context != limits.context:
-                raise InvariantViolation(f"{name} MoneyContext mismatch")
-
-        if pnl.currency != state.equity.currency:
-            raise CurrencyMismatch("PnL currency mismatch")
-
-        if daily_loss.currency != state.equity.currency:
-            raise CurrencyMismatch("DailyLoss currency mismatch")
-
-        if exposure.currency != state.equity.currency:
-            raise CurrencyMismatch("Exposure currency mismatch")
-
-        if notional.currency != state.equity.currency:
-            raise CurrencyMismatch("Notional currency mismatch")
-
-    @staticmethod
-    def _compute_equity_and_drawdown(
-        *,
-        state: RiskInitializedState,
-        pnl: RealizedPnL,
-    ) -> tuple[Equity, Equity, Drawdown]:
-
-        new_equity = state.equity.add(pnl)
-        new_peak = max(state.equity_peak, new_equity, key=lambda e: e.value)
-        drawdown_value = new_peak.value - new_equity.value
-
-        if drawdown_value < Decimal("0"):
-            raise InvariantViolation("Drawdown cannot be negative")
-
-        drawdown = Drawdown(
-            value=drawdown_value,
-            currency=new_equity.currency,
-            context=new_equity.context,
-        )
-
-        return new_equity, new_peak, drawdown
-
-    @staticmethod
-    def _detect_breach_events(
-        *,
-        state: RiskInitializedState,
-        drawdown: Drawdown,
-        daily_loss: DailyLoss,
-        exposure: Exposure,
-        notional: Notional,
-        new_equity: Equity,
-    ) -> list[BaseEvent]:
-
-        limits = state.limits
-
-        breaches = [
-            DrawdownBreach.detect(
-                current=drawdown,
-                limit=limits.max_drawdown,
-                policy=limits.threshold_policy,
-            ),
-            DailyLossBreach.detect(
-                current=daily_loss,
-                limit=limits.max_daily_loss,
-                policy=limits.threshold_policy,
-            ),
-            ExposureBreach.detect(
-                current=exposure,
-                limit=limits.max_exposure,
-                policy=limits.threshold_policy,
-            ),
-            NotionalBreach.detect(
-                current=notional,
-                limit=limits.max_notional,
-                policy=limits.threshold_policy,
-            ),
-            LeverageBreach.detect(
-                exposure=exposure,
-                equity=new_equity,
-                limit=limits.max_leverage,
-                policy=limits.threshold_policy,
-            ),
-        ]
-
-        return [RiskBreachDetectedEvent(breach=b) for b in breaches if b is not None]
-
     def register_pnl(
         self,
         *,
@@ -239,39 +124,27 @@ class RiskState(EventSourcedAggregateRoot[RiskStateId, RiskStateBase]):
         if not isinstance(state, RiskInitializedState):
             raise InvalidStateTransition("RiskState not initialized")
 
-        # --- Strict MoneyContext and currency validation
-        self._validate_inputs(
+        evaluation = RiskGovernanceEvaluator.evaluate_register_pnl(
             state=state,
             pnl=pnl,
             daily_loss=daily_loss,
             exposure=exposure,
             notional=notional,
-        )
-
-        new_equity, new_peak, drawdown = self._compute_equity_and_drawdown(
-            state=state,
-            pnl=pnl,
         )
 
         events: list[BaseEvent] = [
             EquityAdjustedEvent(
                 pnl=pnl,
-                new_equity=new_equity,
-                new_equity_peak=new_peak,
+                new_equity=evaluation.new_equity,
+                new_equity_peak=evaluation.new_equity_peak,
             )
         ]
 
-        # --- Risk breach detection
-        breach_events = self._detect_breach_events(
-            state=state,
-            drawdown=drawdown,
-            daily_loss=daily_loss,
-            exposure=exposure,
-            notional=notional,
-            new_equity=new_equity,
+        events.extend(
+            RiskBreachDetectedEvent(breach=breach) for breach in evaluation.breaches
         )
 
-        return events + breach_events
+        return events
 
     # --- Event → State transitions --------------------------------------------
 

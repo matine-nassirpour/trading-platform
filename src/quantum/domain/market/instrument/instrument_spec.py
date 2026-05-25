@@ -54,6 +54,16 @@ class InstrumentSpec(ValueObject):
                 "tick_value.currency must belong to MoneyContext.allowed_currencies"
             )
 
+        if self.microstructure.tick_value.currency != self.currencies.pnl_currency:
+            raise InvariantViolation(
+                "microstructure.tick_value.currency must equal currencies.pnl_currency"
+            )
+
+        if self.microstructure.point_value.currency != self.currencies.pnl_currency:
+            raise InvariantViolation(
+                "microstructure.point_value.currency must equal currencies.pnl_currency"
+            )
+
         if self.currencies.pnl_currency not in self.context.allowed_currencies:
             raise InvariantViolation(
                 "pnl_currency must belong to MoneyContext.allowed_currencies"

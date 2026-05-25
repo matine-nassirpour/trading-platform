@@ -238,7 +238,16 @@ class CapitalReservation(
 
         state = self._require_pending()
 
+        CapitalAllocationPolicy.assert_economically_consistent(
+            state.requested_allocation
+        )
+
         CapitalAllocationPolicy.assert_economically_consistent(reserved_allocation)
+
+        CapitalAllocationPolicy.assert_reserved_not_greater_than_requested(
+            requested=state.requested_allocation,
+            reserved=reserved_allocation,
+        )
 
         rejection_reason = CapitalReservationPolicy.evaluate(
             requested_allocation=reserved_allocation,
@@ -377,6 +386,11 @@ class CapitalReservation(
             raise InvariantViolation(
                 "CapitalReservedEvent.strategy_id does not match reservation strategy_id"
             )
+
+        CapitalAllocationPolicy.assert_reserved_not_greater_than_requested(
+            requested=state.requested_allocation,
+            reserved=event.reserved_allocation,
+        )
 
         return CapitalReservationReservedState(
             last_sequence=envelope.sequence,

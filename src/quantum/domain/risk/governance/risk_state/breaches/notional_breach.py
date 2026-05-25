@@ -8,6 +8,9 @@ from quantum.domain.risk.governance.limits.risk_threshold_policy import (
 )
 from quantum.domain.risk.governance.measures.notional import Notional
 from quantum.domain.risk.governance.risk_state.breaches.risk_breach import RiskBreach
+from quantum.domain.risk.governance.services.threshold_breach_detector import (
+    ThresholdBreachDetector,
+)
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
 
 
@@ -47,12 +50,13 @@ class NotionalBreach(RiskBreach):
         limit: NotionalLimit,
         policy: RiskThresholdPolicy,
     ) -> NotionalBreach | None:
-
-        if not policy.is_breached(current.value, limit.value):
-            return None
-
-        return NotionalBreach(
-            current=current,
-            limit=limit,
+        return ThresholdBreachDetector.detect(
+            current_value=current.value,
+            limit_value=limit.value,
             policy=policy,
+            breach_factory=lambda: NotionalBreach(
+                current=current,
+                limit=limit,
+                policy=policy,
+            ),
         )

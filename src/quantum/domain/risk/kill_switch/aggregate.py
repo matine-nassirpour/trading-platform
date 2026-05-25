@@ -38,7 +38,7 @@ from quantum.domain.shared_kernel.foundation.errors.invariants import (
 )
 
 
-class KillSwitchState(EventSourcedAggregateRoot[KillSwitchId, KillSwitchStateBase]):
+class KillSwitch(EventSourcedAggregateRoot[KillSwitchId, KillSwitchStateBase]):
     """
     Fully event-sourced Kill Switch aggregate.
 
