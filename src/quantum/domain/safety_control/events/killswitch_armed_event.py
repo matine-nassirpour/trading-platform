@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 from typing import ClassVar
 
-from quantum.domain.risk.common.events.risk_event import RiskEvent
+from quantum.domain.safety_control.events.safety_event import SafetyEvent
 
 
 @dataclass(frozen=True, slots=True)
-class KillSwitchArmedEvent(RiskEvent):
+class KillSwitchArmedEvent(SafetyEvent):
     """
     Emitted when the kill switch is armed.
     """

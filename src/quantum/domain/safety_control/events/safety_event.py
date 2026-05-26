@@ -5,8 +5,7 @@ from quantum.domain.shared_kernel.event_sourcing.events.base_event import BaseEv
 
 
 @dataclass(frozen=True, slots=True)
-class RiskEvent(BaseEvent, ABC):
+class SafetyEvent(BaseEvent, ABC):
     """
-    Represents an event related to risk management,
-    capital protection, or system safety.
+    Represents an event related to safety control.
     """

@@ -1,24 +1,24 @@
 from collections.abc import Mapping
 
-from quantum.domain.risk.kill_switch.detail import KillSwitchDetail
-from quantum.domain.risk.kill_switch.events.killswitch_armed_event import (
+from quantum.domain.safety_control.detail import KillSwitchDetail
+from quantum.domain.safety_control.events.killswitch_armed_event import (
     KillSwitchArmedEvent,
 )
-from quantum.domain.risk.kill_switch.events.killswitch_triggered_event import (
+from quantum.domain.safety_control.events.killswitch_triggered_event import (
     KillSwitchTriggeredEvent,
 )
-from quantum.domain.risk.kill_switch.kill_switch_id import KillSwitchId
-from quantum.domain.risk.kill_switch.reason import KillSwitchReason
-from quantum.domain.risk.kill_switch.states.kill_switch_armed_state import (
+from quantum.domain.safety_control.kill_switch_id import KillSwitchId
+from quantum.domain.safety_control.reason import KillSwitchReason
+from quantum.domain.safety_control.states.kill_switch_armed_state import (
     KillSwitchArmedState,
 )
-from quantum.domain.risk.kill_switch.states.kill_switch_state_base import (
+from quantum.domain.safety_control.states.kill_switch_state_base import (
     KillSwitchStateBase,
 )
-from quantum.domain.risk.kill_switch.states.kill_switch_triggered_state import (
+from quantum.domain.safety_control.states.kill_switch_triggered_state import (
     KillSwitchTriggeredState,
 )
-from quantum.domain.risk.kill_switch.states.kill_switch_uninitialized_state import (
+from quantum.domain.safety_control.states.kill_switch_uninitialized_state import (
     KillSwitchUninitializedState,
 )
 from quantum.domain.shared_kernel.event_sourcing.aggregates.event_sourced_aggregate_root import (
