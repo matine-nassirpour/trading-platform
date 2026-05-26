@@ -416,38 +416,37 @@ trading-platform/
 │       │   │   │   ├── __init__.py
 │       │   │   │   └── market_regime.py
 │       │   │   └── __init__.py
-│       │   ├── risk/
-│       │   │   ├── sizing/
-│       │   │   │   ├── events/
-│       │   │   │   │   ├── __init__.py
-│       │   │   │   │   ├── position_sized_event.py
-│       │   │   │   │   ├── position_sizing_rejected_event.py
-│       │   │   │   │   └── position_sizing_requested_event.py
-│       │   │   │   ├── reason_codes/
-│       │   │   │   │   ├── __init__.py
-│       │   │   │   │   └── position_sizing_rejection_reason_code.py
-│       │   │   │   ├── services/
-│       │   │   │   │   ├── __init__.py
-│       │   │   │   │   ├── position_sizer.py
-│       │   │   │   │   └── sizing_currency_validator.py
-│       │   │   │   ├── states/
-│       │   │   │   │   ├── __init__.py
-│       │   │   │   │   ├── position_sizing_pending_state.py
-│       │   │   │   │   ├── position_sizing_rejected_state.py
-│       │   │   │   │   ├── position_sizing_sized_state.py
-│       │   │   │   │   ├── position_sizing_state_base.py
-│       │   │   │   │   └── position_sizing_uninitialized_state.py
-│       │   │   │   ├── value_objects/
-│       │   │   │   │   ├── __init__.py
-│       │   │   │   │   ├── position_sizing_result.py
-│       │   │   │   │   ├── position_volume.py
-│       │   │   │   │   ├── risk_amount.py
-│       │   │   │   │   ├── sizing_rounding_policy.py
-│       │   │   │   │   └── stop_distance.py
+│       │   ├── position_sizing/
+│       │   │   ├── events/
 │       │   │   │   ├── __init__.py
-│       │   │   │   ├── aggregate.py
-│       │   │   │   └── position_sizing_id.py
-│       │   │   └── __init__.py
+│       │   │   │   ├── position_sized_event.py
+│       │   │   │   ├── position_sizing_event.py
+│       │   │   │   ├── position_sizing_rejected_event.py
+│       │   │   │   └── position_sizing_requested_event.py
+│       │   │   ├── reason_codes/
+│       │   │   │   ├── __init__.py
+│       │   │   │   └── position_sizing_rejection_reason_code.py
+│       │   │   ├── services/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── position_sizer.py
+│       │   │   │   └── sizing_currency_validator.py
+│       │   │   ├── states/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── position_sizing_pending_state.py
+│       │   │   │   ├── position_sizing_rejected_state.py
+│       │   │   │   ├── position_sizing_sized_state.py
+│       │   │   │   ├── position_sizing_state_base.py
+│       │   │   │   └── position_sizing_uninitialized_state.py
+│       │   │   ├── value_objects/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── position_sizing_result.py
+│       │   │   │   ├── position_volume.py
+│       │   │   │   ├── risk_amount.py
+│       │   │   │   ├── sizing_rounding_policy.py
+│       │   │   │   └── stop_distance.py
+│       │   │   ├── __init__.py
+│       │   │   ├── aggregate.py
+│       │   │   └── position_sizing_id.py
 │       │   ├── risk_governance/
 │       │   │   ├── attribution/
 │       │   │   │   ├── __init__.py

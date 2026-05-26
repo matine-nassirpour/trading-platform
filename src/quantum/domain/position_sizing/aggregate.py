@@ -1,38 +1,42 @@
 from collections.abc import Mapping
 from typing import Self
 
-from quantum.domain.capital_management.allocation import CapitalAllocationIntent
+from quantum.domain.capital_management.allocation.capital_allocation_intent import (
+    CapitalAllocationIntent,
+)
 from quantum.domain.market.instrument.identity.symbol import Symbol
 from quantum.domain.market.instrument.instrument_spec import InstrumentSpec
 from quantum.domain.market.instrument.pricing.reference_price import ReferencePrice
-from quantum.domain.risk.sizing.events.position_sized_event import PositionSizedEvent
-from quantum.domain.risk.sizing.events.position_sizing_rejected_event import (
+from quantum.domain.position_sizing.events.position_sized_event import (
+    PositionSizedEvent,
+)
+from quantum.domain.position_sizing.events.position_sizing_rejected_event import (
     PositionSizingRejectedEvent,
 )
-from quantum.domain.risk.sizing.events.position_sizing_requested_event import (
+from quantum.domain.position_sizing.events.position_sizing_requested_event import (
     PositionSizingRequestedEvent,
 )
-from quantum.domain.risk.sizing.position_sizing_id import PositionSizingId
-from quantum.domain.risk.sizing.services.position_sizer import PositionSizer
-from quantum.domain.risk.sizing.states.position_sizing_pending_state import (
+from quantum.domain.position_sizing.position_sizing_id import PositionSizingId
+from quantum.domain.position_sizing.services.position_sizer import PositionSizer
+from quantum.domain.position_sizing.states.position_sizing_pending_state import (
     PositionSizingPendingState,
 )
-from quantum.domain.risk.sizing.states.position_sizing_rejected_state import (
+from quantum.domain.position_sizing.states.position_sizing_rejected_state import (
     PositionSizingRejectedState,
 )
-from quantum.domain.risk.sizing.states.position_sizing_sized_state import (
+from quantum.domain.position_sizing.states.position_sizing_sized_state import (
     PositionSizingSizedState,
 )
-from quantum.domain.risk.sizing.states.position_sizing_state_base import (
+from quantum.domain.position_sizing.states.position_sizing_state_base import (
     PositionSizingStateBase,
 )
-from quantum.domain.risk.sizing.states.position_sizing_uninitialized_state import (
+from quantum.domain.position_sizing.states.position_sizing_uninitialized_state import (
     PositionSizingUninitializedState,
 )
-from quantum.domain.risk.sizing.value_objects.sizing_rounding_policy import (
+from quantum.domain.position_sizing.value_objects.sizing_rounding_policy import (
     SizingRoundingPolicy,
 )
-from quantum.domain.risk.sizing.value_objects.stop_distance import StopDistance
+from quantum.domain.position_sizing.value_objects.stop_distance import StopDistance
 from quantum.domain.risk_governance.measures.equity import Equity
 from quantum.domain.shared_kernel.event_sourcing.aggregates.event_sourced_aggregate_root import (
     EventHandler,

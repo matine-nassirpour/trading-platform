@@ -1,16 +1,18 @@
 from dataclasses import dataclass
 
-from quantum.domain.capital_management.allocation import CapitalAllocationIntent
+from quantum.domain.capital_management.allocation.capital_allocation_intent import (
+    CapitalAllocationIntent,
+)
 from quantum.domain.market.instrument.identity.symbol import Symbol
 from quantum.domain.market.instrument.instrument_spec import InstrumentSpec
 from quantum.domain.market.instrument.pricing.reference_price import ReferencePrice
-from quantum.domain.risk.sizing.states.position_sizing_state_base import (
+from quantum.domain.position_sizing.states.position_sizing_state_base import (
     PositionSizingStateBase,
 )
-from quantum.domain.risk.sizing.value_objects.sizing_rounding_policy import (
+from quantum.domain.position_sizing.value_objects.sizing_rounding_policy import (
     SizingRoundingPolicy,
 )
-from quantum.domain.risk.sizing.value_objects.stop_distance import StopDistance
+from quantum.domain.position_sizing.value_objects.stop_distance import StopDistance
 from quantum.domain.risk_governance.measures.equity import Equity
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.modeling.identity.decision_id import DecisionId

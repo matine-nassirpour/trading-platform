@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
-from quantum.domain.risk.sizing.value_objects.position_volume import PositionVolume
-from quantum.domain.risk.sizing.value_objects.risk_amount import RiskAmount
+from quantum.domain.position_sizing.value_objects.position_volume import PositionVolume
+from quantum.domain.position_sizing.value_objects.risk_amount import RiskAmount
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.modeling.value_objects.value_object import ValueObject
 
