@@ -10,5 +10,5 @@ class KillSwitchArmedEvent(SafetyControlEvent):
     Emitted when the kill switch is armed.
     """
 
-    event_name: ClassVar[str] = "risk.killswitch.armed"
+    event_name: ClassVar[str] = "safety_control.killswitch.armed"
     event_version: ClassVar[int] = 1
