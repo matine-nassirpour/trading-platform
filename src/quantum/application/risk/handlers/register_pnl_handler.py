@@ -7,11 +7,13 @@ from quantum.application.shared.base_handlers.aggregate_command_handler import (
 from quantum.application.shared.base_handlers.aggregate_existence_policy import (
     AggregateExistencePolicy,
 )
-from quantum.domain.risk.governance.risk_state.aggregate import RiskState
+from quantum.domain.risk_governance.aggregate import RiskGovernance
 from quantum.domain.shared_kernel.event_sourcing.events.base_event import BaseEvent
 
 
-class RegisterPnLHandler(AggregateCommandHandler[RegisterPnLCommand, None, RiskState]):
+class RegisterPnLHandler(
+    AggregateCommandHandler[RegisterPnLCommand, None, RiskGovernance]
+):
     """
     Registers realized PnL and updates global risk state.
     """
@@ -29,12 +31,11 @@ class RegisterPnLHandler(AggregateCommandHandler[RegisterPnLCommand, None, RiskS
         self,
         *,
         command: RegisterPnLCommand,
-        aggregate: RiskState,
+        aggregate: RiskGovernance,
     ) -> tuple[Iterable[BaseEvent], None]:
 
         domain_events = aggregate.register_pnl(
             pnl=command.pnl,
-            drawdown=command.drawdown,
             daily_loss=command.daily_loss,
             exposure=command.exposure,
             notional=command.notional,

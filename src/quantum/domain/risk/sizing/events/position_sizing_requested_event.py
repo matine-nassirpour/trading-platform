@@ -8,12 +8,12 @@ from quantum.domain.risk.capital.allocation.capital_allocation_intent import (
     CapitalAllocationIntent,
 )
 from quantum.domain.risk.common.events.risk_event import RiskEvent
-from quantum.domain.risk.governance.measures.equity import Equity
 from quantum.domain.risk.sizing.position_sizing_id import PositionSizingId
 from quantum.domain.risk.sizing.value_objects.sizing_rounding_policy import (
     SizingRoundingPolicy,
 )
 from quantum.domain.risk.sizing.value_objects.stop_distance import StopDistance
+from quantum.domain.risk_governance.measures.equity import Equity
 from quantum.domain.shared_kernel.modeling.identity.decision_id import DecisionId
 from quantum.domain.shared_kernel.modeling.identity.strategy_id import StrategyId
 

@@ -7,7 +7,6 @@ from quantum.domain.market.instrument.pricing.reference_price import ReferencePr
 from quantum.domain.risk.capital.allocation.capital_allocation_intent import (
     CapitalAllocationIntent,
 )
-from quantum.domain.risk.governance.measures.equity import Equity
 from quantum.domain.risk.sizing.events.position_sized_event import PositionSizedEvent
 from quantum.domain.risk.sizing.events.position_sizing_rejected_event import (
     PositionSizingRejectedEvent,
@@ -36,6 +35,7 @@ from quantum.domain.risk.sizing.value_objects.sizing_rounding_policy import (
     SizingRoundingPolicy,
 )
 from quantum.domain.risk.sizing.value_objects.stop_distance import StopDistance
+from quantum.domain.risk_governance.measures.equity import Equity
 from quantum.domain.shared_kernel.event_sourcing.aggregates.event_sourced_aggregate_root import (
     EventHandler,
     EventSourcedAggregateRoot,

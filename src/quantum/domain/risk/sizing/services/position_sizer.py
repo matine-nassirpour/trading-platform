@@ -8,7 +8,6 @@ from quantum.domain.market.instrument.pricing.reference_price import ReferencePr
 from quantum.domain.risk.capital.allocation.capital_allocation_intent import (
     CapitalAllocationIntent,
 )
-from quantum.domain.risk.governance.measures.equity import Equity
 from quantum.domain.risk.sizing.reason_codes.position_sizing_rejection_reason_code import (
     PositionSizingRejectionReasonCode,
 )
@@ -24,6 +23,7 @@ from quantum.domain.risk.sizing.value_objects.sizing_rounding_policy import (
     SizingRoundingPolicy,
 )
 from quantum.domain.risk.sizing.value_objects.stop_distance import StopDistance
+from quantum.domain.risk_governance.measures.equity import Equity
 from quantum.domain.shared_kernel.foundation.errors.invariants import (
     CurrencyMismatch,
     InvariantViolation,

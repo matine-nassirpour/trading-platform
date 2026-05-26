@@ -414,63 +414,6 @@ trading-platform/
 │       │   │   │   │   ├── capital_reservation_id.py
 │       │   │   │   │   └── capital_reservation_policy.py
 │       │   │   │   └── __init__.py
-│       │   │   ├── governance/
-│       │   │   │   ├── limits/
-│       │   │   │   │   ├── __init__.py
-│       │   │   │   │   ├── daily_loss_limit.py
-│       │   │   │   │   ├── drawdown_limit.py
-│       │   │   │   │   ├── exposure_limit.py
-│       │   │   │   │   ├── leverage_limit.py
-│       │   │   │   │   ├── notional_limit.py
-│       │   │   │   │   ├── risk_limits.py
-│       │   │   │   │   ├── risk_scope.py
-│       │   │   │   │   └── risk_threshold_policy.py
-│       │   │   │   ├── measures/
-│       │   │   │   │   ├── __init__.py
-│       │   │   │   │   ├── daily_loss.py
-│       │   │   │   │   ├── drawdown.py
-│       │   │   │   │   ├── equity.py
-│       │   │   │   │   ├── exposure.py
-│       │   │   │   │   └── notional.py
-│       │   │   │   ├── risk_state/
-│       │   │   │   │   ├── attribution/
-│       │   │   │   │   │   ├── __init__.py
-│       │   │   │   │   │   ├── ranked_risk_source.py
-│       │   │   │   │   │   ├── risk_attribution.py
-│       │   │   │   │   │   ├── risk_attribution_rank.py
-│       │   │   │   │   │   ├── risk_reference.py
-│       │   │   │   │   │   ├── risk_source.py
-│       │   │   │   │   │   └── risk_source_type.py
-│       │   │   │   │   ├── breaches/
-│       │   │   │   │   │   ├── __init__.py
-│       │   │   │   │   │   ├── daily_loss_breach.py
-│       │   │   │   │   │   ├── drawdown_breach.py
-│       │   │   │   │   │   ├── exposure_breach.py
-│       │   │   │   │   │   ├── leverage_breach.py
-│       │   │   │   │   │   ├── notional_breach.py
-│       │   │   │   │   │   └── risk_breach.py
-│       │   │   │   │   ├── events/
-│       │   │   │   │   │   ├── __init__.py
-│       │   │   │   │   │   ├── equity_adjusted_event.py
-│       │   │   │   │   │   ├── risk_breach_attributed_event.py
-│       │   │   │   │   │   ├── risk_breach_detected_event.py
-│       │   │   │   │   │   └── risk_initialized_event.py
-│       │   │   │   │   ├── states/
-│       │   │   │   │   │   ├── __init__.py
-│       │   │   │   │   │   ├── risk_initialized_state.py
-│       │   │   │   │   │   ├── risk_state_base.py
-│       │   │   │   │   │   └── risk_uninitialized_state.py
-│       │   │   │   │   ├── __init__.py
-│       │   │   │   │   ├── aggregate.py
-│       │   │   │   │   └── risk_state_id.py
-│       │   │   │   ├── services/
-│       │   │   │   │   ├── __init__.py
-│       │   │   │   │   ├── equity_evolution.py
-│       │   │   │   │   ├── risk_breach_detector.py
-│       │   │   │   │   ├── risk_governance_evaluator.py
-│       │   │   │   │   ├── risk_input_validator.py
-│       │   │   │   │   └── threshold_breach_detector.py
-│       │   │   │   └── __init__.py
 │       │   │   ├── sizing/
 │       │   │   │   ├── events/
 │       │   │   │   │   ├── __init__.py
@@ -502,23 +445,83 @@ trading-platform/
 │       │   │   │   ├── aggregate.py
 │       │   │   │   └── position_sizing_id.py
 │       │   │   └── __init__.py
+│       │   ├── risk_governance/
+│       │   │   ├── attribution/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── ranked_risk_source.py
+│       │   │   │   ├── risk_attribution.py
+│       │   │   │   ├── risk_attribution_rank.py
+│       │   │   │   ├── risk_reference.py
+│       │   │   │   ├── risk_source.py
+│       │   │   │   └── risk_source_type.py
+│       │   │   ├── breaches/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── daily_loss_breach.py
+│       │   │   │   ├── drawdown_breach.py
+│       │   │   │   ├── exposure_breach.py
+│       │   │   │   ├── leverage_breach.py
+│       │   │   │   ├── notional_breach.py
+│       │   │   │   └── risk_breach.py
+│       │   │   ├── events/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── equity_adjusted_event.py
+│       │   │   │   ├── risk_breach_attributed_event.py
+│       │   │   │   ├── risk_breach_detected_event.py
+│       │   │   │   ├── risk_governance_event.py
+│       │   │   │   └── risk_governance_initialized_event.py
+│       │   │   ├── limits/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── daily_loss_limit.py
+│       │   │   │   ├── drawdown_limit.py
+│       │   │   │   ├── exposure_limit.py
+│       │   │   │   ├── leverage_limit.py
+│       │   │   │   ├── notional_limit.py
+│       │   │   │   ├── risk_limits.py
+│       │   │   │   ├── risk_scope.py
+│       │   │   │   └── risk_threshold_policy.py
+│       │   │   ├── measures/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── daily_loss.py
+│       │   │   │   ├── drawdown.py
+│       │   │   │   ├── equity.py
+│       │   │   │   ├── exposure.py
+│       │   │   │   └── notional.py
+│       │   │   ├── services/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── equity_evolution.py
+│       │   │   │   ├── risk_breach_detector.py
+│       │   │   │   ├── risk_governance_evaluator.py
+│       │   │   │   ├── risk_input_validator.py
+│       │   │   │   └── threshold_breach_detector.py
+│       │   │   ├── states/
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── risk_governance_initialized_state.py
+│       │   │   │   ├── risk_governance_state_base.py
+│       │   │   │   └── risk_governance_uninitialized_state.py
+│       │   │   ├── __init__.py
+│       │   │   ├── aggregate.py
+│       │   │   └── risk_governance_id.py
 │       │   ├── safety_control/
 │       │   │   ├── events/
 │       │   │   │   ├── __init__.py
-│       │   │   │   ├── killswitch_armed_event.py
-│       │   │   │   ├── killswitch_triggered_event.py
-│       │   │   │   └── safety_event.py
-│       │   │   ├── states/
+│       │   │   │   └── safety_control_event.py
+│       │   │   ├── kill_switch/
+│       │   │   │   ├── events/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── killswitch_armed_event.py
+│       │   │   │   │   └── killswitch_triggered_event.py
+│       │   │   │   ├── states/
+│       │   │   │   │   ├── __init__.py
+│       │   │   │   │   ├── kill_switch_armed_state.py
+│       │   │   │   │   ├── kill_switch_state_base.py
+│       │   │   │   │   ├── kill_switch_triggered_state.py
+│       │   │   │   │   └── kill_switch_uninitialized_state.py
 │       │   │   │   ├── __init__.py
-│       │   │   │   ├── kill_switch_armed_state.py
-│       │   │   │   ├── kill_switch_state_base.py
-│       │   │   │   ├── kill_switch_triggered_state.py
-│       │   │   │   └── kill_switch_uninitialized_state.py
-│       │   │   ├── __init__.py
-│       │   │   ├── aggregate.py
-│       │   │   ├── detail.py
-│       │   │   ├── kill_switch_id.py
-│       │   │   └── reason.py
+│       │   │   │   ├── aggregate.py
+│       │   │   │   ├── kill_switch_detail.py
+│       │   │   │   ├── kill_switch_id.py
+│       │   │   │   └── kill_switch_reason.py
+│       │   │   └── __init__.py
 │       │   ├── shared_kernel/
 │       │   │   ├── event_sourcing/
 │       │   │   │   ├── aggregates/

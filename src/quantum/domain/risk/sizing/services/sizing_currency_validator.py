@@ -1,5 +1,5 @@
 from quantum.domain.market.instrument.instrument_spec import InstrumentSpec
-from quantum.domain.risk.governance.measures.equity import Equity
+from quantum.domain.risk_governance.measures.equity import Equity
 from quantum.domain.shared_kernel.foundation.errors.invariants import (
     CurrencyMismatch,
     InvariantViolation,
