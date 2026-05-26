@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from quantum.domain.safety_control.states.kill_switch_state_base import (
+from quantum.domain.safety_control.kill_switch.states.kill_switch_state_base import (
     KillSwitchStateBase,
 )
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
