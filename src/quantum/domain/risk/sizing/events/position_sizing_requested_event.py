@@ -1,12 +1,10 @@
 from dataclasses import dataclass
 from typing import ClassVar
 
+from quantum.domain.capital_management.allocation import CapitalAllocationIntent
 from quantum.domain.market.instrument.identity.symbol import Symbol
 from quantum.domain.market.instrument.instrument_spec import InstrumentSpec
 from quantum.domain.market.instrument.pricing.reference_price import ReferencePrice
-from quantum.domain.risk.capital.allocation.capital_allocation_intent import (
-    CapitalAllocationIntent,
-)
 from quantum.domain.risk.common.events.risk_event import RiskEvent
 from quantum.domain.risk.sizing.position_sizing_id import PositionSizingId
 from quantum.domain.risk.sizing.value_objects.sizing_rounding_policy import (

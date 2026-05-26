@@ -1,12 +1,10 @@
 from collections.abc import Mapping
 from typing import Self
 
+from quantum.domain.capital_management.allocation import CapitalAllocationIntent
 from quantum.domain.market.instrument.identity.symbol import Symbol
 from quantum.domain.market.instrument.instrument_spec import InstrumentSpec
 from quantum.domain.market.instrument.pricing.reference_price import ReferencePrice
-from quantum.domain.risk.capital.allocation.capital_allocation_intent import (
-    CapitalAllocationIntent,
-)
 from quantum.domain.risk.sizing.events.position_sized_event import PositionSizedEvent
 from quantum.domain.risk.sizing.events.position_sizing_rejected_event import (
     PositionSizingRejectedEvent,

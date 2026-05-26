@@ -1,61 +1,61 @@
 from collections.abc import Mapping
 from typing import Self
 
-from quantum.domain.risk.capital.allocation.capital_allocation_intent import (
+from quantum.domain.capital_management.allocation.capital_allocation_intent import (
     CapitalAllocationIntent,
 )
-from quantum.domain.risk.capital.allocation.capital_allocation_policy import (
+from quantum.domain.capital_management.allocation.capital_allocation_policy import (
     CapitalAllocationPolicy,
 )
-from quantum.domain.risk.capital.reservation.capital_budget_snapshot import (
+from quantum.domain.capital_management.reservation.capital_budget_snapshot import (
     CapitalBudgetSnapshot,
 )
-from quantum.domain.risk.capital.reservation.capital_reservation_id import (
+from quantum.domain.capital_management.reservation.capital_reservation_id import (
     CapitalReservationId,
 )
-from quantum.domain.risk.capital.reservation.capital_reservation_policy import (
+from quantum.domain.capital_management.reservation.capital_reservation_policy import (
     CapitalReservationPolicy,
 )
-from quantum.domain.risk.capital.reservation.events.capital_consumed_event import (
+from quantum.domain.capital_management.reservation.events.capital_consumed_event import (
     CapitalConsumedEvent,
 )
-from quantum.domain.risk.capital.reservation.events.capital_released_event import (
+from quantum.domain.capital_management.reservation.events.capital_released_event import (
     CapitalReleasedEvent,
 )
-from quantum.domain.risk.capital.reservation.events.capital_reservation_rejected_event import (
+from quantum.domain.capital_management.reservation.events.capital_reservation_rejected_event import (
     CapitalReservationRejectedEvent,
 )
-from quantum.domain.risk.capital.reservation.events.capital_reservation_requested_event import (
+from quantum.domain.capital_management.reservation.events.capital_reservation_requested_event import (
     CapitalReservationRequestedEvent,
 )
-from quantum.domain.risk.capital.reservation.events.capital_reserved_event import (
+from quantum.domain.capital_management.reservation.events.capital_reserved_event import (
     CapitalReservedEvent,
 )
-from quantum.domain.risk.capital.reservation.reason_codes.capital_release_reason_code import (
+from quantum.domain.capital_management.reservation.reason_codes.capital_release_reason_code import (
     CapitalReleaseReasonCode,
 )
-from quantum.domain.risk.capital.reservation.reason_codes.capital_reservation_rejection_reason_code import (
+from quantum.domain.capital_management.reservation.reason_codes.capital_reservation_rejection_reason_code import (
     CapitalReservationRejectionReasonCode,
 )
-from quantum.domain.risk.capital.reservation.states.capital_reservation_consumed_state import (
+from quantum.domain.capital_management.reservation.states.capital_reservation_consumed_state import (
     CapitalReservationConsumedState,
 )
-from quantum.domain.risk.capital.reservation.states.capital_reservation_pending_state import (
+from quantum.domain.capital_management.reservation.states.capital_reservation_pending_state import (
     CapitalReservationPendingState,
 )
-from quantum.domain.risk.capital.reservation.states.capital_reservation_rejected_state import (
+from quantum.domain.capital_management.reservation.states.capital_reservation_rejected_state import (
     CapitalReservationRejectedState,
 )
-from quantum.domain.risk.capital.reservation.states.capital_reservation_released_state import (
+from quantum.domain.capital_management.reservation.states.capital_reservation_released_state import (
     CapitalReservationReleasedState,
 )
-from quantum.domain.risk.capital.reservation.states.capital_reservation_reserved_state import (
+from quantum.domain.capital_management.reservation.states.capital_reservation_reserved_state import (
     CapitalReservationReservedState,
 )
-from quantum.domain.risk.capital.reservation.states.capital_reservation_state_base import (
+from quantum.domain.capital_management.reservation.states.capital_reservation_state_base import (
     CapitalReservationStateBase,
 )
-from quantum.domain.risk.capital.reservation.states.capital_reservation_uninitialized_state import (
+from quantum.domain.capital_management.reservation.states.capital_reservation_uninitialized_state import (
     CapitalReservationUninitializedState,
 )
 from quantum.domain.shared_kernel.event_sourcing.aggregates.event_sourced_aggregate_root import (

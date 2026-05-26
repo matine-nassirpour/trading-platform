@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from quantum.domain.risk.capital.reservation.states.capital_reservation_reserved_state import (
+from quantum.domain.capital_management.reservation.states.capital_reservation_reserved_state import (
     CapitalReservationReservedState,
 )
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation

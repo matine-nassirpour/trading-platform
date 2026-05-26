@@ -1,11 +1,9 @@
 from dataclasses import dataclass
 
+from quantum.domain.capital_management.allocation import CapitalAllocationIntent
 from quantum.domain.market.instrument.identity.symbol import Symbol
 from quantum.domain.market.instrument.instrument_spec import InstrumentSpec
 from quantum.domain.market.instrument.pricing.reference_price import ReferencePrice
-from quantum.domain.risk.capital.allocation.capital_allocation_intent import (
-    CapitalAllocationIntent,
-)
 from quantum.domain.risk.sizing.states.position_sizing_state_base import (
     PositionSizingStateBase,
 )

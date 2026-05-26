@@ -1,10 +1,10 @@
-from quantum.domain.risk.capital.allocation.capital_allocation_intent import (
+from quantum.domain.capital_management.allocation.capital_allocation_intent import (
     CapitalAllocationIntent,
 )
-from quantum.domain.risk.capital.reservation.capital_budget_snapshot import (
+from quantum.domain.capital_management.reservation.capital_budget_snapshot import (
     CapitalBudgetSnapshot,
 )
-from quantum.domain.risk.capital.reservation.reason_codes.capital_reservation_rejection_reason_code import (
+from quantum.domain.capital_management.reservation.reason_codes.capital_reservation_rejection_reason_code import (
     CapitalReservationRejectionReasonCode,
 )
 from quantum.domain.shared_kernel.modeling.services.domain_service import DomainService

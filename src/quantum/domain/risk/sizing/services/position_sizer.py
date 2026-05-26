@@ -3,11 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import ROUND_FLOOR, Decimal
 
+from quantum.domain.capital_management.allocation import CapitalAllocationIntent
 from quantum.domain.market.instrument.instrument_spec import InstrumentSpec
 from quantum.domain.market.instrument.pricing.reference_price import ReferencePrice
-from quantum.domain.risk.capital.allocation.capital_allocation_intent import (
-    CapitalAllocationIntent,
-)
 from quantum.domain.risk.sizing.reason_codes.position_sizing_rejection_reason_code import (
     PositionSizingRejectionReasonCode,
 )

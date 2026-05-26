@@ -1,4 +1,4 @@
-from quantum.domain.risk.capital.allocation.capital_allocation_intent import (
+from quantum.domain.capital_management.allocation.capital_allocation_intent import (
     CapitalAllocationIntent,
 )
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation

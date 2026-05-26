@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 
-from quantum.domain.risk.capital.reservation.reason_codes.capital_reservation_rejection_reason_code import (
+from quantum.domain.capital_management.reservation.reason_codes.capital_reservation_rejection_reason_code import (
     CapitalReservationRejectionReasonCode,
 )
-from quantum.domain.risk.capital.reservation.states.capital_reservation_pending_state import (
+from quantum.domain.capital_management.reservation.states.capital_reservation_pending_state import (
     CapitalReservationPendingState,
 )
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation

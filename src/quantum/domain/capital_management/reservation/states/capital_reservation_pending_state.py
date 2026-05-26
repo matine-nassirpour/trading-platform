@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 
-from quantum.domain.risk.capital.allocation.capital_allocation_intent import (
+from quantum.domain.capital_management.allocation.capital_allocation_intent import (
     CapitalAllocationIntent,
 )
-from quantum.domain.risk.capital.reservation.states.capital_reservation_state_base import (
+from quantum.domain.capital_management.reservation.states.capital_reservation_state_base import (
     CapitalReservationStateBase,
 )
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation

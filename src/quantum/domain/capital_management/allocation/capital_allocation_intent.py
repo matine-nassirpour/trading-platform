@@ -1,7 +1,11 @@
 from dataclasses import dataclass
 
-from quantum.domain.risk.capital.allocation.capital_fraction import CapitalFraction
-from quantum.domain.risk.capital.allocation.risk_budget_slice import RiskBudgetSlice
+from quantum.domain.capital_management.allocation.capital_fraction import (
+    CapitalFraction,
+)
+from quantum.domain.capital_management.allocation.risk_budget_slice import (
+    RiskBudgetSlice,
+)
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.modeling.value_objects.value_object import ValueObject
 
