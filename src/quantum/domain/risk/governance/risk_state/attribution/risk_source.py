@@ -51,7 +51,7 @@ class RiskSource(ValueObject):
     def instrument(symbol: str) -> RiskSource:
         return RiskSource(
             type=RiskSourceType.instrument(),
-            reference=RiskReference.symbol(symbol),
+            reference=RiskReference.instrument(symbol),
         )
 
     @staticmethod

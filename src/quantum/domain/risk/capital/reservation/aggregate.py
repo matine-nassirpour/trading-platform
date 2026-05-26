@@ -131,16 +131,17 @@ class CapitalReservation(
         if isinstance(state, CapitalReservationUninitializedState):
             raise InvalidStateTransition("CapitalReservation not initialized")
 
-        if isinstance(
-            state,
-            (
-                CapitalReservationReservedState,
-                CapitalReservationRejectedState,
-                CapitalReservationReleasedState,
-                CapitalReservationConsumedState,
-            ),
-        ):
-            raise InvalidStateTransition("CapitalReservation is no longer pending")
+        if isinstance(state, CapitalReservationRejectedState):
+            raise InvalidStateTransition("CapitalReservation is rejected")
+
+        if isinstance(state, CapitalReservationReleasedState):
+            raise InvalidStateTransition("CapitalReservation is released")
+
+        if isinstance(state, CapitalReservationConsumedState):
+            raise InvalidStateTransition("CapitalReservation is consumed")
+
+        if isinstance(state, CapitalReservationReservedState):
+            raise InvalidStateTransition("CapitalReservation is already reserved")
 
         if not isinstance(state, CapitalReservationPendingState):
             raise InvariantViolation("Corrupted CapitalReservation state")
@@ -156,17 +157,14 @@ class CapitalReservation(
         if isinstance(state, CapitalReservationPendingState):
             raise InvalidStateTransition("CapitalReservation has not been reserved yet")
 
-        if isinstance(
-            state,
-            (
-                CapitalReservationRejectedState,
-                CapitalReservationReleasedState,
-                CapitalReservationConsumedState,
-            ),
-        ):
-            raise InvalidStateTransition(
-                "CapitalReservation is no longer in reserved state"
-            )
+        if isinstance(state, CapitalReservationRejectedState):
+            raise InvalidStateTransition("CapitalReservation is rejected")
+
+        if isinstance(state, CapitalReservationReleasedState):
+            raise InvalidStateTransition("CapitalReservation is released")
+
+        if isinstance(state, CapitalReservationConsumedState):
+            raise InvalidStateTransition("CapitalReservation is consumed")
 
         if not isinstance(state, CapitalReservationReservedState):
             raise InvariantViolation("Corrupted CapitalReservation state")

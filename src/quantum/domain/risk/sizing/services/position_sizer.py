@@ -168,6 +168,15 @@ class PositionSizer(DomainService):
     # --- Internal Helpers -----------------------------------------------------
 
     @staticmethod
+    def _is_exact_multiple_of_tick_size(
+        *,
+        stop_distance: StopDistance,
+        instrument: InstrumentSpec,
+    ) -> bool:
+        ratio = stop_distance.value / instrument.microstructure.tick_size.value
+        return ratio == ratio.to_integral_value()
+
+    @staticmethod
     def _reject_invalid_inputs(
         *,
         equity: Equity,
@@ -179,14 +188,17 @@ class PositionSizer(DomainService):
                 PositionSizingRejectionReasonCode.non_positive_equity()
             )
 
-        if stop_distance.value <= Decimal("0"):
-            return PositionSizingEvaluation.rejected(
-                PositionSizingRejectionReasonCode.invalid_stop_distance()
-            )
-
         if stop_distance.value < instrument.constraints.price.stop_level:
             return PositionSizingEvaluation.rejected(
                 PositionSizingRejectionReasonCode.stop_distance_below_broker_minimum()
+            )
+
+        if not PositionSizer._is_exact_multiple_of_tick_size(
+            stop_distance=stop_distance,
+            instrument=instrument,
+        ):
+            return PositionSizingEvaluation.rejected(
+                PositionSizingRejectionReasonCode.sizing_policy_violation()
             )
 
         return None
