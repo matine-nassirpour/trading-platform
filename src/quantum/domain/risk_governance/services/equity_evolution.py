@@ -3,6 +3,9 @@ from decimal import Decimal
 
 from quantum.domain.risk_governance.measures.drawdown import Drawdown
 from quantum.domain.risk_governance.measures.equity import Equity
+from quantum.domain.risk_governance.services.monetary_compatibility import (
+    MonetaryCompatibilityService,
+)
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.modeling.monetary.pnl import RealizedPnL
 from quantum.domain.shared_kernel.modeling.services.domain_service import DomainService
@@ -25,11 +28,19 @@ class EquityEvolutionResult(ValueObject):
         if not isinstance(self.drawdown, Drawdown):
             raise InvariantViolation("drawdown must be Drawdown")
 
-        if self.new_equity.context != self.new_equity_peak.context:
-            raise InvariantViolation("Equity context mismatch")
+        MonetaryCompatibilityService.assert_same_context_and_currency(
+            left=self.new_equity,
+            right=self.new_equity_peak,
+            left_label="new_equity",
+            right_label="new_equity_peak",
+        )
 
-        if self.new_equity.currency != self.new_equity_peak.currency:
-            raise InvariantViolation("Equity currency mismatch")
+        MonetaryCompatibilityService.assert_same_context_and_currency(
+            left=self.new_equity,
+            right=self.drawdown,
+            left_label="new_equity",
+            right_label="drawdown",
+        )
 
         if self.new_equity_peak.value < self.new_equity.value:
             raise InvariantViolation("new_equity_peak must be >= new_equity")
@@ -45,17 +56,19 @@ class EquityEvolutionService(DomainService):
         current_peak: Equity,
         pnl: RealizedPnL,
     ) -> EquityEvolutionResult:
-        if pnl.context != current_equity.context:
-            raise InvariantViolation("PnL MoneyContext mismatch")
+        MonetaryCompatibilityService.assert_same_context_and_currency(
+            left=current_equity,
+            right=current_peak,
+            left_label="current_equity",
+            right_label="current_peak",
+        )
 
-        if pnl.currency != current_equity.currency:
-            raise InvariantViolation("PnL currency mismatch")
-
-        if current_peak.context != current_equity.context:
-            raise InvariantViolation("Equity peak MoneyContext mismatch")
-
-        if current_peak.currency != current_equity.currency:
-            raise InvariantViolation("Equity peak currency mismatch")
+        MonetaryCompatibilityService.assert_same_context_and_currency(
+            left=current_equity,
+            right=pnl,
+            left_label="current_equity",
+            right_label="pnl",
+        )
 
         new_equity = current_equity.add(pnl)
         new_peak = max(current_peak, new_equity, key=lambda e: e.value)

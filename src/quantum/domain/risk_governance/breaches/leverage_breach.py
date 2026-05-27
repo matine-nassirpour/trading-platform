@@ -9,13 +9,13 @@ from quantum.domain.risk_governance.limits.risk_threshold_policy import (
 )
 from quantum.domain.risk_governance.measures.equity import Equity
 from quantum.domain.risk_governance.measures.exposure import Exposure
+from quantum.domain.risk_governance.services.monetary_compatibility import (
+    MonetaryCompatibilityService,
+)
 from quantum.domain.risk_governance.services.threshold_breach_detector import (
     ThresholdBreachDetector,
 )
-from quantum.domain.shared_kernel.foundation.errors.invariants import (
-    CurrencyMismatch,
-    InvariantViolation,
-)
+from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
 
 
 @dataclass(frozen=True, slots=True)
@@ -46,11 +46,12 @@ class LeverageBreach(RiskBreach):
             if not isinstance(value, expected_type):
                 raise InvariantViolation(f"LeverageBreach.{field_name} invalid")
 
-        if self.exposure.context != self.equity.context:
-            raise InvariantViolation("Exposure context mismatch")
-
-        if self.exposure.currency != self.equity.currency:
-            raise CurrencyMismatch("Exposure currency mismatch")
+        MonetaryCompatibilityService.assert_same_context_and_currency(
+            left=self.exposure,
+            right=self.equity,
+            left_label="exposure",
+            right_label="equity",
+        )
 
     # --- Factory --------------------------------------------------------------
 
@@ -62,6 +63,12 @@ class LeverageBreach(RiskBreach):
         limit: LeverageLimit,
         policy: RiskThresholdPolicy,
     ) -> LeverageBreach | None:
+        MonetaryCompatibilityService.assert_same_context_and_currency(
+            left=exposure,
+            right=equity,
+            left_label="exposure",
+            right_label="equity",
+        )
 
         if equity.value <= 0:
             return None

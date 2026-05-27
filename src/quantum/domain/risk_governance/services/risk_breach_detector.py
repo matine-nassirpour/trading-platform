@@ -15,10 +15,10 @@ from quantum.domain.risk_governance.measures.drawdown import Drawdown
 from quantum.domain.risk_governance.measures.equity import Equity
 from quantum.domain.risk_governance.measures.exposure import Exposure
 from quantum.domain.risk_governance.measures.notional import Notional
-from quantum.domain.shared_kernel.foundation.errors.invariants import (
-    CurrencyMismatch,
-    InvariantViolation,
+from quantum.domain.risk_governance.services.monetary_compatibility import (
+    MonetaryCompatibilityService,
 )
+from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.modeling.services.domain_service import DomainService
 from quantum.domain.shared_kernel.modeling.value_objects.value_object import ValueObject
 
@@ -52,9 +52,6 @@ class RiskBreachDetector(DomainService):
         if not isinstance(limits, RiskLimits):
             raise InvariantViolation("limits must be RiskLimits")
 
-        expected_context = limits.context
-        expected_currency = limits.context.reporting_currency
-
         values = (
             ("drawdown", drawdown, Drawdown),
             ("daily_loss", daily_loss, DailyLoss),
@@ -70,15 +67,11 @@ class RiskBreachDetector(DomainService):
                     f"got {type(value).__name__}"
                 )
 
-            if value.context != expected_context:
-                raise InvariantViolation(
-                    f"{name} MoneyContext mismatch with RiskLimits.context"
-                )
-
-            if value.currency != expected_currency:
-                raise CurrencyMismatch(
-                    f"{name} currency must equal RiskLimits.context.reporting_currency"
-                )
+            MonetaryCompatibilityService.assert_reporting_currency(
+                value=value,
+                expected_context=limits.context,
+                label=name,
+            )
 
     @staticmethod
     def detect(

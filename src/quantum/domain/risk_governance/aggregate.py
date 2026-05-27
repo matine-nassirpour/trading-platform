@@ -178,7 +178,7 @@ class RiskGovernance(
         if new_snapshot.equity.value <= 0:
             events.append(
                 RiskGovernanceInsolvencyDeclaredEvent(
-                    equity=new_snapshot.equity,
+                    snapshot=new_snapshot,
                 )
             )
 
@@ -265,15 +265,28 @@ class RiskGovernance(
                 "Cannot declare insolvency before initialization"
             )
 
-        if state.snapshot.equity.value > 0:
+        if isinstance(state, RiskGovernanceInsolventState):
+            raise InvalidStateTransition("RiskGovernance is already insolvent")
+
+        if event.snapshot.equity.value > 0:
             raise InvalidStateTransition(
-                "Cannot declare insolvency while equity is positive"
+                "Cannot declare insolvency with positive equity"
+            )
+
+        if event.snapshot.equity.context != state.limits.context:
+            raise InvariantViolation(
+                "Insolvency snapshot MoneyContext mismatch with RiskLimits"
+            )
+
+        if event.snapshot.equity.currency != state.limits.context.reporting_currency:
+            raise CurrencyMismatch(
+                "Insolvency snapshot currency must equal RiskLimits.context.reporting_currency"
             )
 
         return RiskGovernanceInsolventState(
             last_sequence=envelope.sequence,
             limits=state.limits,
-            snapshot=state.snapshot,
+            snapshot=event.snapshot,
         )
 
     @staticmethod

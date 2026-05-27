@@ -9,6 +9,9 @@ from quantum.domain.risk_governance.limits.notional_limit import NotionalLimit
 from quantum.domain.risk_governance.limits.risk_threshold_policy import (
     RiskThresholdPolicy,
 )
+from quantum.domain.risk_governance.services.monetary_compatibility import (
+    MonetaryCompatibilityService,
+)
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.modeling.monetary.money_context import MoneyContext
 from quantum.domain.shared_kernel.modeling.value_objects.value_object import ValueObject
@@ -60,12 +63,8 @@ class RiskLimits(ValueObject):
         }
 
         for name, limit in contextual_limits.items():
-            if limit.context != self.context:
-                raise InvariantViolation(
-                    f"{name} MoneyContext mismatch: {limit.context} vs {self.context}"
-                )
-
-            if limit.currency != self.context.reporting_currency:
-                raise InvariantViolation(
-                    f"{name} currency must equal MoneyContext.reporting_currency"
-                )
+            MonetaryCompatibilityService.assert_reporting_currency(
+                value=limit,
+                expected_context=self.context,
+                label=f"RiskLimits.{name}",
+            )
