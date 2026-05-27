@@ -1,6 +1,6 @@
 from collections.abc import Mapping
 
-from quantum.domain.risk_governance.events.realized_pnl_registred_event import (
+from quantum.domain.risk_governance.events.realized_pnl_registered_event import (
     RealizedPnLRegisteredEvent,
 )
 from quantum.domain.risk_governance.events.risk_governance_initialized_event import (
