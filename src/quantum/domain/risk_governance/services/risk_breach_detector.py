@@ -4,6 +4,9 @@ from quantum.domain.risk_governance.breaches.daily_loss_breach import DailyLossB
 from quantum.domain.risk_governance.breaches.drawdown_breach import DrawdownBreach
 from quantum.domain.risk_governance.breaches.exposure_breach import ExposureBreach
 from quantum.domain.risk_governance.breaches.leverage_breach import LeverageBreach
+from quantum.domain.risk_governance.breaches.non_positive_equity_breach import (
+    NonPositiveEquityBreach,
+)
 from quantum.domain.risk_governance.breaches.notional_breach import NotionalBreach
 from quantum.domain.risk_governance.breaches.risk_breach import RiskBreach
 from quantum.domain.risk_governance.limits.risk_limits import RiskLimits
@@ -117,6 +120,10 @@ class RiskBreachDetector(DomainService):
             NotionalBreach.detect(
                 current=notional,
                 limit=limits.max_notional,
+                policy=policy,
+            ),
+            NonPositiveEquityBreach.detect(
+                equity=equity,
                 policy=policy,
             ),
             LeverageBreach.detect(

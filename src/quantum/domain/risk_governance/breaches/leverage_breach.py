@@ -64,12 +64,7 @@ class LeverageBreach(RiskBreach):
     ) -> LeverageBreach | None:
 
         if equity.value <= 0:
-            return LeverageBreach(
-                exposure=exposure,
-                equity=equity,
-                limit=limit,
-                policy=policy,
-            )
+            return None
 
         leverage = exposure.value / equity.value
 

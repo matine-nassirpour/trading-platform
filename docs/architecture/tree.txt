@@ -462,13 +462,13 @@ trading-platform/
 │       │   │   │   ├── drawdown_breach.py
 │       │   │   │   ├── exposure_breach.py
 │       │   │   │   ├── leverage_breach.py
+│       │   │   │   ├── non_positive_equity_breach.py
 │       │   │   │   ├── notional_breach.py
-│       │   │   │   └── risk_breach.py
+│       │   │   │   ├── risk_breach.py
+│       │   │   │   └── threshold_risk_breach.py
 │       │   │   ├── events/
 │       │   │   │   ├── __init__.py
-│       │   │   │   ├── equity_adjusted_event.py
-│       │   │   │   ├── risk_breach_attributed_event.py
-│       │   │   │   ├── risk_breach_detected_event.py
+│       │   │   │   ├── realized_pnl_registred_event.py
 │       │   │   │   ├── risk_governance_event.py
 │       │   │   │   └── risk_governance_initialized_event.py
 │       │   │   ├── limits/
