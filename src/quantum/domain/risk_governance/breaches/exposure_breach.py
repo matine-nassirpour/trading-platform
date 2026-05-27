@@ -1,61 +1,24 @@
-from __future__ import annotations
-
 from dataclasses import dataclass
+from typing import ClassVar
 
-from quantum.domain.risk_governance.breaches.risk_breach import RiskBreach
+from quantum.domain.risk_governance.breaches.threshold_risk_breach import (
+    ThresholdRiskBreach,
+)
 from quantum.domain.risk_governance.limits.exposure_limit import ExposureLimit
-from quantum.domain.risk_governance.limits.risk_threshold_policy import (
-    RiskThresholdPolicy,
-)
 from quantum.domain.risk_governance.measures.exposure import Exposure
-from quantum.domain.risk_governance.services.threshold_breach_detector import (
-    ThresholdBreachDetector,
+from quantum.domain.shared_kernel.modeling.monetary.contextual_monetary_amount import (
+    ContextualMonetaryAmount,
 )
-from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
 
 
 @dataclass(frozen=True, slots=True)
-class ExposureBreach(RiskBreach):
+class ExposureBreach(ThresholdRiskBreach):
     """
     Risk breach raised when exposure exceeds the allowed limit.
-
-    Invariants:
-    - current is an Exposure
-    - limit is an ExposureLimit
-    - both share the same MoneyContext
     """
 
     current: Exposure
     limit: ExposureLimit
 
-    def _validate_semantics(self) -> None:
-        super()._validate_semantics()
-
-        if not isinstance(self.current, Exposure):
-            raise InvariantViolation("ExposureBreach.current must be an Exposure")
-
-        if not isinstance(self.limit, ExposureLimit):
-            raise InvariantViolation("ExposureBreach.limit must be an ExposureLimit")
-
-        if self.current.context != self.limit.context:
-            raise InvariantViolation("Exposure MoneyContext mismatch")
-
-    # --- Factory --------------------------------------------------------------
-
-    @staticmethod
-    def detect(
-        *,
-        current: Exposure,
-        limit: ExposureLimit,
-        policy: RiskThresholdPolicy,
-    ) -> ExposureBreach | None:
-        return ThresholdBreachDetector.detect(
-            current_value=current.value,
-            limit_value=limit.value,
-            policy=policy,
-            breach_factory=lambda: ExposureBreach(
-                current=current,
-                limit=limit,
-                policy=policy,
-            ),
-        )
+    CURRENT_TYPE: ClassVar[type[ContextualMonetaryAmount]] = Exposure
+    LIMIT_TYPE: ClassVar[type[ContextualMonetaryAmount]] = ExposureLimit
