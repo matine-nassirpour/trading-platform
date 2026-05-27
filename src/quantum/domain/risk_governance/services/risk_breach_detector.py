@@ -12,7 +12,10 @@ from quantum.domain.risk_governance.measures.drawdown import Drawdown
 from quantum.domain.risk_governance.measures.equity import Equity
 from quantum.domain.risk_governance.measures.exposure import Exposure
 from quantum.domain.risk_governance.measures.notional import Notional
-from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
+from quantum.domain.shared_kernel.foundation.errors.invariants import (
+    CurrencyMismatch,
+    InvariantViolation,
+)
 from quantum.domain.shared_kernel.modeling.services.domain_service import DomainService
 from quantum.domain.shared_kernel.modeling.value_objects.value_object import ValueObject
 
@@ -34,6 +37,47 @@ class RiskBreachDetector(DomainService):
     __slots__ = ()
 
     @staticmethod
+    def _validate_inputs(
+        *,
+        limits: RiskLimits,
+        drawdown: Drawdown,
+        daily_loss: DailyLoss,
+        exposure: Exposure,
+        notional: Notional,
+        equity: Equity,
+    ) -> None:
+        if not isinstance(limits, RiskLimits):
+            raise InvariantViolation("limits must be RiskLimits")
+
+        expected_context = limits.context
+        expected_currency = limits.context.reporting_currency
+
+        values = (
+            ("drawdown", drawdown, Drawdown),
+            ("daily_loss", daily_loss, DailyLoss),
+            ("exposure", exposure, Exposure),
+            ("notional", notional, Notional),
+            ("equity", equity, Equity),
+        )
+
+        for name, value, expected_type in values:
+            if not isinstance(value, expected_type):
+                raise InvariantViolation(
+                    f"{name} must be {expected_type.__name__}, "
+                    f"got {type(value).__name__}"
+                )
+
+            if value.context != expected_context:
+                raise InvariantViolation(
+                    f"{name} MoneyContext mismatch with RiskLimits.context"
+                )
+
+            if value.currency != expected_currency:
+                raise CurrencyMismatch(
+                    f"{name} currency must equal RiskLimits.context.reporting_currency"
+                )
+
+    @staticmethod
     def detect(
         *,
         limits: RiskLimits,
@@ -43,6 +87,15 @@ class RiskBreachDetector(DomainService):
         notional: Notional,
         equity: Equity,
     ) -> RiskBreachDetectionResult:
+        RiskBreachDetector._validate_inputs(
+            limits=limits,
+            drawdown=drawdown,
+            daily_loss=daily_loss,
+            exposure=exposure,
+            notional=notional,
+            equity=equity,
+        )
+
         policy = limits.threshold_policy
 
         candidates = (
