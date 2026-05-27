@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from quantum.domain.risk_governance.states.risk_governance_initialized_state import (
+from quantum.domain.risk_governance.lifecycle.states.risk_governance_initialized_state import (
     RiskGovernanceInitializedState,
 )
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation

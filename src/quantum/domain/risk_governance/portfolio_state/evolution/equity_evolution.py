@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 from decimal import Decimal
 
-from quantum.domain.risk_governance.measures.drawdown import Drawdown
-from quantum.domain.risk_governance.measures.equity import Equity
-from quantum.domain.risk_governance.services.monetary_compatibility import (
+from quantum.domain.risk_governance.breach_detection.monetary_compatibility import (
     MonetaryCompatibilityService,
 )
+from quantum.domain.risk_governance.portfolio_state.drawdown import Drawdown
+from quantum.domain.risk_governance.portfolio_state.equity import Equity
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.modeling.monetary.pnl import RealizedPnL
 from quantum.domain.shared_kernel.modeling.services.domain_service import DomainService

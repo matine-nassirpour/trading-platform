@@ -2,12 +2,14 @@ from abc import ABC
 from dataclasses import dataclass
 from typing import ClassVar, TypeVar, final
 
-from quantum.domain.risk_governance.breaches.risk_breach import RiskBreach
+from quantum.domain.risk_governance.breach_detection.breaches.risk_breach import (
+    RiskBreach,
+)
+from quantum.domain.risk_governance.breach_detection.threshold_breach_detector import (
+    ThresholdBreachDetector,
+)
 from quantum.domain.risk_governance.limits.risk_threshold_policy import (
     RiskThresholdPolicy,
-)
-from quantum.domain.risk_governance.services.threshold_breach_detector import (
-    ThresholdBreachDetector,
 )
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.modeling.monetary.contextual_monetary_amount import (

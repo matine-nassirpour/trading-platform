@@ -2,19 +2,21 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from quantum.domain.risk_governance.breaches.risk_breach import RiskBreach
+from quantum.domain.risk_governance.breach_detection.breaches.risk_breach import (
+    RiskBreach,
+)
+from quantum.domain.risk_governance.breach_detection.monetary_compatibility import (
+    MonetaryCompatibilityService,
+)
+from quantum.domain.risk_governance.breach_detection.threshold_breach_detector import (
+    ThresholdBreachDetector,
+)
 from quantum.domain.risk_governance.limits.leverage_limit import LeverageLimit
 from quantum.domain.risk_governance.limits.risk_threshold_policy import (
     RiskThresholdPolicy,
 )
-from quantum.domain.risk_governance.measures.equity import Equity
-from quantum.domain.risk_governance.measures.exposure import Exposure
-from quantum.domain.risk_governance.services.monetary_compatibility import (
-    MonetaryCompatibilityService,
-)
-from quantum.domain.risk_governance.services.threshold_breach_detector import (
-    ThresholdBreachDetector,
-)
+from quantum.domain.risk_governance.portfolio_state.equity import Equity
+from quantum.domain.risk_governance.portfolio_state.exposure import Exposure
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
 
 

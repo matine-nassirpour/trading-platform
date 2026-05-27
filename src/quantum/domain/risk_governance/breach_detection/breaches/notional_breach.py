@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 from typing import ClassVar
 
-from quantum.domain.risk_governance.breaches.threshold_risk_breach import (
+from quantum.domain.risk_governance.breach_detection.breaches.threshold_risk_breach import (
     ThresholdRiskBreach,
 )
 from quantum.domain.risk_governance.limits.notional_limit import NotionalLimit
-from quantum.domain.risk_governance.measures.notional import Notional
+from quantum.domain.risk_governance.portfolio_state.notional import Notional
 from quantum.domain.shared_kernel.modeling.monetary.contextual_monetary_amount import (
     ContextualMonetaryAmount,
 )

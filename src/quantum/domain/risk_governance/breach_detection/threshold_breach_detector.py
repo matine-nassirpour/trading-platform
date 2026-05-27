@@ -2,7 +2,9 @@ from collections.abc import Callable
 from decimal import Decimal
 from typing import TypeVar
 
-from quantum.domain.risk_governance.breaches.risk_breach import RiskBreach
+from quantum.domain.risk_governance.breach_detection.breaches.risk_breach import (
+    RiskBreach,
+)
 from quantum.domain.risk_governance.limits.risk_threshold_policy import (
     RiskThresholdPolicy,
 )

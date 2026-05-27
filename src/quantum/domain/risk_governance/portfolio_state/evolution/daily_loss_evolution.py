@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from quantum.domain.risk_governance.measures.daily_loss import DailyLoss
+from quantum.domain.risk_governance.portfolio_state.daily_loss import DailyLoss
 from quantum.domain.shared_kernel.foundation.errors.invariants import (
     CurrencyMismatch,
     InvariantViolation,

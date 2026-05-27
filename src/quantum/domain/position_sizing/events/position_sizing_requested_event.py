@@ -15,7 +15,7 @@ from quantum.domain.position_sizing.value_objects.sizing_rounding_policy import 
     SizingRoundingPolicy,
 )
 from quantum.domain.position_sizing.value_objects.stop_distance import StopDistance
-from quantum.domain.risk_governance.measures.equity import Equity
+from quantum.domain.risk_governance.portfolio_state.equity import Equity
 from quantum.domain.shared_kernel.modeling.identity.decision_id import DecisionId
 from quantum.domain.shared_kernel.modeling.identity.strategy_id import StrategyId
 

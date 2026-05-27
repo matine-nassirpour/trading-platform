@@ -1,6 +1,9 @@
 from dataclasses import dataclass
 
 from quantum.domain.risk_governance.attribution.risk_reference import RiskReference
+from quantum.domain.risk_governance.breach_detection.monetary_compatibility import (
+    MonetaryCompatibilityService,
+)
 from quantum.domain.risk_governance.limits.daily_loss_limit import DailyLossLimit
 from quantum.domain.risk_governance.limits.drawdown_limit import DrawdownLimit
 from quantum.domain.risk_governance.limits.exposure_limit import ExposureLimit
@@ -8,9 +11,6 @@ from quantum.domain.risk_governance.limits.leverage_limit import LeverageLimit
 from quantum.domain.risk_governance.limits.notional_limit import NotionalLimit
 from quantum.domain.risk_governance.limits.risk_threshold_policy import (
     RiskThresholdPolicy,
-)
-from quantum.domain.risk_governance.services.monetary_compatibility import (
-    MonetaryCompatibilityService,
 )
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.modeling.monetary.money_context import MoneyContext

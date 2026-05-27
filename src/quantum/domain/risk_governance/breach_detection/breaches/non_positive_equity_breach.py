@@ -2,11 +2,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from quantum.domain.risk_governance.breaches.risk_breach import RiskBreach
+from quantum.domain.risk_governance.breach_detection.breaches.risk_breach import (
+    RiskBreach,
+)
 from quantum.domain.risk_governance.limits.risk_threshold_policy import (
     RiskThresholdPolicy,
 )
-from quantum.domain.risk_governance.measures.equity import Equity
+from quantum.domain.risk_governance.portfolio_state.equity import Equity
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
 
 

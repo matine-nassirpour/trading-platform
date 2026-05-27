@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import ClassVar
 
-from quantum.domain.risk_governance.events.risk_governance_event import (
+from quantum.domain.risk_governance.lifecycle.events.risk_governance_event import (
     RiskGovernanceEvent,
 )
 from quantum.domain.shared_kernel.modeling.monetary.pnl import RealizedPnL

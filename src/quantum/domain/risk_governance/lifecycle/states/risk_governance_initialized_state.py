@@ -1,10 +1,10 @@
 from dataclasses import dataclass
 
-from quantum.domain.risk_governance.limits.risk_limits import RiskLimits
-from quantum.domain.risk_governance.states.risk_governance_state_base import (
+from quantum.domain.risk_governance.lifecycle.states.risk_governance_state_base import (
     RiskGovernanceStateBase,
 )
-from quantum.domain.risk_governance.states.risk_snapshot import RiskSnapshot
+from quantum.domain.risk_governance.limits.risk_limits import RiskLimits
+from quantum.domain.risk_governance.portfolio_state.risk_snapshot import RiskSnapshot
 from quantum.domain.shared_kernel.foundation.errors.invariants import (
     CurrencyMismatch,
     InvariantViolation,

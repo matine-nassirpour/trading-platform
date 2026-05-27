@@ -1,13 +1,13 @@
 from dataclasses import dataclass
 
-from quantum.domain.risk_governance.measures.daily_loss import DailyLoss
-from quantum.domain.risk_governance.measures.drawdown import Drawdown
-from quantum.domain.risk_governance.measures.equity import Equity
-from quantum.domain.risk_governance.measures.exposure import Exposure
-from quantum.domain.risk_governance.measures.notional import Notional
-from quantum.domain.risk_governance.services.monetary_compatibility import (
+from quantum.domain.risk_governance.breach_detection.monetary_compatibility import (
     MonetaryCompatibilityService,
 )
+from quantum.domain.risk_governance.portfolio_state.daily_loss import DailyLoss
+from quantum.domain.risk_governance.portfolio_state.drawdown import Drawdown
+from quantum.domain.risk_governance.portfolio_state.equity import Equity
+from quantum.domain.risk_governance.portfolio_state.exposure import Exposure
+from quantum.domain.risk_governance.portfolio_state.notional import Notional
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.modeling.value_objects.value_object import ValueObject
 

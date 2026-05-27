@@ -1,41 +1,41 @@
 from collections.abc import Mapping
 
-from quantum.domain.risk_governance.events.realized_pnl_registered_event import (
-    RealizedPnLRegisteredEvent,
-)
-from quantum.domain.risk_governance.events.risk_breaches_detected_event import (
-    RiskBreachesDetectedEvent,
-)
-from quantum.domain.risk_governance.events.risk_governance_initialized_event import (
-    RiskGovernanceInitializedEvent,
-)
-from quantum.domain.risk_governance.events.risk_governance_insolvency_declared_event import (
-    RiskGovernanceInsolvencyDeclaredEvent,
-)
-from quantum.domain.risk_governance.limits.risk_limits import RiskLimits
-from quantum.domain.risk_governance.risk_governance_id import RiskGovernanceId
-from quantum.domain.risk_governance.services.daily_loss_evolution import (
-    DailyLossEvolutionService,
-)
-from quantum.domain.risk_governance.services.equity_evolution import (
-    EquityEvolutionService,
-)
-from quantum.domain.risk_governance.services.risk_breach_detector import (
+from quantum.domain.risk_governance.breach_detection.risk_breach_detector import (
     RiskBreachDetector,
 )
-from quantum.domain.risk_governance.states.risk_governance_initialized_state import (
+from quantum.domain.risk_governance.lifecycle.events.realized_pnl_registered_event import (
+    RealizedPnLRegisteredEvent,
+)
+from quantum.domain.risk_governance.lifecycle.events.risk_breaches_detected_event import (
+    RiskBreachesDetectedEvent,
+)
+from quantum.domain.risk_governance.lifecycle.events.risk_governance_initialized_event import (
+    RiskGovernanceInitializedEvent,
+)
+from quantum.domain.risk_governance.lifecycle.events.risk_governance_insolvency_declared_event import (
+    RiskGovernanceInsolvencyDeclaredEvent,
+)
+from quantum.domain.risk_governance.lifecycle.states.risk_governance_initialized_state import (
     RiskGovernanceInitializedState,
 )
-from quantum.domain.risk_governance.states.risk_governance_insolvent_state import (
+from quantum.domain.risk_governance.lifecycle.states.risk_governance_insolvent_state import (
     RiskGovernanceInsolventState,
 )
-from quantum.domain.risk_governance.states.risk_governance_state_base import (
+from quantum.domain.risk_governance.lifecycle.states.risk_governance_state_base import (
     RiskGovernanceStateBase,
 )
-from quantum.domain.risk_governance.states.risk_governance_uninitialized_state import (
+from quantum.domain.risk_governance.lifecycle.states.risk_governance_uninitialized_state import (
     RiskGovernanceUninitializedState,
 )
-from quantum.domain.risk_governance.states.risk_snapshot import RiskSnapshot
+from quantum.domain.risk_governance.limits.risk_limits import RiskLimits
+from quantum.domain.risk_governance.portfolio_state.evolution.daily_loss_evolution import (
+    DailyLossEvolutionService,
+)
+from quantum.domain.risk_governance.portfolio_state.evolution.equity_evolution import (
+    EquityEvolutionService,
+)
+from quantum.domain.risk_governance.portfolio_state.risk_snapshot import RiskSnapshot
+from quantum.domain.risk_governance.risk_governance_id import RiskGovernanceId
 from quantum.domain.shared_kernel.event_sourcing.aggregates.event_sourced_aggregate_root import (
     EventHandler,
     EventSourcedAggregateRoot,

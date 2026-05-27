@@ -1,8 +1,10 @@
 from dataclasses import dataclass
 from typing import ClassVar
 
-from quantum.domain.risk_governance.breaches.risk_breach import RiskBreach
-from quantum.domain.risk_governance.events.risk_governance_event import (
+from quantum.domain.risk_governance.breach_detection.breaches.risk_breach import (
+    RiskBreach,
+)
+from quantum.domain.risk_governance.lifecycle.events.risk_governance_event import (
     RiskGovernanceEvent,
 )
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
