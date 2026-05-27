@@ -7,7 +7,6 @@ from quantum.domain.risk_governance.events.risk_governance_initialized_event imp
     RiskGovernanceInitializedEvent,
 )
 from quantum.domain.risk_governance.limits.risk_limits import RiskLimits
-from quantum.domain.risk_governance.measures.equity import Equity
 from quantum.domain.risk_governance.risk_governance_id import RiskGovernanceId
 from quantum.domain.risk_governance.services.equity_evolution import (
     EquityEvolutionService,
@@ -21,6 +20,7 @@ from quantum.domain.risk_governance.states.risk_governance_state_base import (
 from quantum.domain.risk_governance.states.risk_governance_uninitialized_state import (
     RiskGovernanceUninitializedState,
 )
+from quantum.domain.risk_governance.states.risk_snapshot import RiskSnapshot
 from quantum.domain.shared_kernel.event_sourcing.aggregates.event_sourced_aggregate_root import (
     EventHandler,
     EventSourcedAggregateRoot,
@@ -81,31 +81,34 @@ class RiskGovernance(
     def initialize(
         *,
         limits: RiskLimits,
-        initial_equity: Equity,
+        initial_snapshot: RiskSnapshot,
     ) -> list[BaseEvent]:
         """
         Creates the canonical initialization event(s).
 
-        NOTE:
-        - Initialization MUST be represented by an explicit event in the stream.
-        - limits MUST be event-sourced to preserve auditability and deterministic replay.
+        Initialization MUST be represented by an explicit event in the stream.
         """
 
-        if initial_equity.context != limits.context:
+        if initial_snapshot.equity.context != limits.context:
             raise InvariantViolation(
-                "Initial equity MoneyContext mismatch with RiskLimits"
+                "Initial RiskSnapshot MoneyContext mismatch with RiskLimits"
+            )
+
+        if initial_snapshot.equity.currency != limits.context.reporting_currency:
+            raise CurrencyMismatch(
+                "Initial RiskSnapshot currency must equal "
+                "RiskLimits.context.reporting_currency"
             )
 
         return [
             RiskGovernanceInitializedEvent(
                 limits=limits,
-                initial_equity=initial_equity,
+                initial_snapshot=initial_snapshot,
             )
         ]
 
     # --- Commands -------------------------------------------------------------
     def register_pnl(self, *, pnl: RealizedPnL) -> list[BaseEvent]:
-
         state = self.state
 
         if not isinstance(state, RiskGovernanceInitializedState):
@@ -129,7 +132,6 @@ class RiskGovernance(
         event: BaseEvent,
         envelope: RecordedEventEnvelope,
     ) -> RiskGovernanceStateBase:
-
         if not isinstance(event, RiskGovernanceInitializedEvent):
             raise InvariantViolation("Invalid event type")
 
@@ -139,8 +141,7 @@ class RiskGovernance(
         return RiskGovernanceInitializedState(
             last_sequence=envelope.sequence,
             limits=event.limits,
-            equity=event.initial_equity,
-            equity_peak=event.initial_equity,
+            snapshot=event.initial_snapshot,
         )
 
     @staticmethod
@@ -149,7 +150,6 @@ class RiskGovernance(
         event: BaseEvent,
         envelope: RecordedEventEnvelope,
     ) -> RiskGovernanceStateBase:
-
         if not isinstance(event, RealizedPnLRegisteredEvent):
             raise InvariantViolation("Invalid event type")
 
@@ -159,16 +159,24 @@ class RiskGovernance(
             )
 
         evolution = EquityEvolutionService.evolve(
-            current_equity=state.equity,
-            current_peak=state.equity_peak,
+            current_equity=state.snapshot.equity,
+            current_peak=state.snapshot.equity_peak,
             pnl=event.pnl,
+        )
+
+        new_snapshot = RiskSnapshot(
+            equity=evolution.new_equity,
+            equity_peak=evolution.new_equity_peak,
+            drawdown=evolution.drawdown,
+            daily_loss=state.snapshot.daily_loss,
+            exposure=state.snapshot.exposure,
+            notional=state.snapshot.notional,
         )
 
         return RiskGovernanceInitializedState(
             last_sequence=envelope.sequence,
             limits=state.limits,
-            equity=evolution.new_equity,
-            equity_peak=evolution.new_equity_peak,
+            snapshot=new_snapshot,
         )
 
     # --- Handler registry -----------------------------------------------------
