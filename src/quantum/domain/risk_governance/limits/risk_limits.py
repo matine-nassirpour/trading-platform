@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 
+from quantum.domain.risk_governance.attribution.risk_reference import RiskReference
 from quantum.domain.risk_governance.limits.daily_loss_limit import DailyLossLimit
 from quantum.domain.risk_governance.limits.drawdown_limit import DrawdownLimit
 from quantum.domain.risk_governance.limits.exposure_limit import ExposureLimit
 from quantum.domain.risk_governance.limits.leverage_limit import LeverageLimit
 from quantum.domain.risk_governance.limits.notional_limit import NotionalLimit
-from quantum.domain.risk_governance.limits.risk_scope import RiskScope
 from quantum.domain.risk_governance.limits.risk_threshold_policy import (
     RiskThresholdPolicy,
 )
@@ -25,7 +25,7 @@ class RiskLimits(ValueObject):
     - threshold policy
     """
 
-    scope: RiskScope
+    reference: RiskReference
     context: MoneyContext
 
     max_drawdown: DrawdownLimit
@@ -38,7 +38,7 @@ class RiskLimits(ValueObject):
 
     def _validate_semantics(self) -> None:
         required_fields: tuple[tuple[str, object, type[object]], ...] = (
-            ("scope", self.scope, RiskScope),
+            ("reference", self.reference, RiskReference),
             ("context", self.context, MoneyContext),
             ("max_drawdown", self.max_drawdown, DrawdownLimit),
             ("max_notional", self.max_notional, NotionalLimit),
