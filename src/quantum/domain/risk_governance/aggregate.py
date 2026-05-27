@@ -1,22 +1,16 @@
 from collections.abc import Mapping
 
-from quantum.domain.risk_governance.events.equity_adjusted_event import (
-    EquityAdjustedEvent,
-)
-from quantum.domain.risk_governance.events.risk_breach_detected_event import (
-    RiskBreachDetectedEvent,
+from quantum.domain.risk_governance.events.realized_pnl_registred_event import (
+    RealizedPnLRegisteredEvent,
 )
 from quantum.domain.risk_governance.events.risk_governance_initialized_event import (
     RiskGovernanceInitializedEvent,
 )
 from quantum.domain.risk_governance.limits.risk_limits import RiskLimits
-from quantum.domain.risk_governance.measures.daily_loss import DailyLoss
 from quantum.domain.risk_governance.measures.equity import Equity
-from quantum.domain.risk_governance.measures.exposure import Exposure
-from quantum.domain.risk_governance.measures.notional import Notional
 from quantum.domain.risk_governance.risk_governance_id import RiskGovernanceId
-from quantum.domain.risk_governance.services.risk_governance_evaluator import (
-    RiskGovernanceEvaluator,
+from quantum.domain.risk_governance.services.equity_evolution import (
+    EquityEvolutionService,
 )
 from quantum.domain.risk_governance.states.risk_governance_initialized_state import (
     RiskGovernanceInitializedState,
@@ -39,6 +33,7 @@ from quantum.domain.shared_kernel.event_sourcing.events.recorded_event_envelope 
     RecordedEventEnvelope,
 )
 from quantum.domain.shared_kernel.foundation.errors.invariants import (
+    CurrencyMismatch,
     InvalidStateTransition,
     InvariantViolation,
 )
@@ -109,44 +104,22 @@ class RiskGovernance(
         ]
 
     # --- Commands -------------------------------------------------------------
-    def register_pnl(
-        self,
-        *,
-        pnl: RealizedPnL,
-        daily_loss: DailyLoss,
-        exposure: Exposure,
-        notional: Notional,
-    ) -> list[BaseEvent]:
-        """
-        Registers a realized PnL, updates equity & peak, and detects breaches.
-        """
+    def register_pnl(self, *, pnl: RealizedPnL) -> list[BaseEvent]:
 
         state = self.state
 
         if not isinstance(state, RiskGovernanceInitializedState):
-            raise InvalidStateTransition("RiskState not initialized")
+            raise InvalidStateTransition("RiskGovernance not initialized")
 
-        evaluation = RiskGovernanceEvaluator.evaluate_register_pnl(
-            state=state,
-            pnl=pnl,
-            daily_loss=daily_loss,
-            exposure=exposure,
-            notional=notional,
-        )
+        if pnl.context != state.limits.context:
+            raise InvariantViolation("PnL MoneyContext mismatch")
 
-        events: list[BaseEvent] = [
-            EquityAdjustedEvent(
-                pnl=pnl,
-                new_equity=evaluation.new_equity,
-                new_equity_peak=evaluation.new_equity_peak,
+        if pnl.currency != state.limits.context.reporting_currency:
+            raise CurrencyMismatch(
+                "PnL currency must equal RiskLimits.context.reporting_currency"
             )
-        ]
 
-        events.extend(
-            RiskBreachDetectedEvent(breach=breach) for breach in evaluation.breaches
-        )
-
-        return events
+        return [RealizedPnLRegisteredEvent(pnl=pnl)]
 
     # --- Event → State transitions --------------------------------------------
 
@@ -161,7 +134,7 @@ class RiskGovernance(
             raise InvariantViolation("Invalid event type")
 
         if not isinstance(state, RiskGovernanceUninitializedState):
-            raise InvalidStateTransition("RiskState already initialized")
+            raise InvalidStateTransition("RiskGovernance already initialized")
 
         return RiskGovernanceInitializedState(
             last_sequence=envelope.sequence,
@@ -171,45 +144,31 @@ class RiskGovernance(
         )
 
     @staticmethod
-    def _apply_equity_adjusted(
+    def _apply_realized_pnl_registered(
         state: RiskGovernanceStateBase,
         event: BaseEvent,
         envelope: RecordedEventEnvelope,
     ) -> RiskGovernanceStateBase:
 
-        if not isinstance(event, EquityAdjustedEvent):
+        if not isinstance(event, RealizedPnLRegisteredEvent):
             raise InvariantViolation("Invalid event type")
 
         if not isinstance(state, RiskGovernanceInitializedState):
             raise InvalidStateTransition(
-                "Cannot apply EquityAdjustedEvent before initialization"
+                "Cannot apply RealizedPnLRegisteredEvent before initialization"
             )
 
-        return RiskGovernanceInitializedState(
-            last_sequence=envelope.sequence,
-            limits=state.limits,
-            equity=event.new_equity,
-            equity_peak=event.new_equity_peak,
+        evolution = EquityEvolutionService.evolve(
+            current_equity=state.equity,
+            current_peak=state.equity_peak,
+            pnl=event.pnl,
         )
 
-    @staticmethod
-    def _apply_breach(
-        state: RiskGovernanceStateBase,
-        event: BaseEvent,
-        envelope: RecordedEventEnvelope,
-    ) -> RiskGovernanceStateBase:
-
-        if not isinstance(event, RiskBreachDetectedEvent):
-            raise InvariantViolation("Invalid event type")
-
-        if not isinstance(state, RiskGovernanceInitializedState):
-            raise InvalidStateTransition("RiskState not initialized")
-
         return RiskGovernanceInitializedState(
             last_sequence=envelope.sequence,
             limits=state.limits,
-            equity=state.equity,
-            equity_peak=state.equity_peak,
+            equity=evolution.new_equity,
+            equity_peak=evolution.new_equity_peak,
         )
 
     # --- Handler registry -----------------------------------------------------
@@ -220,6 +179,5 @@ class RiskGovernance(
     ) -> Mapping[type[BaseEvent], EventHandler[RiskGovernanceStateBase, BaseEvent]]:
         return {
             RiskGovernanceInitializedEvent: cls._apply_initialized,
-            EquityAdjustedEvent: cls._apply_equity_adjusted,
-            RiskBreachDetectedEvent: cls._apply_breach,
+            RealizedPnLRegisteredEvent: cls._apply_realized_pnl_registered,
         }
