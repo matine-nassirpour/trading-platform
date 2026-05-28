@@ -1,13 +1,13 @@
 from dataclasses import dataclass
 from typing import ClassVar
 
-from quantum.domain.position_sizing.events.position_sizing_event import (
+from quantum.domain.position_sizing.lifecycle.events.position_sizing_event import (
     PositionSizingEvent,
 )
-from quantum.domain.position_sizing.position_sizing_id import PositionSizingId
-from quantum.domain.position_sizing.value_objects.position_sizing_result import (
+from quantum.domain.position_sizing.model.result.position_sizing_result import (
     PositionSizingResult,
 )
+from quantum.domain.position_sizing.position_sizing_id import PositionSizingId
 from quantum.domain.shared_kernel.modeling.identity.decision_id import DecisionId
 from quantum.domain.shared_kernel.modeling.identity.strategy_id import StrategyId
 

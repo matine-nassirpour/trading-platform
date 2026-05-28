@@ -1,10 +1,10 @@
 from dataclasses import dataclass
 
-from quantum.domain.position_sizing.reason_codes.position_sizing_rejection_reason_code import (
-    PositionSizingRejectionReasonCode,
-)
-from quantum.domain.position_sizing.states.position_sizing_pending_state import (
+from quantum.domain.position_sizing.lifecycle.states.position_sizing_pending_state import (
     PositionSizingPendingState,
+)
+from quantum.domain.position_sizing.model.policies.position_sizing_rejection_reason_code import (
+    PositionSizingRejectionReasonCode,
 )
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.modeling.temporal.epoch_ms import EpochMs

@@ -1,12 +1,12 @@
 from quantum.domain.capital_management.allocation.capital_allocation_intent import (
     CapitalAllocationIntent,
 )
-from quantum.domain.position_sizing.value_objects.sizing_allocation import (
+from quantum.domain.position_sizing.model.allocation.sizing_allocation import (
     SizingAllocation,
     SizingCapitalFraction,
     SizingRiskBudgetSlice,
 )
-from quantum.domain.position_sizing.value_objects.sizing_equity import SizingEquity
+from quantum.domain.position_sizing.model.equity.sizing_equity import SizingEquity
 from quantum.domain.risk_governance.portfolio_state.equity import Equity
 
 

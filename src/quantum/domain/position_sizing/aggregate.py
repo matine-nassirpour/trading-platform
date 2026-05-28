@@ -4,40 +4,40 @@ from typing import Self
 from quantum.domain.market.instrument.identity.symbol import Symbol
 from quantum.domain.market.instrument.instrument_spec import InstrumentSpec
 from quantum.domain.market.instrument.pricing.reference_price import ReferencePrice
-from quantum.domain.position_sizing.events.position_sized_event import (
+from quantum.domain.position_sizing.lifecycle.events.position_sized_event import (
     PositionSizedEvent,
 )
-from quantum.domain.position_sizing.events.position_sizing_rejected_event import (
+from quantum.domain.position_sizing.lifecycle.events.position_sizing_rejected_event import (
     PositionSizingRejectedEvent,
 )
-from quantum.domain.position_sizing.events.position_sizing_requested_event import (
+from quantum.domain.position_sizing.lifecycle.events.position_sizing_requested_event import (
     PositionSizingRequestedEvent,
 )
-from quantum.domain.position_sizing.position_sizing_id import PositionSizingId
-from quantum.domain.position_sizing.services.position_sizer import PositionSizer
-from quantum.domain.position_sizing.states.position_sizing_pending_state import (
+from quantum.domain.position_sizing.lifecycle.states.position_sizing_pending_state import (
     PositionSizingPendingState,
 )
-from quantum.domain.position_sizing.states.position_sizing_rejected_state import (
+from quantum.domain.position_sizing.lifecycle.states.position_sizing_rejected_state import (
     PositionSizingRejectedState,
 )
-from quantum.domain.position_sizing.states.position_sizing_sized_state import (
+from quantum.domain.position_sizing.lifecycle.states.position_sizing_sized_state import (
     PositionSizingSizedState,
 )
-from quantum.domain.position_sizing.states.position_sizing_state_base import (
+from quantum.domain.position_sizing.lifecycle.states.position_sizing_state_base import (
     PositionSizingStateBase,
 )
-from quantum.domain.position_sizing.states.position_sizing_uninitialized_state import (
+from quantum.domain.position_sizing.lifecycle.states.position_sizing_uninitialized_state import (
     PositionSizingUninitializedState,
 )
-from quantum.domain.position_sizing.value_objects.sizing_allocation import (
+from quantum.domain.position_sizing.model.allocation.sizing_allocation import (
     SizingAllocation,
 )
-from quantum.domain.position_sizing.value_objects.sizing_equity import SizingEquity
-from quantum.domain.position_sizing.value_objects.sizing_rounding_policy import (
+from quantum.domain.position_sizing.model.equity.sizing_equity import SizingEquity
+from quantum.domain.position_sizing.model.policies.sizing_rounding_policy import (
     SizingRoundingPolicy,
 )
-from quantum.domain.position_sizing.value_objects.stop_distance import StopDistance
+from quantum.domain.position_sizing.model.volume.stop_distance import StopDistance
+from quantum.domain.position_sizing.position_sizing_id import PositionSizingId
+from quantum.domain.position_sizing.services.position_sizer import PositionSizer
 from quantum.domain.shared_kernel.event_sourcing.aggregates.event_sourced_aggregate_root import (
     EventHandler,
     EventSourcedAggregateRoot,

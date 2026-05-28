@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from quantum.domain.position_sizing.states.position_sizing_state_base import (
+from quantum.domain.position_sizing.lifecycle.states.position_sizing_state_base import (
     PositionSizingStateBase,
 )
 from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation

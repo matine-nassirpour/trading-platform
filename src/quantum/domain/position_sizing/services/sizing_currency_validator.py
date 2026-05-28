@@ -1,5 +1,5 @@
 from quantum.domain.market.instrument.instrument_spec import InstrumentSpec
-from quantum.domain.position_sizing.value_objects.sizing_equity import SizingEquity
+from quantum.domain.position_sizing.model.equity.sizing_equity import SizingEquity
 from quantum.domain.shared_kernel.foundation.errors.invariants import (
     CurrencyMismatch,
     InvariantViolation,
