@@ -1,14 +1,12 @@
 from dataclasses import dataclass
-from decimal import Decimal
 
-from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
-from quantum.domain.shared_kernel.modeling.monetary.contextual_monetary_amount import (
-    ContextualMonetaryAmount,
+from quantum.domain.risk_governance.amounts.risk_monetary_amount import (
+    NonNegativeRiskMeasurement,
 )
 
 
 @dataclass(frozen=True, slots=True)
-class DailyLoss(ContextualMonetaryAmount):
+class DailyLoss(NonNegativeRiskMeasurement):
     """
     Accumulated realized loss for the current trading day.
 
@@ -21,9 +19,3 @@ class DailyLoss(ContextualMonetaryAmount):
     @classmethod
     def nominal_type(cls) -> str:
         return "daily_loss"
-
-    def _validate_numeric_semantics(self) -> None:
-        super()._validate_numeric_semantics()
-
-        if self.value < Decimal("0"):
-            raise InvariantViolation("DailyLoss must be non-negative")
