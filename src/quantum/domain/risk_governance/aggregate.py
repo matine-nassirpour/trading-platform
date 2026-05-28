@@ -7,6 +7,9 @@ from quantum.domain.risk_governance.breach_detection.risk_breach_detector import
 from quantum.domain.risk_governance.lifecycle.events.realized_pnl_registered_event import (
     RealizedPnLRegisteredEvent,
 )
+from quantum.domain.risk_governance.lifecycle.events.risk_breaches_cleared_event import (
+    RiskBreachesClearedEvent,
+)
 from quantum.domain.risk_governance.lifecycle.events.risk_breaches_detected_event import (
     RiskBreachesDetectedEvent,
 )
@@ -181,6 +184,8 @@ class RiskGovernance(
                     breaches=detection.breaches,
                 )
             )
+        elif state.active_breaches:
+            events.append(RiskBreachesClearedEvent())
 
         return events
 
@@ -223,6 +228,7 @@ class RiskGovernance(
             limits=event.limits,
             snapshot=event.initial_snapshot,
             trading_day=event.trading_day,
+            active_breaches=(),
         )
 
     @staticmethod
@@ -257,6 +263,51 @@ class RiskGovernance(
             limits=state.limits,
             snapshot=event.resulting_snapshot,
             trading_day=state.trading_day,
+            active_breaches=state.active_breaches,
+        )
+
+    @staticmethod
+    def _apply_risk_breaches_detected(
+        state: RiskGovernanceStateBase,
+        event: BaseEvent,
+        envelope: RecordedEventEnvelope,
+    ) -> RiskGovernanceStateBase:
+        if not isinstance(event, RiskBreachesDetectedEvent):
+            raise InvariantViolation("Invalid event type")
+
+        if not isinstance(state, RiskGovernanceInitializedState):
+            raise InvalidStateTransition(
+                "Cannot apply RiskBreachesDetectedEvent before initialization"
+            )
+
+        return RiskGovernanceInitializedState(
+            last_sequence=envelope.sequence,
+            limits=state.limits,
+            snapshot=state.snapshot,
+            trading_day=state.trading_day,
+            active_breaches=event.breaches,
+        )
+
+    @staticmethod
+    def _apply_risk_breaches_cleared(
+        state: RiskGovernanceStateBase,
+        event: BaseEvent,
+        envelope: RecordedEventEnvelope,
+    ) -> RiskGovernanceStateBase:
+        if not isinstance(event, RiskBreachesClearedEvent):
+            raise InvariantViolation("Invalid event type")
+
+        if not isinstance(state, RiskGovernanceInitializedState):
+            raise InvalidStateTransition(
+                "Cannot apply RiskBreachesClearedEvent before initialization"
+            )
+
+        return RiskGovernanceInitializedState(
+            last_sequence=envelope.sequence,
+            limits=state.limits,
+            snapshot=state.snapshot,
+            trading_day=state.trading_day,
+            active_breaches=(),
         )
 
     @staticmethod
@@ -296,27 +347,7 @@ class RiskGovernance(
             limits=state.limits,
             snapshot=event.snapshot,
             trading_day=state.trading_day,
-        )
-
-    @staticmethod
-    def _apply_risk_breaches_detected(
-        state: RiskGovernanceStateBase,
-        event: BaseEvent,
-        envelope: RecordedEventEnvelope,
-    ) -> RiskGovernanceStateBase:
-        if not isinstance(event, RiskBreachesDetectedEvent):
-            raise InvariantViolation("Invalid event type")
-
-        if not isinstance(state, RiskGovernanceInitializedState):
-            raise InvalidStateTransition(
-                "Cannot apply RiskBreachesDetectedEvent before initialization"
-            )
-
-        return RiskGovernanceInitializedState(
-            last_sequence=envelope.sequence,
-            limits=state.limits,
-            snapshot=state.snapshot,
-            trading_day=state.trading_day,
+            active_breaches=state.active_breaches,
         )
 
     @staticmethod
@@ -351,6 +382,7 @@ class RiskGovernance(
             limits=state.limits,
             snapshot=new_snapshot,
             trading_day=event.trading_day,
+            active_breaches=(),
         )
 
     # --- Handler registry -----------------------------------------------------
@@ -364,5 +396,6 @@ class RiskGovernance(
             RealizedPnLRegisteredEvent: cls._apply_realized_pnl_registered,
             RiskGovernanceInsolvencyDeclaredEvent: cls._apply_insolvency_declared,
             RiskBreachesDetectedEvent: cls._apply_risk_breaches_detected,
+            RiskBreachesClearedEvent: cls._apply_risk_breaches_cleared,
             RiskTradingDayResetEvent: cls._apply_trading_day_reset,
         }
