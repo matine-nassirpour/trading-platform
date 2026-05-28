@@ -1,9 +1,6 @@
 from collections.abc import Mapping
 from typing import Self
 
-from quantum.domain.capital_management.allocation.capital_allocation_intent import (
-    CapitalAllocationIntent,
-)
 from quantum.domain.market.instrument.identity.symbol import Symbol
 from quantum.domain.market.instrument.instrument_spec import InstrumentSpec
 from quantum.domain.market.instrument.pricing.reference_price import ReferencePrice
@@ -33,11 +30,14 @@ from quantum.domain.position_sizing.states.position_sizing_state_base import (
 from quantum.domain.position_sizing.states.position_sizing_uninitialized_state import (
     PositionSizingUninitializedState,
 )
+from quantum.domain.position_sizing.value_objects.sizing_allocation import (
+    SizingAllocation,
+)
+from quantum.domain.position_sizing.value_objects.sizing_equity import SizingEquity
 from quantum.domain.position_sizing.value_objects.sizing_rounding_policy import (
     SizingRoundingPolicy,
 )
 from quantum.domain.position_sizing.value_objects.stop_distance import StopDistance
-from quantum.domain.risk_governance.portfolio_state.equity import Equity
 from quantum.domain.shared_kernel.event_sourcing.aggregates.event_sourced_aggregate_root import (
     EventHandler,
     EventSourcedAggregateRoot,
@@ -124,8 +124,8 @@ class PositionSizing(
         decision_id: DecisionId,
         strategy_id: StrategyId,
         symbol: Symbol,
-        allocation: CapitalAllocationIntent,
-        equity: Equity,
+        allocation: SizingAllocation,
+        equity: SizingEquity,
         stop_distance: StopDistance,
         instrument: InstrumentSpec,
         reference_price: ReferencePrice,
@@ -154,8 +154,8 @@ class PositionSizing(
         decision_id: DecisionId,
         strategy_id: StrategyId,
         symbol: Symbol,
-        allocation: CapitalAllocationIntent,
-        equity: Equity,
+        allocation: SizingAllocation,
+        equity: SizingEquity,
         stop_distance: StopDistance,
         instrument: InstrumentSpec,
         reference_price: ReferencePrice,

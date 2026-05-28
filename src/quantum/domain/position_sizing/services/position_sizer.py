@@ -3,9 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import ROUND_FLOOR, Decimal
 
-from quantum.domain.capital_management.allocation.capital_allocation_intent import (
-    CapitalAllocationIntent,
-)
 from quantum.domain.market.instrument.instrument_spec import InstrumentSpec
 from quantum.domain.market.instrument.pricing.reference_price import ReferencePrice
 from quantum.domain.position_sizing.reason_codes.position_sizing_rejection_reason_code import (
@@ -19,11 +16,14 @@ from quantum.domain.position_sizing.value_objects.position_sizing_result import 
 )
 from quantum.domain.position_sizing.value_objects.position_volume import PositionVolume
 from quantum.domain.position_sizing.value_objects.risk_amount import RiskAmount
+from quantum.domain.position_sizing.value_objects.sizing_allocation import (
+    SizingAllocation,
+)
+from quantum.domain.position_sizing.value_objects.sizing_equity import SizingEquity
 from quantum.domain.position_sizing.value_objects.sizing_rounding_policy import (
     SizingRoundingPolicy,
 )
 from quantum.domain.position_sizing.value_objects.stop_distance import StopDistance
-from quantum.domain.risk_governance.portfolio_state.equity import Equity
 from quantum.domain.shared_kernel.foundation.errors.invariants import (
     CurrencyMismatch,
     InvariantViolation,
@@ -179,7 +179,7 @@ class PositionSizer(DomainService):
     @staticmethod
     def _reject_invalid_inputs(
         *,
-        equity: Equity,
+        equity: SizingEquity,
         stop_distance: StopDistance,
         instrument: InstrumentSpec,
     ) -> PositionSizingEvaluation | None:
@@ -206,8 +206,8 @@ class PositionSizer(DomainService):
     @staticmethod
     def _compute_risk_limited_volume(
         *,
-        allocation: CapitalAllocationIntent,
-        equity: Equity,
+        allocation: SizingAllocation,
+        equity: SizingEquity,
         stop_distance: StopDistance,
         instrument: InstrumentSpec,
     ) -> Decimal | PositionSizingEvaluation:
@@ -241,8 +241,8 @@ class PositionSizer(DomainService):
     @staticmethod
     def _compute_capital_limited_volume(
         *,
-        allocation: CapitalAllocationIntent,
-        equity: Equity,
+        allocation: SizingAllocation,
+        equity: SizingEquity,
         instrument: InstrumentSpec,
         reference_price: ReferencePrice,
     ) -> Decimal | PositionSizingEvaluation:
@@ -267,8 +267,8 @@ class PositionSizer(DomainService):
     @staticmethod
     def _compute_sizing(
         *,
-        allocation: CapitalAllocationIntent,
-        equity: Equity,
+        allocation: SizingAllocation,
+        equity: SizingEquity,
         stop_distance: StopDistance,
         instrument: InstrumentSpec,
         reference_price: ReferencePrice,
@@ -378,7 +378,7 @@ class PositionSizer(DomainService):
         *,
         final_volume: Decimal,
         computed: _ComputedSizing,
-        equity: Equity,
+        equity: SizingEquity,
         instrument: InstrumentSpec,
     ) -> PositionSizingEvaluation:
         risk_amount = RiskAmount(
@@ -402,8 +402,8 @@ class PositionSizer(DomainService):
     @staticmethod
     def evaluate(
         *,
-        allocation: CapitalAllocationIntent,
-        equity: Equity,
+        allocation: SizingAllocation,
+        equity: SizingEquity,
         stop_distance: StopDistance,
         instrument: InstrumentSpec,
         reference_price: ReferencePrice,

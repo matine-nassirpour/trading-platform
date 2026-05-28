@@ -1,5 +1,5 @@
 from quantum.domain.market.instrument.instrument_spec import InstrumentSpec
-from quantum.domain.risk_governance.portfolio_state.equity import Equity
+from quantum.domain.position_sizing.value_objects.sizing_equity import SizingEquity
 from quantum.domain.shared_kernel.foundation.errors.invariants import (
     CurrencyMismatch,
     InvariantViolation,
@@ -27,7 +27,7 @@ class SizingCurrencyValidator(DomainService):
     @staticmethod
     def validate(
         *,
-        equity: Equity,
+        equity: SizingEquity,
         instrument: InstrumentSpec,
     ) -> None:
         if equity.context != instrument.context:
