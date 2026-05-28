@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from quantum.domain.market.calendar.utc_date import UtcDate
 from quantum.domain.risk_governance.lifecycle.states.risk_governance_state_base import (
     RiskGovernanceStateBase,
 )
@@ -16,19 +17,22 @@ class RiskGovernanceInitializedState(RiskGovernanceStateBase):
 
     limits: RiskLimits
     snapshot: RiskSnapshot
+    trading_day: UtcDate
 
     def _validate_semantics(self) -> None:
         super()._validate_semantics()
 
-        if not isinstance(self.limits, RiskLimits):
-            raise InvariantViolation(
-                "RiskGovernanceInitializedState requires RiskLimits"
-            )
+        required_fields: tuple[tuple[str, object, type[object]], ...] = (
+            ("limits", self.limits, RiskLimits),
+            ("snapshot", self.snapshot, RiskSnapshot),
+            ("trading_day", self.trading_day, UtcDate),
+        )
 
-        if not isinstance(self.snapshot, RiskSnapshot):
-            raise InvariantViolation(
-                "RiskGovernanceInitializedState requires RiskSnapshot"
-            )
+        for field_name, value, expected_type in required_fields:
+            if not isinstance(value, expected_type):
+                raise InvariantViolation(
+                    f"RiskGovernanceInitializedState.{field_name} invalid"
+                )
 
         if self.last_sequence.is_initial():
             raise InvariantViolation("Initialized risk cannot be initial")

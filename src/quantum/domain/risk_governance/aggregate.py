@@ -1,5 +1,6 @@
 from collections.abc import Mapping
 
+from quantum.domain.market.calendar.utc_date import UtcDate
 from quantum.domain.risk_governance.breach_detection.risk_breach_detector import (
     RiskBreachDetector,
 )
@@ -14,6 +15,9 @@ from quantum.domain.risk_governance.lifecycle.events.risk_governance_initialized
 )
 from quantum.domain.risk_governance.lifecycle.events.risk_governance_insolvency_declared_event import (
     RiskGovernanceInsolvencyDeclaredEvent,
+)
+from quantum.domain.risk_governance.lifecycle.events.risk_trading_day_reset_event import (
+    RiskTradingDayResetEvent,
 )
 from quantum.domain.risk_governance.lifecycle.states.risk_governance_initialized_state import (
     RiskGovernanceInitializedState,
@@ -31,8 +35,8 @@ from quantum.domain.risk_governance.limits.risk_limits import RiskLimits
 from quantum.domain.risk_governance.portfolio_state.evolution.daily_loss_evolution import (
     DailyLossEvolutionService,
 )
-from quantum.domain.risk_governance.portfolio_state.evolution.equity_evolution import (
-    EquityEvolutionService,
+from quantum.domain.risk_governance.portfolio_state.evolution.risk_snapshot_evolution import (
+    RiskSnapshotEvolutionService,
 )
 from quantum.domain.risk_governance.portfolio_state.risk_snapshot import RiskSnapshot
 from quantum.domain.risk_governance.risk_governance_id import RiskGovernanceId
@@ -94,9 +98,7 @@ class RiskGovernance(
 
     @staticmethod
     def initialize(
-        *,
-        limits: RiskLimits,
-        initial_snapshot: RiskSnapshot,
+        *, limits: RiskLimits, initial_snapshot: RiskSnapshot, trading_day: UtcDate
     ) -> list[BaseEvent]:
         """
         Creates the canonical initialization event(s).
@@ -119,6 +121,7 @@ class RiskGovernance(
             RiskGovernanceInitializedEvent(
                 limits=limits,
                 initial_snapshot=initial_snapshot,
+                trading_day=trading_day,
             )
         ]
 
@@ -142,25 +145,12 @@ class RiskGovernance(
                 "PnL currency must equal RiskLimits.context.reporting_currency"
             )
 
-        evolution = EquityEvolutionService.evolve(
-            current_equity=state.snapshot.equity,
-            current_peak=state.snapshot.equity_peak,
+        snapshot_evolution = RiskSnapshotEvolutionService.evolve_after_realized_pnl(
+            current_snapshot=state.snapshot,
             pnl=pnl,
         )
 
-        new_daily_loss = DailyLossEvolutionService.evolve(
-            current_daily_loss=state.snapshot.daily_loss,
-            pnl=pnl,
-        )
-
-        new_snapshot = RiskSnapshot(
-            equity=evolution.new_equity,
-            equity_peak=evolution.new_equity_peak,
-            drawdown=evolution.drawdown,
-            daily_loss=new_daily_loss,
-            exposure=state.snapshot.exposure,
-            notional=state.snapshot.notional,
-        )
+        new_snapshot = snapshot_evolution.snapshot
 
         detection = RiskBreachDetector.detect(
             limits=state.limits,
@@ -191,6 +181,26 @@ class RiskGovernance(
 
         return events
 
+    def reset_trading_day(self, *, trading_day: UtcDate) -> list[BaseEvent]:
+        state = self.state
+
+        if not isinstance(state, RiskGovernanceInitializedState):
+            raise InvalidStateTransition("RiskGovernance not initialized")
+
+        if isinstance(state, RiskGovernanceInsolventState):
+            raise InvalidStateTransition(
+                "Cannot reset trading day on insolvent governance"
+            )
+
+        if trading_day == state.trading_day:
+            return []
+
+        return [
+            RiskTradingDayResetEvent(
+                trading_day=trading_day,
+            )
+        ]
+
     # --- Event → State transitions --------------------------------------------
 
     @staticmethod
@@ -209,6 +219,7 @@ class RiskGovernance(
             last_sequence=envelope.sequence,
             limits=event.limits,
             snapshot=event.initial_snapshot,
+            trading_day=event.trading_day,
         )
 
     @staticmethod
@@ -225,30 +236,16 @@ class RiskGovernance(
                 "Cannot apply RealizedPnLRegisteredEvent before initialization"
             )
 
-        evolution = EquityEvolutionService.evolve(
-            current_equity=state.snapshot.equity,
-            current_peak=state.snapshot.equity_peak,
+        snapshot_evolution = RiskSnapshotEvolutionService.evolve_after_realized_pnl(
+            current_snapshot=state.snapshot,
             pnl=event.pnl,
-        )
-
-        new_daily_loss = DailyLossEvolutionService.evolve(
-            current_daily_loss=state.snapshot.daily_loss,
-            pnl=event.pnl,
-        )
-
-        new_snapshot = RiskSnapshot(
-            equity=evolution.new_equity,
-            equity_peak=evolution.new_equity_peak,
-            drawdown=evolution.drawdown,
-            daily_loss=new_daily_loss,
-            exposure=state.snapshot.exposure,
-            notional=state.snapshot.notional,
         )
 
         return RiskGovernanceInitializedState(
             last_sequence=envelope.sequence,
             limits=state.limits,
-            snapshot=new_snapshot,
+            snapshot=snapshot_evolution.snapshot,
+            trading_day=state.trading_day,
         )
 
     @staticmethod
@@ -287,6 +284,7 @@ class RiskGovernance(
             last_sequence=envelope.sequence,
             limits=state.limits,
             snapshot=event.snapshot,
+            trading_day=state.trading_day,
         )
 
     @staticmethod
@@ -307,6 +305,41 @@ class RiskGovernance(
             last_sequence=envelope.sequence,
             limits=state.limits,
             snapshot=state.snapshot,
+            trading_day=state.trading_day,
+        )
+
+    @staticmethod
+    def _apply_trading_day_reset(
+        state: RiskGovernanceStateBase,
+        event: BaseEvent,
+        envelope: RecordedEventEnvelope,
+    ) -> RiskGovernanceStateBase:
+        if not isinstance(event, RiskTradingDayResetEvent):
+            raise InvariantViolation("Invalid event type")
+
+        if not isinstance(state, RiskGovernanceInitializedState):
+            raise InvalidStateTransition(
+                "Cannot reset trading day before initialization"
+            )
+
+        new_daily_loss = DailyLossEvolutionService.reset(
+            current_daily_loss=state.snapshot.daily_loss,
+        )
+
+        new_snapshot = RiskSnapshot(
+            equity=state.snapshot.equity,
+            equity_peak=state.snapshot.equity_peak,
+            drawdown=state.snapshot.drawdown,
+            daily_loss=new_daily_loss,
+            exposure=state.snapshot.exposure,
+            notional=state.snapshot.notional,
+        )
+
+        return RiskGovernanceInitializedState(
+            last_sequence=envelope.sequence,
+            limits=state.limits,
+            snapshot=new_snapshot,
+            trading_day=event.trading_day,
         )
 
     # --- Handler registry -----------------------------------------------------
@@ -320,4 +353,5 @@ class RiskGovernance(
             RealizedPnLRegisteredEvent: cls._apply_realized_pnl_registered,
             RiskGovernanceInsolvencyDeclaredEvent: cls._apply_insolvency_declared,
             RiskBreachesDetectedEvent: cls._apply_risk_breaches_detected,
+            RiskTradingDayResetEvent: cls._apply_trading_day_reset,
         }

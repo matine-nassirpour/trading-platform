@@ -32,3 +32,11 @@ class DailyLossEvolutionService(DomainService):
             currency=current_daily_loss.currency,
             context=current_daily_loss.context,
         )
+
+    @staticmethod
+    def reset(*, current_daily_loss: DailyLoss) -> DailyLoss:
+        return DailyLoss(
+            value=Decimal("0"),
+            currency=current_daily_loss.currency,
+            context=current_daily_loss.context,
+        )
