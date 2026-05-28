@@ -162,7 +162,10 @@ class RiskGovernance(
         )
 
         events: list[BaseEvent] = [
-            RealizedPnLRegisteredEvent(pnl=pnl),
+            RealizedPnLRegisteredEvent(
+                pnl=pnl,
+                resulting_snapshot=new_snapshot,
+            ),
         ]
 
         if new_snapshot.equity.value <= 0:
@@ -236,15 +239,23 @@ class RiskGovernance(
                 "Cannot apply RealizedPnLRegisteredEvent before initialization"
             )
 
-        snapshot_evolution = RiskSnapshotEvolutionService.evolve_after_realized_pnl(
-            current_snapshot=state.snapshot,
-            pnl=event.pnl,
-        )
+        if event.resulting_snapshot.equity.context != state.limits.context:
+            raise InvariantViolation(
+                "Resulting RiskSnapshot MoneyContext mismatch with RiskLimits"
+            )
+
+        if (
+            event.resulting_snapshot.equity.currency
+            != state.limits.context.reporting_currency
+        ):
+            raise CurrencyMismatch(
+                "Resulting RiskSnapshot currency must equal RiskLimits.context.reporting_currency"
+            )
 
         return RiskGovernanceInitializedState(
             last_sequence=envelope.sequence,
             limits=state.limits,
-            snapshot=snapshot_evolution.snapshot,
+            snapshot=event.resulting_snapshot,
             trading_day=state.trading_day,
         )
 
