@@ -12,7 +12,7 @@ from quantum.domain.safety_control.kill_switch.kill_switch_reason import (
 
 @dataclass(frozen=True, slots=True)
 class KillSwitchTriggeredEvent(SafetyControlEvent):
-    event_name: ClassVar[str] = "safety_control.killswitch.triggered"
+    event_name: ClassVar[str] = "safety_control.kill_switch.triggered"
     event_version: ClassVar[int] = 1
 
     reason: KillSwitchReason
