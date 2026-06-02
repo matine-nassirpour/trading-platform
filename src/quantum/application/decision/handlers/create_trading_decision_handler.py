@@ -50,7 +50,8 @@ class CreateTradingDecisionHandler(
         command: CreateTradingDecisionCommand,
         aggregate: TradingDecision,
     ) -> tuple[Sequence[BaseEvent], TradingDecisionCommandResult]:
-        events = TradingDecision.decide_create(
+        _, events = TradingDecision.create_new(
+            aggregate_id=command.decision_id,
             symbol=command.symbol,
             decision_qualification=command.decision_qualification,
             context=command.trading_context,

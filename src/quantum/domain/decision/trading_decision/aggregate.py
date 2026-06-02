@@ -113,6 +113,32 @@ class TradingDecision(EventSourcedAggregateRoot[DecisionId, TradingDecisionState
             last_sequence=EventSequence.initial(),
         )
 
+    def decision_qualification(self) -> DecisionQualification:
+        """
+        Returns the decision qualification for states where a TradingDecision
+        has been created.
+
+        This is a read-only domain query, not an application shortcut.
+        """
+
+        state = self.state
+
+        if isinstance(
+            state,
+            (
+                TradingDecisionPendingEvaluationState,
+                TradingDecisionTradeCandidatePendingAuthorizationState,
+                TradingDecisionAuthorizedState,
+                TradingDecisionRejectedState,
+                TradingDecisionNoTradeState,
+            ),
+        ):
+            return state.decision_qualification
+
+        raise InvalidStateTransition(
+            "TradingDecision has no decision qualification before creation"
+        )
+
     # --- Internal state guards ------------------------------------------------
 
     def _require_pending_evaluation(self) -> TradingDecisionPendingEvaluationState:

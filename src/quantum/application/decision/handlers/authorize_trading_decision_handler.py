@@ -33,11 +33,7 @@ from quantum.domain.decision.trading_decision.events.trading_decision_rejected_e
 from quantum.domain.decision.trading_decision.states.trading_decision_state_base import (
     TradingDecisionStateBase,
 )
-from quantum.domain.decision.trading_decision.states.trading_decision_trade_candidate_pending_authorization_state import (
-    TradingDecisionTradeCandidatePendingAuthorizationState,
-)
 from quantum.domain.shared_kernel.event_sourcing.events.base_event import BaseEvent
-from quantum.domain.shared_kernel.foundation.errors.invariants import InvariantViolation
 from quantum.domain.shared_kernel.modeling.identity.decision_id import DecisionId
 
 
@@ -96,17 +92,7 @@ class AuthorizeTradingDecisionHandler(
         command: AuthorizeTradingDecisionCommand,
         aggregate: TradingDecision,
     ) -> tuple[Sequence[BaseEvent], TradingDecisionAuthorizationCommandResult]:
-        state = aggregate.state
-
-        if not isinstance(
-            state,
-            TradingDecisionTradeCandidatePendingAuthorizationState,
-        ):
-            raise InvariantViolation(
-                "TradingDecision must be a trade candidate pending authorization"
-            )
-
-        strategy_id = state.decision_qualification.strategy_id
+        strategy_id = aggregate.decision_qualification().strategy_id
 
         policy = self._decision_policies.get_policies_for(strategy_id)
         if policy is None:
@@ -134,20 +120,18 @@ class AuthorizeTradingDecisionHandler(
         event = events[0]
 
         if isinstance(event, TradingDecisionAuthorizedEvent):
-            result = TradingDecisionAuthorizationCommandResult(
+            return events, TradingDecisionAuthorizationCommandResult(
                 decision_id=command.decision_id,
                 status=DecisionAuthorizationStatus.authorized(),
                 reason_code=None,
             )
-            return events, result
 
         if isinstance(event, TradingDecisionRejectedEvent):
-            result = TradingDecisionAuthorizationCommandResult(
+            return events, TradingDecisionAuthorizationCommandResult(
                 decision_id=command.decision_id,
                 status=DecisionAuthorizationStatus.rejected(),
                 reason_code=event.reason_code,
             )
-            return events, result
 
         raise RuntimeError(
             f"Unexpected authorization event type: {type(event).__name__}"
