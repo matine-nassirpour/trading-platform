@@ -54,7 +54,7 @@ class CreateKillSwitchHandler(
         command: CreateKillSwitchCommand,
         aggregate: KillSwitch,
     ) -> tuple[Sequence[BaseEvent], CreateKillSwitchResult]:
-        events = KillSwitch.genesis_events()
+        _, events = KillSwitch.create_new(aggregate_id=command.kill_switch_id)
 
         return events, CreateKillSwitchResult(
             kill_switch_id=command.kill_switch_id,

@@ -1,4 +1,5 @@
 from collections.abc import Mapping
+from typing import Self
 
 from quantum.domain.safety_control.kill_switch.events.killswitch_armed_event import (
     KillSwitchArmedEvent,
@@ -69,12 +70,17 @@ class KillSwitch(EventSourcedAggregateRoot[KillSwitchId, KillSwitchStateBase]):
 
     # --- Factory --------------------------------------------------------------
 
-    @staticmethod
-    def genesis_events() -> list[BaseEvent]:
-        """
-        Canonical genesis events for the KillSwitch aggregate.
-        """
-        return [KillSwitchArmedEvent()]
+    @classmethod
+    def create_new(
+        cls,
+        *,
+        aggregate_id: KillSwitchId,
+    ) -> tuple[Self, list[BaseEvent]]:
+        aggregate = cls.new(aggregate_id=aggregate_id)
+
+        events = [KillSwitchArmedEvent()]
+
+        return aggregate, events
 
     # --- Commands -------------------------------------------------------------
 
