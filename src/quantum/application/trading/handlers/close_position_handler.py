@@ -1,49 +1,77 @@
-from collections.abc import Iterable
+from collections.abc import Sequence
 
 from quantum.application.shared.base_handlers.aggregate_command_handler import (
     AggregateCommandHandler,
 )
-from quantum.application.shared.base_handlers.aggregate_existence_policy import (
-    AggregateExistencePolicy,
+from quantum.application.shared.eventing.application_event_context import (
+    ApplicationEventContext,
 )
 from quantum.application.trading.commands.close_position_command import (
     ClosePositionCommand,
 )
+from quantum.application.trading.results.position_command_result import (
+    ClosePositionResult,
+)
 from quantum.domain.shared_kernel.event_sourcing.events.base_event import BaseEvent
-from quantum.domain.trading.position.aggregate import Position
+from quantum.domain.trading.position.aggregate import Position, PositionId
+from quantum.domain.trading.position.events.position_closed_event import (
+    PositionClosedEvent,
+)
+from quantum.domain.trading.position.states.position_state_base import PositionStateBase
 
 
 class ClosePositionHandler(
-    AggregateCommandHandler[ClosePositionCommand, None, Position]
+    AggregateCommandHandler[
+        ClosePositionCommand,
+        ClosePositionResult,
+        PositionId,
+        PositionStateBase,
+        Position,
+    ]
 ):
     """
-    Closes an existing Position aggregate.
+    Use case: close an opened Position aggregate.
+
+    Existence policy expected at composition root:
+    - MUST_EXIST
     """
 
-    def __init__(self, **kwargs) -> None:
-        super().__init__(
-            existence_policy=AggregateExistencePolicy.MUST_EXIST,
-            **kwargs,
-        )
+    def _aggregate_id(self, command: ClosePositionCommand) -> PositionId:
+        return command.position_id
 
-    def _stream_id(self, command: ClosePositionCommand) -> str:
-        return f"position-{command.position_id.value}"
+    def _context(self, command: ClosePositionCommand) -> ApplicationEventContext:
+        return command.context
 
     def _execute_domain(
         self,
         *,
         command: ClosePositionCommand,
-        aggregate: Position | None,
-    ) -> tuple[Iterable[BaseEvent], None]:
-
-        if aggregate is None:
-            raise RuntimeError(
-                "Position aggregate missing despite MUST_EXIST policy enforcement."
+        aggregate: Position,
+    ) -> tuple[Sequence[BaseEvent], ClosePositionResult]:
+        events = list(
+            aggregate.close(
+                exit_price=command.exit_price,
+                instrument=command.instrument,
             )
-
-        domain_events = aggregate.close(
-            exit_price=command.exit_price,
-            context=command.context,
         )
 
-        return domain_events, None
+        realized_pnl = self._extract_realized_pnl(events)
+
+        return events, ClosePositionResult(
+            position_id=command.position_id,
+            realized_pnl=realized_pnl,
+        )
+
+    @staticmethod
+    def _extract_realized_pnl(events: Sequence[BaseEvent]):
+        if len(events) != 1:
+            raise RuntimeError("Position.close() must emit exactly one event")
+
+        event = events[0]
+
+        if not isinstance(event, PositionClosedEvent):
+            raise RuntimeError(
+                f"Unexpected close position event type: {type(event).__name__}"
+            )
+
+        return event.realized_pnl

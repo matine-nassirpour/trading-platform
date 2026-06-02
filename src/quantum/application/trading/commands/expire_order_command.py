@@ -1,15 +1,13 @@
 from dataclasses import dataclass
 
 from quantum.application.shared.commands.base_command import BaseCommand
-from quantum.domain.trading.execution.fills.execution_fill import ExecutionFill
 from quantum.domain.trading.order.aggregate import OrderId
 
 
 @dataclass(frozen=True, slots=True)
-class RegisterOrderFillCommand(BaseCommand):
+class ExpireOrderCommand(BaseCommand):
     """
-    Command: register an execution fill against an accepted order.
+    Command: expire an active order.
     """
 
     order_id: OrderId
-    fill: ExecutionFill

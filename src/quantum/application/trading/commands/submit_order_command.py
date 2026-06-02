@@ -1,15 +1,15 @@
 from dataclasses import dataclass
 
 from quantum.application.shared.commands.base_command import BaseCommand
-from quantum.domain.trading.execution.fills.execution_fill import ExecutionFill
+from quantum.domain.shared_kernel.event_sourcing.events.actor_id import ActorId
 from quantum.domain.trading.order.aggregate import OrderId
 
 
 @dataclass(frozen=True, slots=True)
-class RegisterOrderFillCommand(BaseCommand):
+class SubmitOrderCommand(BaseCommand):
     """
-    Command: register an execution fill against an accepted order.
+    Command: mark a created order as submitted.
     """
 
     order_id: OrderId
-    fill: ExecutionFill
+    submitted_by: ActorId
