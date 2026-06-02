@@ -27,18 +27,15 @@ class PendingEventEnvelope(ValueObject):
     event: BaseEvent
     metadata: EventMetadata
 
-    def _validate(self) -> None:
-        if not isinstance(self.aggregate_id, AggregateId):
-            raise InvariantViolation("PendingEventEnvelope.aggregate_id is required")
+    def _validate_semantics(self) -> None:
+        required_fields: tuple[tuple[str, object, type[object]], ...] = (
+            ("aggregate_id", self.aggregate_id, AggregateId),
+            ("id", self.id, EventId),
+            ("occurred_at", self.occurred_at, EpochMs),
+            ("event", self.event, BaseEvent),
+            ("metadata", self.metadata, EventMetadata),
+        )
 
-        if not isinstance(self.id, EventId):
-            raise InvariantViolation("PendingEventEnvelope.id is required")
-
-        if not isinstance(self.occurred_at, EpochMs):
-            raise InvariantViolation("PendingEventEnvelope.occurred_at is required")
-
-        if not isinstance(self.event, BaseEvent):
-            raise InvariantViolation("PendingEventEnvelope.event is required")
-
-        if not isinstance(self.metadata, EventMetadata):
-            raise InvariantViolation("PendingEventEnvelope.metadata is required")
+        for field_name, value, expected_type in required_fields:
+            if not isinstance(value, expected_type):
+                raise InvariantViolation(f"PendingEventEnvelope.{field_name} invalid")

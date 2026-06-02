@@ -3,6 +3,9 @@ from typing import Generic, TypeVar
 
 from quantum.application.ports.outbound.transaction.event_store import EventStore
 from quantum.application.shared.errors.application_error import ApplicationError
+from quantum.application.shared.eventing.pending_event_envelope import (
+    PendingEventEnvelope,
+)
 from quantum.application.shared.eventing.stream_name_resolver import StreamNameResolver
 from quantum.domain.shared_kernel.event_sourcing.aggregates.event_sourced_aggregate_root import (
     EventSourcedAggregateRoot,
@@ -91,7 +94,7 @@ class EventSourcedRepository(Generic[ID, S, A]):
         *,
         aggregate_id: ID,
         expected_version: EventSequence,
-        envelopes: Sequence[RecordedEventEnvelope],
+        envelopes: Sequence[PendingEventEnvelope],
     ) -> list[RecordedEventEnvelope]:
         """
         Persist already-materialized envelopes atomically.
