@@ -54,8 +54,8 @@ class RequestCapitalReservationHandler(
         command: RequestCapitalReservationCommand,
         aggregate: CapitalReservation,
     ) -> tuple[Sequence[BaseEvent], RequestCapitalReservationResult]:
-        events = CapitalReservation.decide_request(
-            reservation_id=command.reservation_id,
+        _, events = CapitalReservation.create_new(
+            aggregate_id=command.reservation_id,
             decision_id=command.decision_id,
             strategy_id=command.strategy_id,
             requested_allocation=command.requested_allocation,
