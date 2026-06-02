@@ -116,6 +116,8 @@ class PositionSizing(
 
         return state
 
+    # --- Creation API ---------------------------------------------------------
+
     @classmethod
     def decide_request(
         cls,
@@ -178,6 +180,8 @@ class PositionSizing(
 
         return aggregate, events
 
+    # --- Commands -------------------------------------------------------------
+
     def size(self) -> list[BaseEvent]:
         state = self._require_pending()
 
@@ -216,6 +220,8 @@ class PositionSizing(
                 result=evaluation.result,
             )
         ]
+
+    # --- Event → State transitions --------------------------------------------
 
     @staticmethod
     def _apply_requested(
@@ -331,6 +337,8 @@ class PositionSizing(
             reason_code=event.reason_code,
             rejected_at=envelope.occurred_at,
         )
+
+    # --- Handler registry -----------------------------------------------------
 
     @classmethod
     def _handlers(
