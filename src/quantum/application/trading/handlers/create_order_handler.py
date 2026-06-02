@@ -41,7 +41,8 @@ class CreateOrderHandler(
         command: CreateOrderCommand,
         aggregate: Order,
     ) -> tuple[Sequence[BaseEvent], CreateOrderResult]:
-        events = Order.decide_create(
+        _, events = Order.create_new(
+            aggregate_id=command.order_id,
             decision_id=command.decision_id,
             broker_order_ref=command.broker_order_ref,
             symbol=command.symbol,
