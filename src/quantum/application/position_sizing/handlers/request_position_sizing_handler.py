@@ -54,8 +54,8 @@ class RequestPositionSizingHandler(
         command: RequestPositionSizingCommand,
         aggregate: PositionSizing,
     ) -> tuple[Sequence[BaseEvent], RequestPositionSizingResult]:
-        events = PositionSizing.decide_request(
-            sizing_id=command.sizing_id,
+        _, events = PositionSizing.create_new(
+            aggregate_id=command.sizing_id,
             decision_id=command.decision_id,
             strategy_id=command.strategy_id,
             symbol=command.symbol,
