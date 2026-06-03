@@ -9,6 +9,9 @@ from quantum.application.risk_governance.results.risk_governance_command_result 
 from quantum.application.shared.base_handlers.aggregate_command_handler import (
     AggregateCommandHandler,
 )
+from quantum.application.shared.errors.application_error import (
+    ApplicationInvariantViolation,
+)
 from quantum.application.shared.eventing.application_event_context import (
     ApplicationEventContext,
 )
@@ -69,7 +72,7 @@ class RegisterRealizedPnLHandler(
             if isinstance(event, RealizedPnLRegisteredEvent):
                 return event.resulting_snapshot
 
-        raise RuntimeError(
+        raise ApplicationInvariantViolation(
             "RiskGovernance.register_pnl() must emit RealizedPnLRegisteredEvent"
         )
 
