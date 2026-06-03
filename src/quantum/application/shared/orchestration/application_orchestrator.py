@@ -3,28 +3,39 @@ import logging
 
 from typing import Final
 
-from quantum.application.ports.outbound.messaging.domain_event_bus import DomainEventBus
+from quantum.application.ports.inbound.messaging.domain_event_subscription_registry import (
+    DomainEventSubscriptionRegistry,
+)
 
 LOGGER: Final = logging.getLogger("quantum.application.app_service")
 
 
 class ApplicationOrchestrator:
     """
-    Root of the Application Layer. Implementation of the ApplicationRuntimePort.
+    Application lifecycle coordinator.
 
     Responsibilities:
-    • Register command/event handlers
-    • Connect domain workflows to the event bus
-    • Expose async start()/stop() lifecycle to the runtime
-    • Coordinate application-level operations
-    • Contain zero business logic (delegates to domain services/use cases)
+    - register application-level event handlers;
+    - expose lifecycle to runtime;
+    - supervise application-owned background tasks.
+
+    Non-responsibilities:
+    - no business logic;
+    - no command execution;
+    - no infrastructure I/O directly;
+    - no domain mutation.
     """
 
-    def __init__(self, *, event_bus: DomainEventBus) -> None:
-        self._event_bus = event_bus
+    __slots__ = ("_subscriptions", "_running", "_tasks")
 
+    def __init__(
+        self,
+        *,
+        subscriptions: DomainEventSubscriptionRegistry,
+    ) -> None:
+        self._subscriptions = subscriptions
         self._running = False
-        self._tasks: list[asyncio.Task] = []
+        self._tasks: list[asyncio.Task[None]] = []
 
         # Instantiate all underlying application services
         # self._execution = ExecutionService(event_bus=event_bus)

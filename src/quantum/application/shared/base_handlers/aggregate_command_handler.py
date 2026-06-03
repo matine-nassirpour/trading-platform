@@ -9,11 +9,13 @@ from quantum.application.ports.outbound.transaction.unit_of_work import UnitOfWo
 from quantum.application.shared.base_handlers.aggregate_existence_policy import (
     AggregateExistencePolicy,
 )
+from quantum.application.shared.base_handlers.empty_event_policy import EmptyEventPolicy
 from quantum.application.shared.commands.base_command import BaseCommand
 from quantum.application.shared.errors.application_error import (
     AggregateNotFoundError,
     ConcurrencyError,
     DomainExecutionError,
+    EmptyDomainEventError,
 )
 from quantum.application.shared.eventing.application_event_context import (
     ApplicationEventContext,
@@ -61,6 +63,7 @@ class AggregateCommandHandler(ABC, Generic[C, R, ID, S, A]):
         "_uow",
         "_enveloper",
         "_existence_policy",
+        "_empty_event_policy",
     )
 
     def __init__(
@@ -71,12 +74,14 @@ class AggregateCommandHandler(ABC, Generic[C, R, ID, S, A]):
         uow: UnitOfWork,
         enveloper: ApplicationEventEnveloper,
         existence_policy: AggregateExistencePolicy,
+        empty_event_policy: EmptyEventPolicy = EmptyEventPolicy.FORBID,
     ) -> None:
         self._repository = repository
         self._outbox = outbox
         self._uow = uow
         self._enveloper = enveloper
         self._existence_policy = existence_policy
+        self._empty_event_policy = empty_event_policy
 
     # --- Abstract contract for concrete handlers ------------------------------
 
@@ -123,9 +128,18 @@ class AggregateCommandHandler(ABC, Generic[C, R, ID, S, A]):
         if exists and self._existence_policy == AggregateExistencePolicy.MUST_NOT_EXIST:
             raise ConcurrencyError(f"Aggregate already exists for id '{aggregate_id}'")
 
+    def _enforce_empty_event_policy(self, command: C) -> None:
+        if self._empty_event_policy is EmptyEventPolicy.ALLOW_NOOP:
+            return
+
+        raise EmptyDomainEventError(
+            f"Command '{command.__class__.__name__}' produced no domain events "
+            "inside an event-sourced aggregate mutation handler"
+        )
+
     def handle(self, command: C) -> R:
-        with self._uow:
-            try:
+        try:
+            with self._uow:
                 aggregate_id = self._aggregate_id(command)
                 aggregate, expected_version = self._repository.load(
                     aggregate_id=aggregate_id
@@ -142,6 +156,7 @@ class AggregateCommandHandler(ABC, Generic[C, R, ID, S, A]):
                 )
 
                 if not domain_events:
+                    self._enforce_empty_event_policy(command)
                     self._uow.commit()
                     return result
 
@@ -164,10 +179,5 @@ class AggregateCommandHandler(ABC, Generic[C, R, ID, S, A]):
                 self._uow.commit()
                 return result
 
-            except DomainError as error:
-                self._uow.rollback()
-                raise DomainExecutionError(error) from None
-
-            except Exception:
-                self._uow.rollback()
-                raise
+        except DomainError as error:
+            raise DomainExecutionError(error) from None

@@ -49,3 +49,9 @@ class AggregateNotFoundError(ApplicationError):
     def __init__(self, stream_id: str):
         super().__init__(f"Aggregate not found for stream '{stream_id}'")
         self.stream_id = stream_id
+
+
+class EmptyDomainEventError(ApplicationError):
+    """
+    Raised when a mutating event-sourced command produced no domain events.
+    """
