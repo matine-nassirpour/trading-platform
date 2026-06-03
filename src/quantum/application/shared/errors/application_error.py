@@ -55,3 +55,15 @@ class EmptyDomainEventError(ApplicationError):
     """
     Raised when a mutating event-sourced command produced no domain events.
     """
+
+
+class ApplicationInvariantViolation(ApplicationError):
+    """
+    Raised when an application-layer invariant or contract is violated.
+
+    This indicates an internal consistency defect, not a user/input error.
+    Typical causes:
+    - a domain method returned an impossible result;
+    - a handler received an unsupported domain event;
+    - an application-level orchestration contract was broken.
+    """
