@@ -1,12 +1,10 @@
 from abc import abstractmethod
-from collections.abc import Callable, Sequence
+from collections.abc import Sequence
 from typing import Protocol, runtime_checkable
 
 from quantum.domain.shared_kernel.event_sourcing.events.recorded_event_envelope import (
     RecordedEventEnvelope,
 )
-
-DomainEventHandler = Callable[[RecordedEventEnvelope], None]
 
 
 @runtime_checkable

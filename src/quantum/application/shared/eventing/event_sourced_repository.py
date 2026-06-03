@@ -51,18 +51,32 @@ class EventSourcedRepository(Generic[ID, S, A]):
         self._aggregate_type = aggregate_type
         self._stream_resolver = stream_resolver
 
-    def load(self, *, aggregate_id: ID) -> tuple[A, EventSequence]:
+    def load(
+        self,
+        *,
+        aggregate_id: ID,
+        from_sequence: EventSequence | None = None,
+        limit: int | None = None,
+    ) -> tuple[A, EventSequence]:
         """
         Load aggregate from EventStore using its typed aggregate identity.
+
+        By default, loads the full stream.
+        For advanced use cases, partial loading can be requested explicitly.
         """
 
         if not isinstance(aggregate_id, AggregateId):
             raise ApplicationError("load() requires a typed AggregateId")
 
         stream_id = self._stream_resolver.resolve(aggregate_id)
-        events: list[RecordedEventEnvelope] = self._store.load_stream(stream_id)
 
-        previous = EventSequence.initial()
+        events: list[RecordedEventEnvelope] = self._store.load_stream(
+            stream_id,
+            from_sequence=from_sequence,
+            limit=limit,
+        )
+
+        previous = from_sequence or EventSequence.initial()
 
         for event in events:
             event.sequence.assert_is_next_of(previous)
@@ -82,11 +96,17 @@ class EventSourcedRepository(Generic[ID, S, A]):
             )
             return aggregate, previous
 
+        if from_sequence is not None:
+            raise ApplicationError(
+                "Partial aggregate rehydration is not allowed without snapshot support"
+            )
+
         # --- Replay
         aggregate = self._aggregate_type.rehydrate(
             events=events,
             aggregate_id=aggregate_id,
         )
+
         return aggregate, events[-1].sequence
 
     def save(

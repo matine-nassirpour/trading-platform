@@ -1,13 +1,11 @@
 from abc import abstractmethod
-from collections.abc import Callable
+from collections.abc import Sequence
 from typing import Protocol, runtime_checkable
 
-from quantum.domain.shared_kernel.event_sourcing.events.base_event import BaseEvent
-from quantum.domain.shared_kernel.event_sourcing.events.recorded_event_envelope import (
-    RecordedEventEnvelope,
+from quantum.application.ports.inbound.messaging.domain_event_handler import (
+    DomainEventHandler,
 )
-
-DomainEventHandler = Callable[[RecordedEventEnvelope], None]
+from quantum.domain.shared_kernel.event_sourcing.events.base_event import BaseEvent
 
 
 @runtime_checkable
@@ -33,4 +31,11 @@ class DomainEventSubscriptionRegistry(Protocol):
         event_type: type[BaseEvent],
         handler: DomainEventHandler,
     ) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def handlers_for(
+        self,
+        event_type: type[BaseEvent],
+    ) -> Sequence[DomainEventHandler]:
         raise NotImplementedError

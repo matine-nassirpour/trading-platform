@@ -20,6 +20,7 @@ class EventStore(Protocol):
 
     Responsibilities:
     - load persisted stream by storage stream id
+    - optionally load stream from a given sequence
     - append pending envelopes atomically
     - assign official sequence and recorded_at
     """
@@ -41,7 +42,22 @@ class EventStore(Protocol):
         raise NotImplementedError
 
     @abstractmethod
-    def load_stream(self, stream_id: str) -> list[RecordedEventEnvelope]:
+    def load_stream(
+        self,
+        stream_id: str,
+        *,
+        from_sequence: EventSequence | None = None,
+        limit: int | None = None,
+    ) -> list[RecordedEventEnvelope]:
+        """
+        Load persisted events for a stream.
+
+        Contract:
+        - If from_sequence is None, load from the beginning.
+        - If from_sequence is provided, return events strictly after it.
+        - If limit is provided, return at most limit events.
+        - Events must be returned in strictly increasing sequence order.
+        """
         raise NotImplementedError
 
     @abstractmethod
