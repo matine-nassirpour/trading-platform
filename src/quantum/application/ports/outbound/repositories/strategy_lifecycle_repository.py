@@ -6,6 +6,16 @@ from quantum.domain.shared_kernel.modeling.identity.strategy_id import StrategyI
 
 @runtime_checkable
 class StrategyLifecycleRepository(Protocol):
+    """
+    Application port for accessing strategy lifecycle state.
 
-    def get_lifecycle(self, strategy_id: StrategyId) -> StrategyLifecycle | None:
+    Async-first contract:
+    - Supports in-memory and persistent implementations.
+    - Avoids future API breakage when backed by external storage.
+    """
+
+    async def get_lifecycle(
+        self,
+        strategy_id: StrategyId,
+    ) -> StrategyLifecycle | None:
         raise NotImplementedError

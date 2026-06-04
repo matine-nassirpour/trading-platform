@@ -10,10 +10,12 @@ from quantum.domain.shared_kernel.event_sourcing.events.base_event import BaseEv
 @runtime_checkable
 class DomainEventSubscriptionRegistry(Protocol):
     """
-    Registry of in-process domain event handlers.
+    Registry of in-process asynchronous domain event handlers.
 
     Responsibility:
     - Maintain handler subscriptions only.
+    - No event execution.
+    - No transport concern.
     """
 
     def subscribe(

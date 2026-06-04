@@ -4,7 +4,6 @@ from typing import Generic, TypeVar
 from quantum.application.ports.outbound.repositories.transactional_projection_repository import (
     TransactionalProjectionRepository,
 )
-from quantum.application.ports.outbound.transaction.unit_of_work import UnitOfWork
 from quantum.domain.shared_kernel.event_sourcing.events.recorded_event_envelope import (
     RecordedEventEnvelope,
 )
@@ -17,28 +16,27 @@ S = TypeVar("S")
 
 class TransactionalProjectionService(Generic[S]):
     """
+    Transaction-bound projection service.
+
     Guarantees:
-    - Runs inside same UnitOfWork as event persistence
-    - Crash-safe
-    - Idempotent
-    - Cursor monotonic enforcement
+    - Does not create or own transactions.
+    - Must be called inside an already active UnitOfWork.
+    - Projection persistence is delegated to a transaction-bound repository.
     """
+
+    __slots__ = ("_projection", "_repository")
 
     def __init__(
         self,
         *,
         projection: DomainProjection[S],
         repository: TransactionalProjectionRepository[S],
-        uow: UnitOfWork,
     ) -> None:
         self._projection = projection
         self._repository = repository
-        self._uow = uow
 
     async def project(self, events: Iterable[RecordedEventEnvelope]) -> None:
         """
-        Apply projection inside current UnitOfWork.
-
         Assumes caller already inside transaction.
         """
 

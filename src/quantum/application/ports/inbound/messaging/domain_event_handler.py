@@ -15,7 +15,8 @@ class DomainEventHandler(Protocol):
     - Must be deterministic.
     - Must not publish to external transports directly.
     - Must be failure-isolated by the dispatcher.
+    - May perform asynchronous application work.
     """
 
-    def handle(self, event: RecordedEventEnvelope) -> None:
+    async def handle(self, event: RecordedEventEnvelope) -> None:
         raise NotImplementedError

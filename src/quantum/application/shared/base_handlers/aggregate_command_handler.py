@@ -5,7 +5,9 @@ from typing import Generic, TypeVar
 from quantum.application.ports.outbound.transaction.outbox_repository import (
     OutboxRepository,
 )
-from quantum.application.ports.outbound.transaction.unit_of_work import UnitOfWork
+from quantum.application.ports.outbound.transaction.unit_of_work_factory import (
+    UnitOfWorkFactory,
+)
 from quantum.application.shared.base_handlers.aggregate_existence_policy import (
     AggregateExistencePolicy,
 )
@@ -54,16 +56,17 @@ class AggregateCommandHandler(ABC, Generic[C, R, ID, S, A]):
     Strict event-sourced aggregate mutation handler.
 
     Guarantees:
-    - Typed aggregate identity throughout application core
-    - Deterministic transaction boundary
-    - Optimistic concurrency enforcement
-    - Outbox pattern only
+    - Typed aggregate identity throughout application core.
+    - Fresh UnitOfWork per command execution.
+    - Deterministic transaction boundary.
+    - Optimistic concurrency enforcement.
+    - Outbox pattern only.
     """
 
     __slots__ = (
         "_repository",
         "_outbox",
-        "_uow",
+        "_uow_factory",
         "_enveloper",
         "_existence_policy",
         "_empty_event_policy",
@@ -75,7 +78,7 @@ class AggregateCommandHandler(ABC, Generic[C, R, ID, S, A]):
         *,
         repository: EventSourcedRepository[ID, S, A],
         outbox: OutboxRepository,
-        uow: UnitOfWork,
+        uow_factory: UnitOfWorkFactory,
         enveloper: ApplicationEventEnveloper,
         existence_policy: AggregateExistencePolicy,
         empty_event_policy: EmptyEventPolicy = EmptyEventPolicy.FORBID,
@@ -83,7 +86,7 @@ class AggregateCommandHandler(ABC, Generic[C, R, ID, S, A]):
     ) -> None:
         self._repository = repository
         self._outbox = outbox
-        self._uow = uow
+        self._uow_factory = uow_factory
         self._enveloper = enveloper
         self._existence_policy = existence_policy
         self._empty_event_policy = empty_event_policy
@@ -145,7 +148,7 @@ class AggregateCommandHandler(ABC, Generic[C, R, ID, S, A]):
 
     async def handle(self, command: C) -> R:
         try:
-            async with self._uow:
+            async with self._uow_factory.create() as uow:
                 aggregate_id = self._aggregate_id(command)
 
                 aggregate, expected_version = await self._repository.load(
@@ -166,7 +169,7 @@ class AggregateCommandHandler(ABC, Generic[C, R, ID, S, A]):
 
                 if not domain_events:
                     self._enforce_empty_event_policy(command)
-                    await self._uow.commit()
+                    await uow.commit()
                     return result
 
                 self._event_batch_policy.validate(
@@ -174,12 +177,10 @@ class AggregateCommandHandler(ABC, Generic[C, R, ID, S, A]):
                     events=domain_events,
                 )
 
-                context = self._context(command)
-
                 pending = self._enveloper.envelope(
                     aggregate_id=aggregate_id,
                     events=domain_events,
-                    context=context,
+                    context=self._context(command),
                 )
 
                 persisted = await self._repository.save(
@@ -190,7 +191,7 @@ class AggregateCommandHandler(ABC, Generic[C, R, ID, S, A]):
 
                 await self._outbox.add(persisted)
 
-                await self._uow.commit()
+                await uow.commit()
                 return result
 
         except DomainError as error:

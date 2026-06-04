@@ -294,6 +294,7 @@ trading-platform/
 │       │   │   │   ├── __init__.py
 │       │   │   │   ├── aggregate_command_handler.py
 │       │   │   │   ├── aggregate_existence_policy.py
+│       │   │   │   ├── domain_event_batch_policy.py
 │       │   │   │   └── empty_event_policy.py
 │       │   │   ├── commands/
 │       │   │   │   ├── __init__.py
