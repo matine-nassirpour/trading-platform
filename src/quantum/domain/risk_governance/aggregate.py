@@ -35,6 +35,9 @@ from quantum.domain.risk_governance.lifecycle.states.risk_governance_uninitializ
     RiskGovernanceUninitializedState,
 )
 from quantum.domain.risk_governance.limits.risk_limits import RiskLimits
+from quantum.domain.risk_governance.outcomes.register_realized_pnl_outcome import (
+    RegisterRealizedPnLOutcome,
+)
 from quantum.domain.risk_governance.portfolio_state.evolution.daily_loss_evolution import (
     DailyLossEvolutionService,
 )
@@ -129,7 +132,11 @@ class RiskGovernance(
         ]
 
     # --- Commands -------------------------------------------------------------
-    def register_pnl(self, *, pnl: RealizedPnL) -> list[BaseEvent]:
+    def register_pnl(
+        self,
+        *,
+        pnl: RealizedPnL,
+    ) -> tuple[RegisterRealizedPnLOutcome, list[BaseEvent]]:
         state = self.state
 
         if not isinstance(state, RiskGovernanceInitializedState):
@@ -164,6 +171,8 @@ class RiskGovernance(
             equity=new_snapshot.equity,
         )
 
+        insolvency_declared = new_snapshot.equity.value <= 0
+
         events: list[BaseEvent] = [
             RealizedPnLRegisteredEvent(
                 pnl=pnl,
@@ -171,7 +180,7 @@ class RiskGovernance(
             ),
         ]
 
-        if new_snapshot.equity.value <= 0:
+        if insolvency_declared:
             events.append(
                 RiskGovernanceInsolvencyDeclaredEvent(
                     snapshot=new_snapshot,
@@ -187,7 +196,13 @@ class RiskGovernance(
         elif state.active_breaches:
             events.append(RiskBreachesClearedEvent())
 
-        return events
+        outcome = RegisterRealizedPnLOutcome(
+            resulting_snapshot=new_snapshot,
+            active_breaches=detection.breaches,
+            insolvency_declared=insolvency_declared,
+        )
+
+        return outcome, events
 
     def reset_trading_day(self, *, trading_day: UtcDate) -> list[BaseEvent]:
         state = self.state

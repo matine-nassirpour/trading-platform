@@ -273,7 +273,7 @@ class TradingDecision(EventSourcedAggregateRoot[DecisionId, TradingDecisionState
         )
 
         lifecycle_result = StrategyEligibilityPolicy.evaluate(
-            decision=self.decision_qualification(),
+            decision=state.decision_qualification,
             lifecycle=lifecycle,
             at=evaluated_at,
         )
