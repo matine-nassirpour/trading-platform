@@ -9,6 +9,9 @@ from quantum.application.ports.outbound.transaction.unit_of_work import UnitOfWo
 from quantum.application.shared.base_handlers.aggregate_existence_policy import (
     AggregateExistencePolicy,
 )
+from quantum.application.shared.base_handlers.domain_event_batch_policy import (
+    DomainEventBatchPolicy,
+)
 from quantum.application.shared.base_handlers.empty_event_policy import EmptyEventPolicy
 from quantum.application.shared.commands.base_command import BaseCommand
 from quantum.application.shared.errors.application_error import (
@@ -64,6 +67,7 @@ class AggregateCommandHandler(ABC, Generic[C, R, ID, S, A]):
         "_enveloper",
         "_existence_policy",
         "_empty_event_policy",
+        "_event_batch_policy",
     )
 
     def __init__(
@@ -75,6 +79,7 @@ class AggregateCommandHandler(ABC, Generic[C, R, ID, S, A]):
         enveloper: ApplicationEventEnveloper,
         existence_policy: AggregateExistencePolicy,
         empty_event_policy: EmptyEventPolicy = EmptyEventPolicy.FORBID,
+        event_batch_policy: DomainEventBatchPolicy | None = None,
     ) -> None:
         self._repository = repository
         self._outbox = outbox
@@ -82,6 +87,7 @@ class AggregateCommandHandler(ABC, Generic[C, R, ID, S, A]):
         self._enveloper = enveloper
         self._existence_policy = existence_policy
         self._empty_event_policy = empty_event_policy
+        self._event_batch_policy = event_batch_policy or DomainEventBatchPolicy()
 
     # --- Abstract contract for concrete handlers ------------------------------
 
@@ -151,15 +157,22 @@ class AggregateCommandHandler(ABC, Generic[C, R, ID, S, A]):
                     version=expected_version,
                 )
 
-                domain_events, result = self._execute_domain(
+                domain_events_sequence, result = self._execute_domain(
                     command=command,
                     aggregate=aggregate,
                 )
+
+                domain_events = list(domain_events_sequence)
 
                 if not domain_events:
                     self._enforce_empty_event_policy(command)
                     await self._uow.commit()
                     return result
+
+                self._event_batch_policy.validate(
+                    command_name=command.__class__.__name__,
+                    events=domain_events,
+                )
 
                 context = self._context(command)
 

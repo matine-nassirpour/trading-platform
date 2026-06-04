@@ -2,7 +2,10 @@ from collections.abc import Sequence
 from typing import Generic, TypeVar
 
 from quantum.application.ports.outbound.transaction.event_store import EventStore
-from quantum.application.shared.errors.application_error import ApplicationError
+from quantum.application.shared.errors.application_error import (
+    ApplicationInvariantViolationError,
+    RepositoryIntegrityError,
+)
 from quantum.application.shared.eventing.pending_event_envelope import (
     PendingEventEnvelope,
 )
@@ -66,7 +69,9 @@ class EventSourcedRepository(Generic[ID, S, A]):
         """
 
         if not isinstance(aggregate_id, AggregateId):
-            raise ApplicationError("load() requires a typed AggregateId")
+            raise ApplicationInvariantViolationError(
+                "EventSourcedRepository.load() requires a typed AggregateId"
+            )
 
         stream_id = self._stream_resolver.resolve(aggregate_id)
 
@@ -83,7 +88,7 @@ class EventSourcedRepository(Generic[ID, S, A]):
             previous = event.sequence
 
             if event.aggregate_id != aggregate_id:
-                raise ApplicationError(
+                raise RepositoryIntegrityError(
                     f"EventStore returned mixed aggregate identity for stream "
                     f"'{stream_id}': expected '{aggregate_id}', got '{event.aggregate_id}'"
                 )
@@ -97,7 +102,7 @@ class EventSourcedRepository(Generic[ID, S, A]):
             return aggregate, previous
 
         if from_sequence is not None:
-            raise ApplicationError(
+            raise ApplicationInvariantViolationError(
                 "Partial aggregate rehydration is not allowed without snapshot support"
             )
 
@@ -121,13 +126,15 @@ class EventSourcedRepository(Generic[ID, S, A]):
         """
 
         if not isinstance(aggregate_id, AggregateId):
-            raise ApplicationError("save() requires a typed AggregateId")
+            raise ApplicationInvariantViolationError(
+                "EventSourcedRepository.save() requires a typed AggregateId"
+            )
 
         stream_id = self._stream_resolver.resolve(aggregate_id)
 
         for envelope in envelopes:
             if envelope.aggregate_id != aggregate_id:
-                raise ApplicationError(
+                raise ApplicationInvariantViolationError(
                     f"Envelope aggregate_id mismatch for stream '{stream_id}'"
                 )
 
@@ -141,7 +148,7 @@ class EventSourcedRepository(Generic[ID, S, A]):
 
         for envelope in persisted:
             if envelope.aggregate_id != aggregate_id:
-                raise ApplicationError(
+                raise RepositoryIntegrityError(
                     f"EventStore returned persisted envelope with mismatched "
                     f"aggregate_id for stream '{stream_id}'"
                 )

@@ -55,3 +55,45 @@ class EmptyDomainEventError(ApplicationError):
     """
     Raised when a mutating event-sourced command produced no domain events.
     """
+
+
+class TooManyDomainEventsError(ApplicationError):
+    """
+    Raised when a command produces more domain events than allowed
+    by application safety policy.
+    """
+
+    def __init__(
+        self,
+        *,
+        command_name: str,
+        produced: int,
+        maximum: int,
+    ) -> None:
+        super().__init__(
+            f"Command '{command_name}' produced {produced} domain events, "
+            f"which exceeds the maximum allowed limit of {maximum}"
+        )
+        self.command_name = command_name
+        self.produced = produced
+        self.maximum = maximum
+
+
+class ApplicationInvariantViolationError(ApplicationError):
+    """
+    Raised when an application-layer invariant is violated.
+    """
+
+
+class RepositoryIntegrityError(ApplicationError):
+    """
+    Raised when a repository detects corrupted, inconsistent,
+    or contract-violating persistence data.
+    """
+
+
+class ProjectionConsistencyError(ApplicationError):
+    """
+    Raised when a projection detects cursor, ordering,
+    idempotency, or consistency violation.
+    """
