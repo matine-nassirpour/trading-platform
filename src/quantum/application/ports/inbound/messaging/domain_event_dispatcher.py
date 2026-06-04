@@ -1,4 +1,3 @@
-from abc import abstractmethod
 from collections.abc import Sequence
 from typing import Protocol, runtime_checkable
 
@@ -24,7 +23,6 @@ class DomainEventDispatcher(Protocol):
     - No external integration event publishing.
     """
 
-    @abstractmethod
     def dispatch(
         self,
         events: Sequence[RecordedEventEnvelope],

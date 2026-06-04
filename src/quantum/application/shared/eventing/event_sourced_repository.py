@@ -51,7 +51,7 @@ class EventSourcedRepository(Generic[ID, S, A]):
         self._aggregate_type = aggregate_type
         self._stream_resolver = stream_resolver
 
-    def load(
+    async def load(
         self,
         *,
         aggregate_id: ID,
@@ -70,7 +70,7 @@ class EventSourcedRepository(Generic[ID, S, A]):
 
         stream_id = self._stream_resolver.resolve(aggregate_id)
 
-        events: list[RecordedEventEnvelope] = self._store.load_stream(
+        events = await self._store.load_stream(
             stream_id,
             from_sequence=from_sequence,
             limit=limit,
@@ -109,7 +109,7 @@ class EventSourcedRepository(Generic[ID, S, A]):
 
         return aggregate, events[-1].sequence
 
-    def save(
+    async def save(
         self,
         *,
         aggregate_id: ID,
@@ -131,7 +131,7 @@ class EventSourcedRepository(Generic[ID, S, A]):
                     f"Envelope aggregate_id mismatch for stream '{stream_id}'"
                 )
 
-        persisted = self._store.append(
+        persisted = await self._store.append(
             stream_id=stream_id,
             events=envelopes,
             expected_version=expected_version,

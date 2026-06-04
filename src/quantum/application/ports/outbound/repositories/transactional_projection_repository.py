@@ -22,11 +22,11 @@ class TransactionalProjectionRepository(ABC, Generic[S]):
     """
 
     @abstractmethod
-    def load(self) -> tuple[S, ProjectionCursor]:
+    async def load(self) -> tuple[S, ProjectionCursor]:
         raise NotImplementedError
 
     @abstractmethod
-    def save(
+    async def save(
         self,
         *,
         state: S,

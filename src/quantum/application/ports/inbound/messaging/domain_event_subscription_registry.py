@@ -1,4 +1,3 @@
-from abc import abstractmethod
 from collections.abc import Sequence
 from typing import Protocol, runtime_checkable
 
@@ -17,7 +16,6 @@ class DomainEventSubscriptionRegistry(Protocol):
     - Maintain handler subscriptions only.
     """
 
-    @abstractmethod
     def subscribe(
         self,
         event_type: type[BaseEvent],
@@ -25,7 +23,6 @@ class DomainEventSubscriptionRegistry(Protocol):
     ) -> None:
         raise NotImplementedError
 
-    @abstractmethod
     def unsubscribe(
         self,
         event_type: type[BaseEvent],
@@ -33,7 +30,6 @@ class DomainEventSubscriptionRegistry(Protocol):
     ) -> None:
         raise NotImplementedError
 
-    @abstractmethod
     def handlers_for(
         self,
         event_type: type[BaseEvent],

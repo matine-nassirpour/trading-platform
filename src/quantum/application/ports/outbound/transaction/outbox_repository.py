@@ -1,4 +1,3 @@
-from abc import abstractmethod
 from collections.abc import Iterable
 from typing import Protocol, runtime_checkable
 
@@ -22,12 +21,10 @@ class OutboxRepository(Protocol):
     - collect_unpublished() must be called outside the command transaction.
     """
 
-    @abstractmethod
-    def add(self, envelopes: Iterable[RecordedEventEnvelope]) -> None:
+    async def add(self, envelopes: Iterable[RecordedEventEnvelope]) -> None:
         raise NotImplementedError
 
-    @abstractmethod
-    def collect_unpublished(
+    async def collect_unpublished(
         self,
         *,
         limit: int,
@@ -41,8 +38,7 @@ class OutboxRepository(Protocol):
         """
         raise NotImplementedError
 
-    @abstractmethod
-    def mark_as_published(
+    async def mark_as_published(
         self,
         envelopes: Iterable[RecordedEventEnvelope],
     ) -> None:

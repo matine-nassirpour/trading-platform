@@ -35,23 +35,25 @@ class TransactionalProjectionService(Generic[S]):
         self._repository = repository
         self._uow = uow
 
-    def project(self, events: Iterable[RecordedEventEnvelope]) -> None:
+    async def project(self, events: Iterable[RecordedEventEnvelope]) -> None:
         """
         Apply projection inside current UnitOfWork.
 
         Assumes caller already inside transaction.
         """
 
-        state, cursor = self._repository.load()
+        events_list = list(events)
+
+        state, cursor = await self._repository.load()
 
         new_state, new_cursor = self._projection.project_incremental(
             state=state,
             cursor=cursor,
-            events=events,
+            events=events_list,
         )
 
-        self._repository.save(
+        await self._repository.save(
             state=new_state,
             cursor=new_cursor,
-            applied_events=list(events),
+            applied_events=events_list,
         )

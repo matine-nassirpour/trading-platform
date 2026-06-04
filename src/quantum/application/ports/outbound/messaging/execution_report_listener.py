@@ -1,4 +1,3 @@
-from abc import abstractmethod
 from typing import Protocol, runtime_checkable
 
 from quantum.domain.trading.execution.reports.execution_report import ExecutionReport
@@ -7,6 +6,5 @@ from quantum.domain.trading.execution.reports.execution_report import ExecutionR
 @runtime_checkable
 class ExecutionReportListener(Protocol):
 
-    @abstractmethod
     def on_execution_report(self, report: ExecutionReport) -> None:
         raise NotImplementedError

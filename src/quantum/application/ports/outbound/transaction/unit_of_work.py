@@ -9,7 +9,7 @@ from quantum.application.ports.outbound.transaction.unit_of_work_state import (
 @runtime_checkable
 class UnitOfWork(Protocol, AbstractContextManager["UnitOfWork"]):
     """
-    Explicit transactional boundary.
+    Explicit asynchronous transactional boundary.
 
     State machine:
 
@@ -32,8 +32,8 @@ class UnitOfWork(Protocol, AbstractContextManager["UnitOfWork"]):
     def state(self) -> UnitOfWorkState:
         raise NotImplementedError
 
-    def commit(self) -> None:
+    async def commit(self) -> None:
         raise NotImplementedError
 
-    def rollback(self) -> None:
+    async def rollback(self) -> None:
         raise NotImplementedError

@@ -1,4 +1,3 @@
-from abc import abstractmethod
 from typing import Protocol, runtime_checkable
 
 from quantum.domain.shared_kernel.event_sourcing.events.recorded_event_envelope import (
@@ -18,6 +17,5 @@ class DomainEventHandler(Protocol):
     - Must be failure-isolated by the dispatcher.
     """
 
-    @abstractmethod
     def handle(self, event: RecordedEventEnvelope) -> None:
         raise NotImplementedError

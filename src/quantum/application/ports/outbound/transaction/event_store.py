@@ -1,4 +1,3 @@
-from abc import abstractmethod
 from collections.abc import Sequence
 from typing import Protocol, runtime_checkable
 
@@ -25,8 +24,7 @@ class EventStore(Protocol):
     - assign official sequence and recorded_at
     """
 
-    @abstractmethod
-    def append(
+    async def append(
         self,
         *,
         stream_id: str,
@@ -41,8 +39,7 @@ class EventStore(Protocol):
         """
         raise NotImplementedError
 
-    @abstractmethod
-    def load_stream(
+    async def load_stream(
         self,
         stream_id: str,
         *,
@@ -60,8 +57,7 @@ class EventStore(Protocol):
         """
         raise NotImplementedError
 
-    @abstractmethod
-    def current_sequence(self, stream_id: str) -> EventSequence:
+    async def current_sequence(self, stream_id: str) -> EventSequence:
         """
         Returns last known sequence for a stream.
         """

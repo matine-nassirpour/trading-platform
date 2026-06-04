@@ -137,11 +137,12 @@ class AggregateCommandHandler(ABC, Generic[C, R, ID, S, A]):
             "inside an event-sourced aggregate mutation handler"
         )
 
-    def handle(self, command: C) -> R:
+    async def handle(self, command: C) -> R:
         try:
-            with self._uow:
+            async with self._uow:
                 aggregate_id = self._aggregate_id(command)
-                aggregate, expected_version = self._repository.load(
+
+                aggregate, expected_version = await self._repository.load(
                     aggregate_id=aggregate_id
                 )
 
@@ -157,7 +158,7 @@ class AggregateCommandHandler(ABC, Generic[C, R, ID, S, A]):
 
                 if not domain_events:
                     self._enforce_empty_event_policy(command)
-                    self._uow.commit()
+                    await self._uow.commit()
                     return result
 
                 context = self._context(command)
@@ -168,15 +169,15 @@ class AggregateCommandHandler(ABC, Generic[C, R, ID, S, A]):
                     context=context,
                 )
 
-                persisted = self._repository.save(
+                persisted = await self._repository.save(
                     aggregate_id=aggregate_id,
                     expected_version=expected_version,
                     envelopes=pending,
                 )
 
-                self._outbox.add(persisted)
+                await self._outbox.add(persisted)
 
-                self._uow.commit()
+                await self._uow.commit()
                 return result
 
         except DomainError as error:

@@ -1,4 +1,3 @@
-from abc import abstractmethod
 from collections.abc import Sequence
 from typing import Protocol, runtime_checkable
 
@@ -25,7 +24,6 @@ class DomainEventPublisher(Protocol):
     - internal async transport adapter
     """
 
-    @abstractmethod
     def publish(
         self,
         events: Sequence[RecordedEventEnvelope],
