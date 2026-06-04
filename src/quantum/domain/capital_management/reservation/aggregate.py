@@ -7,6 +7,9 @@ from quantum.domain.capital_management.allocation.capital_allocation_intent impo
 from quantum.domain.capital_management.allocation.capital_allocation_policy import (
     CapitalAllocationPolicy,
 )
+from quantum.domain.capital_management.outcomes.capital_reservation_outcome import (
+    CapitalReservationOutcome,
+)
 from quantum.domain.capital_management.reservation.capital_budget_snapshot import (
     CapitalBudgetSnapshot,
 )
@@ -229,9 +232,9 @@ class CapitalReservation(
         *,
         reserved_allocation: CapitalAllocationIntent,
         budget: CapitalBudgetSnapshot,
-    ) -> list[BaseEvent]:
+    ) -> tuple[CapitalReservationOutcome, list[BaseEvent]]:
         """
-        Accepts the reservation request and commits capital.
+        Accepts or rejects the reservation request according to capital policy.
         """
 
         state = self._require_pending()
@@ -253,7 +256,11 @@ class CapitalReservation(
         )
 
         if rejection_reason is not None:
-            return [
+            outcome = CapitalReservationOutcome.rejected(
+                rejection_reason_code=rejection_reason,
+            )
+
+            return outcome, [
                 CapitalReservationRejectedEvent(
                     reservation_id=self.aggregate_id,
                     decision_id=state.decision_id,
@@ -262,7 +269,11 @@ class CapitalReservation(
                 )
             ]
 
-        return [
+        outcome = CapitalReservationOutcome.accepted(
+            reserved_allocation=reserved_allocation,
+        )
+
+        return outcome, [
             CapitalReservedEvent(
                 reservation_id=self.aggregate_id,
                 decision_id=state.decision_id,

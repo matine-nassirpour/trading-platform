@@ -16,12 +16,6 @@ from quantum.domain.capital_management.reservation.aggregate import CapitalReser
 from quantum.domain.capital_management.reservation.capital_reservation_id import (
     CapitalReservationId,
 )
-from quantum.domain.capital_management.reservation.events.capital_reservation_rejected_event import (
-    CapitalReservationRejectedEvent,
-)
-from quantum.domain.capital_management.reservation.events.capital_reserved_event import (
-    CapitalReservedEvent,
-)
 from quantum.domain.capital_management.reservation.states.capital_reservation_state_base import (
     CapitalReservationStateBase,
 )
@@ -56,43 +50,14 @@ class ReserveCapitalHandler(
         command: ReserveCapitalCommand,
         aggregate: CapitalReservation,
     ) -> tuple[Sequence[BaseEvent], ReserveCapitalResult]:
-        events = list(
-            aggregate.reserve(
-                reserved_allocation=command.reserved_allocation,
-                budget=command.budget,
-            )
-        )
-        return events, self._build_result(
-            reservation_id=command.reservation_id, events=events
+        outcome, events = aggregate.reserve(
+            reserved_allocation=command.reserved_allocation,
+            budget=command.budget,
         )
 
-    @staticmethod
-    def _build_result(
-        *,
-        reservation_id: CapitalReservationId,
-        events: Sequence[BaseEvent],
-    ) -> ReserveCapitalResult:
-        if len(events) != 1:
-            raise RuntimeError(
-                "CapitalReservation.reserve() must emit exactly one event"
-            )
-
-        event = events[0]
-
-        if isinstance(event, CapitalReservedEvent):
-            return ReserveCapitalResult(
-                reservation_id=reservation_id,
-                accepted=True,
-                reserved_allocation=event.reserved_allocation,
-                rejection_reason_code=None,
-            )
-
-        if isinstance(event, CapitalReservationRejectedEvent):
-            return ReserveCapitalResult(
-                reservation_id=reservation_id,
-                accepted=False,
-                reserved_allocation=None,
-                rejection_reason_code=event.reason_code,
-            )
-
-        raise RuntimeError(f"Unexpected reserve event type: {type(event).__name__}")
+        return events, ReserveCapitalResult(
+            reservation_id=command.reservation_id,
+            accepted=outcome.accepted,
+            reserved_allocation=outcome.reserved_allocation,
+            rejection_reason_code=outcome.rejection_reason_code,
+        )
