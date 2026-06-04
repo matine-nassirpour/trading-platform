@@ -36,6 +36,9 @@ from quantum.domain.position_sizing.model.policies.sizing_rounding_policy import
     SizingRoundingPolicy,
 )
 from quantum.domain.position_sizing.model.volume.stop_distance import StopDistance
+from quantum.domain.position_sizing.outcomes.position_sizing_outcome import (
+    PositionSizingOutcome,
+)
 from quantum.domain.position_sizing.position_sizing_id import PositionSizingId
 from quantum.domain.position_sizing.services.position_sizer import PositionSizer
 from quantum.domain.shared_kernel.event_sourcing.aggregates.event_sourced_aggregate_root import (
@@ -182,7 +185,7 @@ class PositionSizing(
 
     # --- Commands -------------------------------------------------------------
 
-    def size(self) -> list[BaseEvent]:
+    def size(self) -> tuple[PositionSizingOutcome, list[BaseEvent]]:
         state = self._require_pending()
 
         evaluation = PositionSizer.evaluate(
@@ -200,7 +203,11 @@ class PositionSizing(
                     "Rejected sizing evaluation must define rejection_reason"
                 )
 
-            return [
+            outcome = PositionSizingOutcome.rejected(
+                rejection_reason=evaluation.rejection_reason,
+            )
+
+            return outcome, [
                 PositionSizingRejectedEvent(
                     sizing_id=self.aggregate_id,
                     decision_id=state.decision_id,
@@ -212,7 +219,11 @@ class PositionSizing(
         if evaluation.result is None:
             raise InvariantViolation("Successful sizing evaluation must define result")
 
-        return [
+        outcome = PositionSizingOutcome.sized(
+            result=evaluation.result,
+        )
+
+        return outcome, [
             PositionSizedEvent(
                 sizing_id=self.aggregate_id,
                 decision_id=state.decision_id,

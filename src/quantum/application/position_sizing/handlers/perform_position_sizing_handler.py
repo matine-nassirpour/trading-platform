@@ -13,12 +13,6 @@ from quantum.application.shared.eventing.application_event_context import (
     ApplicationEventContext,
 )
 from quantum.domain.position_sizing.aggregate import PositionSizing
-from quantum.domain.position_sizing.lifecycle.events.position_sized_event import (
-    PositionSizedEvent,
-)
-from quantum.domain.position_sizing.lifecycle.events.position_sizing_rejected_event import (
-    PositionSizingRejectedEvent,
-)
 from quantum.domain.position_sizing.lifecycle.states.position_sizing_state_base import (
     PositionSizingStateBase,
 )
@@ -54,50 +48,17 @@ class PerformPositionSizingHandler(
     ) -> ApplicationEventContext:
         return command.context
 
-    # --- Internal Helper ------------------------------------------------------
-
-    @staticmethod
-    def _build_result(
-        *,
-        sizing_id: PositionSizingId,
-        events: Sequence[BaseEvent],
-    ) -> PerformPositionSizingResult:
-        if len(events) != 1:
-            raise RuntimeError("PositionSizing.size() must emit exactly one event")
-
-        event = events[0]
-
-        if isinstance(event, PositionSizedEvent):
-            return PerformPositionSizingResult(
-                sizing_id=sizing_id,
-                sized=True,
-                result=event.result,
-                rejection_reason=None,
-            )
-
-        if isinstance(event, PositionSizingRejectedEvent):
-            return PerformPositionSizingResult(
-                sizing_id=sizing_id,
-                sized=False,
-                result=None,
-                rejection_reason=event.reason_code,
-            )
-
-        raise RuntimeError(f"Unexpected sizing event type: {type(event).__name__}")
-
-    # --- API ------------------------------------------------------------------
-
     def _execute_domain(
         self,
         *,
         command: PerformPositionSizingCommand,
         aggregate: PositionSizing,
     ) -> tuple[Sequence[BaseEvent], PerformPositionSizingResult]:
-        events = list(aggregate.size())
+        outcome, events = aggregate.size()
 
-        result = self._build_result(
+        return events, PerformPositionSizingResult(
             sizing_id=command.sizing_id,
-            events=events,
+            sized=outcome.sized,
+            result=outcome.result,
+            rejection_reason=outcome.rejection_reason,
         )
-
-        return events, result
