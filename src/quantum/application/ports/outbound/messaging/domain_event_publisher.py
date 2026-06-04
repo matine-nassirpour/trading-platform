@@ -24,7 +24,7 @@ class DomainEventPublisher(Protocol):
     - internal async transport adapter
     """
 
-    def publish(
+    async def publish(
         self,
         events: Sequence[RecordedEventEnvelope],
     ) -> None:

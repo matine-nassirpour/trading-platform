@@ -23,7 +23,7 @@ class DomainEventDispatcher(Protocol):
     - No external integration event publishing.
     """
 
-    def dispatch(
+    async def dispatch(
         self,
         events: Sequence[RecordedEventEnvelope],
     ) -> None:

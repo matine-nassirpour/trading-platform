@@ -7,8 +7,8 @@ from quantum.domain.trading.order.events.order_created_event import OrderCreated
 @runtime_checkable
 class BrokerGateway(Protocol):
 
-    def submit_order(self, event: OrderCreatedEvent) -> None:
+    async def submit_order(self, event: OrderCreatedEvent) -> None:
         raise NotImplementedError
 
-    def cancel_order(self, broker_order_ref: BrokerOrderRef) -> None:
+    async def cancel_order(self, broker_order_ref: BrokerOrderRef) -> None:
         raise NotImplementedError
