@@ -23,16 +23,7 @@ from quantum.application.shared.errors.application_error import (
 from quantum.application.shared.eventing.application_event_context import (
     ApplicationEventContext,
 )
-from quantum.domain.decision.authorization.decision_authorization_status import (
-    DecisionAuthorizationStatus,
-)
 from quantum.domain.decision.trading_decision.aggregate import TradingDecision
-from quantum.domain.decision.trading_decision.events.trading_decision_authorized_event import (
-    TradingDecisionAuthorizedEvent,
-)
-from quantum.domain.decision.trading_decision.events.trading_decision_rejected_event import (
-    TradingDecisionRejectedEvent,
-)
 from quantum.domain.decision.trading_decision.states.trading_decision_state_base import (
     TradingDecisionStateBase,
 )
@@ -107,7 +98,7 @@ class AuthorizeTradingDecisionHandler(
                 f"No StrategyLifecycle found for strategy '{strategy_id}'"
             )
 
-        events = list(
+        outcome, events = list(
             aggregate.authorize(
                 policy=policy,
                 lifecycle=lifecycle,
@@ -121,23 +112,8 @@ class AuthorizeTradingDecisionHandler(
                 f"got {len(events)} event(s)"
             )
 
-        event = events[0]
-
-        if isinstance(event, TradingDecisionAuthorizedEvent):
-            return events, TradingDecisionAuthorizationCommandResult(
-                decision_id=command.decision_id,
-                status=DecisionAuthorizationStatus.authorized(),
-                reason_code=None,
-            )
-
-        if isinstance(event, TradingDecisionRejectedEvent):
-            return events, TradingDecisionAuthorizationCommandResult(
-                decision_id=command.decision_id,
-                status=DecisionAuthorizationStatus.rejected(),
-                reason_code=event.reason_code,
-            )
-
-        raise ApplicationInvariantViolation(
-            "TradingDecision.authorize() emitted an unsupported terminal event type: "
-            f"{type(event).__name__}"
+        return events, TradingDecisionAuthorizationCommandResult(
+            decision_id=command.decision_id,
+            status=outcome.status,
+            reason_code=outcome.reason_code,
         )

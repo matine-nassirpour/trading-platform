@@ -1,8 +1,11 @@
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from typing import Self
 
 from quantum.domain.decision.authorization.decision_authorization_basis import (
     DecisionAuthorizationBasis,
+)
+from quantum.domain.decision.authorization.decision_authorization_outcome import (
+    DecisionAuthorizationOutcome,
 )
 from quantum.domain.decision.authorization.decision_authorization_result import (
     DecisionAuthorizationResult,
@@ -254,7 +257,7 @@ class TradingDecision(EventSourcedAggregateRoot[DecisionId, TradingDecisionState
         policy: DecisionPolicy,
         lifecycle: StrategyLifecycle,
         evaluated_at: EpochMs,
-    ) -> list[BaseEvent]:
+    ) -> tuple[DecisionAuthorizationOutcome, Sequence[BaseEvent]]:
         """
         Evaluates a trade candidate against lifecycle and governance policy.
 
@@ -270,24 +273,26 @@ class TradingDecision(EventSourcedAggregateRoot[DecisionId, TradingDecisionState
         )
 
         lifecycle_result = StrategyEligibilityPolicy.evaluate(
-            decision=state.decision_qualification,
+            decision=self.decision_qualification(),
             lifecycle=lifecycle,
             at=evaluated_at,
         )
 
         if lifecycle_result.is_rejected():
+            outcome = DecisionAuthorizationOutcome(result=lifecycle_result)
+
             reason_code = lifecycle_result.reason_code
             if reason_code is None:
                 raise InvariantViolation(
                     "Rejected lifecycle authorization result must define reason_code"
                 )
 
-            return [
+            return outcome, (
                 TradingDecisionRejectedEvent(
                     reason_code=reason_code,
                     authorization_basis=authorization_basis,
-                )
-            ]
+                ),
+            )
 
         policy_result = DecisionPolicyEvaluator.evaluate(
             policy=policy,
@@ -297,24 +302,28 @@ class TradingDecision(EventSourcedAggregateRoot[DecisionId, TradingDecisionState
         )
 
         if policy_result.is_rejected():
+            outcome = DecisionAuthorizationOutcome(result=policy_result)
+
             reason_code = policy_result.reason_code
             if reason_code is None:
                 raise InvariantViolation(
                     "Rejected policy authorization result must define reason_code"
                 )
 
-            return [
+            return outcome, (
                 TradingDecisionRejectedEvent(
                     reason_code=reason_code,
                     authorization_basis=authorization_basis,
-                )
-            ]
+                ),
+            )
 
-        return [
+        outcome = DecisionAuthorizationOutcome.authorized()
+
+        return outcome, (
             TradingDecisionAuthorizedEvent(
                 authorization_basis=authorization_basis,
             ),
-        ]
+        )
 
     # --- Event → State transitions --------------------------------------------
 
