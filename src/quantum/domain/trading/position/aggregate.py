@@ -29,6 +29,9 @@ from quantum.domain.trading.position.events.position_closed_event import (
 from quantum.domain.trading.position.events.position_opened_event import (
     PositionOpenedEvent,
 )
+from quantum.domain.trading.position.outcomes.position_close_outcome import (
+    PositionCloseOutcome,
+)
 from quantum.domain.trading.position.pnl_service import PnLService
 from quantum.domain.trading.position.states.position_closed_state import (
     PositionClosedState,
@@ -104,13 +107,9 @@ class Position(EventSourcedAggregateRoot[PositionId, PositionStateBase]):
         *,
         exit_price: Price,
         instrument: InstrumentSpec,
-    ) -> list[BaseEvent]:
+    ) -> tuple[PositionCloseOutcome, list[BaseEvent]]:
         """
-        Answers the question:
-            "Do we have the right to close this position at this time,
-            and if so, what must be recorded in the event stream?"
-
-        This method represents a DOMAIN COMMAND.
+        Closes an opened position and computes realized PnL.
         """
 
         state = self.state
@@ -129,7 +128,11 @@ class Position(EventSourcedAggregateRoot[PositionId, PositionStateBase]):
             instrument=instrument,
         )
 
-        return [
+        outcome = PositionCloseOutcome(
+            realized_pnl=pnl,
+        )
+
+        return outcome, [
             PositionClosedEvent(
                 broker_position_ref=state.broker_position_ref,
                 side=state.side,

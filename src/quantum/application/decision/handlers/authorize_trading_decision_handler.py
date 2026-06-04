@@ -16,10 +16,7 @@ from quantum.application.ports.outbound.time.clock import Clock
 from quantum.application.shared.base_handlers.aggregate_command_handler import (
     AggregateCommandHandler,
 )
-from quantum.application.shared.errors.application_error import (
-    ApplicationInvariantViolation,
-    NotFoundError,
-)
+from quantum.application.shared.errors.application_error import NotFoundError
 from quantum.application.shared.eventing.application_event_context import (
     ApplicationEventContext,
 )
@@ -107,7 +104,7 @@ class AuthorizeTradingDecisionHandler(
         )
 
         if len(events) != 1:
-            raise ApplicationInvariantViolation(
+            raise RuntimeError(
                 "TradingDecision.authorize() must emit exactly one terminal event; "
                 f"got {len(events)} event(s)"
             )

@@ -61,6 +61,7 @@ from quantum.domain.trading.order.events.order_submitted_event import (
     OrderSubmittedEvent,
 )
 from quantum.domain.trading.order.order_kind import OrderKind
+from quantum.domain.trading.order.outcomes.order_fill_outcome import OrderFillOutcome
 from quantum.domain.trading.order.states.order_initialized_state import (
     OrderInitializedState,
 )
@@ -302,7 +303,11 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
             )
         ]
 
-    def register_fill(self, *, fill: ExecutionFill) -> list[BaseEvent]:
+    def register_fill(
+        self,
+        *,
+        fill: ExecutionFill,
+    ) -> tuple[OrderFillOutcome, list[BaseEvent]]:
         """
         Registers an execution fill against this order.
         """
@@ -317,15 +322,35 @@ class Order(EventSourcedAggregateRoot[OrderId, OrderStateBase]):
         if state.fill_status.is_filled():
             raise OrderNotFillable("Order is already fully filled")
 
-        new_total = state.filled_volume.value + fill.volume.value
+        new_filled_value = state.filled_volume.value + fill.volume.value
 
-        if new_total > state.requested_volume.value:
+        if new_filled_value > state.requested_volume.value:
             raise OrderOverfill("Fill exceeds remaining order volume")
 
         if fill.link.broker_order_ref != state.broker_order_ref:
             raise InvariantViolation("Fill broker_order_ref mismatch")
 
-        return [
+        filled_volume = NonNegativeVolume(new_filled_value)
+
+        fill_status = (
+            OrderFillStatus.filled()
+            if new_filled_value == state.requested_volume.value
+            else OrderFillStatus.partially_filled()
+        )
+
+        lifecycle_status = (
+            OrderLifecycleStatus.completed()
+            if fill_status.is_filled()
+            else state.lifecycle_status
+        )
+
+        outcome = OrderFillOutcome(
+            filled_volume=filled_volume,
+            fill_status=fill_status,
+            lifecycle_status=lifecycle_status,
+        )
+
+        return outcome, [
             OrderFillRegisteredEvent(
                 broker_order_ref=state.broker_order_ref,
                 fill=fill,
