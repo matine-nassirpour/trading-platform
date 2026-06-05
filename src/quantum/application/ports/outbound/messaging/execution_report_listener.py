@@ -6,5 +6,4 @@ from quantum.domain.trading.execution.reports.execution_report import ExecutionR
 @runtime_checkable
 class ExecutionReportListener(Protocol):
 
-    def on_execution_report(self, report: ExecutionReport) -> None:
-        raise NotImplementedError
+    async def on_execution_report(self, report: ExecutionReport) -> None: ...

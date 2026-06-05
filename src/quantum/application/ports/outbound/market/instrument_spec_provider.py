@@ -19,7 +19,6 @@ class InstrumentSpecProvider(Protocol):
         Must raise a domain-meaningful exception at application boundary
         (e.g., application error) if symbol is unknown/unavailable.
         """
-        raise NotImplementedError
+        ...
 
-    async def list_all(self) -> Iterable[InstrumentSpec]:
-        raise NotImplementedError
+    async def list_all(self) -> Iterable[InstrumentSpec]: ...

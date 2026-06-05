@@ -22,18 +22,15 @@ class DomainEventSubscriptionRegistry(Protocol):
         self,
         event_type: type[BaseEvent],
         handler: DomainEventHandler,
-    ) -> None:
-        raise NotImplementedError
+    ) -> None: ...
 
     def unsubscribe(
         self,
         event_type: type[BaseEvent],
         handler: DomainEventHandler,
-    ) -> None:
-        raise NotImplementedError
+    ) -> None: ...
 
     def handlers_for(
         self,
         event_type: type[BaseEvent],
-    ) -> Sequence[DomainEventHandler]:
-        raise NotImplementedError
+    ) -> Sequence[DomainEventHandler]: ...

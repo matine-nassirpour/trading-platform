@@ -9,5 +9,4 @@ class Clock(Protocol):
     Deterministic time source for the application layer.
     """
 
-    def now_epoch_ms(self) -> EpochMs:
-        raise NotImplementedError
+    def now_epoch_ms(self) -> EpochMs: ...

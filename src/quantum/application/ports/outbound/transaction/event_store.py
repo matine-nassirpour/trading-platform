@@ -37,7 +37,7 @@ class EventStore(Protocol):
         Returns the persisted envelopes with updated sequence.
         Must raise ConcurrencyError on version conflict.
         """
-        raise NotImplementedError
+        ...
 
     async def load_stream(
         self,
@@ -55,10 +55,10 @@ class EventStore(Protocol):
         - If limit is provided, return at most limit events.
         - Events must be returned in strictly increasing sequence order.
         """
-        raise NotImplementedError
+        ...
 
     async def current_sequence(self, stream_id: str) -> EventSequence:
         """
         Returns last known sequence for a stream.
         """
-        raise NotImplementedError
+        ...

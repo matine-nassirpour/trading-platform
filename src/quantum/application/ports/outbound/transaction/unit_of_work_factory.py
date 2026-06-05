@@ -14,5 +14,4 @@ class UnitOfWorkFactory(Protocol):
     - UnitOfWork instances must never be shared across concurrent tasks.
     """
 
-    def create(self) -> UnitOfWork:
-        raise NotImplementedError
+    def create(self) -> UnitOfWork: ...

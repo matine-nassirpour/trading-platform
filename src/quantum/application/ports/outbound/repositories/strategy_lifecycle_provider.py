@@ -17,5 +17,4 @@ class StrategyLifecycleProvider(Protocol):
     async def get_lifecycle(
         self,
         strategy_id: StrategyId,
-    ) -> StrategyLifecycle | None:
-        raise NotImplementedError
+    ) -> StrategyLifecycle | None: ...

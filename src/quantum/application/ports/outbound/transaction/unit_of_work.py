@@ -24,8 +24,7 @@ class UnitOfWork(Protocol):
     """
 
     @property
-    def state(self) -> UnitOfWorkState:
-        raise NotImplementedError
+    def state(self) -> UnitOfWorkState: ...
 
     @property
     def event_store(self) -> EventStore:
@@ -33,7 +32,7 @@ class UnitOfWork(Protocol):
         Transaction-bound EventStore.
         Must only be used while UnitOfWork is ACTIVE.
         """
-        raise NotImplementedError
+        ...
 
     @property
     def outbox(self) -> OutboxRepository:
@@ -41,7 +40,7 @@ class UnitOfWork(Protocol):
         Transaction-bound OutboxRepository.
         Must only be used while UnitOfWork is ACTIVE.
         """
-        raise NotImplementedError
+        ...
 
     @property
     def command_deduplication(self) -> CommandDeduplicationRepository:
@@ -49,21 +48,17 @@ class UnitOfWork(Protocol):
         Transaction-bound command deduplication repository.
         Must only be used while UnitOfWork is ACTIVE.
         """
-        raise NotImplementedError
+        ...
 
-    async def __aenter__(self) -> Self:
-        raise NotImplementedError
+    async def __aenter__(self) -> Self: ...
 
     async def __aexit__(
         self,
         exc_type: type[BaseException] | None,
         exc: BaseException | None,
         tb: TracebackType | None,
-    ) -> bool:
-        raise NotImplementedError
+    ) -> bool: ...
 
-    async def commit(self) -> None:
-        raise NotImplementedError
+    async def commit(self) -> None: ...
 
-    async def rollback(self) -> None:
-        raise NotImplementedError
+    async def rollback(self) -> None: ...

@@ -21,8 +21,7 @@ class OutboxRepository(Protocol):
     - collect_unpublished() must be called outside the command transaction.
     """
 
-    async def add(self, envelopes: Iterable[RecordedEventEnvelope]) -> None:
-        raise NotImplementedError
+    async def add(self, envelopes: Iterable[RecordedEventEnvelope]) -> None: ...
 
     async def collect_unpublished(
         self,
@@ -36,7 +35,7 @@ class OutboxRepository(Protocol):
         Should be implemented with locking/claiming in infrastructure
         to avoid duplicate workers publishing the same events concurrently.
         """
-        raise NotImplementedError
+        ...
 
     async def mark_as_published(
         self,
@@ -45,4 +44,4 @@ class OutboxRepository(Protocol):
         """
         Mark events as published after successful external publication.
         """
-        raise NotImplementedError
+        ...

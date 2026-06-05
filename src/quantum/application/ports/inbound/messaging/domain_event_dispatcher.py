@@ -30,4 +30,4 @@ class DomainEventDispatcher(Protocol):
         """
         Dispatch persisted events to registered in-process handlers.
         """
-        raise NotImplementedError
+        ...

@@ -18,5 +18,4 @@ class DomainEventHandler(Protocol):
     - May perform asynchronous application work.
     """
 
-    async def handle(self, event: RecordedEventEnvelope) -> None:
-        raise NotImplementedError
+    async def handle(self, event: RecordedEventEnvelope) -> None: ...

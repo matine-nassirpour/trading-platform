@@ -17,5 +17,4 @@ class DecisionPolicyProvider(Protocol):
     async def get_policies_for(
         self,
         strategy: StrategyId,
-    ) -> DecisionPolicy | None:
-        raise NotImplementedError
+    ) -> DecisionPolicy | None: ...

@@ -36,4 +36,4 @@ class DomainEventPublisher(Protocol):
         - Publication must not mutate domain/application state.
         - Delivery semantics are infrastructure-defined and documented.
         """
-        raise NotImplementedError
+        ...
