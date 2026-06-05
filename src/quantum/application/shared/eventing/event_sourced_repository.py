@@ -54,18 +54,15 @@ class EventSourcedRepository(Generic[ID, S, A]):
         self._aggregate_type = aggregate_type
         self._stream_resolver = stream_resolver
 
-    async def load(
-        self,
-        *,
-        aggregate_id: ID,
-        from_sequence: EventSequence | None = None,
-        limit: int | None = None,
-    ) -> tuple[A, EventSequence]:
+    async def load(self, *, aggregate_id: ID) -> tuple[A, EventSequence]:
         """
         Load aggregate from EventStore using its typed aggregate identity.
 
-        By default, loads the full stream.
-        For advanced use cases, partial loading can be requested explicitly.
+        Contract:
+        - Always loads the full stream.
+        - Partial aggregate rehydration is forbidden.
+        - Snapshot support must be introduced through a dedicated abstraction,
+          not through optional parameters.
         """
 
         if not isinstance(aggregate_id, AggregateId):
@@ -75,13 +72,9 @@ class EventSourcedRepository(Generic[ID, S, A]):
 
         stream_id = self._stream_resolver.resolve(aggregate_id)
 
-        events = await self._store.load_stream(
-            stream_id,
-            from_sequence=from_sequence,
-            limit=limit,
-        )
+        events = await self._store.load_stream(stream_id)
 
-        previous = from_sequence or EventSequence.initial()
+        previous = EventSequence.initial()
 
         for event in events:
             event.sequence.assert_is_next_of(previous)
@@ -100,11 +93,6 @@ class EventSourcedRepository(Generic[ID, S, A]):
                 self._aggregate_type.uninitialized_state(),
             )
             return aggregate, previous
-
-        if from_sequence is not None:
-            raise ApplicationInvariantViolationError(
-                "Partial aggregate rehydration is not allowed without snapshot support"
-            )
 
         # --- Replay
         aggregate = self._aggregate_type.rehydrate(
