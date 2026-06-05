@@ -35,7 +35,7 @@ class CancelOrderHandler(
     def _context(self, command: CancelOrderCommand) -> ApplicationEventContext:
         return command.context
 
-    def _execute_domain(
+    async def _execute_domain(
         self,
         *,
         command: CancelOrderCommand,

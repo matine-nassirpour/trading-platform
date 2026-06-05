@@ -109,7 +109,7 @@ class AggregateCommandHandler(ABC, Generic[C, R, ID, S, A]):
         raise NotImplementedError
 
     @abstractmethod
-    def _execute_domain(
+    async def _execute_domain(
         self,
         *,
         command: C,
@@ -117,6 +117,9 @@ class AggregateCommandHandler(ABC, Generic[C, R, ID, S, A]):
     ) -> tuple[Sequence[BaseEvent], R]:
         """
         Execute domain logic and return (domain_events, result).
+
+        May await application ports before delegating to the domain.
+        Must not contain domain decision logic.
         """
         raise NotImplementedError
 
@@ -160,7 +163,7 @@ class AggregateCommandHandler(ABC, Generic[C, R, ID, S, A]):
                     version=expected_version,
                 )
 
-                domain_events_sequence, result = self._execute_domain(
+                domain_events_sequence, result = await self._execute_domain(
                     command=command,
                     aggregate=aggregate,
                 )

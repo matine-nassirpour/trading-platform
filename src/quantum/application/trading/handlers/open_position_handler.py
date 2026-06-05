@@ -39,7 +39,7 @@ class OpenPositionHandler(
     def _context(self, command: OpenPositionCommand) -> ApplicationEventContext:
         return command.context
 
-    def _execute_domain(
+    async def _execute_domain(
         self,
         *,
         command: OpenPositionCommand,

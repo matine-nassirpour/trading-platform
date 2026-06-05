@@ -35,7 +35,7 @@ class AcceptOrderHandler(
     def _context(self, command: AcceptOrderCommand) -> ApplicationEventContext:
         return command.context
 
-    def _execute_domain(
+    async def _execute_domain(
         self,
         *,
         command: AcceptOrderCommand,

@@ -39,7 +39,7 @@ class RegisterOrderFillHandler(
     def _context(self, command: RegisterOrderFillCommand) -> ApplicationEventContext:
         return command.context
 
-    def _execute_domain(
+    async def _execute_domain(
         self,
         *,
         command: RegisterOrderFillCommand,

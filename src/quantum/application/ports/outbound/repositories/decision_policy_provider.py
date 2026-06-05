@@ -5,7 +5,7 @@ from quantum.domain.shared_kernel.modeling.identity.strategy_id import StrategyI
 
 
 @runtime_checkable
-class DecisionPolicyRepository(Protocol):
+class DecisionPolicyProvider(Protocol):
     """
     Application port for accessing governance decision policies.
 

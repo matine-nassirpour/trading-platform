@@ -5,7 +5,7 @@ from quantum.domain.shared_kernel.modeling.identity.strategy_id import StrategyI
 
 
 @runtime_checkable
-class StrategyLifecycleRepository(Protocol):
+class StrategyLifecycleProvider(Protocol):
     """
     Application port for accessing strategy lifecycle state.
 

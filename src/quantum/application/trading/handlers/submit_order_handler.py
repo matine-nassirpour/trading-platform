@@ -35,7 +35,7 @@ class SubmitOrderHandler(
     def _context(self, command: SubmitOrderCommand) -> ApplicationEventContext:
         return command.context
 
-    def _execute_domain(
+    async def _execute_domain(
         self,
         *,
         command: SubmitOrderCommand,

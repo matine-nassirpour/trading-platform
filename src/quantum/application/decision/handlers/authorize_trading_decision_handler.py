@@ -6,11 +6,11 @@ from quantum.application.decision.commands.authorize_trading_decision_command im
 from quantum.application.decision.results.trading_decision_command_result import (
     TradingDecisionAuthorizationCommandResult,
 )
-from quantum.application.ports.outbound.repositories.decision_policy_repository import (
-    DecisionPolicyRepository,
+from quantum.application.ports.outbound.repositories.decision_policy_provider import (
+    DecisionPolicyProvider,
 )
-from quantum.application.ports.outbound.repositories.strategy_lifecycle_repository import (
-    StrategyLifecycleRepository,
+from quantum.application.ports.outbound.repositories.strategy_lifecycle_provider import (
+    StrategyLifecycleProvider,
 )
 from quantum.application.ports.outbound.time.clock import Clock
 from quantum.application.shared.base_handlers.aggregate_command_handler import (
@@ -58,8 +58,8 @@ class AuthorizeTradingDecisionHandler(
     def __init__(
         self,
         *,
-        decision_policies: DecisionPolicyRepository,
-        strategy_lifecycles: StrategyLifecycleRepository,
+        decision_policies: DecisionPolicyProvider,
+        strategy_lifecycles: StrategyLifecycleProvider,
         clock: Clock,
         **base_dependencies: object,
     ) -> None:
@@ -77,7 +77,7 @@ class AuthorizeTradingDecisionHandler(
     ) -> ApplicationEventContext:
         return command.context
 
-    def _execute_domain(
+    async def _execute_domain(
         self,
         *,
         command: AuthorizeTradingDecisionCommand,
@@ -85,22 +85,20 @@ class AuthorizeTradingDecisionHandler(
     ) -> tuple[Sequence[BaseEvent], TradingDecisionAuthorizationCommandResult]:
         strategy_id = aggregate.decision_qualification().strategy_id
 
-        policy = self._decision_policies.get_policies_for(strategy_id)
+        policy = await self._decision_policies.get_policies_for(strategy_id)
         if policy is None:
             raise NotFoundError(f"No DecisionPolicy found for strategy '{strategy_id}'")
 
-        lifecycle = self._strategy_lifecycles.get_lifecycle(strategy_id)
+        lifecycle = await self._strategy_lifecycles.get_lifecycle(strategy_id)
         if lifecycle is None:
             raise NotFoundError(
                 f"No StrategyLifecycle found for strategy '{strategy_id}'"
             )
 
-        outcome, events = list(
-            aggregate.authorize(
-                policy=policy,
-                lifecycle=lifecycle,
-                evaluated_at=self._clock.now_epoch_ms(),
-            )
+        outcome, events = aggregate.authorize(
+            policy=policy,
+            lifecycle=lifecycle,
+            evaluated_at=self._clock.now_epoch_ms(),
         )
 
         if len(events) != 1:

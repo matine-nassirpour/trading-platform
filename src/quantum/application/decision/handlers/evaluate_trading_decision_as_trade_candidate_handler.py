@@ -48,7 +48,7 @@ class EvaluateTradingDecisionAsTradeCandidateHandler(
     ) -> ApplicationEventContext:
         return command.context
 
-    def _execute_domain(
+    async def _execute_domain(
         self,
         *,
         command: EvaluateTradingDecisionAsTradeCandidateCommand,
