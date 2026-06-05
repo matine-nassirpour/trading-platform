@@ -14,12 +14,12 @@ class InstrumentSpecProvider(Protocol):
     Implementations might source from broker/terminal metadata, cache, DB, etc.
     """
 
-    def get(self, symbol: Symbol) -> InstrumentSpec:
+    async def get(self, symbol: Symbol) -> InstrumentSpec:
         """
         Must raise a domain-meaningful exception at application boundary
         (e.g., application error) if symbol is unknown/unavailable.
         """
         raise NotImplementedError
 
-    def list_all(self) -> Iterable[InstrumentSpec]:
+    async def list_all(self) -> Iterable[InstrumentSpec]:
         raise NotImplementedError
