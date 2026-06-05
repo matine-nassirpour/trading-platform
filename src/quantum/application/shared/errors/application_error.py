@@ -97,3 +97,14 @@ class ProjectionConsistencyError(ApplicationError):
     Raised when a projection detects cursor, ordering,
     idempotency, or consistency violation.
     """
+
+
+class DuplicateCommandError(ApplicationError):
+    """
+    Raised when a command with the same CommandId has already been processed
+    or is currently reserved for processing.
+    """
+
+    def __init__(self, command_id: object):
+        super().__init__(f"Duplicate command detected: '{command_id}'")
+        self.command_id = command_id

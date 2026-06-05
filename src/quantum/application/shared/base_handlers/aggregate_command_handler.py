@@ -17,6 +17,7 @@ from quantum.application.shared.errors.application_error import (
     AggregateNotFoundError,
     ConcurrencyError,
     DomainExecutionError,
+    DuplicateCommandError,
     EmptyDomainEventError,
 )
 from quantum.application.shared.eventing.application_event_context import (
@@ -150,6 +151,11 @@ class AggregateCommandHandler(ABC, Generic[C, R, ID, S, A]):
     async def handle(self, command: C) -> R:
         try:
             async with self._uow_factory.create() as uow:
+                reserved = await uow.command_deduplication.reserve(command.command_id)
+
+                if not reserved:
+                    raise DuplicateCommandError(command.command_id)
+
                 aggregate_id = self._aggregate_id(command)
 
                 repository = EventSourcedRepository[ID, S, A](
@@ -159,7 +165,7 @@ class AggregateCommandHandler(ABC, Generic[C, R, ID, S, A]):
                 )
 
                 aggregate, expected_version = await repository.load(
-                    aggregate_id=aggregate_id
+                    aggregate_id=aggregate_id,
                 )
 
                 self._enforce_existence_policy(

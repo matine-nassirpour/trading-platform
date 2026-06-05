@@ -88,9 +88,9 @@ class ApplicationOrchestrator:
 
     # --- Example handler template ---------------------------------------------
 
-    @staticmethod
-    async def on_trade_executed(payload: dict) -> None:
-        """
-        Example handler for illustration.
-        """
-        LOGGER.info("[App] Received trade.executed event: %s", payload)
+    # @staticmethod
+    # async def on_trade_executed(payload: dict) -> None:
+    #     """
+    #     Example handler for illustration.
+    #     """
+    #     LOGGER.info("[App] Received trade.executed event: %s", payload)

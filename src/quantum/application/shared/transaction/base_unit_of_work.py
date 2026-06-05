@@ -2,6 +2,9 @@ from abc import ABC, abstractmethod
 from types import TracebackType
 from typing import Self
 
+from quantum.application.ports.outbound.transaction.command_deduplication_repository import (
+    CommandDeduplicationRepository,
+)
 from quantum.application.ports.outbound.transaction.event_store import EventStore
 from quantum.application.ports.outbound.transaction.outbox_repository import (
     OutboxRepository,
@@ -101,6 +104,11 @@ class BaseUnitOfWork(UnitOfWork, ABC):
         await self._dispose()
         self._state = UnitOfWorkState.DISPOSED
 
+    @property
+    def command_deduplication(self) -> CommandDeduplicationRepository:
+        self._assert_active()
+        return self._command_deduplication()
+
     @abstractmethod
     def _event_store(self) -> EventStore:
         raise NotImplementedError
@@ -123,4 +131,8 @@ class BaseUnitOfWork(UnitOfWork, ABC):
 
     @abstractmethod
     async def _dispose(self) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _command_deduplication(self) -> CommandDeduplicationRepository:
         raise NotImplementedError

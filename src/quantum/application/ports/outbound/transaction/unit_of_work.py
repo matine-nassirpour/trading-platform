@@ -1,6 +1,9 @@
 from types import TracebackType
 from typing import Protocol, Self, runtime_checkable
 
+from quantum.application.ports.outbound.transaction.command_deduplication_repository import (
+    CommandDeduplicationRepository,
+)
 from quantum.application.ports.outbound.transaction.event_store import EventStore
 from quantum.application.ports.outbound.transaction.outbox_repository import (
     OutboxRepository,
@@ -36,6 +39,14 @@ class UnitOfWork(Protocol):
     def outbox(self) -> OutboxRepository:
         """
         Transaction-bound OutboxRepository.
+        Must only be used while UnitOfWork is ACTIVE.
+        """
+        raise NotImplementedError
+
+    @property
+    def command_deduplication(self) -> CommandDeduplicationRepository:
+        """
+        Transaction-bound command deduplication repository.
         Must only be used while UnitOfWork is ACTIVE.
         """
         raise NotImplementedError
