@@ -58,7 +58,7 @@ class PerformPositionSizingHandler(
 
         return events, PerformPositionSizingResult(
             sizing_id=command.sizing_id,
-            sized=outcome.sized,
+            is_sized=outcome.is_sized,
             result=outcome.result,
             rejection_reason=outcome.rejection_reason,
         )

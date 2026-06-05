@@ -34,6 +34,6 @@ class PerformPositionSizingResult(PositionSizingCommandResult):
     This result exists as an application convenience for downstream orchestration.
     """
 
-    sized: bool
+    is_sized: bool
     result: PositionSizingResult | None
     rejection_reason: PositionSizingRejectionReasonCode | None

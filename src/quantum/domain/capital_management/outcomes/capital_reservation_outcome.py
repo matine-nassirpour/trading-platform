@@ -21,12 +21,12 @@ class CapitalReservationOutcome(ValueObject):
     concrete CapitalReservation event types.
     """
 
-    accepted: bool
+    is_accepted: bool
     reserved_allocation: CapitalAllocationIntent | None
     rejection_reason_code: CapitalReservationRejectionReasonCode | None
 
     def _validate_types(self) -> None:
-        if type(self.accepted) is not bool:
+        if type(self.is_accepted) is not bool:
             raise InvariantViolation("CapitalReservationOutcome.accepted must be bool")
 
         if self.reserved_allocation is not None and not isinstance(
@@ -50,7 +50,7 @@ class CapitalReservationOutcome(ValueObject):
     def _validate_semantics(self) -> None:
         self._validate_types()
 
-        if self.accepted:
+        if self.is_accepted:
             if self.reserved_allocation is None:
                 raise InvariantViolation(
                     "Accepted CapitalReservationOutcome requires reserved_allocation"
@@ -79,7 +79,7 @@ class CapitalReservationOutcome(ValueObject):
         reserved_allocation: CapitalAllocationIntent,
     ) -> CapitalReservationOutcome:
         return cls(
-            accepted=True,
+            is_accepted=True,
             reserved_allocation=reserved_allocation,
             rejection_reason_code=None,
         )
@@ -91,7 +91,7 @@ class CapitalReservationOutcome(ValueObject):
         rejection_reason_code: CapitalReservationRejectionReasonCode,
     ) -> CapitalReservationOutcome:
         return cls(
-            accepted=False,
+            is_accepted=False,
             reserved_allocation=None,
             rejection_reason_code=rejection_reason_code,
         )

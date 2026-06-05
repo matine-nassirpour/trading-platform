@@ -21,12 +21,12 @@ class PositionSizingOutcome(ValueObject):
     concrete PositionSizing event types.
     """
 
-    sized: bool
+    is_sized: bool
     result: PositionSizingResult | None
     rejection_reason: PositionSizingRejectionReasonCode | None
 
     def _validate_types(self) -> None:
-        if type(self.sized) is not bool:
+        if type(self.is_sized) is not bool:
             raise InvariantViolation("PositionSizingOutcome.sized must be bool")
 
         if self.result is not None and not isinstance(
@@ -48,7 +48,7 @@ class PositionSizingOutcome(ValueObject):
     def _validate_semantics(self) -> None:
         self._validate_types()
 
-        if self.sized:
+        if self.is_sized:
             if self.result is None:
                 raise InvariantViolation("Sized PositionSizingOutcome requires result")
 
@@ -75,7 +75,7 @@ class PositionSizingOutcome(ValueObject):
         result: PositionSizingResult,
     ) -> PositionSizingOutcome:
         return cls(
-            sized=True,
+            is_sized=True,
             result=result,
             rejection_reason=None,
         )
@@ -87,7 +87,7 @@ class PositionSizingOutcome(ValueObject):
         rejection_reason: PositionSizingRejectionReasonCode,
     ) -> PositionSizingOutcome:
         return cls(
-            sized=False,
+            is_sized=False,
             result=None,
             rejection_reason=rejection_reason,
         )

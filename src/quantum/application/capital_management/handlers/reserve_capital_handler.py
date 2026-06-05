@@ -57,7 +57,7 @@ class ReserveCapitalHandler(
 
         return events, ReserveCapitalResult(
             reservation_id=command.reservation_id,
-            accepted=outcome.accepted,
+            is_accepted=outcome.is_accepted,
             reserved_allocation=outcome.reserved_allocation,
             rejection_reason_code=outcome.rejection_reason_code,
         )

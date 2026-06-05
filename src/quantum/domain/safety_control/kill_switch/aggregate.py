@@ -78,9 +78,7 @@ class KillSwitch(EventSourcedAggregateRoot[KillSwitchId, KillSwitchStateBase]):
     ) -> tuple[Self, list[BaseEvent]]:
         aggregate = cls.new(aggregate_id=aggregate_id)
 
-        events = [KillSwitchArmedEvent()]
-
-        return aggregate, events
+        return aggregate, [KillSwitchArmedEvent()]
 
     # --- Commands -------------------------------------------------------------
 

@@ -31,7 +31,7 @@ class ReserveCapitalResult(CapitalReservationCommandResult):
     The domain may accept or reject the reservation.
     """
 
-    accepted: bool
+    is_accepted: bool
     reserved_allocation: CapitalAllocationIntent | None
     rejection_reason_code: CapitalReservationRejectionReasonCode | None
 
