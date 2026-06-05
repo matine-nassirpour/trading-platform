@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import Generic, TypeVar
+from typing import Any, Generic, TypeVar
 
 from quantum.application.ports.outbound.transaction.event_store import EventStore
 from quantum.application.shared.errors.application_error import (
@@ -26,7 +26,7 @@ from quantum.domain.shared_kernel.modeling.identity.aggregate_id import Aggregat
 
 ID = TypeVar("ID", bound=AggregateId)
 S = TypeVar("S", bound=AggregateState)
-A = TypeVar("A", bound=EventSourcedAggregateRoot)
+A = TypeVar("A", bound=EventSourcedAggregateRoot[Any, Any])
 
 
 class EventSourcedRepository(Generic[ID, S, A]):
@@ -120,8 +120,8 @@ class EventSourcedRepository(Generic[ID, S, A]):
 
         stream_id = self._stream_resolver.resolve(aggregate_id)
 
-        for envelope in envelopes:
-            if envelope.aggregate_id != aggregate_id:
+        for pending_envelope in envelopes:
+            if pending_envelope.aggregate_id != aggregate_id:
                 raise ApplicationInvariantViolationError(
                     f"Envelope aggregate_id mismatch for stream '{stream_id}'"
                 )
@@ -134,14 +134,14 @@ class EventSourcedRepository(Generic[ID, S, A]):
 
         previous = expected_version
 
-        for envelope in persisted:
-            if envelope.aggregate_id != aggregate_id:
+        for recorded_envelope in persisted:
+            if recorded_envelope.aggregate_id != aggregate_id:
                 raise RepositoryIntegrityError(
                     f"EventStore returned persisted envelope with mismatched "
                     f"aggregate_id for stream '{stream_id}'"
                 )
 
-            envelope.sequence.assert_is_next_of(previous)
-            previous = envelope.sequence
+            recorded_envelope.sequence.assert_is_next_of(previous)
+            previous = recorded_envelope.sequence
 
         return persisted

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from typing import Generic, TypeVar
+from typing import Any, Generic, TypeVar
 
 from quantum.application.ports.outbound.transaction.unit_of_work_factory import (
     UnitOfWorkFactory,
@@ -15,6 +15,7 @@ from quantum.application.shared.base_handlers.empty_event_policy import EmptyEve
 from quantum.application.shared.commands.base_command import BaseCommand
 from quantum.application.shared.errors.application_error import (
     AggregateNotFoundError,
+    ApplicationInvariantViolationError,
     ConcurrencyError,
     DomainExecutionError,
     DuplicateCommandError,
@@ -47,7 +48,7 @@ C = TypeVar("C", bound=BaseCommand)
 R = TypeVar("R")  # Result
 ID = TypeVar("ID", bound=AggregateId)
 S = TypeVar("S", bound=AggregateState)
-A = TypeVar("A", bound=EventSourcedAggregateRoot)
+A = TypeVar("A", bound=EventSourcedAggregateRoot[Any, Any])
 
 
 class AggregateCommandHandler(ABC, Generic[C, R, ID, S, A]):
@@ -206,6 +207,10 @@ class AggregateCommandHandler(ABC, Generic[C, R, ID, S, A]):
 
                 await uow.commit()
                 return result
+
+            raise ApplicationInvariantViolationError(
+                "Unreachable code reached after UnitOfWork context exit"
+            )
 
         except DomainError as error:
             raise DomainExecutionError(error) from None
