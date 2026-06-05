@@ -2,6 +2,10 @@ from abc import ABC, abstractmethod
 from types import TracebackType
 from typing import Self
 
+from quantum.application.ports.outbound.transaction.event_store import EventStore
+from quantum.application.ports.outbound.transaction.outbox_repository import (
+    OutboxRepository,
+)
 from quantum.application.ports.outbound.transaction.unit_of_work import UnitOfWork
 from quantum.application.ports.outbound.transaction.unit_of_work_state import (
     UnitOfWorkState,
@@ -39,6 +43,23 @@ class BaseUnitOfWork(UnitOfWork, ABC):
     def state(self) -> UnitOfWorkState:
         return self._state
 
+    @property
+    def event_store(self) -> EventStore:
+        self._assert_active()
+        return self._event_store()
+
+    @property
+    def outbox(self) -> OutboxRepository:
+        self._assert_active()
+        return self._outbox()
+
+    def _assert_active(self) -> None:
+        if self._state is not UnitOfWorkState.ACTIVE:
+            raise UnitOfWorkStateError(
+                f"UnitOfWork repositories are only accessible while ACTIVE; "
+                f"current state is {self._state.name}"
+            )
+
     async def __aenter__(self) -> Self:
         if self._state is not UnitOfWorkState.NEW:
             raise UnitOfWorkStateError(
@@ -64,20 +85,12 @@ class BaseUnitOfWork(UnitOfWork, ABC):
         return False
 
     async def commit(self) -> None:
-        if self._state is not UnitOfWorkState.ACTIVE:
-            raise UnitOfWorkStateError(
-                f"Cannot commit UnitOfWork from state {self._state.name}"
-            )
-
+        self._assert_active()
         await self._commit()
         self._state = UnitOfWorkState.COMMITTED
 
     async def rollback(self) -> None:
-        if self._state is not UnitOfWorkState.ACTIVE:
-            raise UnitOfWorkStateError(
-                f"Cannot rollback UnitOfWork from state {self._state.name}"
-            )
-
+        self._assert_active()
         await self._rollback()
         self._state = UnitOfWorkState.ROLLED_BACK
 
@@ -87,6 +100,14 @@ class BaseUnitOfWork(UnitOfWork, ABC):
 
         await self._dispose()
         self._state = UnitOfWorkState.DISPOSED
+
+    @abstractmethod
+    def _event_store(self) -> EventStore:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _outbox(self) -> OutboxRepository:
+        raise NotImplementedError
 
     @abstractmethod
     async def _begin(self) -> None:

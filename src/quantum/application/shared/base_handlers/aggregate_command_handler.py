@@ -2,9 +2,6 @@ from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from typing import Generic, TypeVar
 
-from quantum.application.ports.outbound.transaction.outbox_repository import (
-    OutboxRepository,
-)
 from quantum.application.ports.outbound.transaction.unit_of_work_factory import (
     UnitOfWorkFactory,
 )
@@ -31,6 +28,7 @@ from quantum.application.shared.eventing.event_enveloper import (
 from quantum.application.shared.eventing.event_sourced_repository import (
     EventSourcedRepository,
 )
+from quantum.application.shared.eventing.stream_name_resolver import StreamNameResolver
 from quantum.domain.shared_kernel.event_sourcing.aggregates.event_sourced_aggregate_root import (
     EventSourcedAggregateRoot,
 )
@@ -64,8 +62,8 @@ class AggregateCommandHandler(ABC, Generic[C, R, ID, S, A]):
     """
 
     __slots__ = (
-        "_repository",
-        "_outbox",
+        "_aggregate_type",
+        "_stream_resolver",
         "_uow_factory",
         "_enveloper",
         "_existence_policy",
@@ -76,16 +74,16 @@ class AggregateCommandHandler(ABC, Generic[C, R, ID, S, A]):
     def __init__(
         self,
         *,
-        repository: EventSourcedRepository[ID, S, A],
-        outbox: OutboxRepository,
+        aggregate_type: type[A],
+        stream_resolver: StreamNameResolver[ID],
         uow_factory: UnitOfWorkFactory,
         enveloper: ApplicationEventEnveloper,
         existence_policy: AggregateExistencePolicy,
         empty_event_policy: EmptyEventPolicy = EmptyEventPolicy.FORBID,
         event_batch_policy: DomainEventBatchPolicy | None = None,
     ) -> None:
-        self._repository = repository
-        self._outbox = outbox
+        self._aggregate_type = aggregate_type
+        self._stream_resolver = stream_resolver
         self._uow_factory = uow_factory
         self._enveloper = enveloper
         self._existence_policy = existence_policy
@@ -154,7 +152,13 @@ class AggregateCommandHandler(ABC, Generic[C, R, ID, S, A]):
             async with self._uow_factory.create() as uow:
                 aggregate_id = self._aggregate_id(command)
 
-                aggregate, expected_version = await self._repository.load(
+                repository = EventSourcedRepository[ID, S, A](
+                    store=uow.event_store,
+                    aggregate_type=self._aggregate_type,
+                    stream_resolver=self._stream_resolver,
+                )
+
+                aggregate, expected_version = await repository.load(
                     aggregate_id=aggregate_id
                 )
 
@@ -186,13 +190,13 @@ class AggregateCommandHandler(ABC, Generic[C, R, ID, S, A]):
                     context=self._context(command),
                 )
 
-                persisted = await self._repository.save(
+                persisted = await repository.save(
                     aggregate_id=aggregate_id,
                     expected_version=expected_version,
                     envelopes=pending,
                 )
 
-                await self._outbox.add(persisted)
+                await uow.outbox.add(persisted)
 
                 await uow.commit()
                 return result

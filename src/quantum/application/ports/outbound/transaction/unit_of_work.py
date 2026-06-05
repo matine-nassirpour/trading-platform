@@ -1,6 +1,10 @@
 from types import TracebackType
 from typing import Protocol, Self, runtime_checkable
 
+from quantum.application.ports.outbound.transaction.event_store import EventStore
+from quantum.application.ports.outbound.transaction.outbox_repository import (
+    OutboxRepository,
+)
 from quantum.application.ports.outbound.transaction.unit_of_work_state import (
     UnitOfWorkState,
 )
@@ -11,26 +15,29 @@ class UnitOfWork(Protocol):
     """
     Explicit asynchronous transactional boundary.
 
-    State machine:
-
-        NEW
-         │
-         ▼
-        ACTIVE
-        ├── commit()   ──► COMMITTED ──► DISPOSED
-        └── rollback() ──► ROLLED_BACK ─► DISPOSED
-
-    Invariants:
-    - __aenter__ begins the transaction.
-    - commit() is valid only in ACTIVE.
-    - rollback() is valid only in ACTIVE.
-    - __aexit__ must rollback if still ACTIVE.
-    - __aexit__ must dispose resources exactly once.
-    - No post-commit callback is allowed inside UnitOfWork.
+    Critical invariant:
+    - All repositories exposed by this UnitOfWork MUST be transaction-bound.
+    - EventStore append and Outbox add MUST commit or rollback atomically.
     """
 
     @property
     def state(self) -> UnitOfWorkState:
+        raise NotImplementedError
+
+    @property
+    def event_store(self) -> EventStore:
+        """
+        Transaction-bound EventStore.
+        Must only be used while UnitOfWork is ACTIVE.
+        """
+        raise NotImplementedError
+
+    @property
+    def outbox(self) -> OutboxRepository:
+        """
+        Transaction-bound OutboxRepository.
+        Must only be used while UnitOfWork is ACTIVE.
+        """
         raise NotImplementedError
 
     async def __aenter__(self) -> Self:
