@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import asyncio
 import logging
 
@@ -14,7 +12,6 @@ from runtime.lifecycle.state_machine import (
 from quantum.application.ports.inbound.application_runtime_port import (
     ApplicationRuntimePort,
 )
-from quantum.application.ports.outbound.messaging.domain_event_bus import DomainEventBus
 
 LOGGER: Final = logging.getLogger("quantum.runtime.engine")
 
@@ -50,12 +47,10 @@ class RuntimeLifecycleEngine:
         self,
         *,
         app_service: ApplicationRuntimePort,
-        event_bus: DomainEventBus,
         admin_http_server: AdminControlPlanePort,
         graceful_shutdown_timeout: float = 5.0,
     ) -> None:
         self._app = app_service
-        self._event_bus = event_bus
         self._admin_http_server = admin_http_server
         self._graceful_timeout = graceful_shutdown_timeout
 
@@ -64,21 +59,16 @@ class RuntimeLifecycleEngine:
 
         # Track partial startup success
         self._http_started = False
-        self._bus_initialized = False
         self._app_started = False
 
         self._shutdown_lock = asyncio.Lock()
 
-    # --------------------------------------------------------------------------
-    # Public API
-    # --------------------------------------------------------------------------
+    # --- Public API -----------------------------------------------------------
     @property
     def state(self) -> RuntimeState:
         return self._fsm.state
 
-    # --------------------------------------------------------------------------
-    # Internal Lifecycle
-    # --------------------------------------------------------------------------
+    # --- Internal Lifecycle ---------------------------------------------------
     async def _main_loop(self) -> None:
         """
         Block until a shutdown is requested.
@@ -98,12 +88,6 @@ class RuntimeLifecycleEngine:
             LOGGER.debug("[Runtime Engine] Stopping application orchestrator.")
             with self._suppress_cancel():
                 await self._app.stop()
-
-        # EVENT BUS
-        if self._bus_initialized:
-            LOGGER.debug("[Runtime Engine] Closing event bus.")
-            with self._suppress_cancel():
-                await self._event_bus.close()
 
         # HTTP SERVER
         if self._http_started:
@@ -147,9 +131,7 @@ class RuntimeLifecycleEngine:
                 self._fsm.force_stop()
                 LOGGER.info("[Runtime Engine] Shutdown complete.")
 
-    # --------------------------------------------------------------------------
-    # Utilities
-    # --------------------------------------------------------------------------
+    # --- Utilities ------------------------------------------------------------
     class _suppress_cancel:
         """
         Suppress CancelledError inside a context.
@@ -162,9 +144,7 @@ class RuntimeLifecycleEngine:
         def __exit__(self, exc_type, exc, tb) -> bool:
             return exc_type is asyncio.CancelledError
 
-    # --------------------------------------------------------------------------
-    # Public API
-    # --------------------------------------------------------------------------
+    # --- Public API -----------------------------------------------------------
     async def start(self) -> None:
         if self._fsm.state != RuntimeState.STOPPED:
             raise RuntimeLifecycleViolation(
@@ -179,10 +159,6 @@ class RuntimeLifecycleEngine:
             # 1. Start control_plane HTTP server
             await self._admin_http_server.start()
             self._http_started = True
-
-            # 2. Initialize event bus
-            await self._event_bus.initialize()
-            self._bus_initialized = True
 
             # 3. Start application orchestrator
             await self._app.start()

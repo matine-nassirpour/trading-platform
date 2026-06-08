@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from dataclasses import dataclass
 
 from runtime.bootstrap.runtime_context import RuntimeContext
@@ -12,13 +10,10 @@ from runtime.lifecycle.engine import RuntimeLifecycleEngine
 from quantum.application.ports.inbound.application_runtime_port import (
     ApplicationRuntimePort,
 )
-from quantum.application.ports.outbound.messaging.domain_event_bus import DomainEventBus
-from quantum.application.shared.orchestration.application_orchestrator import (
-    ApplicationOrchestrator,
+from quantum.application.runtime.application_component_registry import (
+    ApplicationComponentRegistry,
 )
-from quantum.infrastructure.events.bus.asyncio_event_bus_adapter import (
-    AsyncioEventBusAdapter,
-)
+from quantum.application.runtime.application_orchestrator import ApplicationOrchestrator
 
 
 @dataclass(frozen=True)
@@ -38,6 +33,26 @@ class AssembledRuntime:
     engine: RuntimeLifecycleEngine
 
 
+def _build_application_orchestrator() -> ApplicationRuntimePort:
+    """
+    Build the Application layer lifecycle coordinator.
+
+    Important:
+    - No business orchestration here.
+    - No Decision -> Capital -> Sizing -> Trading workflow here.
+    - Only lifecycle-managed application components may be registered.
+    """
+
+    registry = ApplicationComponentRegistry()
+
+    # Future examples:
+    # registry.register(domain_event_dispatcher_component)
+    # registry.register(outbox_relay_component)
+    # registry.register(application_projection_component)
+
+    return ApplicationOrchestrator(registry=registry)
+
+
 def assemble_runtime(runtime: RuntimeContext) -> AssembledRuntime:
     """
     Build the fully wired runtime system.
@@ -55,11 +70,8 @@ def assemble_runtime(runtime: RuntimeContext) -> AssembledRuntime:
     """
     core_cfg = runtime.config.core
 
-    # Event Bus
-    event_bus: DomainEventBus = AsyncioEventBusAdapter()
-
     # Application Orchestrator
-    orchestrator: ApplicationRuntimePort = ApplicationOrchestrator(event_bus=event_bus)
+    orchestrator = _build_application_orchestrator()
 
     # Admin HTTP Control-Plane
     if core_cfg.quantum_admin_http_enabled:
@@ -77,7 +89,6 @@ def assemble_runtime(runtime: RuntimeContext) -> AssembledRuntime:
     # Runtime engine
     engine = RuntimeLifecycleEngine(
         app_service=orchestrator,
-        event_bus=event_bus,
         admin_http_server=admin_http_server,
         graceful_shutdown_timeout=core_cfg.quantum_shutdown_timeout,
     )
