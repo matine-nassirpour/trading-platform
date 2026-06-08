@@ -191,7 +191,7 @@ class AggregateCommandHandler(ABC, Generic[C, R, ID, S, A]):
                     events=domain_events,
                 )
 
-                pending = self._enveloper.envelope(
+                pending = await self._enveloper.envelope(
                     aggregate_id=aggregate_id,
                     events=domain_events,
                     context=self._context(command),

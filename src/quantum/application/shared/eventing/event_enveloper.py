@@ -37,14 +37,14 @@ class ApplicationEventEnveloper:
         self._clock = clock
         self._ids = ids
 
-    def envelope(
+    async def envelope(
         self,
         *,
         aggregate_id: AggregateId,
         events: Sequence[BaseEvent],
         context: ApplicationEventContext,
     ) -> list[PendingEventEnvelope]:
-        now = self._clock.now_epoch_ms()
+        now = await self._clock.now_epoch_ms()
 
         return [
             PendingEventEnvelope(

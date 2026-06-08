@@ -126,10 +126,12 @@ class AuthorizeTradingDecisionHandler(
                 f"No StrategyLifecycle found for strategy '{strategy_id}'"
             )
 
+        evaluated_at = await self._clock.now_epoch_ms()
+
         outcome, events = aggregate.authorize(
             policy=policy,
             lifecycle=lifecycle,
-            evaluated_at=self._clock.now_epoch_ms(),
+            evaluated_at=evaluated_at,
         )
 
         if len(events) != 1:
