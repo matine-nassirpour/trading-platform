@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from typing import Any
 
 _MAX_STR_LEN = 10_000
@@ -7,9 +5,7 @@ _MAX_BYTES_PREVIEW = 64
 _MAX_DEPTH = 8
 
 
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Internal Helpers                                                           │
-# ╰────────────────────────────────────────────────────────────────────────────╯
+# --- Internal Helpers
 def _safe_str(obj: Any) -> str:
     """Cycle-safe stringification with truncation."""
     try:
@@ -78,9 +74,7 @@ def _sanitize(obj: Any, depth: int, visited: set[int]) -> Any:
     return _safe_str(obj)
 
 
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Public API                                                                 │
-# ╰────────────────────────────────────────────────────────────────────────────╯
+# --- Public API
 def json_sanitize(obj: Any) -> Any:
     """Always safe, JSONable, depth-limited, deterministic."""
     try:

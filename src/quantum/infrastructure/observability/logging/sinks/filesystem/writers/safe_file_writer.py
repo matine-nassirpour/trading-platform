@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import os
 
 from pathlib import Path
@@ -29,9 +27,7 @@ class SafeFileWriter:
         self._tmp_path: Path | None = None
         self._mode_atomic = False
 
-    # --------------------------------------------------------------------------
-    # Properties
-    # --------------------------------------------------------------------------
+    # --- Properties -----------------------------------------------------------
     @property
     def path(self) -> Path | None:
         return self._path
@@ -41,9 +37,7 @@ class SafeFileWriter:
             return 0
         return self._fh.tell()
 
-    # --------------------------------------------------------------------------
-    # Append mode (partitioned handler)
-    # --------------------------------------------------------------------------
+    # --- Append mode (partitioned handler) ------------------------------------
     def open_append(self, path: Path) -> None:
         """
         Open the file in append mode (streaming writes).
@@ -60,9 +54,7 @@ class SafeFileWriter:
         if self._fsync:
             fsync_dir(path.parent)
 
-    # --------------------------------------------------------------------------
-    # Atomic mode (audit handler) open → write → close
-    # --------------------------------------------------------------------------
+    # --- Atomic mode (audit handler) open → write → close ---------------------
     def open_atomic(self, path: Path) -> None:
         """
         Open a *temporary* file for atomic replace on close().
@@ -82,9 +74,7 @@ class SafeFileWriter:
 
         self._fh = open(self._tmp_path, "w", encoding=self._encoding, newline="\n")
 
-    # --------------------------------------------------------------------------
-    # Writing
-    # --------------------------------------------------------------------------
+    # --- Writing --------------------------------------------------------------
     def write_line(self, line: str) -> None:
         """Write a line + newline"""
         if self._fh is None:
@@ -102,9 +92,7 @@ class SafeFileWriter:
 
         self._fh.write(line)
 
-    # --------------------------------------------------------------------------
-    # Closing → fsync → atomic replace
-    # --------------------------------------------------------------------------
+    # --- Closing → fsync → atomic replace -------------------------------------
     def _finalize_atomic_replace(self) -> None:
         tmp = self._tmp_path
         final = self._path

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from quantum.infrastructure.observability.logging.pipeline.engine.argument_kind import (
     StepArgumentKind,
 )

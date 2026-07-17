@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import threading
 
 from collections.abc import Callable, Iterable
@@ -21,9 +19,7 @@ class Counter:
         self._name = name
         self._hooks: list[Callable[[int], None]] = []
 
-    # --------------------------------------------------------------------------
-    # Public C0 API
-    # --------------------------------------------------------------------------
+    # --- Public C0 API --------------------------------------------------------
     @property
     def name(self) -> str:
         """Stable identifier of the counter."""
@@ -42,9 +38,7 @@ class Counter:
             with suppress(Exception):
                 hook(amount)
 
-    # --------------------------------------------------------------------------
-    # Hook registration
-    # --------------------------------------------------------------------------
+    # --- Hook registration ----------------------------------------------------
     def bind_increment_hook(self, fn: Callable[[int], None]) -> None:
         """
         Register a callback to be executed on each increment.
@@ -62,15 +56,11 @@ class Counter:
         self._hooks.append(fn)
 
 
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │Internal C0 registry (process lifetime)                                     │
-# ╰────────────────────────────────────────────────────────────────────────────╯
+# --- Internal C0 registry (process lifetime)
 _internal_metrics: dict[str, Counter] = {}
 
 
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │Internal C0 registry (process lifetime)                                     │
-# ╰────────────────────────────────────────────────────────────────────────────╯
+# ---Internal C0 registry (process lifetime)
 def define_counter(name: str) -> Counter:
     """
     Create or retrieve a C0 counter (idempotent).

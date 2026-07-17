@@ -38,14 +38,14 @@ def init_logging(bundle: LoggingRuntimeBundle) -> logging.Logger:
     - Audit channel fully isolated.
     """
 
-    # ─── Create the dedicated application logger
+    # Create the dedicated application logger
     APP_LOGGER.propagate = False  # NEVER bubble to root
     APP_LOGGER.setLevel(bundle.log_level)
 
     # Reset any previous configuration
     close_and_remove_all_handlers(APP_LOGGER)
 
-    # ─── Build handlers (partitioned + console)
+    # Build handlers (partitioned + console)
     builder = LoggingBuilder(bundle)
 
     for handler in builder.build_handlers():

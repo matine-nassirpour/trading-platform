@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 import threading
 
@@ -31,9 +29,6 @@ LOGGER: Final = logging.getLogger(__name__)
 _init_lock = threading.Lock()
 
 
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Public API                                                                 │
-# ╰────────────────────────────────────────────────────────────────────────────╯
 def init_observability(
     *,
     logging_config: LoggingConfig,

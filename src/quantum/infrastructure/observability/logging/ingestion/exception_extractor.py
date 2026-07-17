@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import traceback
 
 from logging import LogRecord
@@ -33,9 +31,7 @@ class ExceptionExtractor:
 
     __slots__ = ()
 
-    # --------------------------------------------------------------------------
-    # Internal Helpers
-    # --------------------------------------------------------------------------
+    # --- Internal Helpers -----------------------------------------------------
     @staticmethod
     def _extract_basic_info(exc_info: Any) -> tuple[str | None, str | None]:
         etype, evalue, _ = exc_info
@@ -62,9 +58,7 @@ class ExceptionExtractor:
             return f"{exc_type}: {exc_message}"
         return exc_type or exc_message
 
-    # --------------------------------------------------------------------------
-    # Main API
-    # --------------------------------------------------------------------------
+    # --- Main API -------------------------------------------------------------
     @staticmethod
     def extract(record: LogRecord) -> dict[str, str | None]:
         """

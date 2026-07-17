@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 
 from collections.abc import Mapping
@@ -64,9 +62,7 @@ class UnifiedAttrsStep(PipelineStep):
 
     def process(self, record: logging.LogRecord) -> bool:
         try:
-            # ------------------------------------------------------------------
             # Raw extraction of non-standard fields
-            # ------------------------------------------------------------------
             raw_attrs: dict[str, Any] = {
                 k: v
                 for k, v in record.__dict__.items()
@@ -81,9 +77,7 @@ class UnifiedAttrsStep(PipelineStep):
                     else:
                         raw_attrs["exception_text"] = str(exc_val)
 
-            # ------------------------------------------------------------------
             # Retrieving existing attrs
-            # ------------------------------------------------------------------
             base_attrs = getattr(record, "attrs", None)
 
             if isinstance(base_attrs, Mapping):
@@ -94,16 +88,12 @@ class UnifiedAttrsStep(PipelineStep):
                 # Rare edge case: attrs is not a mapping
                 merged = {"value": str(base_attrs)}
 
-            # ------------------------------------------------------------------
             # Controlled merger: existing attrs take priority
-            # ------------------------------------------------------------------
             for k, v in raw_attrs.items():
                 if k not in merged:
                     merged[k] = v
 
-            # ------------------------------------------------------------------
             # Recursive JSON sanitization
-            # ------------------------------------------------------------------
             merged = json_sanitize(merged)
 
             record.attrs = merged

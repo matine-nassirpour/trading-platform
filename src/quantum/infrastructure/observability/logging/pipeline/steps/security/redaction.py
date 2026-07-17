@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import json
 import logging
 import re
@@ -19,9 +17,6 @@ LOGGER: Final = logging.getLogger(__name__)
 
 _LOGGING_REDACTIONS_TOTAL: Final = define_counter("logging_redactions_total")
 
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Constants                                                                  │
-# ╰────────────────────────────────────────────────────────────────────────────╯
 SECRET_KEYS: Final[frozenset[str]] = frozenset(
     {
         "password",
@@ -51,9 +46,6 @@ class _RecordWithAttrs(Protocol):
     attrs: Mapping[str, Any]
 
 
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Internal Helper                                                            │
-# ╰────────────────────────────────────────────────────────────────────────────╯
 def _redact_value(value: Any) -> Any:
     """
     Pure redaction utility — fully deterministic and never raises.

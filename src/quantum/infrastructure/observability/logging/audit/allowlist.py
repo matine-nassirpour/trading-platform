@@ -7,9 +7,7 @@ _SAFE_NAME_RE: Final[re.Pattern[str]] = re.compile(r"^[a-z0-9_]+$")
 _VERSION_SUFFIX_RE: Final[re.Pattern[str]] = re.compile(r"_v\d+$")
 
 
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Internal Helpers                                                           │
-# ╰────────────────────────────────────────────────────────────────────────────╯
+# --- Internal Helpers
 def _normalize_event_name(name: str) -> str:
     """
     Normalize an audit event name:
@@ -35,9 +33,7 @@ def _validate_event_name(name: str) -> None:
         raise ValueError(f"Invalid audit event name: {name!r}")
 
 
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Public API                                                                 │
-# ╰────────────────────────────────────────────────────────────────────────────╯
+# --- Public API
 def normalize_allowlist(events: Iterable[str]) -> frozenset[str]:
     """Normalize & validate a set/list of event names before using them."""
     normalized: set[str] = set()

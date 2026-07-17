@@ -4,17 +4,11 @@ import uuid
 from collections.abc import Generator
 from contextlib import contextmanager
 
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ ContextVar (thread-safe & async-safe)                                      │
-# ╰────────────────────────────────────────────────────────────────────────────╯
 correlation_id_ctx: contextvars.ContextVar[str | None] = contextvars.ContextVar(
     "quantum.correlation_id", default=None
 )
 
 
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Core API                                                                   │
-# ╰────────────────────────────────────────────────────────────────────────────╯
 def get_correlation_id() -> str | None:
     """
     Retrieve the current correlation ID from the active context.
@@ -43,9 +37,6 @@ def generate_correlation_id() -> str:
     return cid
 
 
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Context Manager                                                            │
-# ╰────────────────────────────────────────────────────────────────────────────╯
 @contextmanager
 def correlation_context(
     correlation_id: str | None = None,

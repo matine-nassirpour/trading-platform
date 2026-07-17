@@ -35,9 +35,7 @@ class LoggingBuilder:
         self._formatter = JsonFormatter(bundle.identity.instance_id)
         self._factory = HandlerFactory(bundle, self._formatter, self._pipeline)
 
-    # --------------------------------------------------------------------------
-    # Application handlers
-    # --------------------------------------------------------------------------
+    # --- Application handlers -------------------------------------------------
     def build_handlers(self) -> list[logging.Handler]:
         """Build and return a list of fully configured handlers."""
         handlers: list[logging.Handler] = []
@@ -50,9 +48,7 @@ class LoggingBuilder:
 
         return handlers
 
-    # --------------------------------------------------------------------------
-    # Audit sink
-    # --------------------------------------------------------------------------
+    # --- Audit sink -----------------------------------------------------------
     def configure_audit_sink(self) -> None:
         """Reset and configure the dedicated audit logger sink."""
         if not self._bundle.audit_dir:

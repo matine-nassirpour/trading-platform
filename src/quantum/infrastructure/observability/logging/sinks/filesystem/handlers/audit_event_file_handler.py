@@ -99,9 +99,7 @@ class AuditEventFileHandler(logging.Handler):
             # Extremely degraded mode: quarantine itself failed
             self._diag.error("[audit] failed to open quarantine file", exc_info=True)
 
-    # --------------------------------------------------------------------------
-    # Internal Helpers
-    # --------------------------------------------------------------------------
+    # --- Internal Helpers -----------------------------------------------------
     def _write_quarantine(
         self, record: logging.LogRecord, raw_payload: str, reason: str
     ) -> None:
@@ -119,9 +117,7 @@ class AuditEventFileHandler(logging.Handler):
             # final fallback: never raise
             self.handleError(record)
 
-    # --------------------------------------------------------------------------
-    # Core logic
-    # --------------------------------------------------------------------------
+    # --- Core logic -----------------------------------------------------------
     def emit(self, record: logging.LogRecord) -> None:
         event = getattr(record, "event", None)
         if not isinstance(event, dict):
@@ -168,9 +164,7 @@ class AuditEventFileHandler(logging.Handler):
                 )
                 self._write_quarantine(record, payload, "audit_atomic_write_failed")
 
-    # ----------------------------------------------------------------------
-    # Lifecycle
-    # ----------------------------------------------------------------------
+    # --- Lifecycle --------------------------------------------------------
     def close(self) -> None:
         with self._lock:
             try:

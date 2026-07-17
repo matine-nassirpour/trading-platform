@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 
 from typing import Final
@@ -59,9 +57,7 @@ class LogRecordAdapter:
         This function MUST NOT raise.
         """
 
-        # ----------------------------------------------------------------------
         # Timestamps (LogRecord.created is seconds since epoch)
-        # ----------------------------------------------------------------------
         created_ts = getattr(record, "created", 0.0)
         ts_unix_ms = int(created_ts * 1000) if created_ts else 0
 
@@ -74,9 +70,7 @@ class LogRecordAdapter:
             ts_monotonic_ms=ts_mono_ms,
         )
 
-        # ----------------------------------------------------------------------
         # Severity
-        # ----------------------------------------------------------------------
         levelno = getattr(record, "levelno", logging.INFO)
         level, sev_num = canonical_severity(int(levelno))
 
@@ -85,9 +79,7 @@ class LogRecordAdapter:
             severity_number=sev_num,
         )
 
-        # ----------------------------------------------------------------------
         # Message block
-        # ----------------------------------------------------------------------
         try:
             message_text = record.getMessage()
         except Exception:
@@ -99,9 +91,7 @@ class LogRecordAdapter:
             message=message_text,
         )
 
-        # ----------------------------------------------------------------------
         # Resource block
-        # ----------------------------------------------------------------------
         resource = ResourceDTO(
             env=record.env,  # type: ignore[attr-defined]
             instance_id=instance_id,
@@ -110,9 +100,7 @@ class LogRecordAdapter:
             service_namespace=getattr(record, "service_namespace", None),
         )
 
-        # ----------------------------------------------------------------------
         # Correlation block (OTel + domain correlation + run_id)
-        # ----------------------------------------------------------------------
         trace_id, span_id, is_sampled = extract_trace_context()
 
         correlation = CorrelationDTO(
@@ -123,9 +111,7 @@ class LogRecordAdapter:
             run_id=getattr(record, "run_id", None),
         )
 
-        # ----------------------------------------------------------------------
         # Exception block (raw)
-        # ----------------------------------------------------------------------
         exc_raw = ExceptionExtractor.extract(record)
 
         exception = ExceptionRawDTO(
@@ -135,9 +121,7 @@ class LogRecordAdapter:
             exception_stacktrace=exc_raw.get("exception_stacktrace"),
         )
 
-        # ----------------------------------------------------------------------
         # Final DTO orchestration
-        # ----------------------------------------------------------------------
         attrs = getattr(record, "attrs", None)
         if not isinstance(attrs, dict):
             attrs = {}

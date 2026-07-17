@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from dataclasses import dataclass
 
 from quantum.infrastructure.observability.foundation.config.identity_runtime_bundle import (

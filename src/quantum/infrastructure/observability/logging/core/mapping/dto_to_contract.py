@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from collections.abc import Mapping
 from typing import Any
 
@@ -35,7 +33,7 @@ def map_dto_to_contract(event: InternalLogEvent) -> LogEventContractV1:
       - stable contract interface
     """
 
-    # ─── timestamps
+    # timestamps
     ts: TimestampsDTO = event.timestamps
     timestamps_block = TimestampsBlock(
         timestamp=ts.timestamp,
@@ -43,21 +41,21 @@ def map_dto_to_contract(event: InternalLogEvent) -> LogEventContractV1:
         ts_monotonic_ms=ts.ts_monotonic_ms,
     )
 
-    # ─── severity
+    # severity
     sev: SeverityDTO = event.severity
     severity_block = SeverityBlock(
         level=sev.level,
         severity_number=sev.severity_number,
     )
 
-    # ─── message
+    # message
     msg: MessageDTO = event.message
     message_block = MessageBlock(
         logger=msg.logger,
         message=msg.message,
     )
 
-    # ─── resource
+    # resource
     res: ResourceDTO = event.resource
     resource_block = ResourceBlock(
         env=res.env,
@@ -67,7 +65,7 @@ def map_dto_to_contract(event: InternalLogEvent) -> LogEventContractV1:
         service_namespace=res.service_namespace,
     )
 
-    # ─── correlation
+    # correlation
     corr: CorrelationDTO = event.correlation
     correlation_block = CorrelationBlock(
         trace_id=corr.trace_id,
@@ -77,7 +75,7 @@ def map_dto_to_contract(event: InternalLogEvent) -> LogEventContractV1:
         run_id=corr.run_id,
     )
 
-    # ─── exception
+    # exception
     exc: ExceptionRawDTO = event.exception
     exception_block = ExceptionBlockRaw(
         exception_summary=exc.exception_summary,
@@ -86,10 +84,9 @@ def map_dto_to_contract(event: InternalLogEvent) -> LogEventContractV1:
         exception_stacktrace=exc.exception_stacktrace,
     )
 
-    # ─── attributes
+    # attributes
     attrs: Mapping[str, Any] = event.attrs
 
-    # ─── final contract
     return LogEventContractV1(
         timestamps=timestamps_block,
         severity=severity_block,

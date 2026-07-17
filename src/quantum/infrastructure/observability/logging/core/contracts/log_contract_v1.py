@@ -13,8 +13,6 @@ independent of infrastructure concerns to support strict Clean Architecture,
 controlled schema evolution (V1 → V2 → ...), and formal auditability.
 """
 
-from __future__ import annotations
-
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any, Final

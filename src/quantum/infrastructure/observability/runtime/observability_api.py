@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from quantum.infrastructure.observability.bootstrap.health_registry import (
     HealthRegistry,
 )

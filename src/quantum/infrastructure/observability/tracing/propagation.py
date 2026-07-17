@@ -27,9 +27,7 @@ T = TypeVar("T")
 _PROCESS_BAGGAGE_TOKEN: Token[OTelContext] | None = None
 
 
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Propagators (process-wide)                                                 │
-# ╰────────────────────────────────────────────────────────────────────────────╯
+# --- Propagators (process-wide)
 def setup_propagation() -> None:
     """
     Configure global W3C propagators (traceparent + baggage).
@@ -116,9 +114,7 @@ def baggage_context_from_ids() -> Iterator[None]:
         otel_context.detach(token)
 
 
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │  Context Snapshot (Thread-Safe, Immutable)                                 │
-# ╰────────────────────────────────────────────────────────────────────────────╯
+# --- Context Snapshot (Thread-Safe, Immutable)
 @dataclass(frozen=True)
 class ContextSnapshot:
     """
@@ -146,9 +142,7 @@ def capture_context_snapshot() -> ContextSnapshot:
     )
 
 
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Internal Helpers                                                           │
-# ╰────────────────────────────────────────────────────────────────────────────╯
+# --- Internal Helpers
 def _enter_app_contexts(
     snap: ContextSnapshot,
 ) -> tuple[AbstractContextManager[None] | None, AbstractContextManager[None] | None]:
@@ -204,9 +198,7 @@ def _exit_all_contexts(
         rid_cm.__exit__(None, None, None)
 
 
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Main ContextManager                                                        │
-# ╰────────────────────────────────────────────────────────────────────────────╯
+# --- Main ContextManager
 @contextmanager
 def use_context_snapshot(
     snap: ContextSnapshot,
@@ -233,9 +225,7 @@ def use_context_snapshot(
         _exit_all_contexts(rid_cm, cid_cm, otel_token, baggage_cm)
 
 
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Concurrency utilities                                                      │
-# ╰────────────────────────────────────────────────────────────────────────────╯
+# --- Concurrency utilities
 def run_in_context(snap: ContextSnapshot, fn: Callable[[], T]) -> T:
     with use_context_snapshot(snap):
         return fn()

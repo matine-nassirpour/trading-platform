@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import json
 import logging
 
@@ -30,9 +28,7 @@ class JSONLFormatter:
     def __init__(self, instance_id: str) -> None:
         self._instance_id = instance_id
 
-    # --------------------------------------------------------------------------
-    # Internal helpers
-    # --------------------------------------------------------------------------
+    # --- Internal helpers -----------------------------------------------------
     @staticmethod
     def _safe_json_dumps(obj: Any) -> str:
         """
@@ -58,9 +54,7 @@ class JSONLFormatter:
         except Exception:
             return "<message_unavailable>"
 
-    # --------------------------------------------------------------------------
-    # Core logic
-    # --------------------------------------------------------------------------
+    # --- Core logic -----------------------------------------------------------
     def format(self, record: logging.LogRecord) -> str:
         try:
             data = {

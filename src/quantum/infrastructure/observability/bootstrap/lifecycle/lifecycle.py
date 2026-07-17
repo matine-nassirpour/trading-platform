@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 
 from contextlib import suppress
@@ -85,9 +83,7 @@ class LifecycleService:
         # Reset health state
         registry.reset_all()
 
-        # ----------------------------------------------------------------------
-        # Tracing
-        # ----------------------------------------------------------------------
+        # --- Tracing ----------------------------------------------------------
         try:
             provider = self._deps.tracing_initializer.initialize(tracing_config)
             self._tracer_provider = provider
@@ -98,9 +94,7 @@ class LifecycleService:
             registry.mark_tracing_ok(False)
             registry.mark_tracing_up(False)
 
-        # ----------------------------------------------------------------------
-        # Logging
-        # ----------------------------------------------------------------------
+        # --- Logging ----------------------------------------------------------
         try:
             ok = self._deps.logging_initializer.initialize(logging_config)
             registry.mark_logging_ok(ok)
@@ -111,9 +105,7 @@ class LifecycleService:
             registry.mark_logging_ok(False)
             registry.mark_logging_sink_up(False)
 
-        # ----------------------------------------------------------------------
-        # Metrics
-        # ----------------------------------------------------------------------
+        # --- Metrics ----------------------------------------------------------
         try:
             metrics_ok = self._deps.metrics_initializer.initialize(metrics_config)
             registry.mark_metrics_http_ok(metrics_ok)

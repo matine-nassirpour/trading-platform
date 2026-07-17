@@ -6,8 +6,6 @@ This mapping is used across all observability components to
 ensure consistent interpretation of log severity.
 """
 
-from __future__ import annotations
-
 import logging
 
 from collections.abc import Mapping
@@ -48,9 +46,7 @@ _REV_TEXT_TO_LEVELNO: Final[ReverseLevelMapType] = MappingProxyType(
 _SEVERITY_MAPPING_ERRORS = define_counter("severity_mapping_errors")
 
 
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Public API                                                                 │
-# ╰────────────────────────────────────────────────────────────────────────────╯
+# --- Public API
 def canonical_severity(levelno: int) -> SeverityPair:
     """
     Return the canonical (severity_text, severity_number) pair for a Python
@@ -93,9 +89,7 @@ def severity_text(text: str) -> SeverityText:
     raise ValueError(f"Unknown severity text: {text!r}")
 
 
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Expose read-only mappings for external safe inspection                     │
-# ╰────────────────────────────────────────────────────────────────────────────╯
+# --- Expose read-only mappings for external safe inspection
 SEVERITY_MAP: Final[SeverityMapType] = _CANONICAL_SEVERITY_MAP
 SEVERITY_TEXT_TO_NUMBER: Final[ReverseTextMapType] = _REV_TEXT_TO_NUMBER
 SEVERITY_TEXT_TO_LEVELNO: Final[ReverseLevelMapType] = _REV_TEXT_TO_LEVELNO

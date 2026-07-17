@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from prometheus_client import start_http_server
 
 from quantum.infrastructure.observability.bootstrap.lifecycle.configs.metrics_config import (

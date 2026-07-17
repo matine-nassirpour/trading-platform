@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 
 from typing import Final
@@ -53,17 +51,13 @@ class PayloadAssembler:
     def build(record: logging.LogRecord, instance_id: str) -> LogPayload:
         """Construct a validated LogPayload model from a LogRecord."""
 
-        # ----------------------------------------------------------------------
         # Convert LogRecord → DTO (safe adapter)
-        # ----------------------------------------------------------------------
         internal_event = LogRecordAdapter.to_internal_event(
             record=record,
             instance_id=instance_id,
         )
 
-        # ----------------------------------------------------------------------
         # Convert DTO → Contract (explicit & versioned)
-        # ----------------------------------------------------------------------
         try:
             contract = map_dto_to_contract(internal_event)
         except Exception as exc:
@@ -75,9 +69,7 @@ class PayloadAssembler:
             )
             raise
 
-        # ----------------------------------------------------------------------
         # Convert Contract → Domain Payload (strict validation)
-        # ----------------------------------------------------------------------
         try:
             payload = map_contract_to_payload(contract)
             return payload

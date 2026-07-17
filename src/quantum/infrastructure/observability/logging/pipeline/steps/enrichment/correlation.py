@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 
 from quantum.infrastructure.observability.context.context_attributes_provider import (

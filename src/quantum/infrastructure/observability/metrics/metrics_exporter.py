@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from prometheus_client import Counter as PrometheusCounter
 
 from quantum.infrastructure.observability.foundation.metrics.c0_metric_registry import (
@@ -25,9 +23,7 @@ class MetricsExporter:
         # Cache of Prometheus counters to ensure idempotence
         self._prom_counters: dict[str, PrometheusCounter] = {}
 
-    # --------------------------------------------------------------------------
-    # Public API
-    # --------------------------------------------------------------------------
+    # --- Public API -----------------------------------------------------------
     def attach_prometheus_counter(
         self, internal_name: str, prom_name: str, help_text: str
     ) -> None:

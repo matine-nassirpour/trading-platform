@@ -43,9 +43,7 @@ LOGGER: Final = logging.getLogger(__name__)
 _ATEXIT_REGISTERED: bool = False
 
 
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Lifecycle Management                                                       │
-# ╰────────────────────────────────────────────────────────────────────────────╯
+# --- Lifecycle Management
 def _shutdown_provider_safely() -> None:
     """Gracefully shutdown the current tracer provider (safe for multiple calls)."""
     try:
@@ -69,9 +67,7 @@ def _ensure_atexit_registered() -> None:
         LOGGER.debug(f"Failed to register atexit tracer shutdown: {exc}")
 
 
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Context Processor                                                          │
-# ╰────────────────────────────────────────────────────────────────────────────╯
+# --- Context Processor
 class _ContextEnricherProcessor(SpanProcessor):
     """Injects run_id and correlation_id into every span at start time."""
 
@@ -93,9 +89,7 @@ class _ContextEnricherProcessor(SpanProcessor):
         return True
 
 
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ OTLP Exporter Builder                                                      │
-# ╰────────────────────────────────────────────────────────────────────────────╯
+# --- OTLP Exporter Builder
 def _parse_otlp_headers(headers_csv: str | None) -> dict[str, str]:
     headers: dict[str, str] = {}
     if not headers_csv:
@@ -178,9 +172,7 @@ def _build_otlp_exporter(
         return None
 
 
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ TracerProvider creation pipeline                                           │
-# ╰────────────────────────────────────────────────────────────────────────────╯
+# --- TracerProvider creation pipeline
 def _create_tracer_provider(bundle: TracingRuntimeBundle) -> TracerProvider:
     sample_ratio = max(0.0, min(1.0, float(bundle.trace_sample)))
     resource = Resource.create(
@@ -253,9 +245,7 @@ def init_tracing(
     return provider
 
 
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Public API                                                                 │
-# ╰────────────────────────────────────────────────────────────────────────────╯
+# --- Public API
 def get_tracer(component: str, version: str = "1.0.0") -> Tracer:
     """
     Return a canonical tracer for the given component.

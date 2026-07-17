@@ -40,9 +40,7 @@ class HandlerFactory:
         self._formatter = formatter
         self._pipeline = pipeline
 
-    # ------------------------------------------------------------------
-    # Internal helper
-    # ------------------------------------------------------------------
+    # --- Internal helper ----------------------------------------------
     def _attach(
         self,
         handler: logging.Handler,
@@ -67,9 +65,7 @@ class HandlerFactory:
         handler.addFilter(self._pipeline)
         return handler
 
-    # --------------------------------------------------------------------------
-    # Console handler (Pretty or compact JSON)
-    # --------------------------------------------------------------------------
+    # --- Console handler (Pretty or compact JSON) -----------------------------
     def console(self) -> logging.Handler:
         """
         Return a console handler with PrettyJsonFormatter (human-readable)
@@ -85,9 +81,7 @@ class HandlerFactory:
 
         return self._attach(handler, formatter=formatter)
 
-    # --------------------------------------------------------------------------
-    # Partitioned JSONL file handler (structured machine output)
-    # --------------------------------------------------------------------------
+    # --- Partitioned JSONL file handler (structured machine output) -----------
     def partitioned(self) -> logging.Handler:
         """
         Return a fully configured partitioned JSONL file handler.

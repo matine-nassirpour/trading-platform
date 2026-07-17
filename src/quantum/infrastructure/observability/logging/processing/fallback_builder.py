@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 
 from typing import Any, Final
@@ -43,9 +41,7 @@ class FallbackBuilder:
         - Always deterministic
     """
 
-    # --------------------------------------------------------------------------
-    # Internal Helpers
-    # --------------------------------------------------------------------------
+    # --- Internal Helpers -----------------------------------------------------
     @staticmethod
     def _safe_attrs(attrs: Any) -> dict[str, Any]:
         """
@@ -139,9 +135,7 @@ class FallbackBuilder:
             fallback_reason="contract_mapping_failure",
         )
 
-    # --------------------------------------------------------------------------
-    # Public API
-    # --------------------------------------------------------------------------
+    # --- Public API -----------------------------------------------------------
     @staticmethod
     def build(
         record: logging.LogRecord,
@@ -154,9 +148,7 @@ class FallbackBuilder:
         MUST NEVER raise.
         """
 
-        # ----------------------------------------------------------------------
         # Try to extract the DTO (adapter never raises, but defensive)
-        # ----------------------------------------------------------------------
         try:
             dto = LogRecordAdapter.to_internal_event(record, instance_id)
         except Exception:
@@ -167,18 +159,14 @@ class FallbackBuilder:
                 validation_error=str(error),
             )
 
-        # ----------------------------------------------------------------------
         # Try to map DTO → Contract V1 (pure mapping)
-        # ----------------------------------------------------------------------
         try:
             contract: LogEventContractV1 = map_dto_to_contract(dto)
         except Exception:
             _FALLBACK_MAPPING_ERRORS.inc()
             return FallbackBuilder._fallback_from_dto(dto, error)
 
-        # ----------------------------------------------------------------------
         # Convert Contract → FallbackPayload
-        # ----------------------------------------------------------------------
         try:
             return FallbackBuilder._fallback_from_contract(contract, error)
         except Exception:

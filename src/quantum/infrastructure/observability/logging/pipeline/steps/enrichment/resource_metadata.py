@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 
 from quantum.infrastructure.observability.foundation.config.identity_runtime_bundle import (

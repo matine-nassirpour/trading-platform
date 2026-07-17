@@ -1,14 +1,12 @@
 """
 Diagnostics Module
-──────────────────
+------------------
 
 Provides self-observation of the observability stack itself:
 - Measures initialization latencies for subsystems
 - Records success/failure counts
 - Exposes Prometheus metrics for internal performance tracking
 """
-
-from __future__ import annotations
 
 import logging
 import threading
@@ -23,9 +21,6 @@ from prometheus_client import Counter, Histogram
 LOGGER: Final = logging.getLogger(__name__)
 
 
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Metrics bundle                                                             │
-# ╰────────────────────────────────────────────────────────────────────────────╯
 @dataclass(frozen=True)
 class DiagnosticsMetrics:
     latency_hist: Histogram
@@ -47,9 +42,7 @@ class BootstrapDiagnostics:
         self._results: dict[str, float] = {}
         self._failures: set[str] = set()
 
-    # --------------------------------------------------------------------------
-    # Public API
-    # --------------------------------------------------------------------------
+    # --- Public API -----------------------------------------------------------
     def record_init_latency(self, subsystem: str, duration: float) -> None:
         self._metrics.latency_hist.labels(subsystem=subsystem).observe(duration)
         with self._lock:
@@ -70,9 +63,7 @@ class BootstrapDiagnostics:
             }
 
 
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Factory function                                                           │
-# ╰────────────────────────────────────────────────────────────────────────────╯
+# --- Factory function
 def build_bootstrap_diagnostics(prefix: str = "quantum") -> BootstrapDiagnostics:
     """
     Deterministic, industry-grade factory for BootstrapDiagnostics.
@@ -100,9 +91,7 @@ def build_bootstrap_diagnostics(prefix: str = "quantum") -> BootstrapDiagnostics
     return BootstrapDiagnostics(metrics)
 
 
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Decorator factory                                                          │
-# ╰────────────────────────────────────────────────────────────────────────────╯
+# --- Decorator factory
 def make_latency_decorator(
     diagnostics: BootstrapDiagnostics,
 ) -> Callable[[str], Callable[..., Any]]:

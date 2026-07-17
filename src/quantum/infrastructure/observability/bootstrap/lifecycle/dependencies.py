@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from dataclasses import dataclass
 
 from quantum.infrastructure.observability.bootstrap.health_registry import (
@@ -30,9 +28,6 @@ from quantum.infrastructure.observability.bootstrap.lifecycle.protocols.tracing_
 )
 
 
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Dependency Bundle                                                          │
-# ╰────────────────────────────────────────────────────────────────────────────╯
 @dataclass(frozen=True)
 class ObservabilityDependencies:
     """
@@ -46,9 +41,6 @@ class ObservabilityDependencies:
     diagnostics: BootstrapDiagnostics
 
 
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Factory — used by LifecycleService during instantiation                    │
-# ╰────────────────────────────────────────────────────────────────────────────╯
 def create_observability_dependencies() -> ObservabilityDependencies:
     """
     Composition Root for all Observability dependencies.

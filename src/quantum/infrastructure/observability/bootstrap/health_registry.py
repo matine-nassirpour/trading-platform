@@ -1,14 +1,9 @@
-from __future__ import annotations
-
 from dataclasses import dataclass
 from typing import Protocol
 
 from prometheus_client import Gauge
 
 
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Metrics bundle                                                             │
-# ╰────────────────────────────────────────────────────────────────────────────╯
 @dataclass(frozen=True)
 class HealthMetrics:
     pipeline_up: Gauge
@@ -19,9 +14,6 @@ class HealthMetrics:
     metrics_http_ok: Gauge
 
 
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Public interface for health reporting                                      │
-# ╰────────────────────────────────────────────────────────────────────────────╯
 class HealthMonitor(Protocol):
     """Interface for reporting observability subsystem health."""
 
@@ -48,9 +40,7 @@ class HealthRegistry:
         self._tracing_ok: bool = False
         self._metrics_http_ok: bool = False
 
-    # --------------------------------------------------------------------------
-    # Public API - High level setters
-    # --------------------------------------------------------------------------
+    # --- Public API - High level setters --------------------------------------
     def mark_pipeline_up(self, ok: bool) -> None:
         self._pipeline_up = ok
         self._m.pipeline_up.set(1 if ok else 0)
@@ -75,9 +65,7 @@ class HealthRegistry:
         self._metrics_http_ok = ok
         self._m.metrics_http_ok.set(1 if ok else 0)
 
-    # --------------------------------------------------------------------------
-    # Public API — Getters (read from canonical state, never from Gauge)
-    # --------------------------------------------------------------------------
+    # --- Public API — Getters (read from canonical state, never from Gauge) ---
     def is_pipeline_up(self) -> bool:
         return self._pipeline_up
 
@@ -96,9 +84,7 @@ class HealthRegistry:
     def is_metrics_http_ok(self) -> bool:
         return self._metrics_http_ok
 
-    # --------------------------------------------------------------------------
-    # Utilities
-    # --------------------------------------------------------------------------
+    # --- Utilities ------------------------------------------------------------
     def reset_all(self) -> None:
         """
         Reset all gauges to zero.
@@ -112,9 +98,7 @@ class HealthRegistry:
         self.mark_metrics_http_ok(False)
 
 
-# ╭────────────────────────────────────────────────────────────────────────────╮
-# │ Factory function                                                           │
-# ╰────────────────────────────────────────────────────────────────────────────╯
+# --- Factory function
 def build_health_registry(prefix: str = "quantum") -> HealthRegistry:
     """
     Deterministic, factory for HealthRegistry + Gauges.

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 
 from quantum.infrastructure.observability.logging.pipeline.engine.step import (
